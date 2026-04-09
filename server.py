@@ -104,15 +104,18 @@ def crear_checkout():
     data = request.get_json()
     plan = data.get("plan", "")
     if plan != "pro" or not STRIPE_PRICE_PRO:
-        return jsonify({"error": "Plan no valido o precio no configurado"}), 400
-    session = stripe.checkout.Session.create(
-        mode="subscription",
-        customer_email=current_user.email if current_user.is_authenticated else None,
-        line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
-        success_url=request.host_url + "app?pago=ok",
-        cancel_url=request.host_url + "#precios",
-    )
-    return jsonify({"url": session.url})
+        return jsonify({"error": f"Plan no valido o precio no configurado. PRICE_PRO={STRIPE_PRICE_PRO}"}), 400
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            customer_email=current_user.email if current_user.is_authenticated else None,
+            line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
+            success_url=request.host_url + "app?pago=ok",
+            cancel_url=request.host_url + "#precios",
+        )
+        return jsonify({"url": session.url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/webhook", methods=["POST"])
 def stripe_webhook():
