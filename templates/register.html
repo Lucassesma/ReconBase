@@ -55,7 +55,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 <div class="main">
   <div class="card">
     <div class="card-title">Crea tu cuenta</div>
-    <div class="card-sub">Gratis para siempre en el plan Starter</div>
+    <div class="card-sub">Empieza gratis o pasa a Pro por 29€/mes</div>
     <div class="error-msg" id="error-msg"></div>
     <div class="success-msg" id="success-msg">Cuenta creada correctamente. Redirigiendo...</div>
     <form onsubmit="handleRegister(event)">
@@ -73,18 +73,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
       </div>
       <div class="field">
         <label>Plan</label>
-        <div class="plan-select">
+        <div class="plan-select" style="grid-template-columns:1fr 1fr">
           <div class="plan-opt selected" onclick="selectPlan(this,'starter')">
-            <div class="plan-opt-name">Starter</div>
+            <div class="plan-opt-name">Gratuito</div>
             <div class="plan-opt-price">Gratis</div>
           </div>
           <div class="plan-opt" onclick="selectPlan(this,'pro')">
             <div class="plan-opt-name">Pro</div>
-            <div class="plan-opt-price">29/mes</div>
-          </div>
-          <div class="plan-opt" onclick="selectPlan(this,'enterprise')">
-            <div class="plan-opt-name">Enterprise</div>
-            <div class="plan-opt-price">99/mes</div>
+            <div class="plan-opt-price">29€/mes</div>
           </div>
         </div>
       </div>
