@@ -355,6 +355,12 @@ def generar_pdf():
 
 with app.app_context():
     db.create_all()
+    from sqlalchemy import text
+    try:
+        db.session.execute(text("ALTER TABLE users ADD COLUMN plan VARCHAR(20) DEFAULT 'free' NOT NULL"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
