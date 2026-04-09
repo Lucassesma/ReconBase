@@ -107,11 +107,41 @@ def crear_checkout():
         return jsonify({"error": "Plan no valido o precio no configurado"}), 400
     session = stripe.checkout.Session.create(
         mode="subscription",
+        customer_email=current_user.email if current_user.is_authenticated else None,
         line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
         success_url=request.host_url + "app?pago=ok",
         cancel_url=request.host_url + "#precios",
     )
     return jsonify({"url": session.url})
+
+@app.route("/api/webhook", methods=["POST"])
+def stripe_webhook():
+    payload    = request.get_data()
+    sig_header = request.headers.get("Stripe-Signature", "")
+    secret     = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, secret)
+    except Exception:
+        return jsonify({"error": "firma invalida"}), 400
+
+    if event["type"] == "checkout.session.completed":
+        email = (event["data"]["object"].get("customer_email") or
+                 event["data"]["object"].get("customer_details", {}).get("email"))
+        if email:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.plan = "pro"
+                db.session.commit()
+
+    elif event["type"] == "customer.subscription.deleted":
+        email = event["data"]["object"].get("metadata", {}).get("email")
+        if email:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.plan = "free"
+                db.session.commit()
+
+    return jsonify({"ok": True})
 
 # ── APP ──
 @app.route("/app")

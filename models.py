@@ -12,6 +12,7 @@ class User(UserMixin, db.Model):
     password   = db.Column(db.String(255), nullable=False)
     empresa    = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    plan       = db.Column(db.String(20), default='free', nullable=False)
     scans      = db.relationship('Scan', backref='user', lazy=True)
 
     def set_password(self, password):
