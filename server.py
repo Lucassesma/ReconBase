@@ -309,7 +309,8 @@ def generar_pdf():
     nombre = f"reconbase_{datos.get('dominio','report').replace('.','_')}.pdf"
     return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=nombre)
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5000)
