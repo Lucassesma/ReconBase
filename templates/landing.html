@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ReconBase — Analiza la seguridad de tu empresa gratis</title>
+
+<!-- SEO básico -->
+<meta name="description" content="ReconBase analiza gratis la seguridad de tu dominio: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.">
+<meta name="keywords" content="analizar seguridad dominio, escaner seguridad web, filtraciones datos empresa, seguridad pymes, auditoría seguridad gratis, SPF DMARC, puertos expuestos">
+<meta name="author" content="ReconBase">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase.com/">
+
+<!-- Open Graph (redes sociales) -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase.com/">
+<meta property="og:title" content="ReconBase — Analiza la seguridad de tu empresa gratis">
+<meta property="og:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
+<meta property="og:locale" content="es_ES">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ReconBase — Analiza la seguridad de tu empresa gratis">
+<meta name="twitter:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;line-height:1.6;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);backdrop-filter:blur(16px)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:2.5rem}
+.nav-links a{font-size:.87rem;color:var(--muted);transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:.75rem}
+.btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.5rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s}
+.btn-login:hover{border-color:var(--blue-lt);color:var(--text)}
+.btn-nav{background:var(--blue-dk);color:#fff;border:none;padding:.5rem 1.3rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .2s}
+.btn-nav:hover{background:#1e40af}
+.hero{padding:7rem 6% 5rem;max-width:1000px;margin:0 auto;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:.3rem .9rem;font-size:.72rem;font-family:'JetBrains Mono',monospace;color:#60A5FA;margin-bottom:2rem;animation:fadeUp .6s ease both}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(2.4rem,5.5vw,3.8rem);font-weight:800;letter-spacing:-.05em;line-height:1.05;margin-bottom:1.5rem;animation:fadeUp .7s .1s ease both}
+.hero h1 em{font-style:normal;color:var(--blue-lt)}
+.hero p{font-size:1.05rem;color:var(--muted);max-width:560px;margin:0 auto 2.5rem;animation:fadeUp .7s .2s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;animation:fadeUp .7s .3s ease both}
+.btn-primary{background:var(--blue-dk);color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:all .15s}
+.btn-primary:hover{background:#1e40af;transform:translateY(-2px)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);padding:.85rem 2.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:600;font-size:.92rem;cursor:pointer;transition:border-color .2s}
+.btn-ghost:hover{border-color:var(--blue-lt)}
+.compat{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1rem 6%;display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap}
+.compat-lbl{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:#475569;letter-spacing:.1em;text-transform:uppercase}
+.compat span{font-size:.8rem;color:#94A3B8}
+.section{padding:5rem 6%;max-width:1200px;margin:0 auto}
+.sec-label{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--blue);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.75rem}
+.sec-title{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem}
+.sec-sub{color:var(--muted);font-size:.95rem;line-height:1.7;max-width:520px}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:2.5rem}
+.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;transition:border-color .2s,transform .2s}
+.feat-card:hover{border-color:var(--blue-lt);transform:translateY(-2px)}
+.feat-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+.fi-b{background:rgba(37,99,235,.15)}.fi-r{background:rgba(239,68,68,.15)}.fi-a{background:rgba(245,158,11,.15)}.fi-g{background:rgba(16,185,129,.15)}.fi-t{background:rgba(20,184,166,.15)}.fi-p{background:rgba(139,92,246,.15)}
+.feat-title{font-weight:700;font-size:.93rem;margin-bottom:.4rem}
+.feat-desc{font-size:.82rem;color:var(--muted);line-height:1.6}
+.dark-band{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%}
+.dark-band-inner{max-width:1100px;margin:0 auto}
+.terminal{background:#050810;border:1px solid var(--border);border-radius:10px;padding:1.5rem;font-family:'JetBrains Mono',monospace;font-size:.77rem;margin-top:2rem;position:relative;overflow:hidden}
+.terminal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue-lt),transparent)}
+.t-bar{display:flex;gap:6px;margin-bottom:1.2rem}
+.td{width:11px;height:11px;border-radius:50%}
+.log{display:flex;gap:1rem;padding:.32rem 0;border-bottom:1px solid #0a0f1a;align-items:baseline}
+.log:last-child{border:none}
+.lt{color:#1E3A5F;min-width:60px}.lok{color:var(--green);min-width:72px}.lwarn{color:var(--amber);min-width:72px}.lcrit{color:var(--red);min-width:72px}.lmsg{color:var(--dim);flex:1}.ltgt{color:#60A5FA}
+.demo-section{padding:5rem 6%;max-width:1200px;margin:0 auto}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2.5rem;align-items:start}
+.demo-steps-nav{display:flex;flex-direction:column;gap:.5rem}
+.demo-step-btn{display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;text-align:left}
+.demo-step-btn.active{border-color:var(--blue-lt);background:rgba(37,99,235,.06)}
+.demo-step-btn:hover{border-color:var(--blue-lt)}
+.dsb-num{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:var(--dim);flex-shrink:0;transition:all .2s}
+.demo-step-btn.active .dsb-num{background:var(--blue-dk);color:#fff}
+.dsb-title{font-weight:700;font-size:.88rem;margin-bottom:.2rem}
+.dsb-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
+.demo-preview{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:360px}
+.demo-panel{display:none;padding:1.5rem;animation:fadeIn .3s ease}
+.demo-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.dp-scan{display:flex;gap:.5rem;margin-bottom:1rem}
+.dp-input{flex:1;background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:.55rem .85rem;outline:none}
+.dp-btn{background:var(--blue-dk);color:#fff;border:none;padding:.55rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer}
+.demo-result-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:#080C14;border-radius:6px;margin-bottom:.5rem}
+.dri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dri-label{font-size:.8rem;font-family:'JetBrains Mono',monospace;flex:1}
+.dri-status{font-size:.72rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+.status-ok{color:var(--green)}.status-err{color:var(--red)}.status-warn{color:var(--amber)}
+.demo-pdf-preview{background:#080C14;border-radius:8px;padding:1.25rem;border:1px solid var(--border)}
+.pdf-header{background:var(--blue-dk);border-radius:6px;padding:.75rem 1rem;margin-bottom:1rem;text-align:center}
+.pdf-row{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.pdf-row:last-child{border:none}
+.pdf-key{color:var(--muted);font-family:'JetBrains Mono',monospace}
+.alert-demo{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:1rem;margin-bottom:.75rem}
+.alert-demo-title{font-size:.78rem;font-weight:700;color:#F87171;margin-bottom:.3rem;font-family:'JetBrains Mono',monospace}
+.alert-demo-body{font-size:.75rem;color:var(--muted);line-height:1.5}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-top:2.5rem}
+.plan{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;position:relative}
+.plan.hot{border:2px solid var(--blue-dk)}
+.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--blue-dk);color:#fff;font-size:.67rem;font-family:'JetBrains Mono',monospace;padding:.2rem .85rem;border-radius:20px;white-space:nowrap;letter-spacing:.08em}
+.plan-name{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.plan-price{font-size:2.4rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.25rem}
+.plan-price span{font-size:.9rem;font-weight:400;color:var(--muted)}
+.plan-desc{font-size:.82rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
+.plan-div{height:1px;background:var(--border);margin-bottom:1.2rem}
+.pf{display:flex;align-items:flex-start;gap:8px;font-size:.83rem;color:#CBD5E1;margin-bottom:.65rem;line-height:1.4}
+.pf.off{color:#2d3e5a}
+.ck{color:var(--green);font-size:13px;flex-shrink:0;margin-top:1px}
+.cx{color:#1E2D4A;font-size:13px;flex-shrink:0;margin-top:1px}
+.btn-plan{width:100%;margin-top:1.75rem;padding:.75rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:all .15s}
+.btn-plan.ol{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-plan.ol:hover{border-color:var(--blue-lt)}
+.btn-plan.sl{background:var(--blue-dk);border:none;color:#fff}
+.btn-plan.sl:hover{background:#1e40af}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#0D1220;border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:440px;position:relative}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer}
+.modal-title{font-size:1.2rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.4rem}
+.modal-sub{font-size:.83rem;color:var(--muted);margin-bottom:1.5rem}
+.modal-plan-info{background:#080C14;border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center}
+.mpi-name{font-size:.85rem;font-weight:700}
+.mpi-price{font-size:1.4rem;font-weight:800;color:var(--blue-lt)}
+.sf-label{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:.4rem}
+.sf-input{width:100%;background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.65rem .85rem;outline:none;margin-bottom:1rem;transition:border-color .2s}
+.sf-input:focus{border-color:var(--blue-lt)}
+.sf-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.sf-card-mock{width:100%;background:#080C14;border:1px solid var(--border);border-radius:6px;padding:.65rem .85rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--dim)}
+.sf-card-icons{display:flex;gap:.4rem;margin-left:auto}
+.card-icon{width:32px;height:20px;border-radius:3px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;color:var(--muted)}
+.btn-pay{width:100%;background:var(--blue-dk);color:#fff;border:none;padding:.85rem;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:background .2s;margin-top:.5rem}
+.btn-pay:hover{background:#1e40af}
+.stripe-badge{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.85rem;font-size:.72rem;color:#2d3e5a;font-family:'JetBrains Mono',monospace}
+.faq-item{border-bottom:1px solid var(--border);padding:1.4rem 0;cursor:pointer}
+.faq-q{font-weight:700;font-size:.93rem;display:flex;justify-content:space-between;align-items:center}
+.faq-q::after{content:'+';color:var(--blue-lt);font-size:1.2rem;transition:transform .2s}
+.faq-item.open .faq-q::after{transform:rotate(45deg)}
+.faq-a{font-size:.85rem;color:var(--muted);line-height:1.7;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s}
+.faq-item.open .faq-a{max-height:200px;padding-top:.75rem}
+.cta-band{background:var(--surface);border-top:1px solid var(--border);padding:6rem 6%;text-align:center}
+.cta-band h2{font-size:clamp(1.8rem,3.5vw,2.7rem);font-weight:800;letter-spacing:-.04em;line-height:1.1;margin-bottom:1rem}
+.cta-band p{font-size:.95rem;color:var(--muted);margin-bottom:2.5rem}
+footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.f-logo{font-weight:800;font-size:1rem;letter-spacing:-.03em}
+.f-copy{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.f-links{display:flex;gap:1.5rem;font-size:.75rem;color:#2d3e5a;font-family:'JetBrains Mono',monospace}
+@media(max-width:768px){.demo-grid{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="#1D4ED8"/>
+      <path d="M16 5L7 9.5V17c0 4.7 3.8 9.1 9 10 5.2-.9 9-5.3 9-10V9.5L16 5z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M12 16l2.5 2.5L20 13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="logo-text">ReconBase</div>
+  </a>
+  <div class="nav-links">
+    <a href="#funciones">Funciones</a>
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precios">Precios</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div class="nav-right">
+    {% if user and user.is_authenticated %}
+    <a href="/app"><button class="btn-nav">Mi dashboard</button></a>
+    {% else %}
+    <a href="/login"><button class="btn-login">Iniciar sesion</button></a>
+    <a href="/register"><button class="btn-nav">Registro gratuito</button></a>
+    {% endif %}
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge"><span class="dot"></span> Motor OSINT activo</div>
+  <h1>Seguridad perimetral para<br><em>tu empresa</em>, sin equipo IT</h1>
+  <p>ReconBase escanea tu infraestructura, detecta filtraciones y te avisa antes de que el problema llegue a tus clientes.</p>
+  <div class="hero-btns">
+    <a href="/app"><button class="btn-primary">Analizar mi dominio gratis</button></a>
+    <a href="#como-funciona"><button class="btn-ghost">Ver como funciona</button></a>
+  </div>
+</section>
+
+<div class="compat">
+  <span class="compat-lbl">Tecnologias integradas:</span>
+  <span>Have I Been Pwned</span><span>DNS / DMARC / SPF</span>
+  <span>HTTP Security Headers</span><span>Port Scanning</span><span>Subdomain Enumeration</span>
+</div>
+
+<section class="section" id="funciones">
+  <div class="sec-label">Capacidades</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1.5rem">
+    <div><div class="sec-title">Todo lo que necesitas<br>para proteger tu negocio</div></div>
+    <p class="sec-sub">Sin conocimientos tecnicos. Introduce tu dominio y ReconBase hace el resto.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="feat-icon fi-b"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><div class="feat-title">Escaner de puertos</div><div class="feat-desc">Detecta servicios expuestos al exterior antes de que lo haga un atacante.</div></div>
+    <div class="feat-card"><div class="feat-icon fi-r"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4M12 16h.01"/></svg></div><div class="feat-title">Filtraciones Deep Web</div><div class="feat-desc">Busca tus emails en +800 bases de datos comprometidas y avisa al instante.</div></div>
+    <div class="feat-card"><div class="feat-icon fi-a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div><div class="feat-title">Anti-suplantacion DNS</div><div class="feat-desc">Verifica SPF y DMARC para que nadie envie emails suplantando tu dominio.</div></div>
+    <div class="feat-card"><div class="feat-icon fi-g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="feat-title">Cabeceras HTTP</div><div class="feat-desc">Audita HSTS, X-Frame-Options y CSP de tus aplicaciones web.</div></div>
+    <div class="feat-card"><div class="feat-icon fi-t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2" stroke-linecap="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div><div class="feat-title">Subdominios</div><div class="feat-desc">Mapea tu superficie real: dev, staging, admin, portales olvidados.</div></div>
+    <div class="feat-card"><div class="feat-icon fi-p"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="feat-title">Informes PDF</div><div class="feat-desc">Genera documentacion ejecutiva descargable tras cada analisis.</div></div>
+  </div>
+</section>
+
+<div class="dark-band">
+  <div class="dark-band-inner">
+    <div class="sec-label">Motor en tiempo real</div>
+    <div class="sec-title">Vigilancia nocturna automatica</div>
+    <p class="sec-sub">Tu infraestructura se escanea cada noche. Si algo cambia, recibes una alerta.</p>
+    <div class="terminal">
+      <div class="t-bar"><div class="td" style="background:#EF4444"></div><div class="td" style="background:#F59E0B"></div><div class="td" style="background:#10B981"></div></div>
+      <div class="log" id="tlog1" style="opacity:0"><span class="lt">03:00:01</span><span class="lok">[SCAN]</span><span class="lmsg">Iniciando ronda nocturna</span><span class="ltgt">tuempresa.com</span></div>
+      <div class="log" id="tlog2" style="opacity:0"><span class="lt">03:00:04</span><span class="lok">[OK]</span><span class="lmsg">Red perimetral limpia. 0 puertos expuestos.</span></div>
+      <div class="log" id="tlog3" style="opacity:0"><span class="lt">03:00:07</span><span class="lok">[OK]</span><span class="lmsg">SPF y DMARC verificados correctamente.</span></div>
+      <div class="log" id="tlog4" style="opacity:0"><span class="lt">03:00:12</span><span class="lwarn">[WARN]</span><span class="lmsg">Nuevo subdominio detectado</span><span class="ltgt" style="color:#FBBF24">staging.tuempresa.com</span></div>
+      <div class="log" id="tlog5" style="opacity:0"><span class="lt">03:00:18</span><span class="lcrit">[ALERT]</span><span class="lmsg">Filtracion detectada en HIBP</span><span class="ltgt" style="color:#F87171"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3a5b5e5753547a4e4f5f574a485f495b14595557">[email&#160;protected]</a></span></div>
+      <div class="log" id="tlog6" style="opacity:0"><span class="lt">03:00:19</span><span class="lcrit">[NOTIF]</span><span class="lmsg">Alerta enviada al responsable de seguridad.</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="demo-section" id="como-funciona">
+  <div class="sec-label">Tutorial interactivo</div>
+  <div class="sec-title">Asi funciona ReconBase</div>
+  <p class="sec-sub">Haz clic en cada paso para ver exactamente lo que hace la plataforma.</p>
+  <div class="demo-grid">
+    <div class="demo-steps-nav">
+      <div class="demo-step-btn active" onclick="setDemo(0,this)"><div class="dsb-num">1</div><div><div class="dsb-title">Introduces tu dominio</div><div class="dsb-desc">Solo necesitas escribir tu dominio o email corporativo.</div></div></div>
+      <div class="demo-step-btn" onclick="setDemo(1,this)"><div class="dsb-num">2</div><div><div class="dsb-title">El motor escanea en tiempo real</div><div class="dsb-desc">ReconBase analiza puertos, DNS, subdominios y cabeceras HTTP.</div></div></div>
+      <div class="demo-step-btn" onclick="setDemo(2,this)"><div class="dsb-num">3</div><div><div class="dsb-title">Recibes el informe de riesgos</div><div class="dsb-desc">Cada vulnerabilidad explicada con pasos de accion concretos.</div></div></div>
+      <div class="demo-step-btn" onclick="setDemo(3,this)"><div class="dsb-num">4</div><div><div class="dsb-title">Descargas el PDF ejecutivo</div><div class="dsb-desc">Listo para presentar al equipo directivo o a un cliente.</div></div></div>
+      <div class="demo-step-btn" onclick="setDemo(4,this)"><div class="dsb-num">5</div><div><div class="dsb-title">Vigilancia nocturna automatica</div><div class="dsb-desc">El motor vela por tu infraestructura cada noche y alerta si algo cambia.</div></div></div>
+    </div>
+    <div class="demo-preview">
+      <div class="demo-panel active" id="dp-0">
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Centro de analisis</div>
+        <div class="dp-scan"><input class="dp-input" type="text" value="miempresa.com" id="demo-input"><button class="dp-btn" onclick="setDemo(1,document.querySelectorAll('.demo-step-btn')[1])">ESCANEAR</button></div>
+        <div style="font-size:.78rem;color:var(--dim);margin-top:.5rem">Tambien acepta emails: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fa9b9e979394ba97939f978a889f899bd4999597">[email&#160;protected]</a></div>
+        <div style="margin-top:1.5rem;padding:1rem;background:#080C14;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:.75rem">ULTIMOS ANALISIS</div>
+          <div style="font-size:.8rem;color:#475569;font-family:'JetBrains Mono',monospace;line-height:2">
+            <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">google.com</span><span style="color:var(--green)">BAJO 12%</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">example.com</span><span style="color:var(--amber)">MODERADO 45%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-panel" id="dp-1">
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Analizando miempresa.com</div>
+        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Puertos criticos</div><div class="dri-status status-ok">Completado</div></div>
+        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">DNS / SPF / DMARC</div><div class="dri-status status-ok">Completado</div></div>
+        <div class="demo-result-item"><div class="dri-dot" style="background:var(--amber)"></div><div class="dri-label">Cabeceras HTTP</div><div class="dri-status status-warn">2 ausentes</div></div>
+        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Subdominios</div><div class="dri-status status-ok">3 encontrados</div></div>
+        <div class="demo-result-item"><div class="dri-dot" style="background:var(--red)"></div><div class="dri-label">Filtraciones HIBP</div><div class="dri-status status-err">1 brecha</div></div>
+        <div style="margin-top:1rem;background:#080C14;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--dim)">Duracion total: <span style="color:var(--green)">1 min 43 seg</span></div>
+      </div>
+      <div class="demo-panel" id="dp-2">
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Informe de riesgos</div>
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.75rem;background:#080C14;border-radius:8px"><div style="font-size:2rem;font-weight:800;color:var(--amber)">42%</div><div><div style="font-size:.75rem;font-weight:700;color:var(--amber)">RIESGO MODERADO</div><div style="font-size:.72rem;color:var(--muted)">Se requiere accion en 2 vectores</div></div></div>
+        <div style="background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:.75rem;margin-bottom:.5rem"><div style="font-size:.68rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">DATA BREACH DETECTED</div><div style="font-size:.78rem;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bedfdad3d7d0fed3d7dbd3ceccdbcddf90ddd1d3">[email&#160;protected]</a> aparece en 1 base de datos comprometida. Rote credenciales.</div></div>
+        <div style="background:rgba(245,158,11,.08);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:.75rem"><div style="font-size:.68rem;font-weight:700;color:#FBBF24;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">HTTP HEADERS INCOMPLETE</div><div style="font-size:.78rem;color:var(--muted)">CSP y Permissions-Policy no configuradas.</div></div>
+      </div>
+      <div class="demo-panel" id="dp-3">
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Vista previa PDF ejecutivo</div>
+        <div class="demo-pdf-preview">
+          <div class="pdf-header"><div style="font-size:.9rem;font-weight:700">ReconBase Enterprise</div><div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:.15rem">Informe de Auditoria de Seguridad</div></div>
+          <div class="pdf-row"><span class="pdf-key">Objetivo</span><span style="color:#93C5FD;font-family:'JetBrains Mono',monospace;font-size:.78rem">miempresa.com</span></div>
+          <div class="pdf-row"><span class="pdf-key">Riesgo global</span><span style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:.78rem">42% MODERADO</span></div>
+          <div class="pdf-row"><span class="pdf-key">SPF / DMARC</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.78rem">[OK]</span></div>
+          <div class="pdf-row"><span class="pdf-key">Puertos expuestos</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.78rem">Ninguno</span></div>
+          <div class="pdf-row"><span class="pdf-key">Filtraciones</span><span style="color:var(--red);font-family:'JetBrains Mono',monospace;font-size:.78rem">1 brecha</span></div>
+        </div>
+      </div>
+      <div class="demo-panel" id="dp-4">
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Alertas automaticas - Plan Pro</div>
+        <div class="alert-demo"><div class="alert-demo-title">NUEVA ALERTA - miempresa.com</div><div class="alert-demo-body">Nuevo subdominio detectado: <span style="color:#60A5FA">api2.miempresa.com</span>. Verifica si fue creado intencionalmente.</div></div>
+        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:1rem"><div style="font-size:.75rem;font-weight:700;color:var(--green);margin-bottom:.5rem;font-family:'JetBrains Mono',monospace">ULTIMA RONDA - 03:00</div><div style="font-size:.78rem;color:var(--muted);line-height:1.8">Red perimetral: <span style="color:var(--green)">Limpia</span><br>SPF / DMARC: <span style="color:var(--green)">Verificados</span><br>Subdominios nuevos: <span style="color:var(--amber)">1 detectado</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="dark-band" id="precios">
+  <div class="dark-band-inner">
+    <div style="text-align:center;margin-bottom:2.5rem"><div class="sec-label" style="text-align:center">Precios</div><div class="sec-title" style="text-align:center">Simple. Sin sorpresas.</div></div>
+    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));max-width:800px;margin:0 auto">
+
+      <div class="plan">
+        <div class="plan-name">Gratuito</div>
+        <div class="plan-price">0 <span>/ mes</span></div>
+        <div class="plan-desc">Para cualquier empresa que quiera conocer su estado de seguridad sin coste.</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="ck">v</span>Analisis ilimitados</div>
+        <div class="pf"><span class="ck">v</span>Escaner de puertos expuestos</div>
+        <div class="pf"><span class="ck">v</span>Verificacion DNS / SPF / DMARC</div>
+        <div class="pf"><span class="ck">v</span>Cabeceras de seguridad HTTP</div>
+        <div class="pf"><span class="ck">v</span>Enumeracion de subdominios</div>
+        <div class="pf"><span class="ck">v</span>Informe PDF basico</div>
+        <div class="plan-div" style="margin-top:1.2rem"></div>
+        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
+          Cada analisis gratuito te muestra que servicios de tu empresa son visibles desde internet, si tu dominio de correo puede ser suplantado y si tu web tiene configuraciones de seguridad incorrectas. Obtienes un informe descargable con los resultados.
+        </div>
+        <div class="pf off"><span class="cx">x</span>Filtraciones Deep Web</div>
+        <div class="pf off"><span class="cx">x</span>Alertas automaticas por email</div>
+        <div class="pf off"><span class="cx">x</span>Vigilancia nocturna 24/7</div>
+        <a href="/register"><button class="btn-plan ol" style="margin-top:1.75rem">Empezar gratis</button></a>
+      </div>
+
+      <div class="plan hot">
+        <div class="plan-badge">RECOMENDADO</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">29 <span>/ mes</span></div>
+        <div class="plan-desc">Para empresas que necesitan proteccion continua, no solo analisis puntuales.</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="ck">v</span>Todo lo del plan gratuito</div>
+        <div class="pf"><span class="ck">v</span>Filtraciones Deep Web</div>
+        <div class="pf"><span class="ck">v</span>Alertas por email automaticas</div>
+        <div class="pf"><span class="ck">v</span>Vigilancia nocturna 24/7</div>
+        <div class="pf"><span class="ck">v</span>Informe PDF ejecutivo avanzado</div>
+        <div class="pf"><span class="ck">v</span>Soporte prioritario</div>
+        <div class="plan-div" style="margin-top:1.2rem"></div>
+        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
+          Ademas del analisis completo, ReconBase busca si los emails de tu empresa han aparecido en filtraciones de datos conocidas. Cada noche revisamos tu dominio automaticamente y te avisamos por email si detectamos algo nuevo, sin que tengas que hacer nada.
+        </div>
+        <button class="btn-plan sl" onclick="pagarPlan('pro')">Suscribirse — 29€/mes</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<section class="section" id="faq" style="max-width:720px">
+  <div class="sec-label">FAQ</div><div class="sec-title">Preguntas frecuentes</div><br>
+  <div class="faq-item"><div class="faq-q">Necesito conocimientos de ciberseguridad?</div><div class="faq-a">No. Disenado para duenos de negocio sin perfil tecnico. Los informes explican cada riesgo con pasos de accion concretos.</div></div>
+  <div class="faq-item"><div class="faq-q">Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente legal. Solo puedes analizar dominios que tu mismo introduzcas. El motor usa tecnicas pasivas sobre infraestructura publica.</div></div>
+  <div class="faq-item"><div class="faq-q">Que pasa si detecta una filtracion?</div><div class="faq-a">Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contrasenas, 2FA, notificacion RGPD si aplica.</div></div>
+  <div class="faq-item"><div class="faq-q">Puedo cancelar en cualquier momento?</div><div class="faq-a">Si, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado.</div></div>
+  <div class="faq-item"><div class="faq-q">El pago es seguro?</div><div class="faq-a">Los pagos se procesan a traves de Stripe con certificacion PCI DSS nivel 1. En ningun momento almacenamos datos de tu tarjeta.</div></div>
+</section>
+
+<div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%;text-align:center">
+  <div class="sec-label" style="text-align:center">Apoya el proyecto</div>
+  <h2 style="font-size:clamp(1.5rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem">ReconBase es completamente gratuito</h2>
+  <p style="color:var(--muted);font-size:.95rem;max-width:480px;margin:0 auto 2rem;line-height:1.7">Si te ha sido util y quieres ayudar a mantener el proyecto, cualquier donacion es bienvenida y nos ayuda a seguir mejorando la herramienta.</p>
+  <a href="https://paypal.me/ReconBase" target="_blank" rel="noopener">
+    <button style="background:#0070E0;color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#005bb5'" onmouseout="this.style.background='#0070E0'">
+      Donar con PayPal
+    </button>
+  </a>
+  <p style="font-size:.72rem;color:var(--dim);margin-top:1rem;font-family:'JetBrains Mono',monospace">Pago seguro a traves de PayPal. Sin compromisos.</p>
+</div>
+
+<div class="cta-band">
+  <div class="sec-label" style="text-align:center">Empieza hoy</div>
+  <h2>Tu dominio puede estar<br>comprometido ahora mismo</h2>
+  <p>El primer analisis es gratis y tarda menos de 2 minutos.</p>
+  <a href="/app"><button class="btn-primary" style="font-size:1rem;padding:1rem 2.75rem">Analizar mi dominio ahora</button></a>
+</div>
+
+<footer>
+  <a href="/" class="f-logo">ReconBase</a>
+  <div class="f-copy">2025 ReconBase. Todos los derechos reservados.</div>
+  <div class="f-links"><span>Privacidad</span><span>Terminos</span><span>Contacto</span></div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function animarTerminal(){
+  ['tlog1','tlog2','tlog3','tlog4','tlog5','tlog6'].forEach((id,i)=>{
+    setTimeout(()=>{
+      const el=document.getElementById(id);
+      if(el){el.style.transition='opacity .4s ease';el.style.opacity='1';}
+    },i*900);
+  });
+}
+const termEl=document.querySelector('.terminal');
+if(termEl){
+  const obs=new IntersectionObserver(e=>{if(e[0].isIntersecting){animarTerminal();obs.disconnect();}},{threshold:.3});
+  obs.observe(termEl);
+}
+function setDemo(idx,btn){
+  document.querySelectorAll('.demo-step-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.demo-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('dp-'+idx).classList.add('active');
+}
+document.querySelectorAll('.faq-item').forEach(item=>{
+  item.addEventListener('click',()=>item.classList.toggle('open'));
+});
+async function pagarPlan(plan){
+  try{
+    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
+    const data=await res.json();
+    if(data.url){window.open(data.url,'_blank');}
+    else{alert(data.error||'Error al iniciar el pago');}
+  }catch(e){alert('Error de conexión. Inténtalo de nuevo.');}
+}
+</script>
+</body>
+</html>

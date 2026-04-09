@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ReconBase App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif}
+a{text-decoration:none;color:inherit}
+.shell{display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 2rem;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:9px;cursor:pointer}
+.logo-text{font-weight:800;font-size:1rem;letter-spacing:-.03em}
+.logo-ver{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue);background:rgba(37,99,235,.1);padding:.15rem .4rem;border-radius:3px}
+.topbar-right{display:flex;align-items:center;gap:1rem}
+.back-link{font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace;transition:color .2s}
+.back-link:hover{color:var(--text)}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;flex-shrink:0}
+.tab{padding:.7rem 1.25rem;font-size:.84rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--blue-lt)}
+.content{flex:1;padding:2rem;max-width:1300px;width:100%;margin:0 auto}
+.scanner-bar{display:flex;gap:.75rem;margin-bottom:1.5rem}
+.scan-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.92rem;padding:.75rem 1rem;outline:none;transition:border-color .2s}
+.scan-input:focus{border-color:var(--blue-lt);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.scan-input::placeholder{color:var(--dim)}
+.btn-scan{background:var(--blue-dk);color:#fff;border:none;padding:.75rem 2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.05em;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-scan:hover:not(:disabled){background:#1e40af;transform:translateY(-1px)}
+.btn-scan:disabled{opacity:.5;cursor:not-allowed}
+.loading{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-bottom:1.5rem}
+.loading.show{display:block}
+.load-title{font-size:.9rem;font-weight:700;margin-bottom:1rem}
+.load-steps{display:flex;flex-direction:column;gap:.5rem}
+.load-step{display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-family:'JetBrains Mono',monospace}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s}
+.step-dot.done{background:var(--green)}
+.step-dot.active{background:var(--blue-lt);animation:blink .8s ease infinite}
+.step-txt{color:var(--muted);transition:color .3s}
+.step-txt.active{color:var(--text)}
+.step-txt.done{color:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.progress-bar{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:1.25rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--blue-lt);width:0%;transition:width .5s ease;border-radius:2px}
+.results{display:none}
+.results.show{display:block}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.5rem}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem}
+.metric-lbl{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
+.metric-val{font-size:1.7rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.metric-sub{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+.main-grid{display:grid;grid-template-columns:280px 1fr;gap:1rem;margin-bottom:1rem}
+.gauge-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;display:flex;flex-direction:column;align-items:center}
+.gauge-wrap{position:relative;width:200px;height:110px;margin:.5rem auto}
+.gauge-center{position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center}
+.gauge-pct{font-size:2.2rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.gauge-label-txt{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-top:.2rem}
+.cards-col{display:flex;flex-direction:column;gap:.75rem}
+.rcard{background:var(--surface);border-left:3px solid;border-radius:0 8px 8px 0;padding:1.1rem 1.25rem}
+.rcard-crit{border-left-color:var(--red)}
+.rcard-ok{border-left-color:var(--green)}
+.badge{display:inline-block;padding:.18rem .55rem;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:.5rem}
+.b-red{background:rgba(239,68,68,.12);color:#F87171;border:1px solid rgba(239,68,68,.25)}
+.b-green{background:rgba(16,185,129,.12);color:#34D399;border:1px solid rgba(16,185,129,.25)}
+.rcard-title{font-size:.88rem;font-weight:700;color:#CBD5E1;margin-bottom:.3rem}
+.rcard-body{font-size:.8rem;color:var(--muted);line-height:1.6}
+.rcard-body code{background:#111827;padding:.1rem .3rem;border-radius:3px;color:#93C5FD;font-size:.78rem}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem}
+.chart-card h4{font-size:.8rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
+.chart-wrap{position:relative;overflow:hidden;height:220px}
+.chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
+.subs-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+.subs-card h4{font-size:.8rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
+.subs-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.subs-table th{text-align:left;padding:.5rem .75rem;color:var(--dim);font-size:.7rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.subs-table td{padding:.55rem .75rem;border-bottom:1px solid rgba(30,45,74,.5);font-family:'JetBrains Mono',monospace;color:#93C5FD}
+.subs-table tr:last-child td{border-bottom:none}
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem}
+.export-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.75rem;text-align:center}
+.export-icon{font-size:2.5rem;margin-bottom:1rem}
+.export-title{font-size:1rem;font-weight:700;margin-bottom:.5rem}
+.export-desc{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem}
+.btn-export{width:100%;padding:.75rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;letter-spacing:.03em;transition:all .15s}
+.btn-export.primary{background:var(--blue-dk);border:none;color:#fff}
+.btn-export.primary:hover{background:#1e40af}
+.btn-export.secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-export.secondary:hover{border-color:var(--blue-lt)}
+.panel{display:none}
+.panel.active{display:block}
+.hist-table{width:100%;border-collapse:collapse;font-size:.83rem;margin-top:1rem}
+.hist-table th{text-align:left;padding:.5rem .75rem;color:var(--dim);font-size:.7rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.hist-table td{padding:.65rem .75rem;border-bottom:1px solid rgba(30,45,74,.5)}
+.hist-table tr:last-child td{border-bottom:none}
+.risk-pill{padding:.2rem .6rem;border-radius:4px;font-size:.72rem;font-family:'JetBrains Mono',monospace;font-weight:700}
+.rp-low{background:rgba(16,185,129,.15);color:#34D399}
+.rp-med{background:rgba(245,158,11,.15);color:#FBBF24}
+.rp-high{background:rgba(239,68,68,.15);color:#F87171}
+.empty{text-align:center;padding:5rem 2rem;color:var(--muted)}
+.empty-icon{font-size:3rem;margin-bottom:1rem;opacity:.3}
+.empty h3{font-size:1.1rem;font-weight:700;color:var(--dim);margin-bottom:.5rem}
+.empty p{font-size:.85rem}
+.api-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.82rem;color:#FBBF24;font-family:'JetBrains Mono',monospace}
+.btn-clear{margin-top:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.5rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <a href="/" class="logo">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#1D4ED8"/>
+        <path d="M16 5L7 9.5V17c0 4.7 3.8 9.1 9 10 5.2-.9 9-5.3 9-10V9.5L16 5z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M12 16l2.5 2.5L20 13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="logo-text">ReconBase</div>
+      <span class="logo-ver">v2.0</span>
+    </a>
+    <div class="topbar-right">
+      <a href="/" class="back-link">Volver a la web</a>
+      <button class="btn-clear" style="margin:0" onclick="cerrarSesion()">Cerrar sesion</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('auditoria',this)">Auditoria</div>
+    <div class="tab" onclick="switchTab('dashboard',this)">Dashboard</div>
+    <div class="tab" onclick="switchTab('exportar',this)">Exportar</div>
+    <div class="tab" onclick="switchTab('historial',this)">Historial</div>
+  </div>
+
+  <div class="content">
+
+    {% if not api_key_ok %}
+    <div class="api-warn">RECONBASE_API_KEY no configurada. Las busquedas de filtraciones estaran desactivadas.</div>
+    {% endif %}
+
+    <div class="panel active" id="panel-auditoria">
+      <div class="scanner-bar">
+        <input class="scan-input" id="objetivo" type="text" placeholder="empresa.com  o  admin@empresa.com" onkeydown="if(event.key==='Enter')lanzarScan()">
+        <button class="btn-scan" id="btn-scan" onclick="lanzarScan()">ESCANEAR</button>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="load-title">Analizando infraestructura...</div>
+        <div class="load-steps">
+          <div class="load-step"><span class="step-dot" id="d0"></span><span class="step-txt" id="t0">Escaneando puertos criticos de red</span></div>
+          <div class="load-step"><span class="step-dot" id="d1"></span><span class="step-txt" id="t1">Verificando registros DNS / SPF / DMARC</span></div>
+          <div class="load-step"><span class="step-dot" id="d2"></span><span class="step-txt" id="t2">Comprobando cabeceras de seguridad HTTP</span></div>
+          <div class="load-step"><span class="step-dot" id="d3"></span><span class="step-txt" id="t3">Enumerando subdominios activos</span></div>
+          <div class="load-step"><span class="step-dot" id="d4"></span><span class="step-txt" id="t4">Consultando bases de datos de filtraciones</span></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+      </div>
+
+      <div class="results" id="results">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap">
+          <span style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">OBJETIVO</span>
+          <code id="res-objetivo" style="background:var(--surface);border:1px solid var(--border);padding:.2rem .6rem;border-radius:4px;color:#93C5FD;font-size:.83rem"></code>
+          <span id="res-timestamp" style="font-size:.7rem;color:var(--dim)"></span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-lbl">Riesgo Global</div><div class="metric-val" id="m-riesgo">-</div><div class="metric-sub" id="m-label" style="font-weight:700">-</div></div>
+          <div class="metric"><div class="metric-lbl">Puertos Abiertos</div><div class="metric-val" id="m-puertos">-</div><div class="metric-sub">detectados</div></div>
+          <div class="metric"><div class="metric-lbl">Subdominios</div><div class="metric-val" id="m-subs">-</div><div class="metric-sub">encontrados</div></div>
+          <div class="metric"><div class="metric-lbl">SPF / DMARC</div><div class="metric-val" id="m-dns" style="font-size:1.1rem;padding-top:.3rem">-</div><div class="metric-sub" id="m-dns-sub">-</div></div>
+          <div class="metric"><div class="metric-lbl">Filtraciones</div><div class="metric-val" id="m-leaks">-</div><div class="metric-sub">en Deep Web</div></div>
+        </div>
+        <div class="main-grid">
+          <div class="gauge-card">
+            <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Score de Riesgo</div>
+            <div class="gauge-wrap">
+              <canvas id="gauge" width="200" height="110"></canvas>
+              <div class="gauge-center">
+                <div class="gauge-pct" id="gauge-pct">-</div>
+                <div class="gauge-label-txt" id="gauge-label">-</div>
+              </div>
+            </div>
+          </div>
+          <div class="cards-col" id="cards-col"></div>
+        </div>
+        <div class="sec-grid">
+          <div class="chart-card">
+            <h4>Cabeceras HTTP</h4>
+            <div class="chart-wrap" id="headers-wrap"><canvas id="chart-headers"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h4>Vectores de Ataque</h4>
+            <div class="chart-wrap" style="height:200px"><canvas id="chart-radar"></canvas></div>
+          </div>
+        </div>
+        <div class="subs-card" id="subs-section" style="display:none">
+          <h4>Subdominios Detectados</h4>
+          <table class="subs-table">
+            <thead><tr><th>#</th><th>Subdominio</th><th>IP</th></tr></thead>
+            <tbody id="subs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="empty" id="empty-state">
+        <div class="empty-icon">*</div>
+        <h3>Introduce un objetivo para comenzar</h3>
+        <p>Acepta dominios (empresa.com) o emails (<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="88e9ece5e1e6c8ede5f8faedfbe9a6ebe7e5">[email&#160;protected]</a>)</p>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-dashboard">
+      <div class="empty" id="dash-empty"><div class="empty-icon">*</div><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
+      <div id="dash-content" style="display:none">
+        <div class="sec-grid">
+          <div class="chart-card"><h4>Cabeceras HTTP</h4><div class="chart-wrap" id="dash-headers-wrap" style="height:200px"><canvas id="dash-headers"></canvas></div></div>
+          <div class="chart-card"><h4>Radar de Superficie</h4><div class="chart-wrap" style="height:200px"><canvas id="dash-radar"></canvas></div></div>
+        </div>
+        <div class="chart-card" style="margin-top:1rem"><h4>Desglose del Score</h4><div class="chart-wrap" style="height:120px"><canvas id="dash-desglose"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-exportar">
+      <div class="empty" id="exp-empty"><div class="empty-icon">*</div><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
+      <div id="exp-content" style="display:none">
+        <div id="exp-summary" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:.85rem;color:var(--muted);margin-bottom:1rem"></div>
+        <div class="export-grid">
+          <div class="export-card">
+            <div class="export-icon">*</div>
+            <div class="export-title">Informe PDF Ejecutivo</div>
+            <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones.</div>
+            <button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>
+          </div>
+          <div class="export-card">
+            <div class="export-icon">*</div>
+            <div class="export-title">Datos Raw (JSON)</div>
+            <div class="export-desc">Exporta todos los datos del analisis en formato JSON.</div>
+            <button class="btn-export secondary" onclick="descargarJSON()">Exportar JSON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-historial">
+      <div class="empty" id="hist-empty"><div class="empty-icon">*</div><h3>Sin escaneos recientes</h3><p>El historial aparecera aqui.</p></div>
+      <div id="hist-content" style="display:none">
+        <table class="hist-table">
+          <thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th></tr></thead>
+          <tbody id="hist-tbody"></tbody>
+        </table>
+        <button class="btn-clear" onclick="clearHistorial()">Limpiar historial</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+var lastData = null;
+var historial = [];
+var gaugeChart = null, headersChart = null, radarChart = null;
+var dashHeadersChart = null, dashRadarChart = null, dashDesglosChart = null;
+
+// ── HISTORIAL localStorage ──
+function saveHistorial() {
+  try { localStorage.setItem('rb_hist', JSON.stringify(historial)); } catch(e) {}
+}
+function loadHistorial() {
+  try {
+    var s = localStorage.getItem('rb_hist');
+    if(s) historial = JSON.parse(s);
+  } catch(e) { historial = []; }
+}
+function clearHistorial() {
+  historial = [];
+  saveHistorial();
+  renderHistorial();
+}
+
+// ── TABS ──
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name === 'dashboard' && lastData) renderDashboard();
+  if(name === 'exportar') renderExport();
+  if(name === 'historial') renderHistorial();
+}
+
+// ── SCAN ──
+function lanzarScan() {
+  var objetivo = document.getElementById('objetivo').value.trim();
+  if(!objetivo) { alert('Introduce un dominio o email'); return; }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('btn-scan').disabled = true;
+  document.getElementById('progress').style.width = '0%';
+
+  for(var i=0; i<5; i++) {
+    document.getElementById('d'+i).className = 'step-dot';
+    document.getElementById('t'+i).className = 'step-txt';
+  }
+
+  var step = 0;
+  var stepInterval = setInterval(function() {
+    if(step < 5) {
+      if(step > 0) {
+        document.getElementById('d'+(step-1)).className = 'step-dot done';
+        document.getElementById('t'+(step-1)).className = 'step-txt done';
+      }
+      document.getElementById('d'+step).className = 'step-dot active';
+      document.getElementById('t'+step).className = 'step-txt active';
+      document.getElementById('progress').style.width = ((step+1)/5*85) + '%';
+      step++;
+    }
+  }, 1800);
+
+  fetch('/api/scan', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({objetivo: objetivo})
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    clearInterval(stepInterval);
+    if(data.error) {
+      alert('Error: ' + data.error);
+      resetLoading();
+      return;
+    }
+    for(var i=0; i<5; i++) {
+      document.getElementById('d'+i).className = 'step-dot done';
+      document.getElementById('t'+i).className = 'step-txt done';
+    }
+    document.getElementById('progress').style.width = '100%';
+    setTimeout(function() {
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('btn-scan').disabled = false;
+      lastData = data;
+      historial.unshift(data);
+      if(historial.length > 20) historial.pop();
+      saveHistorial();
+      renderResults(data);
+    }, 500);
+  })
+  .catch(function(e) {
+    clearInterval(stepInterval);
+    alert('Error de conexion con el servidor. Asegurate de que Flask esta corriendo.');
+    resetLoading();
+  });
+}
+
+function resetLoading() {
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('btn-scan').disabled = false;
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('progress').style.width = '0%';
+  for(var i=0; i<5; i++) {
+    document.getElementById('d'+i).className = 'step-dot';
+    document.getElementById('t'+i).className = 'step-txt';
+  }
+}
+
+// ── RENDER RESULTS ──
+function renderResults(d) {
+  document.getElementById('res-objetivo').textContent = d.objetivo;
+  document.getElementById('res-timestamp').textContent = d.timestamp;
+  document.getElementById('m-riesgo').textContent = d.riesgo + '%';
+  document.getElementById('m-label').textContent = d.label;
+  document.getElementById('m-label').style.color = d.color;
+  document.getElementById('m-puertos').textContent = d.puertos.length;
+  document.getElementById('m-subs').textContent = d.subs.length;
+  document.getElementById('m-leaks').textContent = d.leaks;
+  var dnsOk = d.dns.SPF && d.dns.DMARC;
+  document.getElementById('m-dns').textContent = dnsOk ? 'OK' : 'FALTA';
+  document.getElementById('m-dns').style.color = dnsOk ? '#10B981' : '#EF4444';
+  document.getElementById('m-dns-sub').textContent = dnsOk ? 'Correcto' : 'Vulnerable';
+  renderGauge(d.riesgo, d.color);
+  renderCards(d);
+  renderHeadersChart(d.headers, 'chart-headers', 'headers-wrap', headersChart, function(c){ headersChart = c; });
+  renderRadarChart(d, 'chart-radar', radarChart, function(c){ radarChart = c; });
+  if(d.subs.length > 0) {
+    document.getElementById('subs-section').style.display = 'block';
+    document.getElementById('subs-tbody').innerHTML = d.subs.map(function(s, i) {
+      return '<tr><td style="color:var(--dim)">' + (i+1) + '</td><td>' + s.subdominio + '</td><td style="color:var(--muted)">' + s.ip + '</td></tr>';
+    }).join('');
+  } else {
+    document.getElementById('subs-section').style.display = 'none';
+  }
+  document.getElementById('results').classList.add('show');
+}
+
+function renderGauge(pct, color) {
+  if(gaugeChart) gaugeChart.destroy();
+  gaugeChart = new Chart(document.getElementById('gauge').getContext('2d'), {
+    type: 'doughnut',
+    data: { datasets: [{ data: [pct, 100-pct], backgroundColor: [color, '#1E2D4A'], borderWidth: 0, circumference: 180, rotation: 270 }] },
+    options: { cutout: '75%', responsive: false, plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+  });
+  document.getElementById('gauge-pct').textContent = pct + '%';
+  document.getElementById('gauge-pct').style.color = color;
+  document.getElementById('gauge-label').textContent = pct >= 70 ? 'CRITICO' : pct >= 40 ? 'MODERADO' : 'BAJO';
+}
+
+function renderCards(d) {
+  var col = document.getElementById('cards-col');
+  var html = '';
+  if(d.puertos.length) {
+    var lista = d.puertos.slice(0,6).map(function(p){ return '<code>' + p.puerto + '/' + p.servicio + '</code>'; }).join(' ');
+    html += card('crit','b-red','CRITICAL EXPOSURE', d.puertos.length + ' puerto(s) expuesto(s)', 'Servicios accesibles: ' + lista + '. Revise el firewall.');
+  } else {
+    html += card('ok','b-green','NETWORK SECURE','Perimetro correcto','No se detectan puertos expuestos al exterior.');
+  }
+  var spf = d.dns.SPF, dmarc = d.dns.DMARC;
+  if(!spf || !dmarc) {
+    var f = [!spf && 'SPF', !dmarc && 'DMARC'].filter(Boolean).join(', ');
+    html += card('crit','b-red','HIGH RISK SPOOFING', f + ' ausente', 'Permite suplantar el dominio en ataques de phishing.');
+  } else {
+    html += card('ok','b-green','IDENTITY PROTECTED','SPF y DMARC OK','Firmas criptograficas correctamente implementadas.');
+  }
+  if(d.leaks > 0) {
+    html += card('crit','b-red','DATA BREACH', d.leaks + ' filtracion(es)', 'Aparece en bases de datos comprometidas. Rote credenciales.');
+  } else if(d.objetivo.indexOf('@') !== -1) {
+    html += card('ok','b-green','NO LEAKS','Sin filtraciones','No se encontraron credenciales comprometidas.');
+  }
+  col.innerHTML = html;
+}
+
+function card(type, badge, badgeText, title, body) {
+  return '<div class="rcard rcard-' + type + '"><span class="badge ' + badge + '">' + badgeText + '</span><div class="rcard-title">' + title + '</div><div class="rcard-body">' + body + '</div></div>';
+}
+
+function renderHeadersChart(headers, canvasId, wrapId, existing, setter) {
+  if(existing) existing.destroy();
+  var labels = Object.keys(headers);
+  var vals = labels.map(function(k){ return headers[k]; });
+  var colors = vals.map(function(v){ return v ? 'rgba(16,185,129,.8)' : 'rgba(239,68,68,.8)'; });
+  var wrap = document.getElementById(wrapId);
+  if(wrap) { wrap.style.height = (labels.length * 36) + 'px'; }
+  var canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  setter(new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ data: vals.map(function(){ return 1; }), backgroundColor: colors, borderRadius: 4, borderWidth: 0, barThickness: 18 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      animation: false,
+      scales: {
+        x: { display: false, max: 1.3 },
+        y: { ticks: { color: '#CBD5E1', font: { size: 10 } }, grid: { color: '#1E2D4A' } }
+      },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ return vals[ctx.dataIndex] ? ' Presente' : ' Ausente'; } } } }
+    }
+  }));
+}
+
+function renderRadarChart(d, canvasId, existing, setter) {
+  if(existing) existing.destroy();
+  var canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  var vals = [
+    Math.min(d.puertos.length * 20, 100),
+    d.dns.SPF ? 0 : 100,
+    d.dns.DMARC ? 0 : 100,
+    Math.min(d.subs.length * 10, 100),
+    Math.min(d.leaks * 25, 100)
+  ];
+  setter(new Chart(canvas.getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Red','SPF','DMARC','Subdominios','Filtraciones'],
+      datasets: [{ data: vals, backgroundColor: 'rgba(59,130,246,.2)', borderColor: '#3B82F6', pointBackgroundColor: '#3B82F6', pointRadius: 3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: false,
+      scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#1E2D4A' }, pointLabels: { color: '#CBD5E1', font: { size: 11 } } } },
+      plugins: { legend: { display: false } }
+    }
+  }));
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  if(!lastData) return;
+  document.getElementById('dash-empty').style.display = 'none';
+  document.getElementById('dash-content').style.display = 'block';
+  renderHeadersChart(lastData.headers, 'dash-headers', 'dash-headers-wrap', dashHeadersChart, function(c){ dashHeadersChart = c; });
+  renderRadarChart(lastData, 'dash-radar', dashRadarChart, function(c){ dashRadarChart = c; });
+  if(dashDesglosChart) dashDesglosChart.destroy();
+  var des = lastData.desglose || {};
+  var keys = Object.keys(des).filter(function(k){ return des[k] > 0; });
+  var vals = keys.map(function(k){ return des[k]; });
+  dashDesglosChart = new Chart(document.getElementById('dash-desglose').getContext('2d'), {
+    type: 'bar',
+    data: { labels: keys, datasets: [{ data: vals, backgroundColor: 'rgba(59,130,246,.6)', borderRadius: 4, borderWidth: 0, barThickness: 16 }] },
+    options: {
+      indexAxis: 'y', responsive: false, animation: false,
+      scales: {
+        x: { ticks: { color: '#64748B' }, grid: { color: '#1E2D4A' }, max: 40 },
+        y: { ticks: { color: '#CBD5E1', font: { size: 11 } }, grid: { color: '#1E2D4A' } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// ── EXPORTAR ──
+function renderExport() {
+  if(!lastData) {
+    document.getElementById('exp-empty').style.display = 'block';
+    document.getElementById('exp-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('exp-empty').style.display = 'none';
+  document.getElementById('exp-content').style.display = 'block';
+  document.getElementById('exp-summary').innerHTML =
+    'Objetivo: <strong style="color:#93C5FD">' + lastData.objetivo + '</strong> &nbsp; Riesgo: <strong style="color:' + lastData.color + '">' + lastData.riesgo + '% (' + lastData.label + ')</strong> &nbsp; ' + lastData.timestamp;
+}
+
+function descargarPDF() {
+  if(!lastData) return;
+  var btn = event.target;
+  btn.textContent = 'Generando...';
+  btn.disabled = true;
+  fetch('/api/pdf', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(lastData)
+  })
+  .then(function(res) {
+    if(!res.ok) throw new Error('Error');
+    return res.blob();
+  })
+  .then(function(blob) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'reconbase_' + lastData.dominio + '.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+  })
+  .catch(function() { alert('Error generando PDF.'); })
+  .finally(function() { btn.textContent = 'Descargar PDF'; btn.disabled = false; });
+}
+
+function descargarJSON() {
+  if(!lastData) return;
+  var json = JSON.stringify(lastData, null, 2);
+  var blob = new Blob([json], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'reconbase_' + lastData.dominio + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── HISTORIAL ──
+function loadHistorial() {
+  fetch('/api/historial')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      historial = data;
+      if(historial.length > 0) lastData = historial[0];
+    })
+    .catch(function() {});
+}
+
+function renderHistorial() {
+  if(!historial.length) {
+    document.getElementById('hist-empty').style.display = 'block';
+    document.getElementById('hist-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('hist-empty').style.display = 'none';
+  document.getElementById('hist-content').style.display = 'block';
+  document.getElementById('hist-tbody').innerHTML = historial.map(function(h, i) {
+    var cls = h.riesgo >= 70 ? 'rp-high' : h.riesgo >= 40 ? 'rp-med' : 'rp-low';
+    var puertosLen = h.puertos ? h.puertos.length : 0;
+    var row = '<tr>';
+    row += '<td style="color:var(--dim)">' + (i+1) + '</td>';
+    row += '<td style="color:#93C5FD">' + h.objetivo + '</td>';
+    row += '<td><span class="risk-pill ' + cls + '">' + h.riesgo + '% ' + h.label + '</span></td>';
+    row += '<td style="color:var(--muted)">' + puertosLen + '</td>';
+    row += '<td style="color:var(--muted)">' + h.leaks + '</td>';
+    row += '<td style="color:var(--dim);font-size:.78rem">' + h.timestamp + '</td>';
+    row += '</tr>';
+    return row;
+  }).join('');
+}
+
+function cerrarSesion() {
+  fetch('/api/logout', {method:'POST'})
+    .then(function() { window.location.href = '/'; });
+}
+
+// Inicializar
+loadHistorial();
+</script>
+</body>
+</html>

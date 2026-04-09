@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ReconBase — Registro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2.5rem;width:100%;max-width:420px}
+.card-title{font-size:1.5rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.4rem}
+.card-sub{font-size:.85rem;color:var(--muted);margin-bottom:2rem}
+.field{margin-bottom:1.1rem}
+.field label{display:block;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem}
+.field input{width:100%;background:#080C14;border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.7rem .9rem;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--blue-lt);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.field input::placeholder{color:var(--dim)}
+.btn-submit{width:100%;background:var(--blue-dk);color:#fff;border:none;padding:.85rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:background .2s;margin-top:.5rem}
+.btn-submit:hover{background:#1e40af}
+.footer-link{text-align:center;margin-top:1.5rem;font-size:.83rem;color:var(--muted)}
+.footer-link a{color:var(--blue-lt);font-weight:600}
+.footer-link a:hover{text-decoration:underline}
+.error-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:.65rem .85rem;font-size:.8rem;color:#F87171;margin-bottom:1rem;display:none}
+.error-msg.show{display:block}
+.success-msg{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:6px;padding:.65rem .85rem;font-size:.8rem;color:#34D399;margin-bottom:1rem;display:none}
+.success-msg.show{display:block}
+.plan-select{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1.1rem}
+.plan-opt{background:#080C14;border:1px solid var(--border);border-radius:7px;padding:.65rem;text-align:center;cursor:pointer;transition:all .2s}
+.plan-opt:hover{border-color:var(--blue-lt)}
+.plan-opt.selected{border-color:var(--blue-dk);background:rgba(37,99,235,.08)}
+.plan-opt-name{font-size:.78rem;font-weight:700;margin-bottom:.15rem}
+.plan-opt-price{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.terms{font-size:.75rem;color:var(--dim);margin-top:1rem;line-height:1.5}
+.terms a{color:var(--blue-lt)}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="#1D4ED8"/>
+      <path d="M16 5L7 9.5V17c0 4.7 3.8 9.1 9 10 5.2-.9 9-5.3 9-10V9.5L16 5z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M12 16l2.5 2.5L20 13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="logo-text">ReconBase</div>
+  </a>
+</nav>
+<div class="main">
+  <div class="card">
+    <div class="card-title">Crea tu cuenta</div>
+    <div class="card-sub">Gratis para siempre en el plan Starter</div>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="success-msg" id="success-msg">Cuenta creada correctamente. Redirigiendo...</div>
+    <form onsubmit="handleRegister(event)">
+      <div class="field">
+        <label>Nombre de empresa</label>
+        <input type="text" id="empresa" placeholder="Mi Empresa SL" required>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="admin@miempresa.com" required>
+      </div>
+      <div class="field">
+        <label>Contrasena</label>
+        <input type="password" id="password" placeholder="Minimo 8 caracteres" minlength="8" required>
+      </div>
+      <div class="field">
+        <label>Plan</label>
+        <div class="plan-select">
+          <div class="plan-opt selected" onclick="selectPlan(this,'starter')">
+            <div class="plan-opt-name">Starter</div>
+            <div class="plan-opt-price">Gratis</div>
+          </div>
+          <div class="plan-opt" onclick="selectPlan(this,'pro')">
+            <div class="plan-opt-name">Pro</div>
+            <div class="plan-opt-price">29/mes</div>
+          </div>
+          <div class="plan-opt" onclick="selectPlan(this,'enterprise')">
+            <div class="plan-opt-name">Enterprise</div>
+            <div class="plan-opt-price">99/mes</div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="plan-selected" value="starter">
+      <button type="submit" class="btn-submit">Crear cuenta gratis</button>
+      <div class="terms">Al registrarte aceptas nuestros <a href="#">Terminos de Servicio</a> y <a href="#">Politica de Privacidad</a>.</div>
+    </form>
+    <div class="footer-link">Ya tienes cuenta? <a href="/login">Inicia sesion</a></div>
+    <div class="footer-link" style="margin-top:.75rem"><a href="/" style="color:var(--dim)">Volver a la web</a></div>
+  </div>
+</div>
+<script>
+function selectPlan(el, plan) {
+  document.querySelectorAll('.plan-opt').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('plan-selected').value = plan;
+  var btn = document.querySelector('.btn-submit');
+  if(plan === 'starter') {
+    btn.textContent = 'Crear cuenta gratis';
+  } else {
+    btn.textContent = 'Continuar al pago';
+  }
+}
+function handleRegister(e) {
+  e.preventDefault();
+  var plan = document.getElementById('plan-selected').value;
+  var data = {
+    empresa: document.getElementById('empresa').value,
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value,
+    plan: plan
+  };
+  // Si el plan es de pago, primero registrar y luego abrir Stripe en nueva pestana
+  var STRIPE_LINKS = {
+    pro:        'https://buy.stripe.com/TU_LINK_PRO',
+    enterprise: 'https://buy.stripe.com/TU_LINK_ENTERPRISE'
+  };
+  if(plan !== 'starter') {
+    var stripeUrl = STRIPE_LINKS[plan];
+    if(!stripeUrl || stripeUrl.indexOf('TU_LINK') !== -1) {
+      alert('Configura tus Payment Links de Stripe en register.html (variable STRIPE_LINKS).');
+      return;
+    }
+    // Registrar la cuenta primero
+    fetch('/api/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if(res.ok) {
+        // Abrir Stripe en nueva pestana para generar confianza
+        window.open(stripeUrl, '_blank', 'noopener,noreferrer');
+        document.getElementById('success-msg').textContent = 'Cuenta creada. Completando pago en nueva pestana...';
+        document.getElementById('success-msg').classList.add('show');
+        setTimeout(function(){ window.location.href = '/app'; }, 3000);
+      } else {
+        var el = document.getElementById('error-msg');
+        el.textContent = res.error || 'Error al crear la cuenta';
+        el.classList.add('show');
+      }
+    });
+    return;
+  }
+  fetch('/api/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res) {
+    if(res.ok) {
+      document.getElementById('success-msg').classList.add('show');
+      setTimeout(function(){ window.location.href = '/app'; }, 1500);
+    } else {
+      var el = document.getElementById('error-msg');
+      el.textContent = res.error || 'Error al crear la cuenta';
+      el.classList.add('show');
+    }
+  })
+  .catch(function(){ alert('Error de conexion'); });
+}
+</script>
+</body>
+</html>
