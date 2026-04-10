@@ -208,7 +208,9 @@ def dashboard():
     ).order_by(Scan.timestamp.desc()).first()
     return render_template("app.html", api_key_ok=bool(API_KEY),
                            plan=current_user.plan, scans_mes=scans_mes,
-                           ultimo_auto=ultimo_auto)
+                           ultimo_auto=ultimo_auto,
+                           scan_hora=current_user.scan_hora or 3,
+                           scan_dias=(current_user.scan_dias or '0,1,2,3,4,5,6').split(','))
 
 # ── SCAN ──
 def calcular_riesgo(puertos, dns, leaks, headers):
@@ -427,8 +429,18 @@ def generar_pdf():
 
 def escaneo_automatico():
     with app.app_context():
+        from zoneinfo import ZoneInfo
+        now_madrid = datetime.now(ZoneInfo("Europe/Madrid"))
+        hora_actual = now_madrid.hour
+        dia_actual  = now_madrid.weekday()  # 0=lunes, 6=domingo
+
         usuarios_pro = User.query.filter_by(plan='pro').all()
         for user in usuarios_pro:
+            if user.scan_hora != hora_actual:
+                continue
+            dias = [int(d) for d in (user.scan_dias or '0,1,2,3,4,5,6').split(',') if d.strip()]
+            if dia_actual not in dias:
+                continue
             ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
             if not ultimo:
                 continue
@@ -457,21 +469,40 @@ def escaneo_automatico():
                 db.session.commit()
                 if riesgo >= 30:
                     enviar_alerta_email(user.email, objetivo, riesgo, label, desglose)
+                print(f"[Cron] Escaneado {dominio} para {user.email}")
             except Exception as e:
                 print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
 
 scheduler = BackgroundScheduler(timezone="Europe/Madrid")
-scheduler.add_job(escaneo_automatico, 'cron', hour=3, minute=0)
+scheduler.add_job(escaneo_automatico, 'cron', minute=0)  # cada hora en punto
 scheduler.start()
+
+@app.route("/api/horario", methods=["POST"])
+@login_required
+def guardar_horario():
+    if current_user.plan != 'pro':
+        return jsonify({"ok": False, "error": "Solo disponible en Pro"}), 403
+    data = request.get_json()
+    hora = data.get("hora", 3)
+    dias = data.get("dias", [0,1,2,3,4,5,6])
+    current_user.scan_hora = int(hora)
+    current_user.scan_dias = ','.join(str(d) for d in dias)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 with app.app_context():
     db.create_all()
     from sqlalchemy import text
-    try:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN plan VARCHAR(20) DEFAULT 'free' NOT NULL"))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+    for col_sql in [
+        "ALTER TABLE users ADD COLUMN plan VARCHAR(20) DEFAULT 'free' NOT NULL",
+        "ALTER TABLE users ADD COLUMN scan_hora INTEGER DEFAULT 3",
+        "ALTER TABLE users ADD COLUMN scan_dias VARCHAR(20) DEFAULT '0,1,2,3,4,5,6'",
+    ]:
+        try:
+            db.session.execute(text(col_sql))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

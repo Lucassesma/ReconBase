@@ -307,19 +307,19 @@ a{text-decoration:none;color:inherit}
         <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.85rem 2.5rem;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer">Activar vigilancia — Pro 29€/mes</button></a>
       </div>
       {% else %}
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-bottom:1.5rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
           <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Estado</div>
           <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
             <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease infinite"></span>
             <span style="font-weight:700;font-size:1rem">Vigilancia activa</span>
           </div>
-          <div style="font-size:.82rem;color:var(--muted)">Tu dominio se escanea automaticamente cada noche</div>
+          <div style="font-size:.82rem;color:var(--muted)">Tu dominio se escanea segun tu horario configurado</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
-          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Proximo escaneo</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">Esta noche a las 3:00 AM</div>
-          <div style="font-size:.82rem;color:var(--muted)">Hora de Madrid · automatico</div>
+          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Horario configurado</div>
+          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ '%02d:00'|format(scan_hora) }} · hora de Madrid</div>
+          <div style="font-size:.82rem;color:var(--muted)">{% set dias_nombres = ['L','M','X','J','V','S','D'] %}{% for d in range(7) %}<span style="{% if d|string in scan_dias %}color:#60A5FA{% else %}color:var(--dim){% endif %};margin-right:4px">{{ dias_nombres[d] }}</span>{% endfor %}</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
           <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Ultimo escaneo automatico</div>
@@ -328,9 +328,38 @@ a{text-decoration:none;color:inherit}
           <div style="font-size:.82rem;color:var(--muted)">{{ ultimo_auto.timestamp.strftime('%d %b %Y · %H:%M') }}</div>
           {% else %}
           <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">Pendiente</div>
-          <div style="font-size:.82rem;color:var(--muted)">El primer escaneo sera esta noche</div>
+          <div style="font-size:.82rem;color:var(--muted)">El primer escaneo sera en tu proximo horario</div>
           {% endif %}
         </div>
+      </div>
+
+      <!-- Configuración del horario -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin-bottom:1.25rem">
+        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Configurar horario de vigilancia</div>
+        <div style="display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start">
+          <div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Hora del escaneo</div>
+            <select id="vig-hora" style="background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.5rem .85rem;outline:none;cursor:pointer">
+              {% for h in range(24) %}<option value="{{ h }}" {% if h == scan_hora %}selected{% endif %}>{{ '%02d:00'|format(h) }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Días de la semana</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              {% set dias_nombres = [('L',0),('M',1),('X',2),('J',3),('V',4),('S',5),('D',6)] %}
+              {% for nombre, num in dias_nombres %}
+              <label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer">
+                <input type="checkbox" id="dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#2563EB;width:16px;height:16px;cursor:pointer">
+                <span style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ nombre }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button onclick="guardarHorario()" style="background:#2563EB;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar horario</button>
+          </div>
+        </div>
+        <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
       </div>
       {% if ultimo_auto %}
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
@@ -708,6 +737,27 @@ function verScanHistorial(i) {
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('results').classList.add('show');
   renderResults(h);
+}
+
+async function guardarHorario() {
+  var hora = parseInt(document.getElementById('vig-hora').value);
+  var dias = [];
+  for(var i=0; i<7; i++) {
+    var cb = document.getElementById('dia-'+i);
+    if(cb && cb.checked) dias.push(i);
+  }
+  if(dias.length === 0) { mostrarMsgVig('Selecciona al menos un dia', false); return; }
+  var r = await fetch('/api/horario', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hora, dias})});
+  var d = await r.json();
+  if(d.ok) mostrarMsgVig('Horario guardado correctamente', true);
+  else mostrarMsgVig(d.error || 'Error al guardar', false);
+}
+function mostrarMsgVig(txt, ok) {
+  var el = document.getElementById('vig-msg');
+  el.textContent = txt;
+  el.style.color = ok ? '#10B981' : '#EF4444';
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display='none'; }, 3000);
 }
 
 function cerrarSesion() {
