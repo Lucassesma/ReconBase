@@ -140,20 +140,20 @@ a{text-decoration:none;color:inherit}
     {% endif %}
 
     {% if plan == 'free' %}
-    <div style="background:linear-gradient(90deg,rgba(30,58,95,.6),rgba(30,45,74,.6));border-top:1px solid #1E3A5F;border-bottom:1px solid #1E3A5F;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-      <div style="display:flex;flex-direction:column;gap:.3rem">
-        <div style="display:flex;align-items:center;gap:.6rem">
-          <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#1E3A5F;color:#60A5FA;padding:.15rem .6rem;border-radius:20px;letter-spacing:.05em">PLAN FREE</span>
-          <span style="font-size:.82rem;color:var(--muted)">Tu empresa no está siendo vigilada automáticamente cada noche</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.5rem">
-          <div style="height:6px;width:120px;background:#1E2D4A;border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#3B82F6{% endif %};border-radius:3px;transition:width .3s"></div>
+    <div style="background:linear-gradient(90deg,rgba(30,58,95,.6),rgba(30,45,74,.6));border-top:1px solid #1E3A5F;border-bottom:1px solid #1E3A5F;padding:1.2rem 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem">
+      <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+        <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#1E3A5F;color:#60A5FA;padding:.2rem .8rem;border-radius:20px;letter-spacing:.05em;white-space:nowrap">PLAN FREE</span>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          <span style="font-size:.83rem;color:var(--muted)">Tu empresa no está siendo vigilada automáticamente cada noche</span>
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="height:5px;width:130px;background:#1E2D4A;border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#3B82F6{% endif %};border-radius:3px"></div>
+            </div>
+            <span style="font-size:.74rem;color:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#64748B{% endif %}">{{ scans_mes }}/10 escaneos este mes</span>
           </div>
-          <span style="font-size:.75rem;color:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#94A3B8{% endif %}">{{ scans_mes }}/10 escaneos usados este mes</span>
         </div>
       </div>
-      <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.55rem 1.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
+      <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
     </div>
     {% endif %}
 
@@ -248,11 +248,12 @@ a{text-decoration:none;color:inherit}
           <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones. Disponible en el plan Pro.</div>
           <a href="/#precios"><button class="btn-export primary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
         </div>
-        <div class="export-card">
+        <div class="export-card" style="opacity:.5;position:relative">
+          <div style="position:absolute;top:1rem;right:1rem;font-size:1.2rem">🔒</div>
           <div class="export-icon">*</div>
-          <div class="export-title">Datos Raw (JSON)</div>
-          <div class="export-desc">Exporta todos los datos del analisis en formato JSON.</div>
-          <button class="btn-export secondary" onclick="lastData ? descargarJSON() : alert('Ejecuta un escaneo primero')">Exportar JSON</button>
+          <div class="export-title">Datos Raw (JSON) <span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:6px">PRO</span></div>
+          <div class="export-desc">Exporta todos los datos del analisis en formato JSON. Disponible en el plan Pro.</div>
+          <a href="/#precios"><button class="btn-export secondary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
         </div>
       </div>
       {% endif %}
