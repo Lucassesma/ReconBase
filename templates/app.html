@@ -239,20 +239,35 @@ a{text-decoration:none;color:inherit}
     </div>
 
     <div class="panel" id="panel-exportar">
-      <div class="empty" id="exp-empty"><div class="empty-icon">*</div><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
+      {% if plan == 'free' %}
+      <div class="export-grid" style="margin-bottom:1rem">
+        <div class="export-card" style="opacity:.5;position:relative">
+          <div style="position:absolute;top:1rem;right:1rem;font-size:1.2rem">🔒</div>
+          <div class="export-icon">*</div>
+          <div class="export-title">Informe PDF Ejecutivo <span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:6px">PRO</span></div>
+          <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones. Disponible en el plan Pro.</div>
+          <a href="/#precios"><button class="btn-export primary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
+        </div>
+        <div class="export-card">
+          <div class="export-icon">*</div>
+          <div class="export-title">Datos Raw (JSON)</div>
+          <div class="export-desc">Exporta todos los datos del analisis en formato JSON.</div>
+          <button class="btn-export secondary" onclick="lastData ? descargarJSON() : alert('Ejecuta un escaneo primero')">Exportar JSON</button>
+        </div>
+      </div>
+      {% endif %}
+      <div class="empty" id="exp-empty" {% if plan == 'free' %}style="display:none"{% endif %}><div class="empty-icon">*</div><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
       <div id="exp-content" style="display:none">
         <div id="exp-summary" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:.85rem;color:var(--muted);margin-bottom:1rem"></div>
         <div class="export-grid">
+          {% if plan != 'free' %}
           <div class="export-card">
             <div class="export-icon">*</div>
-            <div class="export-title">Informe PDF Ejecutivo {% if plan == 'free' %}<span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:6px">🔒 PRO</span>{% endif %}</div>
+            <div class="export-title">Informe PDF Ejecutivo</div>
             <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones.</div>
-            {% if plan == 'free' %}
-            <a href="/#precios"><button class="btn-export primary" style="opacity:.5;cursor:not-allowed" disabled>Requiere plan Pro</button></a>
-            {% else %}
             <button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>
-            {% endif %}
           </div>
+          {% endif %}
           <div class="export-card">
             <div class="export-icon">*</div>
             <div class="export-title">Datos Raw (JSON)</div>
