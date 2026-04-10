@@ -140,9 +140,20 @@ a{text-decoration:none;color:inherit}
     {% endif %}
 
     {% if plan == 'free' %}
-    <div style="background:linear-gradient(90deg,#1e3a5f,#1e2d4a);border-bottom:1px solid #2563EB;padding:.75rem 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
-      <span style="font-size:.82rem;color:#93C5FD">⚡ Plan Free — <strong style="color:#E2EDF8">{{ 10 - scans_mes }} escaneos restantes este mes</strong> · Tu empresa no está siendo vigilada automáticamente cada noche</span>
-      <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer">Pásate a Pro — 29€/mes</button></a>
+    <div style="background:linear-gradient(90deg,rgba(30,58,95,.6),rgba(30,45,74,.6));border-top:1px solid #1E3A5F;border-bottom:1px solid #1E3A5F;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div style="display:flex;flex-direction:column;gap:.3rem">
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#1E3A5F;color:#60A5FA;padding:.15rem .6rem;border-radius:20px;letter-spacing:.05em">PLAN FREE</span>
+          <span style="font-size:.82rem;color:var(--muted)">Tu empresa no está siendo vigilada automáticamente cada noche</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <div style="height:6px;width:120px;background:#1E2D4A;border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#3B82F6{% endif %};border-radius:3px;transition:width .3s"></div>
+          </div>
+          <span style="font-size:.75rem;color:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#94A3B8{% endif %}">{{ scans_mes }}/10 escaneos usados este mes</span>
+        </div>
+      </div>
+      <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.55rem 1.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
     </div>
     {% endif %}
 
