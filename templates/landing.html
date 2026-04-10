@@ -134,14 +134,14 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
+:root{--bg:#060A10;--surface:#0B1018;--border:#162032;--text:#E8F4F8;--muted:#5D7A8A;--dim:#3D5468;--blue:#0891B2;--blue-dk:#0E7490;--blue-lt:#06B6D4;--green:#10B981;--red:#EF4444;--amber:#F59E0B;--accent:#00D4AA}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;line-height:1.6;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6;overflow-x:hidden}
 a{text-decoration:none;color:inherit}
 nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);backdrop-filter:blur(16px)}
 .logo{display:flex;align-items:center;gap:10px}
@@ -150,23 +150,41 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .nav-links a{font-size:.87rem;color:var(--muted);transition:color .2s}
 .nav-links a:hover{color:var(--text)}
 .nav-right{display:flex;align-items:center;gap:.75rem}
-.btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.6rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s;min-height:44px;display:inline-flex;align-items:center}
+.btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.6rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s;min-height:44px;display:inline-flex;align-items:center}
 .btn-login:hover{border-color:var(--blue-lt);color:var(--text)}
-.btn-nav{background:var(--blue-dk);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .2s;min-height:44px;display:inline-flex;align-items:center}
-.btn-nav:hover{background:#1e40af}
-.hero{padding:3.5rem 6% 5rem;max-width:1000px;margin:0 auto;text-align:center}
-.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:.3rem .9rem;font-size:.72rem;font-family:'JetBrains Mono',monospace;color:#60A5FA;margin-bottom:2rem;animation:fadeUp .6s ease both}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite}
+.hero{padding:4rem 6% 5rem;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.hero-left{animation:fadeUp .7s ease both}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:20px;padding:.3rem .9rem;font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);margin-bottom:1.5rem}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.hero h1{font-size:clamp(1.9rem,4.2vw,3rem);font-weight:800;letter-spacing:-.05em;line-height:1.05;margin-bottom:1.5rem;animation:fadeUp .7s .1s ease both}
-.hero h1 em{font-style:normal;color:var(--blue-lt)}
-.hero p{font-size:1.05rem;color:var(--muted);max-width:560px;margin:0 auto 2.5rem;animation:fadeUp .7s .2s ease both}
+.hero h1{font-size:clamp(2rem,3.8vw,3.2rem);font-weight:800;letter-spacing:-.04em;line-height:1.08;margin-bottom:1.25rem}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--blue-lt),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1rem;color:var(--muted);max-width:480px;margin-bottom:2rem;line-height:1.7}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;animation:fadeUp .7s .3s ease both}
-.btn-primary{background:var(--blue-dk);color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:all .15s;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
-.btn-primary:hover{background:#1e40af;transform:translateY(-2px)}
-.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);padding:.85rem 2.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:600;font-size:.92rem;cursor:pointer;transition:border-color .2s;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
-.btn-ghost:hover{border-color:var(--blue-lt)}
+.hero-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+.hero-right{animation:fadeUp .7s .15s ease both}
+.hero-scanner{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;position:relative;overflow:hidden}
+.hero-scanner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue-lt),transparent)}
+.hero-scan-label{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem}
+.hero-scan-input-wrap{display:flex;gap:.5rem;margin-bottom:1.25rem}
+.hero-scan-input{flex:1;background:#040810;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.7rem 1rem;outline:none;transition:border-color .2s}
+.hero-scan-input:focus{border-color:var(--blue-lt)}
+.hero-scan-btn{background:linear-gradient(135deg,var(--blue-dk),var(--blue-lt));color:#fff;border:none;padding:.7rem 1.25rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.hero-scan-btn:hover{opacity:.85}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.hstat{background:#040810;border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem}
+.hstat-val{font-size:1.3rem;font-weight:800;color:var(--text);letter-spacing:-.03em}
+.hstat-lbl{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:.1rem}
+.hstat-ok{color:var(--accent)}
+.hstat-warn{color:var(--amber)}
+.hstat-err{color:var(--red)}
+.btn-primary{background:linear-gradient(135deg,var(--blue-dk),var(--blue-lt));color:#fff;border:none;padding:.8rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px)}
+.btn-nav{background:linear-gradient(135deg,var(--blue-dk),var(--blue-lt));color:#fff;border:none;padding:.6rem 1.3rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:opacity .2s;min-height:44px;display:inline-flex;align-items:center}
+.btn-nav:hover{opacity:.85}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);padding:.8rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:border-color .2s,color .2s;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.btn-ghost:hover{border-color:var(--blue-lt);color:var(--blue-lt)}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:2.5rem}.hero-right{display:none}}
 .compat{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1rem 6%;display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap}
 .compat-lbl{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:#64748B;letter-spacing:.1em;text-transform:uppercase}
 .compat span{font-size:.8rem;color:#94A3B8}
@@ -206,7 +224,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .dp-scan{display:flex;gap:.5rem;margin-bottom:1rem}
 .dp-input{flex:1;background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:.55rem .85rem;outline:none}
-.dp-btn{background:var(--blue-dk);color:#fff;border:none;padding:.55rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer}
+.dp-btn{background:var(--blue-dk);color:#fff;border:none;padding:.55rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer}
 .demo-result-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:#080C14;border-radius:6px;margin-bottom:.5rem}
 .dri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .dri-label{font-size:.8rem;font-family:'JetBrains Mono',monospace;flex:1}
@@ -233,7 +251,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .pf.off{color:#2d3e5a}
 .ck{color:var(--green);font-size:13px;flex-shrink:0;margin-top:1px}
 .cx{color:#1E2D4A;font-size:13px;flex-shrink:0;margin-top:1px}
-.btn-plan{width:100%;margin-top:1.75rem;padding:.75rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:all .15s;min-height:44px;display:flex;align-items:center;justify-content:center}
+.btn-plan{width:100%;margin-top:1.75rem;padding:.75rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:all .15s;min-height:44px;display:flex;align-items:center;justify-content:center}
 .btn-plan.ol{background:transparent;border:1px solid var(--border);color:var(--text)}
 .btn-plan.ol:hover{border-color:var(--blue-lt)}
 .btn-plan.sl{background:var(--blue-dk);border:none;color:#fff}
@@ -254,7 +272,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .sf-card-mock{width:100%;background:#080C14;border:1px solid var(--border);border-radius:6px;padding:.65rem .85rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--dim)}
 .sf-card-icons{display:flex;gap:.4rem;margin-left:auto}
 .card-icon{width:32px;height:20px;border-radius:3px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;color:var(--muted)}
-.btn-pay{width:100%;background:var(--blue-dk);color:#fff;border:none;padding:.85rem;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:background .2s;margin-top:.5rem}
+.btn-pay{width:100%;background:var(--blue-dk);color:#fff;border:none;padding:.85rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:background .2s;margin-top:.5rem}
 .btn-pay:hover{background:#1e40af}
 .stripe-badge{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.85rem;font-size:.72rem;color:#2d3e5a;font-family:'JetBrains Mono',monospace}
 .faq-item{border-bottom:1px solid var(--border);padding:1.4rem 0;cursor:pointer}
@@ -301,18 +319,44 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
 <main>
 <section class="hero">
-  <div style="display:flex;justify-content:center;margin-bottom:1.5rem">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="72">
-      <text x="97" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8" text-anchor="end">RECON</text>
-      <text x="103" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#3B82F6" text-anchor="start">BASE</text>
-    </svg>
+  <div class="hero-left">
+    <div class="hero-badge"><span class="dot"></span> Motor OSINT en tiempo real</div>
+    <h1>Seguridad perimetral para<br><em>tu empresa</em>, sin equipo IT</h1>
+    <p>ReconBase analiza tu dominio, detecta filtraciones y te avisa automáticamente cada noche. Sin conocimientos técnicos.</p>
+    <div class="hero-btns">
+      <a href="/app" class="btn-primary">Analizar gratis ahora</a>
+      <a href="#como-funciona" class="btn-ghost">Ver cómo funciona</a>
+    </div>
   </div>
-  <div class="hero-badge"><span class="dot"></span> Motor OSINT activo</div>
-  <h1>Seguridad perimetral para<br><em>tu empresa</em>, sin equipo IT</h1>
-  <p>ReconBase escanea tu infraestructura, detecta filtraciones y te avisa antes de que el problema llegue a tus clientes.</p>
-  <div class="hero-btns">
-    <a href="/app" class="btn-primary">Analizar mi dominio gratis</a>
-    <a href="#como-funciona" class="btn-ghost">Ver como funciona</a>
+  <div class="hero-right">
+    <div class="hero-scanner">
+      <div class="hero-scan-label">Análisis en tiempo real</div>
+      <div class="hero-scan-input-wrap">
+        <input class="hero-scan-input" type="text" placeholder="tuempresa.com" aria-label="Dominio a analizar" readonly>
+        <button class="hero-scan-btn" onclick="window.location='/app'">ESCANEAR</button>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat">
+          <div class="hstat-val hstat-ok">0</div>
+          <div class="hstat-lbl">Puertos expuestos</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val hstat-err">2</div>
+          <div class="hstat-lbl">Filtraciones</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val hstat-warn">SPF</div>
+          <div class="hstat-lbl">DNS sin proteger</div>
+        </div>
+        <div class="hstat">
+          <div class="hstat-val hstat-ok">3</div>
+          <div class="hstat-lbl">Subdominios</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;padding:.75rem 1rem;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:8px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#F87171">
+        ⚠ admin@tuempresa.com aparece en 2 filtraciones conocidas
+      </div>
+    </div>
   </div>
 </section>
 
@@ -478,7 +522,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <h2 style="font-size:clamp(1.5rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem">ReconBase es completamente gratuito</h2>
   <p style="color:var(--muted);font-size:.95rem;max-width:480px;margin:0 auto 2rem;line-height:1.7">Si te ha sido util y quieres ayudar a mantener el proyecto, cualquier donacion es bienvenida y nos ayuda a seguir mejorando la herramienta.</p>
   <a href="https://paypal.me/ReconBase" target="_blank" rel="noopener">
-    <button style="background:#0070E0;color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#005bb5'" onmouseout="this.style.background='#0070E0'">
+    <button style="background:#0070E0;color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#005bb5'" onmouseout="this.style.background='#0070E0'">
       Donar con PayPal
     </button>
   </a>
