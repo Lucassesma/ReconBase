@@ -147,7 +147,142 @@ def scan_subdomains(domain, max_workers=30):
     return sorted(found, key=lambda x: x["subdominio"])
 
 # ─────────────────────────────────────────────────────────────
-# MÓDULO 6: VIGILANCIA NOCTURNA
+# MÓDULO 6: DETECCIÓN DE CMS
+# ─────────────────────────────────────────────────────────────
+CMS_SIGNATURES = {
+    "WordPress": {
+        "html": ["wp-content/", "wp-includes/", "wp-json"],
+        "headers": {"x-powered-by": "wordpress"},
+        "paths": ["/wp-login.php", "/wp-admin/"],
+        "meta_generator": "wordpress",
+    },
+    "Joomla": {
+        "html": ["/components/com_", "/media/jui/", "joomla"],
+        "headers": {},
+        "paths": ["/administrator/"],
+        "meta_generator": "joomla",
+    },
+    "Drupal": {
+        "html": ["/sites/default/files/", "drupal.js", "Drupal.settings"],
+        "headers": {"x-generator": "drupal", "x-drupal-cache": ""},
+        "paths": [],
+        "meta_generator": "drupal",
+    },
+    "PrestaShop": {
+        "html": ["/themes/default-bootstrap/", "prestashop", "/modules/blockcart/"],
+        "headers": {"x-powered-by": "prestashop"},
+        "paths": [],
+        "meta_generator": "prestashop",
+    },
+    "Magento": {
+        "html": ["mage/cookies.js", "Magento_", "/skin/frontend/"],
+        "headers": {"x-powered-by": "phusion"},
+        "paths": ["/admin/", "/downloader/"],
+        "meta_generator": "magento",
+    },
+    "Shopify": {
+        "html": ["cdn.shopify.com", "shopify.com/s/files", "Shopify.theme"],
+        "headers": {"x-shopid": "", "x-shopify-stage": ""},
+        "paths": [],
+        "meta_generator": "shopify",
+    },
+    "Wix": {
+        "html": ["static.wixstatic.com", "wix-code-sdk", "_wix_"],
+        "headers": {"x-wix-request-id": ""},
+        "paths": [],
+        "meta_generator": "wix",
+    },
+    "Squarespace": {
+        "html": ["squarespace.com", "static1.squarespace.com"],
+        "headers": {"x-powered-by": "squarespace"},
+        "paths": [],
+        "meta_generator": "squarespace",
+    },
+}
+
+def detect_cms(domain, timeout=7):
+    """Detecta el CMS del dominio. Devuelve dict con cms, version, riesgo."""
+    result = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
+    try:
+        for scheme in ["https", "http"]:
+            try:
+                r = requests.get(
+                    f"{scheme}://{domain}", timeout=timeout,
+                    allow_redirects=True,
+                    headers={"User-Agent": "Mozilla/5.0 (compatible; ReconBase/2.0)"}
+                )
+                html = r.text.lower()
+                headers = {k.lower(): v.lower() for k, v in r.headers.items()}
+
+                # Extract meta generator
+                import re
+                gen_match = re.search(r'<meta[^>]+name=["\']generator["\'][^>]+content=["\']([^"\']+)["\']', r.text, re.I)
+                generator = gen_match.group(1) if gen_match else ""
+
+                for cms_name, sigs in CMS_SIGNATURES.items():
+                    detected = False
+                    version = None
+
+                    # Check meta generator
+                    if sigs["meta_generator"] in generator.lower():
+                        detected = True
+                        # Try to extract version from generator tag
+                        ver_match = re.search(r'(\d+\.\d+[\.\d]*)', generator)
+                        if ver_match:
+                            version = ver_match.group(1)
+
+                    # Check HTML signatures
+                    if not detected:
+                        for sig in sigs["html"]:
+                            if sig.lower() in html:
+                                detected = True
+                                break
+
+                    # Check response headers
+                    if not detected:
+                        for hdr, val in sigs["headers"].items():
+                            if hdr in headers and (not val or val in headers[hdr]):
+                                detected = True
+                                break
+
+                    if detected:
+                        result["cms"] = cms_name
+                        result["version"] = version
+                        # WordPress: check version via wp-json
+                        if cms_name == "WordPress" and not version:
+                            try:
+                                wp = requests.get(f"{scheme}://{domain}/wp-json/", timeout=4,
+                                                  headers={"User-Agent": "Mozilla/5.0"})
+                                if wp.status_code == 200:
+                                    import json
+                                    wp_data = wp.json()
+                                    version = wp_data.get("version") or wp_data.get("gmt_offset") and None
+                                    if version:
+                                        result["version"] = str(version)
+                            except Exception:
+                                pass
+                        # Mark as risky if version exposed or specific CMS
+                        result["riesgo"] = cms_name in ["WordPress", "Joomla", "PrestaShop", "Magento"]
+                        if result["riesgo"]:
+                            result["detalle"] = (
+                                f"Se ha detectado {cms_name}"
+                                + (f" v{version}" if version else "")
+                                + ". Los CMS desactualizados son el vector de ataque mas comun en PYMEs. Mantén siempre la última versión y sus plugins actualizados."
+                            )
+                        else:
+                            result["detalle"] = f"Se ha detectado {cms_name}. Asegurate de mantenerlo actualizado."
+                        return result
+                return result  # No CMS detected
+            except requests.exceptions.SSLError:
+                continue
+            except Exception:
+                break
+    except Exception:
+        pass
+    return result
+
+# ─────────────────────────────────────────────────────────────
+# MÓDULO 7: VIGILANCIA NOCTURNA
 # ─────────────────────────────────────────────────────────────
 def enviar_alerta(mensaje):
     print(f"\n{'='*55}\n  ALERTA RECONBASE [{time.strftime('%Y-%m-%d %H:%M:%S')}]\n{'='*55}")

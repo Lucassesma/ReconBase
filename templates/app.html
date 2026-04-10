@@ -604,6 +604,14 @@ function renderCards(d) {
   } else if(d.objetivo.indexOf('@') !== -1) {
     html += card('ok','b-green','NO LEAKS','Sin filtraciones','No se encontraron credenciales comprometidas.');
   }
+  if(d.cms && d.cms.cms) {
+    var cmsName = d.cms.cms + (d.cms.version ? ' v' + d.cms.version : '');
+    if(d.cms.riesgo) {
+      html += card('crit','b-red','CMS DETECTADO', cmsName, d.cms.detalle);
+    } else {
+      html += card('ok','b-green','CMS DETECTADO', cmsName, d.cms.detalle);
+    }
+  }
   col.innerHTML = html;
 }
 

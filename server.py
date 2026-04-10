@@ -348,12 +348,17 @@ def scan():
     dns     = engine.check_email_spoofing(dominio)
     headers = engine.check_security_headers(dominio)
     subs    = engine.scan_subdomains(dominio)
+    cms     = engine.detect_cms(dominio)
     leaks   = []
     if es_email and API_KEY:
         leaks = engine.check_leaks_real(objetivo, API_KEY) or []
 
     riesgo, desglose = calcular_riesgo(puertos, dns, leaks, headers)
-    label, color     = label_riesgo(riesgo)
+    # Añadir riesgo por CMS con riesgo detectado
+    if cms.get("riesgo"):
+        riesgo = min(100, riesgo + 10)
+        desglose["CMS desactualizable"] = 10
+    label, color = label_riesgo(riesgo)
 
     resultado = {
         "objetivo":  objetivo,
@@ -368,6 +373,7 @@ def scan():
         "label":     label,
         "color":     color,
         "desglose":  desglose,
+        "cms":       cms,
         "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
     }
 
