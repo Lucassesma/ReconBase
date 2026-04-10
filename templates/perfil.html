@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi Perfil — ReconBase</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%233B82F6'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.nav-right{display:flex;align-items:center;gap:.75rem}
+.btn-back{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.45rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s}
+.btn-back:hover{border-color:var(--blue-lt);color:var(--text)}
+.main{max-width:720px;margin:3rem auto;padding:0 6%;width:100%}
+.page-title{font-size:1.6rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.4rem}
+.page-sub{color:var(--muted);font-size:.88rem;margin-bottom:2.5rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.75rem;margin-bottom:1.25rem}
+.card-title{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid rgba(30,45,74,.5)}
+.info-row:last-child{border:none}
+.info-label{font-size:.82rem;color:var(--muted)}
+.info-val{font-size:.88rem;color:var(--text);font-weight:600}
+.plan-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .8rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.05em}
+.plan-free{background:rgba(100,116,139,.15);color:#94A3B8;border:1px solid #334155}
+.plan-pro{background:rgba(37,99,235,.15);color:#60A5FA;border:1px solid #1E3A5F}
+.progress-wrap{margin-top:1rem}
+.progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.4rem}
+.progress-bar{height:6px;background:#1E2D4A;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.form-group{margin-bottom:1rem}
+.form-label{font-size:.78rem;color:var(--muted);margin-bottom:.4rem;display:block}
+.form-input{width:100%;background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.65rem .85rem;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--blue-lt)}
+.btn-primary{background:var(--blue-dk);color:#fff;border:none;padding:.7rem 1.5rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:background .2s;width:100%}
+.btn-primary:hover{background:#1e40af}
+.btn-upgrade{background:var(--blue-dk);color:#fff;border:none;padding:.7rem 1.5rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:background .2s;display:block;text-align:center;margin-top:1.25rem}
+.btn-upgrade:hover{background:#1e40af}
+.msg{padding:.65rem 1rem;border-radius:6px;font-size:.83rem;margin-top:.75rem;display:none}
+.msg.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10B981}
+.msg.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#EF4444}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="30">
+      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
+      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#3B82F6">BASE</text>
+    </svg>
+  </a>
+  <div class="nav-right">
+    <a href="/app"><button class="btn-back">← Volver al dashboard</button></a>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-title">Mi perfil</div>
+  <div class="page-sub">Gestiona tu cuenta y plan de suscripcion</div>
+
+  <!-- Info cuenta -->
+  <div class="card">
+    <div class="card-title">Informacion de la cuenta</div>
+    <div class="info-row">
+      <span class="info-label">Email</span>
+      <span class="info-val">{{ user.email }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Empresa</span>
+      <span class="info-val">{{ user.empresa }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Miembro desde</span>
+      <span class="info-val">{{ user.created_at.strftime('%d %b %Y') }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Escaneos totales</span>
+      <span class="info-val">{{ total_scans }}</span>
+    </div>
+  </div>
+
+  <!-- Plan -->
+  <div class="card">
+    <div class="card-title">Plan actual</div>
+    <div class="info-row">
+      <span class="info-label">Plan</span>
+      {% if user.plan == 'pro' %}
+      <span class="plan-badge plan-pro">⚡ Pro</span>
+      {% else %}
+      <span class="plan-badge plan-free">Free</span>
+      {% endif %}
+    </div>
+    {% if user.plan == 'free' %}
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Escaneos este mes</span>
+        <span>{{ scans_mes }}/10</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#3B82F6{% endif %}"></div>
+      </div>
+    </div>
+    <a href="/#precios"><button class="btn-upgrade">Pásate a Pro — 29€/mes · Escaneos ilimitados + vigilancia nocturna</button></a>
+    {% else %}
+    <div class="info-row">
+      <span class="info-label">Vigilancia nocturna</span>
+      <span class="info-val" style="color:var(--green)">Activa · cada noche a las 3:00 AM</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Escaneos</span>
+      <span class="info-val" style="color:var(--green)">Ilimitados</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Cambiar contraseña -->
+  <div class="card">
+    <div class="card-title">Cambiar contraseña</div>
+    <div class="form-group">
+      <label class="form-label">Contraseña actual</label>
+      <input class="form-input" type="password" id="pw-actual" placeholder="••••••••">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nueva contraseña</label>
+      <input class="form-input" type="password" id="pw-nueva" placeholder="Mínimo 8 caracteres">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmar nueva contraseña</label>
+      <input class="form-input" type="password" id="pw-confirmar" placeholder="Repite la nueva contraseña">
+    </div>
+    <button class="btn-primary" onclick="cambiarPassword()">Guardar nueva contraseña</button>
+    <div class="msg ok" id="msg-ok">Contraseña actualizada correctamente</div>
+    <div class="msg err" id="msg-err"></div>
+  </div>
+</div>
+
+<script>
+async function cambiarPassword() {
+  var actual     = document.getElementById('pw-actual').value;
+  var nueva      = document.getElementById('pw-nueva').value;
+  var confirmar  = document.getElementById('pw-confirmar').value;
+  var msgOk      = document.getElementById('msg-ok');
+  var msgErr     = document.getElementById('msg-err');
+  msgOk.style.display = 'none';
+  msgErr.style.display = 'none';
+  if(!actual || !nueva || !confirmar) { msgErr.textContent = 'Rellena todos los campos'; msgErr.style.display='block'; return; }
+  if(nueva !== confirmar) { msgErr.textContent = 'Las contraseñas no coinciden'; msgErr.style.display='block'; return; }
+  if(nueva.length < 8) { msgErr.textContent = 'La nueva contraseña debe tener al menos 8 caracteres'; msgErr.style.display='block'; return; }
+  const r = await fetch('/api/cambiar-password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({actual, nueva})
+  });
+  const d = await r.json();
+  if(d.ok) {
+    msgOk.style.display = 'block';
+    document.getElementById('pw-actual').value = '';
+    document.getElementById('pw-nueva').value = '';
+    document.getElementById('pw-confirmar').value = '';
+  } else {
+    msgErr.textContent = d.error || 'Error al cambiar la contraseña';
+    msgErr.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

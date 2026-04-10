@@ -163,6 +163,35 @@ def stripe_webhook():
 
     return jsonify({"ok": True})
 
+# ── PERFIL ──
+@app.route("/perfil")
+@login_required
+def perfil():
+    from sqlalchemy import extract
+    now = datetime.utcnow()
+    scans_mes = Scan.query.filter(
+        Scan.user_id == current_user.id,
+        extract('month', Scan.timestamp) == now.month,
+        extract('year',  Scan.timestamp) == now.year
+    ).count()
+    total_scans = Scan.query.filter_by(user_id=current_user.id).count()
+    return render_template("perfil.html", user=current_user,
+                           scans_mes=scans_mes, total_scans=total_scans)
+
+@app.route("/api/cambiar-password", methods=["POST"])
+@login_required
+def cambiar_password():
+    data = request.get_json()
+    actual   = data.get("actual", "")
+    nueva    = data.get("nueva", "")
+    if not current_user.check_password(actual):
+        return jsonify({"ok": False, "error": "Contraseña actual incorrecta"}), 400
+    if len(nueva) < 8:
+        return jsonify({"ok": False, "error": "La nueva contraseña debe tener al menos 8 caracteres"}), 400
+    current_user.set_password(nueva)
+    db.session.commit()
+    return jsonify({"ok": True})
+
 # ── APP ──
 @app.route("/app")
 @login_required
