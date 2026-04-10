@@ -260,19 +260,10 @@ var historial = [];
 var gaugeChart = null, headersChart = null, radarChart = null;
 var dashHeadersChart = null, dashRadarChart = null, dashDesglosChart = null;
 
-// ── HISTORIAL localStorage ──
-function saveHistorial() {
-  try { localStorage.setItem('rb_hist', JSON.stringify(historial)); } catch(e) {}
-}
-function loadHistorial() {
-  try {
-    var s = localStorage.getItem('rb_hist');
-    if(s) historial = JSON.parse(s);
-  } catch(e) { historial = []; }
-}
+function saveHistorial() {}
+function loadHistorial() {}
 function clearHistorial() {
   historial = [];
-  saveHistorial();
   renderHistorial();
 }
 
@@ -497,7 +488,7 @@ function renderDashboard() {
     type: 'bar',
     data: { labels: keys, datasets: [{ data: vals, backgroundColor: 'rgba(59,130,246,.6)', borderRadius: 4, borderWidth: 0, barThickness: 16 }] },
     options: {
-      indexAxis: 'y', responsive: false, animation: false,
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
       scales: {
         x: { ticks: { color: '#64748B' }, grid: { color: '#1E2D4A' }, max: 40 },
         y: { ticks: { color: '#CBD5E1', font: { size: 11 } }, grid: { color: '#1E2D4A' } }
@@ -564,7 +555,10 @@ function loadHistorial() {
     .then(function(res) { return res.json(); })
     .then(function(data) {
       historial = data;
-      if(historial.length > 0) lastData = historial[0];
+      if(historial.length > 0) {
+        lastData = historial[0];
+        renderDashboard();
+      }
     })
     .catch(function() {});
 }
