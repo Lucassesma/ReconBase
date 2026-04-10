@@ -209,7 +209,7 @@ def dashboard():
     return render_template("app.html", api_key_ok=bool(API_KEY),
                            plan=current_user.plan, scans_mes=scans_mes,
                            ultimo_auto=ultimo_auto,
-                           scan_hora=current_user.scan_hora or 3,
+                           scan_hora=current_user.scan_hora if current_user.scan_hora is not None else 3,
                            scan_dias=(current_user.scan_dias or '0,1,2,3,4,5,6').split(','))
 
 # ── SCAN ──
@@ -483,12 +483,17 @@ def guardar_horario():
     if current_user.plan != 'pro':
         return jsonify({"ok": False, "error": "Solo disponible en Pro"}), 403
     data = request.get_json()
-    hora = data.get("hora", 3)
+    hora = int(data.get("hora", 3))
     dias = data.get("dias", [0,1,2,3,4,5,6])
-    current_user.scan_hora = int(hora)
-    current_user.scan_dias = ','.join(str(d) for d in dias)
-    db.session.commit()
-    return jsonify({"ok": True})
+    try:
+        user = db.session.get(User, current_user.id)
+        user.scan_hora = hora
+        user.scan_dias = ','.join(str(d) for d in dias)
+        db.session.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 with app.app_context():
     db.create_all()
