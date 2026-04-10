@@ -749,8 +749,10 @@ async function guardarHorario() {
   if(dias.length === 0) { mostrarMsgVig('Selecciona al menos un dia', false); return; }
   var r = await fetch('/api/horario', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hora, dias})});
   var d = await r.json();
-  if(d.ok) mostrarMsgVig('Horario guardado correctamente', true);
-  else mostrarMsgVig(d.error || 'Error al guardar', false);
+  if(d.ok) {
+    mostrarMsgVig('Horario guardado. Actualizando...', true);
+    setTimeout(function(){ window.location.href = '/app?tab=vigilancia'; }, 800);
+  } else mostrarMsgVig(d.error || 'Error al guardar', false);
 }
 function mostrarMsgVig(txt, ok) {
   var el = document.getElementById('vig-msg');
@@ -767,6 +769,11 @@ function cerrarSesion() {
 
 // Inicializar
 loadHistorial();
+var urlTab = new URLSearchParams(window.location.search).get('tab');
+if(urlTab) {
+  var tabEl = document.querySelector('.tab:nth-child(' + ({auditoria:1,dashboard:2,exportar:3,historial:4,vigilancia:5}[urlTab]||1) + ')');
+  if(tabEl) switchTab(urlTab, tabEl);
+}
 </script>
 </body>
 </html>
