@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard — ReconBase</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%233B82F6'>B</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#16A34A;--blue-dk:#15803D;--blue-lt:#22C55E;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif}
 a{text-decoration:none;color:inherit}
 .shell{display:flex;flex-direction:column;min-height:100vh}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 2rem;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .logo{display:flex;align-items:center;gap:9px;cursor:pointer}
 .logo-text{font-weight:800;font-size:1rem;letter-spacing:-.03em}
-.logo-ver{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue);background:rgba(37,99,235,.1);padding:.15rem .4rem;border-radius:3px}
+.logo-ver{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue);background:rgba(22,163,74,.1);padding:.15rem .4rem;border-radius:3px}
 .topbar-right{display:flex;align-items:center;gap:1rem}
 .back-link{font-size:.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace;transition:color .2s}
 .back-link:hover{color:var(--text)}
@@ -31,7 +31,7 @@ a{text-decoration:none;color:inherit}
 .scan-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.92rem;padding:.75rem 1rem;outline:none;transition:border-color .2s}
 .scan-input:focus{border-color:var(--blue-lt);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 .scan-input::placeholder{color:var(--dim)}
-.btn-scan{background:var(--blue-dk);color:#fff;border:none;padding:.75rem 2rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.05em;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-scan{background:var(--blue-dk);color:#fff;border:none;padding:.75rem 2rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.05em;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn-scan:hover:not(:disabled){background:#1e40af;transform:translateY(-1px)}
 .btn-scan:disabled{opacity:.5;cursor:not-allowed}
 .loading{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-bottom:1.5rem}
@@ -87,7 +87,7 @@ a{text-decoration:none;color:inherit}
 .export-icon{font-size:2.5rem;margin-bottom:1rem}
 .export-title{font-size:1rem;font-weight:700;margin-bottom:.5rem}
 .export-desc{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem}
-.btn-export{width:100%;padding:.75rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;letter-spacing:.03em;transition:all .15s}
+.btn-export{width:100%;padding:.75rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;letter-spacing:.03em;transition:all .15s}
 .btn-export.primary{background:var(--blue-dk);border:none;color:#fff}
 .btn-export.primary:hover{background:#1e40af}
 .btn-export.secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
@@ -107,7 +107,7 @@ a{text-decoration:none;color:inherit}
 .empty h3{font-size:1.1rem;font-weight:700;color:var(--dim);margin-bottom:.5rem}
 .empty p{font-size:.85rem}
 .api-warn{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.82rem;color:#FBBF24;font-family:'JetBrains Mono',monospace}
-.btn-clear{margin-top:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.5rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s}
+.btn-clear{margin-top:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.5rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s}
 .btn-clear:hover{border-color:var(--red);color:var(--red)}
 </style>
 </head>
@@ -118,7 +118,7 @@ a{text-decoration:none;color:inherit}
     <a href="/" class="logo">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="24">
         <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
-        <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#3B82F6">BASE</text>
+        <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#22C55E">BASE</text>
       </svg>
     </a>
     <div class="topbar-right">
@@ -143,20 +143,20 @@ a{text-decoration:none;color:inherit}
     {% endif %}
 
     {% if plan == 'free' %}
-    <div style="background:linear-gradient(90deg,rgba(30,58,95,.6),rgba(30,45,74,.6));border:1px solid #1E3A5F;border-radius:7px;margin:0 6% 0;padding:1.2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem">
+    <div style="background:linear-gradient(90deg,rgba(20,83,45,.6),rgba(21,128,61,.2));border:1px solid #14532D;border-radius:7px;margin:0 6% 0;padding:1.2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem">
       <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
-        <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#1E3A5F;color:#60A5FA;padding:.2rem .8rem;border-radius:20px;letter-spacing:.05em;white-space:nowrap">PLAN FREE</span>
+        <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#14532D;color:#4ADE80;padding:.2rem .8rem;border-radius:20px;letter-spacing:.05em;white-space:nowrap">PLAN FREE</span>
         <div style="display:flex;flex-direction:column;gap:.4rem">
           <span style="font-size:.83rem;color:var(--muted)">Tu empresa no está siendo vigilada automáticamente cada noche</span>
           <div style="display:flex;align-items:center;gap:.6rem">
             <div style="height:5px;width:130px;background:#1E2D4A;border-radius:3px;overflow:hidden">
-              <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#3B82F6{% endif %};border-radius:3px"></div>
+              <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#16A34A{% endif %};border-radius:3px"></div>
             </div>
             <span style="font-size:.74rem;color:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#64748B{% endif %}">{{ scans_mes }}/10 escaneos este mes</span>
           </div>
         </div>
       </div>
-      <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
+      <a href="/#precios"><button style="background:#16A34A;color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
     </div>
     {% endif %}
 
@@ -284,9 +284,9 @@ a{text-decoration:none;color:inherit}
 
     <div class="panel" id="panel-historial">
       {% if plan == 'free' %}
-      <div style="background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:7px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-        <span style="font-size:.82rem;color:#60A5FA">Plan Free: solo se muestran los últimos 3 escaneos.</span>
-        <a href="/#precios" style="font-size:.78rem;font-weight:700;color:#3B82F6;white-space:nowrap">Pásate a Pro para ver todo el historial →</a>
+      <div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:7px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <span style="font-size:.82rem;color:#4ADE80">Plan Free: solo se muestran los últimos 3 escaneos.</span>
+        <a href="/#precios" style="font-size:.78rem;font-weight:700;color:#22C55E;white-space:nowrap">Pásate a Pro para ver todo el historial →</a>
       </div>
       {% endif %}
       <div class="empty" id="hist-empty"><div class="empty-icon">*</div><h3>Sin escaneos recientes</h3><p>El historial aparecera aqui.</p></div>
@@ -322,7 +322,7 @@ a{text-decoration:none;color:inherit}
     <div class="panel" id="panel-vigilancia">
       {% if plan == 'free' %}
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;padding:2rem">
-        <div style="width:72px;height:72px;border-radius:16px;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1.5rem">🔒</div>
+        <div style="width:72px;height:72px;border-radius:16px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1.5rem">🔒</div>
         <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.75rem">Solo disponible en Pro</div>
         <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem">Vigilancia nocturna 24/7</h2>
         <p style="color:var(--muted);font-size:.9rem;max-width:440px;line-height:1.7;margin-bottom:2rem">Cada noche a las 3:00 AM ReconBase escanea tu dominio automaticamente. Si detecta algo nuevo o el riesgo sube, recibes un email al instante. Tu duermes, nosotros vigilamos.</p>
@@ -332,7 +332,7 @@ a{text-decoration:none;color:inherit}
           <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Historial completo de vigilancia</div>
           <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Sin hacer nada, funciona solo</div>
         </div>
-        <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.85rem 2.5rem;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer">Activar vigilancia — Pro 29€/mes</button></a>
+        <a href="/#precios"><button style="background:#16A34A;color:#fff;border:none;padding:.85rem 2.5rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer">Activar vigilancia — Pro 29€/mes</button></a>
       </div>
       {% else %}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
@@ -355,7 +355,7 @@ a{text-decoration:none;color:inherit}
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
           <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Horario configurado</div>
           <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ '%02d:00'|format(scan_hora) }} · hora de Madrid</div>
-          <div style="font-size:.82rem;color:var(--muted)">{% set dias_nombres = ['L','M','X','J','V','S','D'] %}{% for d in range(7) %}<span style="{% if d|string in scan_dias %}color:#60A5FA{% else %}color:var(--dim){% endif %};margin-right:4px">{{ dias_nombres[d] }}</span>{% endfor %}</div>
+          <div style="font-size:.82rem;color:var(--muted)">{% set dias_nombres = ['L','M','X','J','V','S','D'] %}{% for d in range(7) %}<span style="{% if d|string in scan_dias %}color:#4ADE80{% else %}color:var(--dim){% endif %};margin-right:4px">{{ dias_nombres[d] }}</span>{% endfor %}</div>
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
           <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Ultimo escaneo automatico</div>
@@ -374,7 +374,7 @@ a{text-decoration:none;color:inherit}
         <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Configurar horario de vigilancia</div>
         <div style="margin-bottom:1.25rem">
           <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer">
-            <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#2563EB;width:16px;height:16px;cursor:pointer" onchange="toggleVigConfig()">
+            <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer" onchange="toggleVigConfig()">
             <span style="font-size:.88rem;font-weight:600">Activar escaneo automático</span>
           </label>
         </div>
@@ -392,21 +392,21 @@ a{text-decoration:none;color:inherit}
               {% set dias_nombres = [('L',0),('M',1),('X',2),('J',3),('V',4),('S',5),('D',6)] %}
               {% for nombre, num in dias_nombres %}
               <label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer">
-                <input type="checkbox" id="dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#2563EB;width:16px;height:16px;cursor:pointer">
+                <input type="checkbox" id="dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer">
                 <span style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ nombre }}</span>
               </label>
               {% endfor %}
             </div>
           </div>
           <div style="display:flex;align-items:flex-end">
-            <button onclick="guardarHorario()" style="background:#2563EB;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar horario</button>
+            <button onclick="guardarHorario()" style="background:#16A34A;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar horario</button>
           </div>
         </div>
         <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
         </div><!-- /vig-config -->
         <div id="vig-msg-off" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
         <div style="margin-top:1rem;{% if scan_dias %}display:none{% endif %}" id="vig-save-off">
-          <button onclick="guardarHorario()" style="background:#475569;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button>
+          <button onclick="guardarHorario()" style="background:#475569;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button>
         </div>
       </div>
       {% if ultimo_auto %}
@@ -659,7 +659,7 @@ function renderRadarChart(d, canvasId, existing, setter) {
     type: 'radar',
     data: {
       labels: ['Red','SPF','DMARC','Subdominios','Filtraciones'],
-      datasets: [{ data: vals, backgroundColor: 'rgba(59,130,246,.2)', borderColor: '#3B82F6', pointBackgroundColor: '#3B82F6', pointRadius: 3 }]
+      datasets: [{ data: vals, backgroundColor: 'rgba(22,163,74,.2)', borderColor: '#22C55E', pointBackgroundColor: '#22C55E', pointRadius: 3 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -683,7 +683,7 @@ function renderDashboard() {
   var vals = keys.map(function(k){ return des[k]; });
   dashDesglosChart = new Chart(document.getElementById('dash-desglose').getContext('2d'), {
     type: 'bar',
-    data: { labels: keys, datasets: [{ data: vals, backgroundColor: 'rgba(59,130,246,.6)', borderRadius: 4, borderWidth: 0, barThickness: 16 }] },
+    data: { labels: keys, datasets: [{ data: vals, backgroundColor: 'rgba(22,163,74,.6)', borderRadius: 4, borderWidth: 0, barThickness: 16 }] },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
       scales: {
@@ -775,7 +775,7 @@ function renderHistorial() {
     row += '<td style="color:var(--muted)">' + puertosLen + '</td>';
     row += '<td style="color:var(--muted)">' + h.leaks + '</td>';
     row += '<td style="color:var(--dim);font-size:.78rem">' + h.timestamp + '</td>';
-    row += '<td><button onclick="verScanHistorial(' + i + ')" style="background:transparent;border:1px solid var(--border);color:var(--blue-lt);padding:.25rem .7rem;border-radius:5px;font-family:\'Syne\',sans-serif;font-size:.75rem;cursor:pointer">Ver</button></td>';
+    row += '<td><button onclick="verScanHistorial(' + i + ')" style="background:transparent;border:1px solid var(--border);color:var(--blue-lt);padding:.25rem .7rem;border-radius:5px;font-family:\'Inter\',sans-serif;font-size:.75rem;cursor:pointer">Ver</button></td>';
     row += '</tr>';
     return row;
   }).join('');
@@ -830,8 +830,8 @@ function renderTendencia() {
       labels: labels,
       datasets: [{
         data: scores,
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59,130,246,.08)',
+        borderColor: '#22C55E',
+        backgroundColor: 'rgba(22,163,74,.08)',
         pointBackgroundColor: colors,
         pointBorderColor: colors,
         pointRadius: 5,
