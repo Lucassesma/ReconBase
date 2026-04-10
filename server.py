@@ -241,7 +241,7 @@ def dashboard():
                            plan=current_user.plan, scans_mes=scans_mes,
                            ultimo_auto=ultimo_auto,
                            scan_hora=current_user.scan_hora if current_user.scan_hora is not None else 3,
-                           scan_dias=(current_user.scan_dias or '0,1,2,3,4,5,6').split(','))
+                           scan_dias=current_user.scan_dias.split(',') if current_user.scan_dias else [])
 
 # ── SCAN ──
 def calcular_riesgo(puertos, dns, leaks, headers):
