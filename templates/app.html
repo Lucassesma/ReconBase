@@ -131,6 +131,7 @@ a{text-decoration:none;color:inherit}
     <div class="tab" onclick="switchTab('dashboard',this)">Dashboard</div>
     <div class="tab" onclick="switchTab('exportar',this)">Exportar</div>
     <div class="tab" onclick="switchTab('historial',this)">Historial</div>
+    <div class="tab" onclick="switchTab('tendencia',this)">Tendencia</div>
     <div class="tab" onclick="switchTab('vigilancia',this)">Vigilancia {% if plan == 'free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}</div>
   </div>
 
@@ -291,6 +292,26 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
+    <div class="panel" id="panel-tendencia">
+      <div class="empty" id="tend-empty"><div class="empty-icon">📈</div><h3>Sin datos de tendencia</h3><p>Haz al menos 2 escaneos para ver la evolución del riesgo.</p></div>
+      <div id="tend-content" style="display:none">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.5rem" id="tend-stats"></div>
+        <div class="chart-card" style="margin-bottom:1rem">
+          <h4>Evolución del riesgo</h4>
+          <div class="chart-wrap" style="height:280px"><canvas id="tend-chart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Desglose por escaneo</h4>
+          <div style="overflow-x:auto;margin-top:.5rem">
+            <table class="hist-table" id="tend-table">
+              <thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Subdominios</th><th>Fecha</th></tr></thead>
+              <tbody id="tend-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="panel" id="panel-vigilancia">
       {% if plan == 'free' %}
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;padding:2rem">
@@ -412,6 +433,7 @@ function switchTab(name, el) {
   if(name === 'dashboard' && lastData) renderDashboard();
   if(name === 'exportar') renderExport();
   if(name === 'historial') renderHistorial();
+  if(name === 'tendencia') renderTendencia();
 }
 
 // ── SCAN ──
@@ -739,6 +761,85 @@ function verScanHistorial(i) {
   renderResults(h);
 }
 
+// ── TENDENCIA ──
+var tendChart = null;
+function renderTendencia() {
+  if(historial.length < 2) {
+    document.getElementById('tend-empty').style.display = 'block';
+    document.getElementById('tend-content').style.display = 'none';
+    return;
+  }
+  document.getElementById('tend-empty').style.display = 'none';
+  document.getElementById('tend-content').style.display = 'block';
+
+  var rev = historial.slice().reverse();
+  var labels = rev.map(function(h, i){ return h.dominio || h.objetivo || ('#' + (i+1)); });
+  var scores = rev.map(function(h){ return h.riesgo; });
+  var colors = scores.map(function(r){ return r >= 70 ? '#EF4444' : r >= 40 ? '#F59E0B' : '#10B981'; });
+
+  var max = Math.max.apply(null, scores);
+  var min = Math.min.apply(null, scores);
+  var avg = Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length);
+  var trend = scores[scores.length-1] - scores[0];
+
+  document.getElementById('tend-stats').innerHTML =
+    stat('Riesgo máximo', max + '%', max >= 70 ? '#EF4444' : max >= 40 ? '#F59E0B' : '#10B981') +
+    stat('Riesgo mínimo', min + '%', min >= 70 ? '#EF4444' : min >= 40 ? '#F59E0B' : '#10B981') +
+    stat('Media', avg + '%', '#64748B') +
+    stat('Tendencia', (trend > 0 ? '+' : '') + trend + '%', trend > 0 ? '#EF4444' : trend < 0 ? '#10B981' : '#64748B');
+
+  if(tendChart) tendChart.destroy();
+  tendChart = new Chart(document.getElementById('tend-chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: scores,
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59,130,246,.08)',
+        pointBackgroundColor: colors,
+        pointBorderColor: colors,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.35,
+        fill: true,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      scales: {
+        x: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { color: '#1E2D4A' } },
+        y: { min: 0, max: 100, ticks: { color: '#64748B', callback: function(v){ return v + '%'; } }, grid: { color: '#1E2D4A' } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx){ return ' Riesgo: ' + ctx.parsed.y + '%'; } } }
+      }
+    }
+  });
+
+  document.getElementById('tend-tbody').innerHTML = rev.map(function(h, i) {
+    var cls = h.riesgo >= 70 ? 'rp-high' : h.riesgo >= 40 ? 'rp-med' : 'rp-low';
+    return '<tr>' +
+      '<td style="color:var(--dim)">' + (i+1) + '</td>' +
+      '<td style="color:#93C5FD">' + (h.objetivo||'-') + '</td>' +
+      '<td><span class="risk-pill ' + cls + '">' + h.riesgo + '% ' + h.label + '</span></td>' +
+      '<td style="color:var(--muted)">' + (h.puertos ? h.puertos.length : 0) + '</td>' +
+      '<td style="color:var(--muted)">' + (h.leaks||0) + '</td>' +
+      '<td style="color:var(--muted)">' + (h.subs ? h.subs.length : 0) + '</td>' +
+      '<td style="color:var(--dim);font-size:.78rem">' + (h.timestamp||'-') + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function stat(label, val, color) {
+  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem">' +
+    '<div style="font-size:.68rem;font-family:\'JetBrains Mono\',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem">' + label + '</div>' +
+    '<div style="font-size:1.6rem;font-weight:800;letter-spacing:-.04em;color:' + color + '">' + val + '</div>' +
+    '</div>';
+}
+
 async function guardarHorario() {
   var hora = parseInt(document.getElementById('vig-hora').value);
   var dias = [];
@@ -771,7 +872,7 @@ function cerrarSesion() {
 loadHistorial();
 var urlTab = new URLSearchParams(window.location.search).get('tab');
 if(urlTab) {
-  var tabEl = document.querySelector('.tab:nth-child(' + ({auditoria:1,dashboard:2,exportar:3,historial:4,vigilancia:5}[urlTab]||1) + ')');
+  var tabEl = document.querySelector('.tab:nth-child(' + ({auditoria:1,dashboard:2,exportar:3,historial:4,tendencia:5,vigilancia:6}[urlTab]||1) + ')');
   if(tabEl) switchTab(urlTab, tabEl);
 }
 </script>
