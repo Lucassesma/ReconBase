@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ReconBase App</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%233B82F6'>B</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -244,7 +245,7 @@ a{text-decoration:none;color:inherit}
       <div class="empty" id="hist-empty"><div class="empty-icon">*</div><h3>Sin escaneos recientes</h3><p>El historial aparecera aqui.</p></div>
       <div id="hist-content" style="display:none">
         <table class="hist-table">
-          <thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th></tr></thead>
+          <thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th><th></th></tr></thead>
           <tbody id="hist-tbody"></tbody>
         </table>
         <button class="btn-clear" onclick="clearHistorial()">Limpiar historial</button>
@@ -570,16 +571,33 @@ function renderHistorial() {
   document.getElementById('hist-tbody').innerHTML = historial.map(function(h, i) {
     var cls = h.riesgo >= 70 ? 'rp-high' : h.riesgo >= 40 ? 'rp-med' : 'rp-low';
     var puertosLen = h.puertos ? h.puertos.length : 0;
+    var auto = h.automatico ? '<span style="font-size:.65rem;color:var(--blue-lt);font-family:\'JetBrains Mono\',monospace;margin-left:4px">AUTO</span>' : '';
     var row = '<tr>';
     row += '<td style="color:var(--dim)">' + (i+1) + '</td>';
-    row += '<td style="color:#93C5FD">' + h.objetivo + '</td>';
+    row += '<td style="color:#93C5FD">' + h.objetivo + auto + '</td>';
     row += '<td><span class="risk-pill ' + cls + '">' + h.riesgo + '% ' + h.label + '</span></td>';
     row += '<td style="color:var(--muted)">' + puertosLen + '</td>';
     row += '<td style="color:var(--muted)">' + h.leaks + '</td>';
     row += '<td style="color:var(--dim);font-size:.78rem">' + h.timestamp + '</td>';
+    row += '<td><button onclick="verScanHistorial(' + i + ')" style="background:transparent;border:1px solid var(--border);color:var(--blue-lt);padding:.25rem .7rem;border-radius:5px;font-family:\'Syne\',sans-serif;font-size:.75rem;cursor:pointer">Ver</button></td>';
     row += '</tr>';
     return row;
   }).join('');
+}
+
+function verScanHistorial(i) {
+  var h = historial[i];
+  if(!h) return;
+  lastData = h;
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.panel');
+  tabs.forEach(function(t){ t.classList.remove('active'); });
+  panels.forEach(function(p){ p.classList.remove('active'); });
+  tabs[0].classList.add('active');
+  document.getElementById('panel-auditoria').classList.add('active');
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results').classList.add('show');
+  renderResults(h);
 }
 
 function cerrarSesion() {
