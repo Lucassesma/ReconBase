@@ -282,6 +282,12 @@ a{text-decoration:none;color:inherit}
     </div>
 
     <div class="panel" id="panel-historial">
+      {% if plan == 'free' %}
+      <div style="background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:7px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <span style="font-size:.82rem;color:#60A5FA">Plan Free: solo se muestran los últimos 3 escaneos.</span>
+        <a href="/#precios" style="font-size:.78rem;font-weight:700;color:#3B82F6;white-space:nowrap">Pásate a Pro para ver todo el historial →</a>
+      </div>
+      {% endif %}
       <div class="empty" id="hist-empty"><div class="empty-icon">*</div><h3>Sin escaneos recientes</h3><p>El historial aparecera aqui.</p></div>
       <div id="hist-content" style="display:none">
         <table class="hist-table">
@@ -331,11 +337,19 @@ a{text-decoration:none;color:inherit}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
           <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Estado</div>
+          {% if scan_dias %}
           <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
             <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease infinite"></span>
             <span style="font-weight:700;font-size:1rem">Vigilancia activa</span>
           </div>
           <div style="font-size:.82rem;color:var(--muted)">Tu dominio se escanea segun tu horario configurado</div>
+          {% else %}
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span>
+            <span style="font-weight:700;font-size:1rem;color:var(--muted)">Vigilancia desactivada</span>
+          </div>
+          <div style="font-size:.82rem;color:var(--dim)">Activa el escaneo automatico en la configuracion</div>
+          {% endif %}
         </div>
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
           <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Horario configurado</div>
@@ -357,6 +371,13 @@ a{text-decoration:none;color:inherit}
       <!-- Configuración del horario -->
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin-bottom:1.25rem">
         <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Configurar horario de vigilancia</div>
+        <div style="margin-bottom:1.25rem">
+          <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer">
+            <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#2563EB;width:16px;height:16px;cursor:pointer" onchange="toggleVigConfig()">
+            <span style="font-size:.88rem;font-weight:600">Activar escaneo automático</span>
+          </label>
+        </div>
+        <div id="vig-config" style="{% if not scan_dias %}display:none{% endif %}">
         <div style="display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start">
           <div>
             <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Hora del escaneo</div>
@@ -381,6 +402,11 @@ a{text-decoration:none;color:inherit}
           </div>
         </div>
         <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
+        </div><!-- /vig-config -->
+        <div id="vig-msg-off" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
+        <div style="margin-top:1rem;{% if scan_dias %}display:none{% endif %}" id="vig-save-off">
+          <button onclick="guardarHorario()" style="background:#475569;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button>
+        </div>
       </div>
       {% if ultimo_auto %}
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
@@ -840,18 +866,27 @@ function stat(label, val, color) {
     '</div>';
 }
 
+function toggleVigConfig() {
+  var activo = document.getElementById('vig-activo').checked;
+  document.getElementById('vig-config').style.display = activo ? 'block' : 'none';
+  document.getElementById('vig-save-off').style.display = activo ? 'none' : 'block';
+}
+
 async function guardarHorario() {
-  var hora = parseInt(document.getElementById('vig-hora').value);
+  var activo = document.getElementById('vig-activo').checked;
+  var hora = activo ? parseInt(document.getElementById('vig-hora').value) : 3;
   var dias = [];
-  for(var i=0; i<7; i++) {
-    var cb = document.getElementById('dia-'+i);
-    if(cb && cb.checked) dias.push(i);
+  if(activo) {
+    for(var i=0; i<7; i++) {
+      var cb = document.getElementById('dia-'+i);
+      if(cb && cb.checked) dias.push(i);
+    }
+    if(dias.length === 0) { mostrarMsgVig('Selecciona al menos un dia', false); return; }
   }
-  if(dias.length === 0) { mostrarMsgVig('Selecciona al menos un dia', false); return; }
   var r = await fetch('/api/horario', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hora, dias})});
   var d = await r.json();
   if(d.ok) {
-    mostrarMsgVig('Horario guardado. Actualizando...', true);
+    mostrarMsgVig('Guardado. Actualizando...', true);
     setTimeout(function(){ window.location.href = '/app?tab=vigilancia'; }, 800);
   } else mostrarMsgVig(d.error || 'Error al guardar', false);
 }

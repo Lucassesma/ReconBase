@@ -203,8 +203,11 @@ def perfil():
         extract('year',  Scan.timestamp) == now.year
     ).count()
     total_scans = Scan.query.filter_by(user_id=current_user.id).count()
+    scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
+    scan_dias = (current_user.scan_dias or '').split(',') if current_user.scan_dias else []
     return render_template("perfil.html", user=current_user,
-                           scans_mes=scans_mes, total_scans=total_scans)
+                           scans_mes=scans_mes, total_scans=total_scans,
+                           scan_hora=scan_hora, scan_dias=scan_dias)
 
 @app.route("/api/cambiar-password", methods=["POST"])
 @login_required
@@ -387,7 +390,8 @@ def scan():
 @app.route("/api/historial", methods=["GET"])
 @login_required
 def historial():
-    scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).limit(20).all()
+    limite = 3 if current_user.plan == 'free' else 50
+    scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).limit(limite).all()
     return jsonify([s.resultado for s in scans])
 
 @app.route("/api/pdf", methods=["POST"])
@@ -458,55 +462,43 @@ def generar_pdf():
 def enviar_informe_automatico(destinatario, dominio, riesgo, label, desglose, puertos, num_subs):
     def _send():
         try:
-            if riesgo >= 70:   emoji = "🔴"
-            elif riesgo >= 40: emoji = "🟡"
-            else:              emoji = "🟢"
-
+            nivel = "CRITICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
             puertos_txt = ""
             if puertos:
                 lista = ", ".join([f"{p['puerto']}/{p['servicio']}" for p in puertos[:5]])
-                puertos_txt = f"  ⚠ Puertos expuestos: {lista}\n"
-
+                puertos_txt = f"  - Puertos expuestos: {lista}\n"
             desglose_txt = ""
             consejos = {
-                "DMARC ausente": "Configura un registro DMARC en tu DNS para evitar que terceros envien emails suplantando tu dominio.",
-                "SPF ausente":   "Añade un registro SPF en tu DNS para proteger tu dominio de suplantacion de identidad.",
-                "Red":           "Revisa los puertos abiertos en tu servidor y cierra los que no sean necesarios.",
-                "Headers":       "Configura cabeceras de seguridad HTTP como HSTS, CSP y X-Frame-Options en tu servidor web.",
+                "DMARC ausente": "Configura un registro DMARC en tu DNS para evitar suplantacion de identidad.",
+                "SPF ausente":   "Añade un registro SPF en tu DNS para proteger tu dominio.",
+                "Red":           "Revisa los puertos abiertos y cierra los que no sean necesarios.",
+                "Headers":       "Configura cabeceras de seguridad HTTP (HSTS, CSP, X-Frame-Options).",
             }
             for k, v in desglose.items():
                 if v > 0:
                     consejo = consejos.get(k, "Accede al dashboard para ver los detalles.")
-                    desglose_txt += f"  ⚠ {k}\n     {consejo}\n\n"
-
+                    desglose_txt += f"  - {k}: {consejo}\n"
+            cuerpo = (
+                f"Hola,\n\n"
+                f"ReconBase ha completado el escaneo automatico de tu dominio.\n\n"
+                f"DOMINIO:           {dominio}\n"
+                f"NIVEL DE RIESGO:   {riesgo}% - {label} ({nivel})\n"
+                f"PUERTOS EXPUESTOS: {len(puertos)}\n"
+                f"SUBDOMINIOS:       {num_subs}\n\n"
+                f"{'PUNTOS A REVISAR:' if desglose_txt else 'Todo en orden, no se detectaron problemas criticos.'}\n"
+                f"{desglose_txt}{puertos_txt}\n"
+                f"Ver informe completo:\n"
+                f"https://reconbase-production.up.railway.app/app\n\n"
+                f"--\nReconBase - Vigilancia automatica Pro\n"
+            )
             with app.app_context():
                 msg = Message(
-                    subject=f"{emoji} ReconBase — Informe nocturno de {dominio}",
+                    subject=f"[ReconBase] Informe automatico de {dominio} - {nivel}",
                     recipients=[destinatario],
-                    body=f"""Hola,
-
-ReconBase ha completado el escaneo automatico programado de tu dominio.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  DOMINIO ANALIZADO: {dominio}
-  NIVEL DE RIESGO:   {riesgo}% — {label} {emoji}
-  PUERTOS EXPUESTOS: {len(puertos)}
-  SUBDOMINIOS:       {num_subs}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{"PUNTOS A REVISAR:" if desglose_txt else "Todo en orden, no se detectaron problemas criticos."}
-
-{desglose_txt}{puertos_txt}
-Accede a tu dashboard para ver el informe completo:
-
-  → https://reconbase-production.up.railway.app/app
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ReconBase — Vigilancia nocturna Pro
-Este informe ha sido generado automaticamente segun tu horario configurado.
-"""
+                    body=cuerpo
                 )
                 mail.send(msg)
+                print(f"[Cron] Email enviado a {destinatario}")
         except Exception as e:
             print(f"[!] Error enviando informe automatico: {e}")
     threading.Thread(target=_send, daemon=True).start()
@@ -520,9 +512,13 @@ def escaneo_automatico():
 
         usuarios_pro = User.query.filter_by(plan='pro').all()
         for user in usuarios_pro:
+            if not user.scan_dias:
+                continue  # vigilancia desactivada
+            dias = [int(d) for d in user.scan_dias.split(',') if d.strip()]
+            if not dias:
+                continue
             if user.scan_hora != hora_actual:
                 continue
-            dias = [int(d) for d in (user.scan_dias or '0,1,2,3,4,5,6').split(',') if d.strip()]
             if dia_actual not in dias:
                 continue
             ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()

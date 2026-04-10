@@ -108,7 +108,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     {% else %}
     <div class="info-row">
       <span class="info-label">Vigilancia nocturna</span>
-      <span class="info-val" style="color:var(--green)">Activa · cada noche a las 3:00 AM</span>
+      {% if scan_dias %}
+      <span class="info-val" style="color:var(--green)">Activa · {{ '%02d:00'|format(scan_hora) }}h · {% set dias_map = ['L','M','X','J','V','S','D'] %}{% for d in range(7) %}{% if d|string in scan_dias %}<span style="color:#60A5FA">{{ dias_map[d] }}</span>{% else %}<span style="color:#334155">{{ dias_map[d] }}</span>{% endif %}{% endfor %}</span>
+      {% else %}
+      <span class="info-val" style="color:var(--muted)">Desactivada</span>
+      {% endif %}
     </div>
     <div class="info-row">
       <span class="info-label">Escaneos</span>
