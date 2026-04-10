@@ -203,8 +203,12 @@ def dashboard():
         extract('month', Scan.timestamp) == now.month,
         extract('year',  Scan.timestamp) == now.year
     ).count()
+    ultimo_auto = Scan.query.filter_by(user_id=current_user.id).filter(
+        Scan.resultado.op('->>')('automatico') == 'true'
+    ).order_by(Scan.timestamp.desc()).first()
     return render_template("app.html", api_key_ok=bool(API_KEY),
-                           plan=current_user.plan, scans_mes=scans_mes)
+                           plan=current_user.plan, scans_mes=scans_mes,
+                           ultimo_auto=ultimo_auto)
 
 # ── SCAN ──
 def calcular_riesgo(puertos, dns, leaks, headers):

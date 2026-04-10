@@ -131,6 +131,7 @@ a{text-decoration:none;color:inherit}
     <div class="tab" onclick="switchTab('dashboard',this)">Dashboard</div>
     <div class="tab" onclick="switchTab('exportar',this)">Exportar</div>
     <div class="tab" onclick="switchTab('historial',this)">Historial</div>
+    <div class="tab" onclick="switchTab('vigilancia',this)">Vigilancia {% if plan == 'free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}</div>
   </div>
 
   <div class="content">
@@ -288,6 +289,73 @@ a{text-decoration:none;color:inherit}
         </table>
         <button class="btn-clear" onclick="clearHistorial()">Limpiar historial</button>
       </div>
+    </div>
+
+    <div class="panel" id="panel-vigilancia">
+      {% if plan == 'free' %}
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;padding:2rem">
+        <div style="width:72px;height:72px;border-radius:16px;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1.5rem">🔒</div>
+        <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.75rem">Solo disponible en Pro</div>
+        <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem">Vigilancia nocturna 24/7</h2>
+        <p style="color:var(--muted);font-size:.9rem;max-width:440px;line-height:1.7;margin-bottom:2rem">Cada noche a las 3:00 AM ReconBase escanea tu dominio automaticamente. Si detecta algo nuevo o el riesgo sube, recibes un email al instante. Tu duermes, nosotros vigilamos.</p>
+        <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem;text-align:left;width:100%;max-width:320px">
+          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Escaneo automatico cada noche</div>
+          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Alerta por email si sube el riesgo</div>
+          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Historial completo de vigilancia</div>
+          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Sin hacer nada, funciona solo</div>
+        </div>
+        <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.85rem 2.5rem;border-radius:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer">Activar vigilancia — Pro 29€/mes</button></a>
+      </div>
+      {% else %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-bottom:1.5rem">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Estado</div>
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease infinite"></span>
+            <span style="font-weight:700;font-size:1rem">Vigilancia activa</span>
+          </div>
+          <div style="font-size:.82rem;color:var(--muted)">Tu dominio se escanea automaticamente cada noche</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Proximo escaneo</div>
+          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">Esta noche a las 3:00 AM</div>
+          <div style="font-size:.82rem;color:var(--muted)">Hora de Madrid · automatico</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Ultimo escaneo automatico</div>
+          {% if ultimo_auto %}
+          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ ultimo_auto.resultado.get('riesgo', 0) }}% — {{ ultimo_auto.resultado.get('label', '') }}</div>
+          <div style="font-size:.82rem;color:var(--muted)">{{ ultimo_auto.timestamp.strftime('%d %b %Y · %H:%M') }}</div>
+          {% else %}
+          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">Pendiente</div>
+          <div style="font-size:.82rem;color:var(--muted)">El primer escaneo sera esta noche</div>
+          {% endif %}
+        </div>
+      </div>
+      {% if ultimo_auto %}
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1rem">Resultado del ultimo escaneo automatico</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Dominio</div>
+            <div style="font-size:.85rem;font-weight:700;color:#93C5FD">{{ ultimo_auto.dominio }}</div>
+          </div>
+          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Puertos expuestos</div>
+            <div style="font-size:1.2rem;font-weight:800">{{ ultimo_auto.resultado.get('puertos', [])|length }}</div>
+          </div>
+          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Filtraciones</div>
+            <div style="font-size:1.2rem;font-weight:800">{{ ultimo_auto.resultado.get('leaks', 0) }}</div>
+          </div>
+          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Subdominios</div>
+            <div style="font-size:1.2rem;font-weight:800">{{ ultimo_auto.resultado.get('subs', [])|length }}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
     </div>
 
   </div>
