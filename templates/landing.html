@@ -133,7 +133,10 @@
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#080C14;--surface:#0D1220;--border:#1E2D4A;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--blue:#2563EB;--blue-dk:#1D4ED8;--blue-lt:#3B82F6;--green:#10B981;--red:#EF4444;--amber:#F59E0B}
@@ -346,7 +349,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="log" id="tlog2" style="opacity:0"><span class="lt">03:00:04</span><span class="lok">[OK]</span><span class="lmsg">Red perimetral limpia. 0 puertos expuestos.</span></div>
       <div class="log" id="tlog3" style="opacity:0"><span class="lt">03:00:07</span><span class="lok">[OK]</span><span class="lmsg">SPF y DMARC verificados correctamente.</span></div>
       <div class="log" id="tlog4" style="opacity:0"><span class="lt">03:00:12</span><span class="lwarn">[WARN]</span><span class="lmsg">Nuevo subdominio detectado</span><span class="ltgt" style="color:#FBBF24">staging.tuempresa.com</span></div>
-      <div class="log" id="tlog5" style="opacity:0"><span class="lt">03:00:18</span><span class="lcrit">[ALERT]</span><span class="lmsg">Filtracion detectada en HIBP</span><span class="ltgt" style="color:#F87171"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3a5b5e5753547a4e4f5f574a485f495b14595557">[email&#160;protected]</a></span></div>
+      <div class="log" id="tlog5" style="opacity:0"><span class="lt">03:00:18</span><span class="lcrit">[ALERT]</span><span class="lmsg">Filtracion detectada en HIBP</span><span class="ltgt" style="color:#F87171">admin@tuempresa.com</span></div>
       <div class="log" id="tlog6" style="opacity:0"><span class="lt">03:00:19</span><span class="lcrit">[NOTIF]</span><span class="lmsg">Alerta enviada al responsable de seguridad.</span></div>
     </div>
   </div>
@@ -367,8 +370,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="demo-preview">
       <div class="demo-panel active" id="dp-0">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Centro de analisis</div>
-        <div class="dp-scan"><input class="dp-input" type="text" value="miempresa.com" id="demo-input"><button class="dp-btn" onclick="setDemo(1,document.querySelectorAll('.demo-step-btn')[1])">ESCANEAR</button></div>
-        <div style="font-size:.78rem;color:var(--dim);margin-top:.5rem">Tambien acepta emails: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fa9b9e979394ba97939f978a889f899bd4999597">[email&#160;protected]</a></div>
+        <div class="dp-scan"><label for="demo-input" style="display:none">Dominio a analizar</label><input class="dp-input" type="text" value="miempresa.com" id="demo-input" aria-label="Dominio a analizar"><button class="dp-btn" onclick="setDemo(1,document.querySelectorAll('.demo-step-btn')[1])">ESCANEAR</button></div>
+        <div style="font-size:.78rem;color:var(--dim);margin-top:.5rem">Tambien acepta emails: <span style="color:#60A5FA">admin@tuempresa.com</span></div>
         <div style="margin-top:1.5rem;padding:1rem;background:#080C14;border-radius:8px;border:1px solid var(--border)">
           <div style="font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:.75rem">ULTIMOS ANALISIS</div>
           <div style="font-size:.8rem;color:#475569;font-family:'JetBrains Mono',monospace;line-height:2">
@@ -494,7 +497,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="f-links"><a href="/privacy">Privacidad</a><a href="/terms">Terminos</a><a href="mailto:ReconBase.alertas@gmail.com">Contacto</a></div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 function animarTerminal(){
   ['tlog1','tlog2','tlog3','tlog4','tlog5','tlog6'].forEach((id,i)=>{
     setTimeout(()=>{
