@@ -125,25 +125,38 @@ def stripe_webhook():
     secret     = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, secret)
-    except Exception:
+    except Exception as e:
+        print(f"[Webhook] Firma invalida: {e}")
         return jsonify({"error": "firma invalida"}), 400
 
-    if event["type"] == "checkout.session.completed":
-        email = (event["data"]["object"].get("customer_email") or
-                 event["data"]["object"].get("customer_details", {}).get("email"))
-        if email:
-            user = User.query.filter_by(email=email).first()
-            if user:
-                user.plan = "pro"
-                db.session.commit()
+    try:
+        obj = event["data"]["object"]
+        if event["type"] == "checkout.session.completed":
+            email = obj.get("customer_email")
+            if not email:
+                details = obj.get("customer_details")
+                if details and isinstance(details, dict):
+                    email = details.get("email")
+            print(f"[Webhook] checkout completado, email={email}")
+            if email:
+                user = User.query.filter_by(email=email).first()
+                if user:
+                    user.plan = "pro"
+                    db.session.commit()
+                    print(f"[Webhook] Plan actualizado a pro para {email}")
+                else:
+                    print(f"[Webhook] Usuario no encontrado: {email}")
 
-    elif event["type"] == "customer.subscription.deleted":
-        email = event["data"]["object"].get("metadata", {}).get("email")
-        if email:
-            user = User.query.filter_by(email=email).first()
-            if user:
-                user.plan = "free"
-                db.session.commit()
+        elif event["type"] == "customer.subscription.deleted":
+            email = obj.get("metadata", {}).get("email")
+            if email:
+                user = User.query.filter_by(email=email).first()
+                if user:
+                    user.plan = "free"
+                    db.session.commit()
+    except Exception as e:
+        print(f"[Webhook] Error procesando evento: {e}")
+        return jsonify({"error": str(e)}), 500
 
     return jsonify({"ok": True})
 
