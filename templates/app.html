@@ -139,6 +139,13 @@ a{text-decoration:none;color:inherit}
     <div class="api-warn">RECONBASE_API_KEY no configurada. Las busquedas de filtraciones estaran desactivadas.</div>
     {% endif %}
 
+    {% if plan == 'free' %}
+    <div style="background:linear-gradient(90deg,#1e3a5f,#1e2d4a);border-bottom:1px solid #2563EB;padding:.75rem 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+      <span style="font-size:.82rem;color:#93C5FD">⚡ Plan Free — <strong style="color:#E2EDF8">{{ 10 - scans_mes }} escaneos restantes este mes</strong> · Tu empresa no está siendo vigilada automáticamente cada noche</span>
+      <a href="/#precios"><button style="background:#2563EB;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer">Pásate a Pro — 29€/mes</button></a>
+    </div>
+    {% endif %}
+
     <div class="panel active" id="panel-auditoria">
       <div class="scanner-bar">
         <input class="scan-input" id="objetivo" type="text" placeholder="empresa.com  o  admin@empresa.com" onkeydown="if(event.key==='Enter')lanzarScan()">
@@ -227,9 +234,13 @@ a{text-decoration:none;color:inherit}
         <div class="export-grid">
           <div class="export-card">
             <div class="export-icon">*</div>
-            <div class="export-title">Informe PDF Ejecutivo</div>
+            <div class="export-title">Informe PDF Ejecutivo {% if plan == 'free' %}<span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:6px">🔒 PRO</span>{% endif %}</div>
             <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones.</div>
+            {% if plan == 'free' %}
+            <a href="/#precios"><button class="btn-export primary" style="opacity:.5;cursor:not-allowed" disabled>Requiere plan Pro</button></a>
+            {% else %}
             <button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>
+            {% endif %}
           </div>
           <div class="export-card">
             <div class="export-icon">*</div>
@@ -318,7 +329,11 @@ function lanzarScan() {
   .then(function(data) {
     clearInterval(stepInterval);
     if(data.error) {
-      alert('Error: ' + data.error);
+      if(data.error === 'limite_free') {
+        alert('Has alcanzado el límite de 10 escaneos este mes.\nPásate a Pro para escaneos ilimitados y vigilancia nocturna automática.');
+      } else {
+        alert('Error: ' + data.error);
+      }
       resetLoading();
       return;
     }

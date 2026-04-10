@@ -167,7 +167,15 @@ def stripe_webhook():
 @app.route("/app")
 @login_required
 def dashboard():
-    return render_template("app.html", api_key_ok=bool(API_KEY))
+    from sqlalchemy import extract
+    now = datetime.utcnow()
+    scans_mes = Scan.query.filter(
+        Scan.user_id == current_user.id,
+        extract('month', Scan.timestamp) == now.month,
+        extract('year',  Scan.timestamp) == now.year
+    ).count()
+    return render_template("app.html", api_key_ok=bool(API_KEY),
+                           plan=current_user.plan, scans_mes=scans_mes)
 
 # ── SCAN ──
 def calcular_riesgo(puertos, dns, leaks, headers):
@@ -251,6 +259,17 @@ Este analisis ha sido generado automaticamente.
 @app.route("/api/scan", methods=["POST"])
 @login_required
 def scan():
+    if current_user.plan == "free":
+        from sqlalchemy import extract
+        now = datetime.utcnow()
+        scans_mes = Scan.query.filter(
+            Scan.user_id == current_user.id,
+            extract('month', Scan.timestamp) == now.month,
+            extract('year',  Scan.timestamp) == now.year
+        ).count()
+        if scans_mes >= 10:
+            return jsonify({"error": "limite_free"}), 403
+
     data     = request.get_json()
     objetivo = data.get("objetivo","").strip().replace("https://","").replace("http://","").rstrip("/")
     if not objetivo:
