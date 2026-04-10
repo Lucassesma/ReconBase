@@ -271,53 +271,46 @@ def label_riesgo(score):
 def sanitizar(texto):
     return str(texto).encode("ascii","ignore").decode("ascii")
 
-def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose):
+def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_anterior=None):
     def _send():
         try:
-            emoji_nivel = "🔴" if riesgo >= 70 else "🟠" if riesgo >= 40 else "🟡"
+            nivel = "CRITICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
             consejos = {
-                "Red":            "Tienes puertos de red expuestos al exterior. Esto significa que servicios internos de tu empresa son accesibles desde internet. Contacta con tu proveedor de hosting para cerrarlos.",
-                "SPF ausente":    "Tu dominio no tiene proteccion SPF. Cualquiera podria enviar emails haciendose pasar por tu empresa. Añade un registro SPF en tu DNS.",
-                "DMARC ausente":  "Tu dominio no tiene DMARC configurado. Esto facilita los ataques de phishing usando tu nombre. Añade un registro DMARC en tu DNS.",
-                "Filtraciones":   "Se han encontrado datos de tu empresa en filtraciones conocidas. Cambia las contraseñas afectadas lo antes posible y activa la autenticacion en dos pasos.",
+                "Red":            "Tienes puertos de red expuestos al exterior. Contacta con tu proveedor de hosting para cerrarlos.",
+                "SPF ausente":    "Tu dominio no tiene proteccion SPF. Añade un registro SPF en tu DNS.",
+                "DMARC ausente":  "Tu dominio no tiene DMARC configurado. Añade un registro DMARC en tu DNS.",
+                "Filtraciones":   "Se han encontrado datos en filtraciones conocidas. Cambia las contraseñas afectadas.",
+                "CMS desactualizable": "Se ha detectado un CMS que puede tener vulnerabilidades. Mantén siempre la ultima version.",
             }
             desglose_txt = ""
             for k, v in desglose.items():
-                consejo = consejos.get(k, "Revisa este punto en tu dashboard.")
-                desglose_txt += f"  ⚠ {k}\n     {consejo}\n\n"
+                if v > 0:
+                    consejo = consejos.get(k, "Revisa este punto en tu dashboard.")
+                    desglose_txt += f"  - {k}: {consejo}\n"
 
+            subida_txt = ""
+            if riesgo_anterior is not None:
+                subida_txt = f"CAMBIO RESPECTO AL ANTERIOR: {riesgo_anterior}% -> {riesgo}% (+{riesgo - riesgo_anterior}%)\n\n"
+
+            cuerpo = (
+                f"Hola,\n\n"
+                f"ReconBase ha detectado un aumento en el nivel de riesgo de tu dominio.\n\n"
+                f"DOMINIO: {objetivo}\n"
+                f"RIESGO ACTUAL: {riesgo}% - {label} ({nivel})\n"
+                f"{subida_txt}"
+                f"PUNTOS A REVISAR:\n{desglose_txt}\n"
+                f"Ver informe completo:\n"
+                f"https://reconbase-production.up.railway.app/app\n\n"
+                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
             with app.app_context():
                 msg = Message(
-                    subject=f"{emoji_nivel} ReconBase ha detectado vulnerabilidades en {objetivo}",
+                    subject=f"[ReconBase] Alerta de seguridad en {objetivo} - {nivel}",
                     recipients=[destinatario],
-                    body=f"""Hola,
-
-ReconBase ha analizado tu dominio y ha encontrado algunos puntos de seguridad que requieren tu atencion.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  DOMINIO ANALIZADO: {objetivo}
-  NIVEL DE RIESGO:   {riesgo}% — {label} {emoji_nivel}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-QUE HEMOS ENCONTRADO:
-
-{desglose_txt}
-¿QUE DEBES HACER AHORA?
-
-Accede a tu dashboard para ver el informe completo con todos los detalles
-y los pasos exactos para solucionar cada problema:
-
-  → http://127.0.0.1:5000/app
-
-Si tienes dudas sobre como actuar, puedes responder a este email
-y te ayudaremos a interpretar los resultados.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ReconBase — Seguridad perimetral para PYMEs
-Este analisis ha sido generado automaticamente.
-"""
+                    body=cuerpo
                 )
                 mail.send(msg)
+                print(f"[Alerta] Email enviado a {destinatario} ({objetivo} {riesgo}%)")
         except Exception as e:
             print(f"[!] Error enviando email: {e}")
     threading.Thread(target=_send, daemon=True).start()
@@ -388,8 +381,16 @@ def scan():
     db.session.add(scan)
     db.session.commit()
 
-    if riesgo >= 30:
-        enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose)
+    # Enviar alerta solo si el riesgo subió respecto al escaneo anterior del mismo dominio
+    scan_anterior = Scan.query.filter_by(user_id=current_user.id, dominio=dominio)\
+        .order_by(Scan.timestamp.desc()).offset(1).first()
+    riesgo_anterior = scan_anterior.riesgo if scan_anterior else None
+    if riesgo_anterior is None:
+        # Primer escaneo: enviar si riesgo es alto
+        if riesgo >= 50:
+            enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
+    elif riesgo > riesgo_anterior:
+        enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
 
     return jsonify(resultado)
 
