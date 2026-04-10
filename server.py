@@ -43,6 +43,30 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_PRO = os.getenv("STRIPE_PRICE_PRO", "")
 
 # ── RUTAS PÚBLICAS ──
+@app.route("/sitemap.xml")
+def sitemap():
+    base = "https://reconbase-production.up.railway.app"
+    urls = [
+        {"loc": base + "/",        "priority": "1.0",  "changefreq": "weekly"},
+        {"loc": base + "/login",   "priority": "0.6",  "changefreq": "monthly"},
+        {"loc": base + "/register","priority": "0.8",  "changefreq": "monthly"},
+        {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly"},
+        {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly"},
+    ]
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for u in urls:
+        xml += f'  <url><loc>{u["loc"]}</loc><changefreq>{u["changefreq"]}</changefreq><priority>{u["priority"]}</priority></url>\n'
+    xml += '</urlset>'
+    from flask import Response
+    return Response(xml, mimetype="application/xml")
+
+@app.route("/robots.txt")
+def robots():
+    from flask import Response
+    txt = "User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nSitemap: https://reconbase-production.up.railway.app/sitemap.xml"
+    return Response(txt, mimetype="text/plain")
+
 @app.route("/")
 def index():
     return render_template("landing.html", user=current_user)
