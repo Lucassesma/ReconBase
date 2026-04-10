@@ -5,6 +5,7 @@ from models import db, User, Scan
 import reconbase_engine as engine
 import os, io, json, stripe, threading
 from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
 try:
@@ -355,6 +356,45 @@ def generar_pdf():
     buf.seek(0)
     nombre = f"reconbase_{datos.get('dominio','report').replace('.','_')}.pdf"
     return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=nombre)
+
+def escaneo_automatico():
+    with app.app_context():
+        usuarios_pro = User.query.filter_by(plan='pro').all()
+        for user in usuarios_pro:
+            ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
+            if not ultimo:
+                continue
+            dominio  = ultimo.dominio
+            objetivo = dominio
+            try:
+                puertos = engine.scan_critical_ports_fast(dominio)
+                dns     = engine.check_email_spoofing(dominio)
+                headers = engine.check_security_headers(dominio)
+                subs    = engine.scan_subdomains(dominio)
+                riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+                label, color     = label_riesgo(riesgo)
+                resultado = {
+                    "objetivo": objetivo, "dominio": dominio,
+                    "puertos": puertos, "dns": dns,
+                    "headers": {k: bool(v) for k, v in headers.items()},
+                    "subs": subs, "leaks": 0, "leaks_raw": [],
+                    "riesgo": riesgo, "label": label, "color": color,
+                    "desglose": desglose,
+                    "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+                    "automatico": True
+                }
+                scan = Scan(user_id=user.id, objetivo=objetivo, dominio=dominio,
+                            riesgo=riesgo, label=label, resultado=resultado)
+                db.session.add(scan)
+                db.session.commit()
+                if riesgo >= 30:
+                    enviar_alerta_email(user.email, objetivo, riesgo, label, desglose)
+            except Exception as e:
+                print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
+
+scheduler = BackgroundScheduler(timezone="Europe/Madrid")
+scheduler.add_job(escaneo_automatico, 'cron', hour=3, minute=0)
+scheduler.start()
 
 with app.app_context():
     db.create_all()
