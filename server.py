@@ -67,6 +67,10 @@ def robots():
     txt = "User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nSitemap: https://reconbase-production.up.railway.app/sitemap.xml"
     return Response(txt, mimetype="text/plain")
 
+@app.route("/google9b381a283a68cc0a.html")
+def google_verify():
+    return "google-site-verification: google9b381a283a68cc0a.html"
+
 @app.route("/")
 def index():
     return render_template("landing.html", user=current_user)
