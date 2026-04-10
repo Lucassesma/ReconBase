@@ -130,13 +130,15 @@ def stripe_webhook():
         return jsonify({"error": "firma invalida"}), 400
 
     try:
-        obj = event["data"]["object"]
-        if event["type"] == "checkout.session.completed":
-            email = obj.get("customer_email")
+        obj  = event.data.object
+        tipo = event.type
+
+        if tipo == "checkout.session.completed":
+            email = getattr(obj, "customer_email", None)
             if not email:
-                details = obj.get("customer_details")
-                if details and isinstance(details, dict):
-                    email = details.get("email")
+                details = getattr(obj, "customer_details", None)
+                if details:
+                    email = getattr(details, "email", None)
             print(f"[Webhook] checkout completado, email={email}")
             if email:
                 user = User.query.filter_by(email=email).first()
@@ -147,8 +149,9 @@ def stripe_webhook():
                 else:
                     print(f"[Webhook] Usuario no encontrado: {email}")
 
-        elif event["type"] == "customer.subscription.deleted":
-            email = obj.get("metadata", {}).get("email")
+        elif tipo == "customer.subscription.deleted":
+            metadata = getattr(obj, "metadata", None)
+            email = metadata.get("email") if metadata else None
             if email:
                 user = User.query.filter_by(email=email).first()
                 if user:
