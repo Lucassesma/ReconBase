@@ -555,10 +555,6 @@ function loadHistorial() {
     .then(function(res) { return res.json(); })
     .then(function(data) {
       historial = data;
-      if(historial.length > 0) {
-        lastData = historial[0];
-        renderDashboard();
-      }
     })
     .catch(function() {});
 }
