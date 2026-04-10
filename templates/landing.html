@@ -139,19 +139,27 @@
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#060A10;--surface:#0B1018;--border:#162032;--text:#E8F4F8;--muted:#5D7A8A;--dim:#3D5468;--blue:#0891B2;--blue-dk:#0E7490;--blue-lt:#06B6D4;--green:#10B981;--red:#EF4444;--amber:#F59E0B;--accent:#00D4AA}
+:root{
+  --bg:#F8FAFC;--surface:#FFFFFF;--border:#E2E8F0;
+  --text:#0F172A;--muted:#64748B;--dim:#94A3B8;
+  --accent:#16A34A;--accent-lt:#22C55E;--accent-dk:#15803D;
+  --red:#DC2626;--amber:#D97706;--blue:#2563EB;--blue-lt:#3B82F6;--blue-dk:#1D4ED8;
+  --green:#10B981;--dark:#0F172A;--dark-surface:#1E293B;
+}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6;overflow-x:hidden}
 a{text-decoration:none;color:inherit}
-nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);backdrop-filter:blur(16px)}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(248,250,252,.96);backdrop-filter:blur(16px)}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em;color:var(--text)}
 .nav-links{display:flex;gap:2.5rem}
-.nav-links a{font-size:.87rem;color:var(--muted);transition:color .2s}
+.nav-links a{font-size:.87rem;color:var(--muted);transition:color .2s;font-weight:500}
 .nav-links a:hover{color:var(--text)}
 .nav-right{display:flex;align-items:center;gap:.75rem}
-.btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.6rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s;min-height:44px;display:inline-flex;align-items:center}
-.btn-login:hover{border-color:var(--blue-lt);color:var(--text)}
+.btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.55rem 1.1rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.83rem;cursor:pointer;transition:all .2s;min-height:44px;display:inline-flex;align-items:center}
+.btn-login:hover{border-color:var(--text);color:var(--text)}
 .hero{padding:4rem 6% 5rem;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
 .hero-left{animation:fadeUp .7s ease both}
 .hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2);border-radius:20px;padding:.3rem .9rem;font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);margin-bottom:1.5rem}
@@ -167,7 +175,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .hero-scanner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue-lt),transparent)}
 .hero-scan-label{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.15em;margin-bottom:1rem}
 .hero-scan-input-wrap{display:flex;gap:.5rem;margin-bottom:1.25rem}
-.hero-scan-input{flex:1;background:#040810;border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.7rem 1rem;outline:none;transition:border-color .2s}
+.hero-scan-input{flex:1;background:#040810;border:1px solid #1E3A5F;border-radius:8px;color:#94A3B8;font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.7rem 1rem;outline:none;transition:border-color .2s}
 .hero-scan-input:focus{border-color:var(--blue-lt)}
 .hero-scan-btn{background:linear-gradient(135deg,var(--blue-dk),var(--blue-lt));color:#fff;border:none;padding:.7rem 1.25rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;transition:opacity .2s}
 .hero-scan-btn:hover{opacity:.85}
@@ -296,8 +304,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <nav>
   <a href="/" class="logo" aria-label="ReconBase — Inicio">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="36" aria-hidden="true">
-      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
-      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#3B82F6">BASE</text>
+      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#0F172A">RECON</text>
+      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#16A34A">BASE</text>
     </svg>
   </a>
   <div class="nav-links">
@@ -436,7 +444,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="demo-panel" id="dp-2">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Informe de riesgos</div>
         <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.75rem;background:#080C14;border-radius:8px"><div style="font-size:2rem;font-weight:800;color:var(--amber)">42%</div><div><div style="font-size:.75rem;font-weight:700;color:var(--amber)">RIESGO MODERADO</div><div style="font-size:.72rem;color:var(--muted)">Se requiere accion en 2 vectores</div></div></div>
-        <div style="background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:.75rem;margin-bottom:.5rem"><div style="font-size:.68rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">DATA BREACH DETECTED</div><div style="font-size:.78rem;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bedfdad3d7d0fed3d7dbd3ceccdbcddf90ddd1d3">[email&#160;protected]</a> aparece en 1 base de datos comprometida. Rote credenciales.</div></div>
+        <div style="background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:.75rem;margin-bottom:.5rem"><div style="font-size:.68rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">DATA BREACH DETECTED</div><div style="font-size:.78rem;color:var(--muted)">admin@miempresa.com aparece en 1 base de datos comprometida. Rote credenciales.</div></div>
         <div style="background:rgba(245,158,11,.08);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:.75rem"><div style="font-size:.68rem;font-weight:700;color:#FBBF24;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">HTTP HEADERS INCOMPLETE</div><div style="font-size:.78rem;color:var(--muted)">CSP y Permissions-Policy no configuradas.</div></div>
       </div>
       <div class="demo-panel" id="dp-3">
@@ -533,8 +541,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <footer>
   <a href="/" class="f-logo" aria-label="ReconBase — Inicio">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="22" aria-hidden="true">
-      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
-      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#3B82F6">BASE</text>
+      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#0F172A">RECON</text>
+      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#16A34A">BASE</text>
     </svg>
   </a>
   <div class="f-copy">2025 ReconBase. Todos los derechos reservados.</div>
