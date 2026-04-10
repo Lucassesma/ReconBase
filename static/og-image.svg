@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#080C14"/>
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E2D4A" stroke-width="0.5"/>
+    </pattern>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1D4ED8" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#080C14" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Logo -->
+  <text x="600" y="240" font-family="Arial Black, sans-serif" font-weight="900" font-size="96" letter-spacing="-3" fill="#E2EDF8" text-anchor="middle">
+    <tspan fill="#E2EDF8">RECON</tspan><tspan fill="#3B82F6">BASE</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="600" y="310" font-family="Arial, sans-serif" font-size="28" fill="#64748B" text-anchor="middle" letter-spacing="1">Seguridad perimetral para empresas</text>
+
+  <!-- Divider -->
+  <line x1="480" y1="355" x2="720" y2="355" stroke="#1E2D4A" stroke-width="1"/>
+
+  <!-- Features -->
+  <text x="300" y="420" font-family="Arial, monospace" font-size="18" fill="#3B82F6" text-anchor="middle">Puertos expuestos</text>
+  <text x="600" y="420" font-family="Arial, monospace" font-size="18" fill="#3B82F6" text-anchor="middle">Filtraciones de datos</text>
+  <text x="900" y="420" font-family="Arial, monospace" font-size="18" fill="#3B82F6" text-anchor="middle">Vulnerabilidades DNS</text>
+
+  <text x="300" y="448" font-family="Arial, sans-serif" font-size="15" fill="#475569" text-anchor="middle">Deteccion en tiempo real</text>
+  <text x="600" y="448" font-family="Arial, sans-serif" font-size="15" fill="#475569" text-anchor="middle">HIBP y dark web</text>
+  <text x="900" y="448" font-family="Arial, sans-serif" font-size="15" fill="#475569" text-anchor="middle">SPF · DMARC · Headers</text>
+
+  <!-- CTA badge -->
+  <rect x="450" y="510" width="300" height="52" rx="8" fill="#1D4ED8"/>
+  <text x="600" y="542" font-family="Arial Black, sans-serif" font-weight="900" font-size="18" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">Analiza tu dominio gratis</text>
+</svg>
