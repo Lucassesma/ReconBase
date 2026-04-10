@@ -451,6 +451,62 @@ def generar_pdf():
     nombre = f"reconbase_{datos.get('dominio','report').replace('.','_')}.pdf"
     return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=nombre)
 
+def enviar_informe_automatico(destinatario, dominio, riesgo, label, desglose, puertos, num_subs):
+    def _send():
+        try:
+            if riesgo >= 70:   emoji = "🔴"
+            elif riesgo >= 40: emoji = "🟡"
+            else:              emoji = "🟢"
+
+            puertos_txt = ""
+            if puertos:
+                lista = ", ".join([f"{p['puerto']}/{p['servicio']}" for p in puertos[:5]])
+                puertos_txt = f"  ⚠ Puertos expuestos: {lista}\n"
+
+            desglose_txt = ""
+            consejos = {
+                "DMARC ausente": "Configura un registro DMARC en tu DNS para evitar que terceros envien emails suplantando tu dominio.",
+                "SPF ausente":   "Añade un registro SPF en tu DNS para proteger tu dominio de suplantacion de identidad.",
+                "Red":           "Revisa los puertos abiertos en tu servidor y cierra los que no sean necesarios.",
+                "Headers":       "Configura cabeceras de seguridad HTTP como HSTS, CSP y X-Frame-Options en tu servidor web.",
+            }
+            for k, v in desglose.items():
+                if v > 0:
+                    consejo = consejos.get(k, "Accede al dashboard para ver los detalles.")
+                    desglose_txt += f"  ⚠ {k}\n     {consejo}\n\n"
+
+            with app.app_context():
+                msg = Message(
+                    subject=f"{emoji} ReconBase — Informe nocturno de {dominio}",
+                    recipients=[destinatario],
+                    body=f"""Hola,
+
+ReconBase ha completado el escaneo automatico programado de tu dominio.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DOMINIO ANALIZADO: {dominio}
+  NIVEL DE RIESGO:   {riesgo}% — {label} {emoji}
+  PUERTOS EXPUESTOS: {len(puertos)}
+  SUBDOMINIOS:       {num_subs}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{"PUNTOS A REVISAR:" if desglose_txt else "Todo en orden, no se detectaron problemas criticos."}
+
+{desglose_txt}{puertos_txt}
+Accede a tu dashboard para ver el informe completo:
+
+  → https://reconbase-production.up.railway.app/app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ReconBase — Vigilancia nocturna Pro
+Este informe ha sido generado automaticamente segun tu horario configurado.
+"""
+                )
+                mail.send(msg)
+        except Exception as e:
+            print(f"[!] Error enviando informe automatico: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
 def escaneo_automatico():
     with app.app_context():
         from zoneinfo import ZoneInfo
@@ -491,8 +547,7 @@ def escaneo_automatico():
                             riesgo=riesgo, label=label, resultado=resultado)
                 db.session.add(scan)
                 db.session.commit()
-                if riesgo >= 30:
-                    enviar_alerta_email(user.email, objetivo, riesgo, label, desglose)
+                enviar_informe_automatico(user.email, dominio, riesgo, label, desglose, puertos, len(subs))
                 print(f"[Cron] Escaneado {dominio} para {user.email}")
             except Exception as e:
                 print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
