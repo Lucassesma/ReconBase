@@ -297,6 +297,49 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 .f-copy{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .f-links{display:flex;gap:1.5rem;font-size:.75rem;color:#64748B;font-family:'JetBrains Mono',monospace}
 @media(max-width:768px){.demo-grid{grid-template-columns:1fr}.nav-links{display:none}}
+
+/* CARACTERISTICAS */
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;margin-bottom:5rem;padding-bottom:5rem;border-bottom:1px solid var(--border)}
+.cf-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.cf-row-rev .cf-text{order:2}.cf-row-rev .cf-visual{order:1}
+.cf-num{font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:800;color:var(--border);line-height:1;margin-bottom:.75rem;letter-spacing:-.05em}
+.cf-title{font-size:1.35rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.85rem;line-height:1.25}
+.cf-desc{font-size:.9rem;color:var(--muted);line-height:1.75;margin-bottom:1.25rem}
+.cf-tags{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.cf-tag{font-size:.68rem;font-family:'JetBrains Mono',monospace;padding:.25rem .75rem;border-radius:20px;font-weight:600}
+.cf-tag-r{background:rgba(220,38,38,.08);color:#F87171;border:1px solid rgba(220,38,38,.2)}
+.cf-tag-a{background:rgba(217,119,6,.08);color:#FBBF24;border:1px solid rgba(217,119,6,.2)}
+.cf-tag-b{background:rgba(37,99,235,.08);color:#93C5FD;border:1px solid rgba(37,99,235,.2)}
+.cf-tag-g{background:rgba(16,185,129,.08);color:#6EE7B7;border:1px solid rgba(16,185,129,.2)}
+.cf-what{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:.75rem;font-size:.82rem;color:var(--muted);line-height:1.7}
+.cf-what-title{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem}
+.cf-fix{background:rgba(22,163,74,.05);border:1px solid rgba(22,163,74,.15);border-radius:8px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.7}
+.cf-fix-title{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem}
+.cf-mock{background:#050810;border:1px solid #0F1E35;border-radius:10px;padding:1.25rem;position:relative}
+.cf-mock-bar{margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid #0F1E35}
+.cf-port{display:flex;align-items:center;gap:.75rem;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.75rem}
+.cf-port.ok{background:rgba(16,185,129,.04)}.cf-port.warn{background:rgba(217,119,6,.06)}.cf-port.err{background:rgba(220,38,38,.06)}
+.cf-port-num{color:#60A5FA;min-width:45px;font-weight:700}
+.cf-port-svc{color:#94A3B8;flex:1}
+.cf-port-st{font-size:.65rem;font-weight:700}
+.st-ok{color:#10B981}.st-warn{color:#F59E0B}.st-err{color:#EF4444}
+.cf-breach{display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;background:#080C14;border-radius:5px;margin-bottom:.3rem}
+.cf-breach-name{font-size:.75rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;min-width:110px}
+.cf-breach-date{font-size:.65rem;color:#475569;font-family:'JetBrains Mono',monospace;margin-left:auto}
+.cf-dns-row{display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.73rem}
+.cf-dns-row.ok{background:rgba(16,185,129,.04)}.cf-dns-row.warn{background:rgba(217,119,6,.06)}.cf-dns-row.err{background:rgba(220,38,38,.06)}
+.cf-dns-label{color:#60A5FA;min-width:55px;font-weight:700}
+.cf-dns-val{color:#94A3B8;flex:1;font-size:.68rem}
+.cf-hdr{display:flex;align-items:center;justify-content:space-between;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.72rem}
+.cf-hdr.ok{background:rgba(16,185,129,.04)}.cf-hdr.err{background:rgba(220,38,38,.06)}.cf-hdr.warn{background:rgba(217,119,6,.06)}
+.cf-hdr-name{color:#94A3B8}
+.cf-sub{display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.72rem}
+.cf-sub.ok{background:rgba(16,185,129,.04)}.cf-sub.warn{background:rgba(217,119,6,.06)}.cf-sub.err{background:rgba(220,38,38,.06)}
+.cf-sub-name{color:#93C5FD;flex:1}
+.cf-cms-plugin{display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.75rem}
+.cf-cms-plugin.ok{background:rgba(16,185,129,.04)}.cf-cms-plugin.warn{background:rgba(217,119,6,.06)}.cf-cms-plugin.err{background:rgba(220,38,38,.06)}
+.cf-cms-plugin span:first-child{color:#E2E8F0;flex:1}
+@media(max-width:900px){.cf-row{grid-template-columns:1fr;gap:2rem}.cf-row-rev .cf-text{order:1}.cf-row-rev .cf-visual{order:2}}
 </style>
 </head>
 <body>
@@ -310,6 +353,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   </a>
   <div class="nav-links">
     <a href="#funciones">Funciones</a>
+    <a href="#caracteristicas">Caracteristicas</a>
     <a href="#como-funciona">Como funciona</a>
     <a href="#precios">Precios</a>
     <a href="#faq">FAQ</a>
@@ -388,6 +432,251 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="feat-card"><div class="feat-icon fi-t"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2" stroke-linecap="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg></div><div class="feat-title">Subdominios</div><div class="feat-desc">Mapea tu superficie real: dev, staging, admin, portales olvidados.</div></div>
     <div class="feat-card"><div class="feat-icon fi-p"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="feat-title">Informes PDF</div><div class="feat-desc">Genera documentacion ejecutiva descargable tras cada analisis.</div></div>
   </div>
+</section>
+
+<!-- CARACTERISTICAS DETALLADAS -->
+<section class="section" id="caracteristicas" style="max-width:1100px">
+  <div class="sec-label">En detalle</div>
+  <h2 class="sec-title">Qué analiza ReconBase<br>y por qué importa</h2>
+  <p class="sec-sub" style="margin-bottom:4rem">Cada modulo del escaner tiene un proposito concreto. Aqui te explicamos que busca, que significa lo que encuentra y que debes hacer si detecta un problema.</p>
+
+  <!-- 1. Puertos -->
+  <div class="cf-row">
+    <div class="cf-text">
+      <div class="cf-num">01</div>
+      <h3 class="cf-title">Escaner de puertos expuestos</h3>
+      <p class="cf-desc">Comprueba que servicios de tu empresa son visibles desde internet. Un servidor con puertos abiertos innecesariamente (RDP, SSH, bases de datos) es una puerta de entrada directa para atacantes.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-r">Alto riesgo si expuesto</span>
+        <span class="cf-tag cf-tag-b">TCP/UDP scan</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que hace ReconBase</div>
+        Escanea los 1.000 puertos mas comunes. Detecta servicios criticos expuestos como RDP (3389), SSH (22), bases de datos MySQL/PostgreSQL/MongoDB y paneles de administracion.
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Si encuentra algo</div>
+        Cierra el puerto en el firewall o restringe el acceso por IP. Nunca dejes bases de datos accesibles desde internet sin VPN.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock">
+        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">PUERTOS — tuempresa.com</span></div>
+        <div class="cf-port ok"><span class="cf-port-num">80</span><span class="cf-port-svc">HTTP</span><span class="cf-port-st st-ok">ABIERTO — Normal</span></div>
+        <div class="cf-port ok"><span class="cf-port-num">443</span><span class="cf-port-svc">HTTPS</span><span class="cf-port-st st-ok">ABIERTO — Normal</span></div>
+        <div class="cf-port warn"><span class="cf-port-num">22</span><span class="cf-port-svc">SSH</span><span class="cf-port-st st-warn">ABIERTO — Revisar</span></div>
+        <div class="cf-port err"><span class="cf-port-num">3389</span><span class="cf-port-svc">RDP</span><span class="cf-port-st st-err">EXPUESTO — Critico</span></div>
+        <div class="cf-port err"><span class="cf-port-num">27017</span><span class="cf-port-svc">MongoDB</span><span class="cf-port-st st-err">EXPUESTO — Critico</span></div>
+        <div style="margin-top:1rem;padding:.6rem .75rem;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:.72rem;color:#F87171;font-family:'JetBrains Mono',monospace">2 puertos criticos expuestos · Riesgo +30pts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Filtraciones -->
+  <div class="cf-row cf-row-rev">
+    <div class="cf-text">
+      <div class="cf-num">02</div>
+      <h3 class="cf-title">Filtraciones en bases de datos comprometidas</h3>
+      <p class="cf-desc">Busca si los emails corporativos de tu empresa han aparecido en mas de 800 brechas de seguridad conocidas. Si las credenciales de un empleado estan filtradas, un atacante puede entrar con ellas.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-r">Muy frecuente en pymes</span>
+        <span class="cf-tag cf-tag-b">HIBP + bases propias</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que hace ReconBase</div>
+        Consulta Have I Been Pwned y otras fuentes para cada email relacionado con tu dominio. Indica en que brecha aparecio, cuando y que datos quedaron expuestos.
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Si encuentra algo</div>
+        Cambia la contrasena de esa cuenta de inmediato, activa autenticacion en dos pasos (2FA) y notifica al equipo. Si hay datos de clientes, puede requerirse notificacion RGPD.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock">
+        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">FILTRACIONES — tuempresa.com</span></div>
+        <div style="margin-bottom:.75rem">
+          <div style="font-size:.68rem;color:#94A3B8;font-family:'JetBrains Mono',monospace;margin-bottom:.4rem">admin@tuempresa.com</div>
+          <div class="cf-breach"><div class="cf-breach-name">LinkedIn 2021</div><div style="font-size:.7rem;color:#94A3B8">Email, contrasena hasheada, nombre</div><div class="cf-breach-date">Jun 2021</div></div>
+          <div class="cf-breach"><div class="cf-breach-name">Adobe 2019</div><div style="font-size:.7rem;color:#94A3B8">Email, contrasena, ciudad</div><div class="cf-breach-date">Oct 2019</div></div>
+        </div>
+        <div style="margin-bottom:.75rem">
+          <div style="font-size:.68rem;color:#94A3B8;font-family:'JetBrains Mono',monospace;margin-bottom:.4rem">info@tuempresa.com</div>
+          <div style="font-size:.75rem;color:#10B981;font-family:'JetBrains Mono',monospace;padding:.4rem .6rem;background:rgba(16,185,129,.06);border-radius:4px">Sin filtraciones conocidas</div>
+        </div>
+        <div style="padding:.6rem .75rem;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:.72rem;color:#F87171;font-family:'JetBrains Mono',monospace">1 email comprometido · Cambia credenciales YA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. DNS -->
+  <div class="cf-row">
+    <div class="cf-text">
+      <div class="cf-num">03</div>
+      <h3 class="cf-title">Proteccion DNS — SPF y DMARC</h3>
+      <p class="cf-desc">Sin SPF y DMARC correctamente configurados, cualquier persona puede enviar emails suplantando tu dominio. Los atacantes lo usan para hacer phishing haciendose pasar por ti ante tus clientes.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-a">Ignoran muchas empresas</span>
+        <span class="cf-tag cf-tag-b">Anti-phishing</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que hace ReconBase</div>
+        Consulta los registros DNS de tu dominio y verifica si SPF esta correctamente configurado, si DMARC existe y si la politica es suficientemente estricta (p=reject o p=quarantine).
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Si encuentra algo</div>
+        Anade los registros TXT correspondientes en tu panel DNS. ReconBase indica exactamente que valor poner. Suele tardar menos de 10 minutos.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock">
+        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">DNS — tuempresa.com</span></div>
+        <div class="cf-dns-row ok"><span class="cf-dns-label">SPF</span><span class="cf-dns-val">v=spf1 include:_spf.google.com ~all</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
+        <div class="cf-dns-row err"><span class="cf-dns-label">DMARC</span><span class="cf-dns-val" style="color:#64748B;font-style:italic">No encontrado</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">FALTA</span></div>
+        <div class="cf-dns-row warn"><span class="cf-dns-label">DKIM</span><span class="cf-dns-val" style="color:#64748B;font-style:italic">Solo selector google</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">PARCIAL</span></div>
+        <div style="margin-top:1rem;background:#050810;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.7rem">
+          <div style="color:#64748B;margin-bottom:.35rem">Anadir en tu DNS (TXT):</div>
+          <div style="color:#86EFAC;word-break:break-all">_dmarc.tuempresa.com → v=DMARC1; p=quarantine; rua=mailto:dmarc@tuempresa.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Cabeceras HTTP -->
+  <div class="cf-row cf-row-rev">
+    <div class="cf-text">
+      <div class="cf-num">04</div>
+      <h3 class="cf-title">Cabeceras de seguridad HTTP</h3>
+      <p class="cf-desc">Las cabeceras HTTP instruyen al navegador sobre como comportarse. Sin ellas, tu web es vulnerable a ataques XSS, clickjacking o inyeccion de contenido malicioso.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-a">Falla en el 80% de webs</span>
+        <span class="cf-tag cf-tag-b">XSS · Clickjacking · CSP</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que hace ReconBase</div>
+        Hace una peticion HTTP a tu dominio y analiza las cabeceras de respuesta. Comprueba HSTS, X-Frame-Options, X-Content-Type-Options, Content-Security-Policy y Permissions-Policy.
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Si encuentra algo</div>
+        Configura las cabeceras en tu servidor web (Nginx, Apache) o en el panel de tu hosting. ReconBase indica cual es el valor recomendado para cada una.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock">
+        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">HTTP HEADERS — tuempresa.com</span></div>
+        <div class="cf-hdr ok"><span class="cf-hdr-name">Strict-Transport-Security</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
+        <div class="cf-hdr ok"><span class="cf-hdr-name">X-Content-Type-Options</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
+        <div class="cf-hdr err"><span class="cf-hdr-name">Content-Security-Policy</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">AUSENTE</span></div>
+        <div class="cf-hdr err"><span class="cf-hdr-name">X-Frame-Options</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">AUSENTE</span></div>
+        <div class="cf-hdr warn"><span class="cf-hdr-name">Permissions-Policy</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">PARCIAL</span></div>
+        <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);border-radius:6px;font-size:.72rem;color:#FBBF24;font-family:'JetBrains Mono',monospace">2 cabeceras criticas ausentes · Riesgo clickjacking y XSS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Subdominios -->
+  <div class="cf-row">
+    <div class="cf-text">
+      <div class="cf-num">05</div>
+      <h3 class="cf-title">Enumeracion de subdominios</h3>
+      <p class="cf-desc">Muchas empresas tienen subdominios olvidados: entornos de prueba, paneles admin, APIs internas accesibles desde internet. Cada uno es un vector de ataque potencial que nadie esta monitorizando.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-a">Shadow IT frecuente</span>
+        <span class="cf-tag cf-tag-b">Superficie de ataque</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que hace ReconBase</div>
+        Usa consultas DNS pasivas y tecnicas OSINT para mapear los subdominios activos de tu dominio. Identifica cuales responden, en que IP estan y si tienen puertos criticos abiertos.
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Si encuentra algo</div>
+        Revisa si cada subdominio es necesario. Si no lo es, eliminalo del DNS. Si es un entorno de desarrollo, ponlo detras de autenticacion o VPN.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock">
+        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">SUBDOMINIOS — tuempresa.com</span></div>
+        <div class="cf-sub ok"><span class="cf-sub-name">www.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">93.184.x.x</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Normal</span></div>
+        <div class="cf-sub ok"><span class="cf-sub-name">mail.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">74.125.x.x</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Normal</span></div>
+        <div class="cf-sub warn"><span class="cf-sub-name">staging.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">34.90.x.x</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Revisar</span></div>
+        <div class="cf-sub err"><span class="cf-sub-name">admin.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">45.33.x.x</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Expuesto</span></div>
+        <div class="cf-sub err"><span class="cf-sub-name">dev.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">18.195.x.x</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Sin auth</span></div>
+        <div style="margin-top:.75rem;padding:.5rem .75rem;background:#050810;border-radius:6px;font-size:.7rem;color:#64748B;font-family:'JetBrains Mono',monospace">5 subdominios detectados · 2 requieren atencion</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. CMS -->
+  <div class="cf-row cf-row-rev">
+    <div class="cf-text">
+      <div class="cf-num">06</div>
+      <h3 class="cf-title">Deteccion de CMS y versiones</h3>
+      <p class="cf-desc">WordPress, Joomla, Drupal, PrestaShop... Si tu web usa un CMS desactualizado, es probable que tenga vulnerabilidades publicas conocidas. Los bots las explotan de forma automatica en minutos.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-r">Masivamente explotado</span>
+        <span class="cf-tag cf-tag-b">WordPress · Joomla · Drupal</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que hace ReconBase</div>
+        Analiza cabeceras HTTP, codigo fuente, rutas caracteristicas y meta generator para identificar el CMS, su version y si hay plugins o temas con CVEs conocidos.
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Si encuentra algo</div>
+        Actualiza el CMS y todos sus plugins a la ultima version estable. Activa actualizaciones automaticas de seguridad. Elimina plugins que no uses.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock">
+        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">CMS DETECTION — tuempresa.com</span></div>
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);border-radius:8px;margin-bottom:.75rem">
+          <div style="width:36px;height:36px;background:rgba(139,92,246,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem">W</div>
+          <div><div style="font-size:.85rem;font-weight:700;color:#C4B5FD">WordPress 6.2.1</div><div style="font-size:.7rem;color:#64748B;font-family:'JetBrains Mono',monospace">Desactualizado — ultima: 6.7.2</div></div>
+        </div>
+        <div class="cf-cms-plugin warn"><span>WooCommerce</span><span style="font-size:.68rem;color:#64748B;font-family:'JetBrains Mono',monospace">v8.1.0</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">DESACTUALIZADO</span></div>
+        <div class="cf-cms-plugin err"><span>Contact Form 7</span><span style="font-size:.68rem;color:#64748B;font-family:'JetBrains Mono',monospace">v5.7</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">CVE CONOCIDO</span></div>
+        <div class="cf-cms-plugin ok"><span>Yoast SEO</span><span style="font-size:.68rem;color:#64748B;font-family:'JetBrains Mono',monospace">v22.5</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
+        <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:.72rem;color:#F87171;font-family:'JetBrains Mono',monospace">CMS + 1 plugin vulnerable · Actualiza urgente</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Informe PDF -->
+  <div class="cf-row">
+    <div class="cf-text">
+      <div class="cf-num">07</div>
+      <h3 class="cf-title">Informe PDF ejecutivo</h3>
+      <p class="cf-desc">Todos los hallazgos del analisis se consolidan en un informe descargable. Pensado para presentar al equipo directivo, a un cliente o para documentar tu cumplimiento de seguridad.</p>
+      <div class="cf-tags">
+        <span class="cf-tag cf-tag-g">Sin conocimientos tecnicos</span>
+        <span class="cf-tag cf-tag-b">Descarga inmediata</span>
+      </div>
+      <div class="cf-what">
+        <div class="cf-what-title">Que incluye el informe</div>
+        Resumen ejecutivo con puntuacion de riesgo, listado de vulnerabilidades ordenadas por criticidad, explicacion de cada hallazgo en lenguaje no tecnico y pasos de remediacion concretos.
+      </div>
+      <div class="cf-fix">
+        <div class="cf-fix-title">Para que sirve</div>
+        Justificar inversiones en seguridad ante la direccion, demostrar diligencia a clientes o auditores, y tener un registro historico del estado de seguridad de tu empresa.
+      </div>
+    </div>
+    <div class="cf-visual">
+      <div class="cf-mock" style="padding:0;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);padding:1.25rem 1.5rem">
+          <div style="font-size:.95rem;font-weight:800;color:#fff;letter-spacing:-.03em">ReconBase</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;margin-top:.2rem">Informe de Auditoria de Seguridad</div>
+        </div>
+        <div style="padding:1rem 1.25rem">
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;padding:.6rem;background:#080C14;border-radius:6px"><div style="font-size:1.6rem;font-weight:800;color:#D97706">47%</div><div><div style="font-size:.7rem;font-weight:700;color:#D97706;font-family:'JetBrains Mono',monospace">RIESGO MODERADO</div><div style="font-size:.65rem;color:#64748B">3 vectores requieren accion</div></div></div>
+          <div class="pdf-row"><span class="pdf-key">Dominio</span><span style="color:#93C5FD;font-family:'JetBrains Mono',monospace;font-size:.75rem">tuempresa.com</span></div>
+          <div class="pdf-row"><span class="pdf-key">Puertos criticos</span><span style="color:#EF4444;font-family:'JetBrains Mono',monospace;font-size:.75rem">2 expuestos</span></div>
+          <div class="pdf-row"><span class="pdf-key">Filtraciones</span><span style="color:#EF4444;font-family:'JetBrains Mono',monospace;font-size:.75rem">1 brecha</span></div>
+          <div class="pdf-row"><span class="pdf-key">DNS / SPF / DMARC</span><span style="color:#D97706;font-family:'JetBrains Mono',monospace;font-size:.75rem">Parcial</span></div>
+          <div class="pdf-row"><span class="pdf-key">HTTP Headers</span><span style="color:#D97706;font-family:'JetBrains Mono',monospace;font-size:.75rem">2 ausentes</span></div>
+          <div class="pdf-row" style="border:none"><span class="pdf-key">Subdominios</span><span style="color:#10B981;font-family:'JetBrains Mono',monospace;font-size:.75rem">5 (2 revisar)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <div class="dark-band">
