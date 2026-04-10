@@ -142,6 +142,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
   </div>
 </div>
 
+<div style="max-width:680px;margin:1.5rem auto 3rem;padding:0 1.5rem">
+  <button onclick="cerrarSesion()" style="width:100%;background:transparent;border:1px solid rgba(239,68,68,.3);color:#F87171;padding:.75rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(239,68,68,.08)'" onmouseout="this.style.background='transparent'">Cerrar sesion</button>
+</div>
+
 <script>
 async function cambiarPassword() {
   var actual     = document.getElementById('pw-actual').value;
@@ -169,6 +173,9 @@ async function cambiarPassword() {
     msgErr.textContent = d.error || 'Error al cambiar la contraseña';
     msgErr.style.display = 'block';
   }
+}
+function cerrarSesion() {
+  fetch('/api/logout', {method:'POST'}).then(function(){ window.location.href = '/'; });
 }
 </script>
 </body>
