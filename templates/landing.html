@@ -29,6 +29,109 @@
 <meta name="twitter:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
 <meta name="twitter:image" content="https://reconbase-production.up.railway.app/static/og-image.svg">
 
+<!-- JSON-LD Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "ReconBase",
+      "url": "https://reconbase-production.up.railway.app",
+      "description": "ReconBase analiza la seguridad perimetral de tu empresa: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Web",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Plan Free",
+          "price": "0",
+          "priceCurrency": "EUR",
+          "description": "10 análisis al mes, informe básico"
+        },
+        {
+          "@type": "Offer",
+          "name": "Plan Pro",
+          "price": "29",
+          "priceCurrency": "EUR",
+          "priceSpecification": {
+            "@type": "UnitPriceSpecification",
+            "billingDuration": "P1M"
+          },
+          "description": "Escaneos ilimitados, vigilancia nocturna automática, alertas por email, informes PDF ejecutivos"
+        }
+      ],
+      "featureList": [
+        "Escáner de puertos",
+        "Detección de filtraciones en dark web",
+        "Verificación SPF y DMARC",
+        "Auditoría de cabeceras HTTP",
+        "Enumeración de subdominios",
+        "Detección de CMS",
+        "Informes PDF ejecutivos",
+        "Vigilancia nocturna automática"
+      ]
+    },
+    {
+      "@type": "Organization",
+      "name": "ReconBase",
+      "url": "https://reconbase-production.up.railway.app",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "ReconBase.alertas@gmail.com",
+        "contactType": "customer support",
+        "availableLanguage": "Spanish"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Necesito conocimientos de ciberseguridad para usar ReconBase?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Diseñado para dueños de negocio sin perfil técnico. Los informes explican cada riesgo con pasos de acción concretos."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Es legal escanear mi propio dominio?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Completamente legal. Solo puedes analizar dominios que tú mismo introduzcas. El motor usa técnicas pasivas sobre infraestructura pública."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué pasa si ReconBase detecta una filtración de datos?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contraseñas, 2FA, notificación RGPD si aplica."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Puedo cancelar el plan Pro en cualquier momento?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿El pago es seguro?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -218,7 +321,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <section class="section" id="funciones">
   <div class="sec-label">Capacidades</div>
   <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1.5rem">
-    <div><div class="sec-title">Todo lo que necesitas<br>para proteger tu negocio</div></div>
+    <div><h2 class="sec-title">Todo lo que necesitas<br>para proteger tu negocio</h2></div>
     <p class="sec-sub">Sin conocimientos tecnicos. Introduce tu dominio y ReconBase hace el resto.</p>
   </div>
   <div class="feat-grid">
@@ -234,7 +337,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <div class="dark-band">
   <div class="dark-band-inner">
     <div class="sec-label">Motor en tiempo real</div>
-    <div class="sec-title">Vigilancia nocturna automatica</div>
+    <h2 class="sec-title">Vigilancia nocturna automatica</h2>
     <p class="sec-sub">Tu infraestructura se escanea cada noche. Si algo cambia, recibes una alerta.</p>
     <div class="terminal">
       <div class="t-bar"><div class="td" style="background:#EF4444"></div><div class="td" style="background:#F59E0B"></div><div class="td" style="background:#10B981"></div></div>
@@ -250,7 +353,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
 <section class="demo-section" id="como-funciona">
   <div class="sec-label">Tutorial interactivo</div>
-  <div class="sec-title">Asi funciona ReconBase</div>
+  <h2 class="sec-title">Asi funciona ReconBase</h2>
   <p class="sec-sub">Haz clic en cada paso para ver exactamente lo que hace la plataforma.</p>
   <div class="demo-grid">
     <div class="demo-steps-nav">
@@ -310,7 +413,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
 <div class="dark-band" id="precios">
   <div class="dark-band-inner">
-    <div style="text-align:center;margin-bottom:2.5rem"><div class="sec-label" style="text-align:center">Precios</div><div class="sec-title" style="text-align:center">Simple. Sin sorpresas.</div></div>
+    <div style="text-align:center;margin-bottom:2.5rem"><div class="sec-label" style="text-align:center">Precios</div><h2 class="sec-title" style="text-align:center">Simple. Sin sorpresas.</h2></div>
     <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));max-width:800px;margin:0 auto">
 
       <div class="plan">
@@ -358,12 +461,12 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 </div>
 
 <section class="section" id="faq" style="max-width:720px">
-  <div class="sec-label">FAQ</div><div class="sec-title">Preguntas frecuentes</div><br>
-  <div class="faq-item"><div class="faq-q">Necesito conocimientos de ciberseguridad?</div><div class="faq-a">No. Disenado para duenos de negocio sin perfil tecnico. Los informes explican cada riesgo con pasos de accion concretos.</div></div>
-  <div class="faq-item"><div class="faq-q">Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente legal. Solo puedes analizar dominios que tu mismo introduzcas. El motor usa tecnicas pasivas sobre infraestructura publica.</div></div>
-  <div class="faq-item"><div class="faq-q">Que pasa si detecta una filtracion?</div><div class="faq-a">Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contrasenas, 2FA, notificacion RGPD si aplica.</div></div>
-  <div class="faq-item"><div class="faq-q">Puedo cancelar en cualquier momento?</div><div class="faq-a">Si, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado.</div></div>
-  <div class="faq-item"><div class="faq-q">El pago es seguro?</div><div class="faq-a">Los pagos se procesan a traves de Stripe con certificacion PCI DSS nivel 1. En ningun momento almacenamos datos de tu tarjeta.</div></div>
+  <div class="sec-label">FAQ</div><h2 class="sec-title">Preguntas frecuentes</h2><br>
+  <div class="faq-item"><div class="faq-q">¿Necesito conocimientos de ciberseguridad?</div><div class="faq-a">No. Diseñado para dueños de negocio sin perfil técnico. Los informes explican cada riesgo con pasos de acción concretos.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente legal. Solo puedes analizar dominios que tú mismo introduzcas. El motor usa técnicas pasivas sobre infraestructura pública.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Qué pasa si detecta una filtración?</div><div class="faq-a">Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contraseñas, 2FA, notificación RGPD si aplica.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Puedo cancelar en cualquier momento?</div><div class="faq-a">Sí, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado.</div></div>
+  <div class="faq-item"><div class="faq-q">¿El pago es seguro?</div><div class="faq-a">Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta.</div></div>
 </section>
 
 <div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%;text-align:center">
