@@ -244,12 +244,14 @@ a{text-decoration:none;color:inherit}
     <div class="panel" id="panel-exportar">
       {% if plan == 'free' %}
       <div class="export-grid" style="margin-bottom:1rem">
-        <div class="export-card" style="opacity:.5;position:relative">
-          <div style="position:absolute;top:1rem;right:1rem;font-size:1.2rem">🔒</div>
+        <div class="export-card" id="pdf-free-card" style="position:relative">
+          <div style="position:absolute;top:1rem;right:1rem;font-size:1.2rem" id="pdf-free-icon">🔒</div>
           <div class="export-icon">*</div>
-          <div class="export-title">Informe PDF Ejecutivo <span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:6px">PRO</span></div>
-          <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones. Disponible en el plan Pro.</div>
-          <a href="/#precios"><button class="btn-export primary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
+          <div class="export-title">Informe PDF Ejecutivo</div>
+          <div class="export-desc" id="pdf-free-desc">Ejecuta un escaneo para obtener el informe completo.</div>
+          <div id="pdf-free-btn">
+            <a href="/#precios"><button class="btn-export primary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
+          </div>
         </div>
         <div class="export-card" style="opacity:.5;position:relative">
           <div style="position:absolute;top:1rem;right:1rem;font-size:1.2rem">🔒</div>
@@ -523,6 +525,7 @@ function lanzarScan() {
       if(historial.length > 20) historial.pop();
       saveHistorial();
       renderResults(data);
+      updatePdfFreeCard(data);
     }, 500);
   })
   .catch(function(e) {
@@ -734,6 +737,42 @@ function renderExport() {
     'Objetivo: <strong style="color:#93C5FD">' + lastData.objetivo + '</strong> &nbsp; Riesgo: <strong style="color:' + lastData.color + '">' + lastData.riesgo + '% (' + lastData.label + ')</strong> &nbsp; ' + lastData.timestamp;
 }
 
+function updatePdfFreeCard(d) {
+  var card = document.getElementById('pdf-free-card');
+  if(!card) return;
+  var icon = document.getElementById('pdf-free-icon');
+  var desc = document.getElementById('pdf-free-desc');
+  var btnWrap = document.getElementById('pdf-free-btn');
+  if(d.pdf_unlocked) {
+    card.style.opacity = '1';
+    icon.textContent = '';
+    desc.textContent = 'Informe desbloqueado. Descarga tu informe PDF ejecutivo.';
+    btnWrap.innerHTML = '<button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>';
+  } else {
+    card.style.opacity = '1';
+    icon.textContent = '';
+    desc.textContent = 'Obtén el informe ejecutivo completo de este escaneo por un único pago.';
+    btnWrap.innerHTML = '<button class="btn-export primary" style="background:#16A34A" onclick="comprarInforme(' + d.scan_id + ')">Obtener informe completo — 9\u20AC</button>';
+  }
+}
+
+function comprarInforme(scanId) {
+  var btn = event.target;
+  btn.textContent = 'Redirigiendo...';
+  btn.disabled = true;
+  fetch('/api/checkout-informe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({scan_id: scanId})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(j){
+    if(j.url) { window.location.href = j.url; }
+    else { alert('Error al iniciar el pago.'); btn.textContent = 'Obtener informe completo — 9\u20AC'; btn.disabled = false; }
+  })
+  .catch(function(){ alert('Error de red.'); btn.textContent = 'Obtener informe completo — 9\u20AC'; btn.disabled = false; });
+}
+
 function descargarPDF() {
   if(!lastData) return;
   var btn = event.target;
@@ -820,6 +859,7 @@ function verScanHistorial(i) {
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('results').classList.add('show');
   renderResults(h);
+  updatePdfFreeCard(h);
 }
 
 // ── TENDENCIA ──
@@ -945,6 +985,36 @@ if(urlTab) {
   var tabEl = document.querySelector('.tab:nth-child(' + ({auditoria:1,dashboard:2,exportar:3,historial:4,tendencia:5,vigilancia:6}[urlTab]||1) + ')');
   if(tabEl) switchTab(urlTab, tabEl);
 }
+
+// Verificar pago de informe tras redirect de Stripe
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var informeOk = params.get('informe_ok');
+  var sid = params.get('sid');
+  if(informeOk && sid) {
+    fetch('/api/verificar-informe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({scan_id: informeOk, session_id: sid})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j.ok) {
+        var card = document.getElementById('pdf-free-card');
+        if(card) {
+          document.getElementById('pdf-free-icon').textContent = '';
+          document.getElementById('pdf-free-desc').textContent = 'Pago confirmado. Descarga tu informe PDF ejecutivo.';
+          document.getElementById('pdf-free-btn').innerHTML = '<button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>';
+        }
+        var tabEl = document.querySelector('.tab:nth-child(3)');
+        if(tabEl) switchTab('exportar', tabEl);
+        // Limpiar params de la URL
+        history.replaceState(null, '', '/app?tab=exportar');
+      }
+    })
+    .catch(function(){});
+  }
+})();
 </script>
 </body>
 </html>

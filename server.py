@@ -4,7 +4,7 @@ from flask_mail import Mail, Message
 from models import db, User, Scan
 import reconbase_engine as engine
 import os, io, json, stripe, threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
@@ -152,6 +152,57 @@ def crear_checkout():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/checkout-informe", methods=["POST"])
+@login_required
+def checkout_informe():
+    data    = request.get_json()
+    scan_id = data.get("scan_id")
+    if not scan_id:
+        return jsonify({"error": "scan_id requerido"}), 400
+    scan_obj = Scan.query.get(int(scan_id))
+    if not scan_obj or scan_obj.user_id != current_user.id:
+        return jsonify({"error": "Escaneo no encontrado"}), 404
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            customer_email=current_user.email,
+            line_items=[{
+                "price_data": {
+                    "currency": "eur",
+                    "product_data": {"name": "Informe PDF ejecutivo — ReconBase"},
+                    "unit_amount": 900,
+                },
+                "quantity": 1,
+            }],
+            success_url=request.host_url + f"app?informe_ok={scan_id}&sid={{CHECKOUT_SESSION_ID}}",
+            cancel_url=request.host_url + "app",
+            metadata={"scan_id": str(scan_id), "user_id": str(current_user.id)},
+        )
+        return jsonify({"url": session.url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/verificar-informe", methods=["POST"])
+@login_required
+def verificar_informe():
+    """Verifica el pago de Stripe y desbloquea el PDF del escaneo concreto."""
+    data       = request.get_json()
+    session_id = data.get("session_id")
+    scan_id    = data.get("scan_id")
+    if not session_id or not scan_id:
+        return jsonify({"ok": False}), 400
+    try:
+        stripe_session = stripe.checkout.Session.retrieve(session_id)
+        if stripe_session.payment_status == "paid":
+            scan_obj = Scan.query.get(int(scan_id))
+            if scan_obj and scan_obj.user_id == current_user.id:
+                scan_obj.pdf_unlocked = True
+                db.session.commit()
+                return jsonify({"ok": True})
+    except Exception as e:
+        print(f"[!] Error verificando informe: {e}")
+    return jsonify({"ok": False})
+
 @app.route("/api/webhook", methods=["POST"])
 def stripe_webhook():
     payload    = request.get_data()
@@ -168,20 +219,33 @@ def stripe_webhook():
         tipo = event.type
 
         if tipo == "checkout.session.completed":
-            email = getattr(obj, "customer_email", None)
-            if not email:
-                details = getattr(obj, "customer_details", None)
-                if details:
-                    email = getattr(details, "email", None)
-            print(f"[Webhook] checkout completado, email={email}")
-            if email:
-                user = User.query.filter_by(email=email).first()
-                if user:
-                    user.plan = "pro"
-                    db.session.commit()
-                    print(f"[Webhook] Plan actualizado a pro para {email}")
-                else:
-                    print(f"[Webhook] Usuario no encontrado: {email}")
+            mode = getattr(obj, "mode", None)
+            if mode == "payment":
+                # Pago puntual: desbloquear PDF del escaneo
+                meta    = getattr(obj, "metadata", {}) or {}
+                scan_id = meta.get("scan_id")
+                if scan_id:
+                    scan_obj = Scan.query.get(int(scan_id))
+                    if scan_obj:
+                        scan_obj.pdf_unlocked = True
+                        db.session.commit()
+                        print(f"[Webhook] PDF desbloqueado para scan {scan_id}")
+            else:
+                # Suscripción Pro
+                email = getattr(obj, "customer_email", None)
+                if not email:
+                    details = getattr(obj, "customer_details", None)
+                    if details:
+                        email = getattr(details, "email", None)
+                print(f"[Webhook] checkout Pro completado, email={email}")
+                if email:
+                    user = User.query.filter_by(email=email).first()
+                    if user:
+                        user.plan = "pro"
+                        db.session.commit()
+                        print(f"[Webhook] Plan actualizado a pro para {email}")
+                    else:
+                        print(f"[Webhook] Usuario no encontrado: {email}")
 
         elif tipo == "customer.subscription.deleted":
             metadata = getattr(obj, "metadata", None)
@@ -276,6 +340,60 @@ def label_riesgo(score):
 
 def sanitizar(texto):
     return str(texto).encode("ascii","ignore").decode("ascii")
+
+def enviar_email_onboarding(destinatario):
+    def _send():
+        try:
+            cuerpo = (
+                "Hola,\n\n"
+                "Te registraste en ReconBase hace 2 dias y todavia no has analizado tu dominio.\n\n"
+                "En menos de 2 minutos puedes saber:\n"
+                "  - Si tienes puertos criticos expuestos al exterior\n"
+                "  - Si algun email de tu empresa aparece en filtraciones conocidas\n"
+                "  - Si tu dominio puede ser suplantado para ataques de phishing\n\n"
+                "Muchas empresas descubren problemas graves en su primer escaneo.\n\n"
+                "Entra ahora y analiza gratis:\n"
+                "https://reconbase-production.up.railway.app/app\n\n"
+                "--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject="Tu empresa todavia no ha sido analizada — ReconBase",
+                    recipients=[destinatario],
+                    body=cuerpo
+                ))
+                print(f"[Onboarding] Email enviado a {destinatario}")
+        except Exception as e:
+            print(f"[!] Error onboarding {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def enviar_email_limite_free(destinatario):
+    def _send():
+        try:
+            cuerpo = (
+                "Hola,\n\n"
+                "Has usado todos tus escaneos gratuitos de este mes.\n\n"
+                "Tu empresa puede seguir expuesta a amenazas que no puedes revisar ahora.\n\n"
+                "Con el plan Pro a 29 euros al mes tienes:\n"
+                "  - Escaneos ilimitados\n"
+                "  - Vigilancia nocturna automatica cada dia\n"
+                "  - Alertas por email cuando se detecta algo nuevo\n"
+                "  - Informes PDF ejecutivos completos\n"
+                "  - Historial completo de todos tus escaneos\n\n"
+                "Activa el plan Pro ahora:\n"
+                "https://reconbase-production.up.railway.app/#precios\n\n"
+                "--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject="Has agotado tus escaneos gratuitos este mes — ReconBase",
+                    recipients=[destinatario],
+                    body=cuerpo
+                ))
+                print(f"[Limite] Email enviado a {destinatario}")
+        except Exception as e:
+            print(f"[!] Error limite email {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
 
 def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_anterior=None):
     def _send():
@@ -410,6 +528,20 @@ def scan():
     )
     db.session.add(scan)
     db.session.commit()
+    resultado["scan_id"]      = scan.id
+    resultado["pdf_unlocked"] = scan.pdf_unlocked
+
+    # Email de límite Free cuando se agota el último escaneo del mes
+    if current_user.plan == 'free':
+        from sqlalchemy import extract as _ext
+        _now = datetime.utcnow()
+        _total = Scan.query.filter(
+            Scan.user_id == current_user.id,
+            _ext('month', Scan.timestamp) == _now.month,
+            _ext('year',  Scan.timestamp) == _now.year
+        ).count()
+        if _total >= 10:
+            enviar_email_limite_free(current_user.email)
 
     # Enviar alerta solo si el riesgo subió respecto al escaneo anterior del mismo dominio
     scan_anterior = Scan.query.filter_by(user_id=current_user.id, dominio=dominio)\
@@ -589,8 +721,23 @@ def escaneo_automatico():
             except Exception as e:
                 print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
 
+def cron_onboarding():
+    """Envía email a usuarios registrados hace ~2 días que no han hecho ningún escaneo."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        ventana_ini = ahora - timedelta(days=3)
+        ventana_fin = ahora - timedelta(days=2)
+        candidatos = User.query.filter(
+            User.created_at >= ventana_ini,
+            User.created_at <  ventana_fin
+        ).all()
+        for user in candidatos:
+            if Scan.query.filter_by(user_id=user.id).count() == 0:
+                enviar_email_onboarding(user.email)
+
 scheduler = BackgroundScheduler(timezone="Europe/Madrid")
-scheduler.add_job(escaneo_automatico, 'cron', minute=0)  # cada hora en punto
+scheduler.add_job(escaneo_automatico, 'cron', minute=0)   # cada hora en punto
+scheduler.add_job(cron_onboarding,    'cron', hour=10, minute=0)  # diario a las 10:00
 scheduler.start()
 
 @app.route("/api/horario", methods=["POST"])

@@ -31,5 +31,6 @@ class Scan(db.Model):
     dominio    = db.Column(db.String(255), nullable=False)
     riesgo     = db.Column(db.Integer, default=0)
     label      = db.Column(db.String(20), default='')
-    resultado  = db.Column(db.JSON, nullable=True)
-    timestamp  = db.Column(db.DateTime, default=datetime.utcnow)
+    resultado     = db.Column(db.JSON, nullable=True)
+    pdf_unlocked  = db.Column(db.Boolean, default=False)
+    timestamp     = db.Column(db.DateTime, default=datetime.utcnow)
