@@ -162,7 +162,7 @@ a{text-decoration:none;color:inherit}
 
     <div class="panel active" id="panel-auditoria">
       <div class="scanner-bar">
-        <input class="scan-input" id="objetivo" type="text" placeholder="empresa.com  o  admin@empresa.com" onkeydown="if(event.key==='Enter')lanzarScan()">
+        <input class="scan-input" id="objetivo" type="text" placeholder="empresa.com · admin@empresa.com · 192.168.1.1" onkeydown="if(event.key==='Enter')lanzarScan()">
         <button class="btn-scan" id="btn-scan" onclick="lanzarScan()">ESCANEAR</button>
       </div>
 
@@ -612,6 +612,32 @@ function renderCards(d) {
     } else {
       html += card('ok','b-green','CMS DETECTADO', cmsName, d.cms.detalle);
     }
+  }
+  // SSL/TLS
+  if(d.ssl) {
+    if(!d.ssl.tiene_ssl) {
+      html += card('crit','b-red','SIN SSL/TLS','No se detecta HTTPS','El servidor no tiene certificado SSL activo. Las comunicaciones van en texto plano.');
+    } else if(d.ssl.caducado) {
+      html += card('crit','b-red','SSL CADUCADO','Certificado expirado hace ' + Math.abs(d.ssl.dias_restantes) + ' dias','Los navegadores mostrarán advertencia de seguridad. Renueva el certificado urgentemente.');
+    } else if(d.ssl.pronto_a_caducar) {
+      html += card('crit','b-red','SSL POR CADUCAR','Expira en ' + d.ssl.dias_restantes + ' dias (' + d.ssl.expira + ')','Renueva el certificado antes de que caduque para evitar interrupciones.');
+    } else if(d.ssl.tiene_ssl) {
+      var sslDetail = (d.ssl.version_ssl || '') + (d.ssl.cifrado ? ' · ' + d.ssl.cifrado : '') + (d.ssl.expira ? ' · Expira ' + d.ssl.expira : '');
+      html += card('ok','b-green','SSL/TLS OK', d.ssl.sujeto || 'Certificado valido', sslDetail);
+    }
+    if(d.ssl.error && d.ssl.tiene_ssl) {
+      html += card('crit','b-red','SSL ERROR', d.ssl.error, 'Revisa la configuracion del certificado.');
+    }
+  }
+  // OS Detection
+  if(d.os) {
+    html += card('ok','b-green','SISTEMA DETECTADO', d.os, 'Sistema operativo inferido desde banners de servicios activos.');
+  }
+  // Banners
+  var bannerPorts = d.banners ? Object.keys(d.banners) : [];
+  if(bannerPorts.length) {
+    var bannerDetail = bannerPorts.map(function(p){ return '<code>' + p + '</code>'; }).join(' ');
+    html += card('ok','b-green','BANNERS CAPTURADOS', bannerPorts.length + ' servicio(s)', 'Respuesta obtenida en puertos: ' + bannerDetail);
   }
   col.innerHTML = html;
 }

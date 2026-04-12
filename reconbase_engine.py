@@ -1,6 +1,9 @@
 import concurrent.futures
 import requests
 import socket
+import ssl
+import datetime
+import re as _re
 import time
 import schedule
 
@@ -314,6 +317,120 @@ def vigilancia_nocturna(clientes, api_key):
         else:
             print(f"    [{dominio}] Sin alertas.")
     print(f"[{time.strftime('%H:%M:%S')}] Ronda finalizada.")
+
+
+# ─────────────────────────────────────────────────────────────
+# MÓDULO 7: ANÁLISIS SSL/TLS
+# ─────────────────────────────────────────────────────────────
+def ssl_scan(target, port=443, timeout=6):
+    """Analiza el certificado SSL/TLS y configuración de cifrado."""
+    result = {
+        "tiene_ssl": False,
+        "expira": None,
+        "dias_restantes": None,
+        "version_ssl": None,
+        "cifrado": None,
+        "caducado": False,
+        "pronto_a_caducar": False,
+        "sujeto": None,
+        "error": None,
+    }
+    try:
+        ctx = ssl.create_default_context()
+        with socket.create_connection((target, port), timeout=timeout) as sock:
+            with ctx.wrap_socket(sock, server_hostname=target) as ssock:
+                cert = ssock.getpeercert()
+                cipher = ssock.cipher()
+                result["tiene_ssl"] = True
+                result["version_ssl"] = ssock.version()
+                result["cifrado"] = cipher[0] if cipher else None
+                expire_str = cert.get("notAfter", "")
+                if expire_str:
+                    expire_dt = datetime.datetime.strptime(expire_str, "%b %d %H:%M:%S %Y %Z")
+                    result["expira"] = expire_dt.strftime("%d/%m/%Y")
+                    dias = (expire_dt - datetime.datetime.utcnow()).days
+                    result["dias_restantes"] = dias
+                    result["caducado"] = dias < 0
+                    result["pronto_a_caducar"] = 0 <= dias < 30
+                sujeto = dict(x[0] for x in cert.get("subject", []))
+                result["sujeto"] = sujeto.get("commonName", "")
+    except ssl.SSLCertVerificationError as e:
+        result["tiene_ssl"] = True
+        result["error"] = "Certificado no verificable: " + str(e)[:80]
+    except ConnectionRefusedError:
+        result["error"] = "Puerto 443 cerrado"
+    except Exception as e:
+        result["error"] = str(e)[:80]
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
+# MÓDULO 8: BANNER GRABBING Y DETECCIÓN DE OS
+# ─────────────────────────────────────────────────────────────
+_PROBES = {
+    21:   b"",
+    22:   b"",
+    25:   b"EHLO recon\r\n",
+    80:   b"HEAD / HTTP/1.0\r\nHost: target\r\n\r\n",
+    110:  b"",
+    143:  b"",
+    3306: b"",
+    5432: b"",
+    6379: b"PING\r\n",
+    8080: b"HEAD / HTTP/1.0\r\nHost: target\r\n\r\n",
+    9200: b"",
+}
+
+def banner_grab(target, puertos_abiertos, timeout=2):
+    """Captura banners de servicios en puertos abiertos."""
+    banners = {}
+    for p_info in puertos_abiertos:
+        port = p_info["puerto"]
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(timeout)
+            s.connect((target, port))
+            probe = _PROBES.get(port, b"")
+            if probe:
+                try:
+                    s.send(probe)
+                except Exception:
+                    pass
+            try:
+                banner = s.recv(1024).decode("utf-8", errors="ignore").strip()
+            except Exception:
+                banner = ""
+            if banner:
+                banners[port] = banner[:300]
+            s.close()
+        except Exception:
+            pass
+    return banners
+
+
+def detect_os_from_banners(banners):
+    """Infiere el sistema operativo a partir de los banners capturados."""
+    for banner in banners.values():
+        b = banner.lower()
+        if "ubuntu" in b:                       return "Linux (Ubuntu)"
+        if "debian" in b:                       return "Linux (Debian)"
+        if "centos" in b:                       return "Linux (CentOS)"
+        if "fedora" in b:                       return "Linux (Fedora)"
+        if "red hat" in b:                      return "Linux (Red Hat)"
+        if "freebsd" in b:                      return "FreeBSD"
+        if "windows" in b or "microsoft" in b or "iis" in b: return "Windows Server"
+        if "openssh" in b:                      return "Linux/Unix"
+        if "nginx" in b:                        return "Linux (Nginx)"
+        if "apache" in b:                       return "Linux (Apache)"
+    return None
+
+
+# ─────────────────────────────────────────────────────────────
+# HELPER: DETECTAR SI EL TARGET ES IP O DOMINIO
+# ─────────────────────────────────────────────────────────────
+def es_ip(target):
+    """Devuelve True si el target es una dirección IPv4."""
+    return bool(_re.match(r'^\d{1,3}(\.\d{1,3}){3}$', target.strip()))
 
 if __name__ == "__main__":
     import os

@@ -73,7 +73,13 @@ def google_verify():
 
 @app.route("/")
 def index():
-    return render_template("landing.html", user=current_user)
+    stats_scans   = Scan.query.count()
+    stats_vulns   = int((db.session.query(db.func.sum(Scan.riesgo)).scalar() or 0) / 10)
+    stats_breaches = User.query.count()
+    return render_template("landing.html", user=current_user,
+                           stats_scans=stats_scans,
+                           stats_vulns=stats_vulns,
+                           stats_breaches=stats_breaches)
 
 @app.route("/login")
 def login_page():
@@ -334,28 +340,49 @@ def scan():
     if not objetivo:
         return jsonify({"error": "Objetivo vacío"}), 400
 
+    es_ip    = engine.es_ip(objetivo)
     dominio  = objetivo.split("@")[-1] if "@" in objetivo else objetivo
     es_email = "@" in objetivo
 
-    puertos = engine.scan_critical_ports_fast(dominio)
-    dns     = engine.check_email_spoofing(dominio)
-    headers = engine.check_security_headers(dominio)
-    subs    = engine.scan_subdomains(dominio)
-    cms     = engine.detect_cms(dominio)
-    leaks   = []
+    # Módulos comunes: puertos, SSL, banners
+    puertos  = engine.scan_critical_ports_fast(dominio)
+    ssl_info = engine.ssl_scan(dominio)
+    banners  = engine.banner_grab(dominio, puertos)
+    os_det   = engine.detect_os_from_banners(banners)
+
+    # Módulos solo para dominios (no IPs)
+    if not es_ip:
+        dns     = engine.check_email_spoofing(dominio)
+        headers = engine.check_security_headers(dominio)
+        subs    = engine.scan_subdomains(dominio)
+        cms     = engine.detect_cms(dominio)
+    else:
+        dns     = {"SPF": None, "DMARC": None, "SPF_raw": "", "DMARC_raw": ""}
+        headers = {}
+        subs    = []
+        cms     = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
+
+    leaks = []
     if es_email and API_KEY:
         leaks = engine.check_leaks_real(objetivo, API_KEY) or []
 
     riesgo, desglose = calcular_riesgo(puertos, dns, leaks, headers)
-    # Añadir riesgo por CMS con riesgo detectado
     if cms.get("riesgo"):
         riesgo = min(100, riesgo + 10)
         desglose["CMS desactualizable"] = 10
+    # Penalización SSL
+    if ssl_info.get("caducado"):
+        riesgo = min(100, riesgo + 20)
+        desglose["SSL caducado"] = 20
+    elif ssl_info.get("pronto_a_caducar"):
+        riesgo = min(100, riesgo + 10)
+        desglose["SSL por caducar"] = 10
     label, color = label_riesgo(riesgo)
 
     resultado = {
         "objetivo":  objetivo,
         "dominio":   dominio,
+        "es_ip":     es_ip,
         "puertos":   puertos,
         "dns":       dns,
         "headers":   {k: bool(v) for k, v in headers.items()},
@@ -367,6 +394,9 @@ def scan():
         "color":     color,
         "desglose":  desglose,
         "cms":       cms,
+        "ssl":       ssl_info,
+        "banners":   banners,
+        "os":        os_det,
         "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
     }
 
