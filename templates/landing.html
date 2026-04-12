@@ -297,6 +297,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 .f-copy{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .f-links{display:flex;gap:1.5rem;font-size:.75rem;color:#64748B;font-family:'JetBrains Mono',monospace}
 @media(max-width:768px){.demo-grid{grid-template-columns:1fr}.nav-links{display:none}}
+@media(max-width:480px){.hero{padding:3rem 5% 2.5rem}.hero h1{font-size:1.9rem}.hero-btns{flex-direction:column}.hero-counter-inner{gap:1rem}.section,.demo-section{padding:3rem 5%}.cf-row{gap:1.5rem}.pricing-grid{grid-template-columns:1fr}.bacomp-grid{grid-template-columns:1fr}footer{flex-direction:column;text-align:center}}
 
 /* CARACTERISTICAS */
 .cf-row{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;margin-bottom:5rem;padding-bottom:5rem;border-bottom:1px solid var(--border)}
@@ -381,7 +382,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <a href="/perfil" class="btn-login">Mi perfil</a>
     <a href="/app" class="btn-nav">Mi dashboard</a>
     {% else %}
-    <a href="/login" class="btn-login">Iniciar sesion</a>
+    <a href="/login" class="btn-login">Iniciar sesión</a>
     <a href="/register" class="btn-nav">Registro gratuito</a>
     {% endif %}
   </div>
@@ -420,7 +421,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     </div>
     <div class="gauge-items">
       <div class="gauge-item"><div class="gauge-item-val" style="color:#EF4444">2</div><div class="gauge-item-lbl">Puertos expuestos</div></div>
-      <div class="gauge-item"><div class="gauge-item-val" style="color:#EF4444">1</div><div class="gauge-item-lbl">Filtracion</div></div>
+      <div class="gauge-item"><div class="gauge-item-val" style="color:#EF4444">1</div><div class="gauge-item-lbl">Filtración</div></div>
       <div class="gauge-item"><div class="gauge-item-val" style="color:#F59E0B">SPF</div><div class="gauge-item-lbl">DNS sin proteger</div></div>
       <div class="gauge-item"><div class="gauge-item-val" style="color:#4ADE80">3</div><div class="gauge-item-lbl">Subdominios</div></div>
     </div>
@@ -544,7 +545,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
         <div class="cf-dns-row err"><span class="cf-dns-label">DMARC</span><span class="cf-dns-val" style="color:#64748B;font-style:italic">No encontrado</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">FALTA</span></div>
         <div class="cf-dns-row warn"><span class="cf-dns-label">DKIM</span><span class="cf-dns-val" style="color:#64748B;font-style:italic">Solo selector google</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">PARCIAL</span></div>
         <div style="margin-top:1rem;background:#050810;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.7rem">
-          <div style="color:#64748B;margin-bottom:.35rem">Anadir en tu DNS (TXT):</div>
+          <div style="color:#64748B;margin-bottom:.35rem">Añadir en tu DNS (TXT):</div>
           <div style="color:#86EFAC;word-break:break-all">_dmarc.tuempresa.com → v=DMARC1; p=quarantine; rua=mailto:dmarc@tuempresa.com</div>
         </div>
       </div>
@@ -672,7 +673,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="cf-mock" style="padding:0;overflow:hidden">
         <div style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);padding:1.25rem 1.5rem">
           <div style="font-size:.95rem;font-weight:800;color:#fff;letter-spacing:-.03em">ReconBase</div>
-          <div style="font-size:.68rem;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;margin-top:.2rem">Informe de Auditoria de Seguridad</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;margin-top:.2rem">Informe de Auditoría de Seguridad</div>
         </div>
         <div style="padding:1rem 1.25rem">
           <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;padding:.6rem;background:#080C14;border-radius:6px"><div style="font-size:1.6rem;font-weight:800;color:#D97706">47%</div><div><div style="font-size:.7rem;font-weight:700;color:#D97706;font-family:'JetBrains Mono',monospace">RIESGO MODERADO</div><div style="font-size:.65rem;color:#64748B">3 vectores requieren accion</div></div></div>
@@ -727,15 +728,15 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="ba-items">
         <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Firewall configurado — 0 puertos expuestos al exterior</span></div>
         <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Credenciales renovadas y 2FA activado en todas las cuentas</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">SPF + DMARC con politica estricta — dominio protegido</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">SPF + DMARC con política estricta — dominio protegido</span></div>
         <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Todas las cabeceras HTTP configuradas correctamente</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Admin restringido por IP + autenticacion de doble factor</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Vigilancia nocturna activa — ultimo escaneo hace 2 horas</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Admin restringido por IP + autenticación de doble factor</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Vigilancia nocturna activa — último escaneo hace 2 horas</span></div>
       </div>
     </div>
   </div>
   <div style="text-align:center;margin-top:2.5rem">
-    <a href="/register" class="btn-primary" style="display:inline-flex">Descubre en que estado esta tu empresa — es gratis</a>
+    <a href="/register" class="btn-primary" style="display:inline-flex">Descubre en qué estado está tu empresa — es gratis</a>
   </div>
 </section>
 
@@ -750,7 +751,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="log" id="tlog2" style="opacity:0"><span class="lt">03:00:04</span><span class="lok">[OK]</span><span class="lmsg">Red perimetral limpia. 0 puertos expuestos.</span></div>
       <div class="log" id="tlog3" style="opacity:0"><span class="lt">03:00:07</span><span class="lok">[OK]</span><span class="lmsg">SPF y DMARC verificados correctamente.</span></div>
       <div class="log" id="tlog4" style="opacity:0"><span class="lt">03:00:12</span><span class="lwarn">[WARN]</span><span class="lmsg">Nuevo subdominio detectado</span><span class="ltgt" style="color:#FBBF24">staging.tuempresa.com</span></div>
-      <div class="log" id="tlog5" style="opacity:0"><span class="lt">03:00:18</span><span class="lcrit">[ALERT]</span><span class="lmsg">Filtracion detectada en HIBP</span><span class="ltgt" style="color:#F87171">admin@tuempresa.com</span></div>
+      <div class="log" id="tlog5" style="opacity:0"><span class="lt">03:00:18</span><span class="lcrit">[ALERT]</span><span class="lmsg">Filtración detectada en HIBP</span><span class="ltgt" style="color:#F87171">admin@tuempresa.com</span></div>
       <div class="log" id="tlog6" style="opacity:0"><span class="lt">03:00:19</span><span class="lcrit">[NOTIF]</span><span class="lmsg">Alerta enviada al responsable de seguridad.</span></div>
     </div>
   </div>
@@ -758,15 +759,15 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
 <section class="demo-section" id="como-funciona">
   <div class="sec-label">Tutorial interactivo</div>
-  <h2 class="sec-title">Asi funciona ReconBase</h2>
+  <h2 class="sec-title">Así funciona ReconBase</h2>
   <p class="sec-sub">Haz clic en cada paso para ver exactamente lo que hace la plataforma.</p>
   <div class="demo-grid">
     <div class="demo-steps-nav">
       <div class="demo-step-btn active" onclick="setDemo(0,this)"><div class="dsb-num">1</div><div><div class="dsb-title">Introduces tu dominio</div><div class="dsb-desc">Solo necesitas escribir tu dominio o email corporativo.</div></div></div>
       <div class="demo-step-btn" onclick="setDemo(1,this)"><div class="dsb-num">2</div><div><div class="dsb-title">El motor escanea en tiempo real</div><div class="dsb-desc">ReconBase analiza puertos, DNS, subdominios y cabeceras HTTP.</div></div></div>
-      <div class="demo-step-btn" onclick="setDemo(2,this)"><div class="dsb-num">3</div><div><div class="dsb-title">Recibes el informe de riesgos</div><div class="dsb-desc">Cada vulnerabilidad explicada con pasos de accion concretos.</div></div></div>
+      <div class="demo-step-btn" onclick="setDemo(2,this)"><div class="dsb-num">3</div><div><div class="dsb-title">Recibes el informe de riesgos</div><div class="dsb-desc">Cada vulnerabilidad explicada con pasos de acción concretos.</div></div></div>
       <div class="demo-step-btn" onclick="setDemo(3,this)"><div class="dsb-num">4</div><div><div class="dsb-title">Descargas el PDF ejecutivo</div><div class="dsb-desc">Listo para presentar al equipo directivo o a un cliente.</div></div></div>
-      <div class="demo-step-btn" onclick="setDemo(4,this)"><div class="dsb-num">5</div><div><div class="dsb-title">Vigilancia nocturna automatica</div><div class="dsb-desc">El motor vela por tu infraestructura cada noche y alerta si algo cambia.</div></div></div>
+      <div class="demo-step-btn" onclick="setDemo(4,this)"><div class="dsb-num">5</div><div><div class="dsb-title">Vigilancia nocturna automática</div><div class="dsb-desc">El motor revisa tu infraestructura cada noche y alerta si algo cambia.</div></div></div>
     </div>
     <div class="demo-preview">
       <div class="demo-panel active" id="dp-0">
@@ -783,23 +784,23 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       </div>
       <div class="demo-panel" id="dp-1">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Analizando miempresa.com</div>
-        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Puertos criticos</div><div class="dri-status status-ok">Completado</div></div>
+        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Puertos críticos</div><div class="dri-status status-ok">Completado</div></div>
         <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">DNS / SPF / DMARC</div><div class="dri-status status-ok">Completado</div></div>
         <div class="demo-result-item"><div class="dri-dot" style="background:var(--amber)"></div><div class="dri-label">Cabeceras HTTP</div><div class="dri-status status-warn">2 ausentes</div></div>
         <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Subdominios</div><div class="dri-status status-ok">3 encontrados</div></div>
         <div class="demo-result-item"><div class="dri-dot" style="background:var(--red)"></div><div class="dri-label">Filtraciones HIBP</div><div class="dri-status status-err">1 brecha</div></div>
-        <div style="margin-top:1rem;background:#080C14;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--dim)">Duracion total: <span style="color:var(--green)">1 min 43 seg</span></div>
+        <div style="margin-top:1rem;background:#080C14;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--dim)">Duración total: <span style="color:var(--green)">1 min 43 seg</span></div>
       </div>
       <div class="demo-panel" id="dp-2">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Informe de riesgos</div>
-        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.75rem;background:#080C14;border-radius:8px"><div style="font-size:2rem;font-weight:800;color:var(--amber)">42%</div><div><div style="font-size:.75rem;font-weight:700;color:var(--amber)">RIESGO MODERADO</div><div style="font-size:.72rem;color:var(--muted)">Se requiere accion en 2 vectores</div></div></div>
-        <div style="background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:.75rem;margin-bottom:.5rem"><div style="font-size:.68rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">DATA BREACH DETECTED</div><div style="font-size:.78rem;color:var(--muted)">admin@miempresa.com aparece en 1 base de datos comprometida. Rote credenciales.</div></div>
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.75rem;background:#080C14;border-radius:8px"><div style="font-size:2rem;font-weight:800;color:var(--amber)">42%</div><div><div style="font-size:.75rem;font-weight:700;color:var(--amber)">RIESGO MODERADO</div><div style="font-size:.72rem;color:var(--muted)">Se requiere acción en 2 vectores</div></div></div>
+        <div style="background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:.75rem;margin-bottom:.5rem"><div style="font-size:.68rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">DATA BREACH DETECTED</div><div style="font-size:.78rem;color:var(--muted)">admin@miempresa.com aparece en 1 base de datos comprometida. Cambia las credenciales.</div></div>
         <div style="background:rgba(245,158,11,.08);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:.75rem"><div style="font-size:.68rem;font-weight:700;color:#FBBF24;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">HTTP HEADERS INCOMPLETE</div><div style="font-size:.78rem;color:var(--muted)">CSP y Permissions-Policy no configuradas.</div></div>
       </div>
       <div class="demo-panel" id="dp-3">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Vista previa PDF ejecutivo</div>
         <div class="demo-pdf-preview">
-          <div class="pdf-header"><div style="font-size:.9rem;font-weight:700">ReconBase Enterprise</div><div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:.15rem">Informe de Auditoria de Seguridad</div></div>
+          <div class="pdf-header"><div style="font-size:.9rem;font-weight:700">ReconBase Enterprise</div><div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:.15rem">Informe de Auditoría de Seguridad</div></div>
           <div class="pdf-row"><span class="pdf-key">Objetivo</span><span style="color:#93C5FD;font-family:'JetBrains Mono',monospace;font-size:.78rem">miempresa.com</span></div>
           <div class="pdf-row"><span class="pdf-key">Riesgo global</span><span style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:.78rem">42% MODERADO</span></div>
           <div class="pdf-row"><span class="pdf-key">SPF / DMARC</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.78rem">[OK]</span></div>
@@ -808,7 +809,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
         </div>
       </div>
       <div class="demo-panel" id="dp-4">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Alertas automaticas - Plan Pro</div>
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Alertas automáticas — Plan Pro</div>
         <div class="alert-demo"><div class="alert-demo-title">NUEVA ALERTA - miempresa.com</div><div class="alert-demo-body">Nuevo subdominio detectado: <span style="color:#60A5FA">api2.miempresa.com</span>. Verifica si fue creado intencionalmente.</div></div>
         <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:1rem"><div style="font-size:.75rem;font-weight:700;color:var(--green);margin-bottom:.5rem;font-family:'JetBrains Mono',monospace">ULTIMA RONDA - 03:00</div><div style="font-size:.78rem;color:var(--muted);line-height:1.8">Red perimetral: <span style="color:var(--green)">Limpia</span><br>SPF / DMARC: <span style="color:var(--green)">Verificados</span><br>Subdominios nuevos: <span style="color:var(--amber)">1 detectado</span></div></div>
       </div>
@@ -826,18 +827,18 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
         <div class="plan-price">0 <span>/ mes</span></div>
         <div class="plan-desc">Para cualquier empresa que quiera conocer su estado de seguridad sin coste.</div>
         <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>10 analisis al mes</div>
-        <div class="pf"><span class="ck">v</span>Escaner de puertos expuestos</div>
-        <div class="pf"><span class="ck">v</span>Verificacion DNS / SPF / DMARC</div>
+        <div class="pf"><span class="ck">v</span>10 análisis al mes</div>
+        <div class="pf"><span class="ck">v</span>Escáner de puertos expuestos</div>
+        <div class="pf"><span class="ck">v</span>Verificación DNS / SPF / DMARC</div>
         <div class="pf"><span class="ck">v</span>Cabeceras de seguridad HTTP</div>
-        <div class="pf"><span class="ck">v</span>Enumeracion de subdominios</div>
-        <div class="pf"><span class="ck">v</span>Informe PDF basico</div>
+        <div class="pf"><span class="ck">v</span>Enumeración de subdominios</div>
+        <div class="pf"><span class="ck">v</span>Informe PDF básico</div>
         <div class="plan-div" style="margin-top:1.2rem"></div>
         <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
-          Cada analisis gratuito te muestra que servicios de tu empresa son visibles desde internet, si tu dominio de correo puede ser suplantado y si tu web tiene configuraciones de seguridad incorrectas. Obtienes un informe descargable con los resultados.
+          Cada análisis gratuito te muestra qué servicios de tu empresa son visibles desde internet, si tu dominio de correo puede ser suplantado y si tu web tiene configuraciones de seguridad incorrectas. Obtienes un informe descargable con los resultados.
         </div>
         <div class="pf off"><span class="cx">x</span>Filtraciones Deep Web</div>
-        <div class="pf off"><span class="cx">x</span>Alertas automaticas por email</div>
+        <div class="pf off"><span class="cx">x</span>Alertas automáticas por email</div>
         <div class="pf off"><span class="cx">x</span>Vigilancia nocturna 24/7</div>
         <a href="/register" class="btn-plan ol" style="margin-top:1.75rem;display:block;text-align:center">Empezar gratis</a>
       </div>
@@ -898,13 +899,13 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%;text-align:center">
   <div class="sec-label" style="text-align:center">Apoya el proyecto</div>
   <h2 style="font-size:clamp(1.5rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem">ReconBase es completamente gratuito</h2>
-  <p style="color:var(--muted);font-size:.95rem;max-width:480px;margin:0 auto 2rem;line-height:1.7">Si te ha sido util y quieres ayudar a mantener el proyecto, cualquier donacion es bienvenida y nos ayuda a seguir mejorando la herramienta.</p>
+  <p style="color:var(--muted);font-size:.95rem;max-width:480px;margin:0 auto 2rem;line-height:1.7">Si te ha sido útil y quieres ayudar a mantener el proyecto, cualquier donación es bienvenida y nos ayuda a seguir mejorando la herramienta.</p>
   <a href="https://paypal.me/ReconBase" target="_blank" rel="noopener">
     <button style="background:#0070E0;color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#005bb5'" onmouseout="this.style.background='#0070E0'">
       Donar con PayPal
     </button>
   </a>
-  <p style="font-size:.72rem;color:var(--dim);margin-top:1rem;font-family:'JetBrains Mono',monospace">Pago seguro a traves de PayPal. Sin compromisos.</p>
+  <p style="font-size:.72rem;color:var(--dim);margin-top:1rem;font-family:'JetBrains Mono',monospace">Pago seguro a través de PayPal. Sin compromisos.</p>
 </div>
 
 </main>
@@ -916,7 +917,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     </svg>
   </a>
   <div class="f-copy">2026 ReconBase. Todos los derechos reservados.</div>
-  <div class="f-links"><a href="/privacy">Privacidad</a><a href="/terms">Terminos</a><a href="mailto:ReconBase.alertas@gmail.com">Contacto</a></div>
+  <div class="f-links"><a href="/privacy">Privacidad</a><a href="/terms">Términos</a><a href="mailto:ReconBase.alertas@gmail.com">Contacto</a></div>
 </footer>
 
 <script>
