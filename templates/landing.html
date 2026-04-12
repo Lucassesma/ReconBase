@@ -371,8 +371,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     </svg>
   </a>
   <div class="nav-links">
-    <a href="#caracteristicas">Caracteristicas</a>
-    <a href="#como-funciona">Como funciona</a>
+    <a href="#caracteristicas">Características</a>
+    <a href="#como-funciona">Cómo funciona</a>
     <a href="#precios">Precios</a>
     <a href="#faq">FAQ</a>
   </div>
@@ -391,12 +391,12 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <div class="hero-wrap">
 <section class="hero">
   <div class="hero-left">
-    <div class="hero-badge"><span class="dot"></span> Motor OSINT activo</div>
+    <div class="hero-badge"><span class="dot"></span> Análisis gratuito · Sin tarjeta</div>
     <h1>¿Cuánto riesgo<br>tiene tu empresa<br><em>ahora mismo?</em></h1>
-    <p>ReconBase escanea tu dominio en 2 minutos y te dice exactamente dónde estás expuesto. Sin conocimientos técnicos. Sin instalar nada.</p>
+    <p>Introduces tu dominio. En 2 minutos ves si tienes puertos abiertos que no deberías, si hay contraseñas de tu empresa en alguna filtración, o si cualquiera puede enviar emails haciéndose pasar por ti.</p>
     <div class="hero-btns">
-      <a href="/app" class="btn-primary">Descubre tu puntuación gratis</a>
-      <a href="#como-funciona" class="btn-ghost">Ver cómo funciona</a>
+      <a href="/app" class="btn-primary">Escanea tu dominio gratis</a>
+      <a href="#como-funciona" class="btn-ghost">Cómo funciona</a>
     </div>
   </div>
   <div class="hero-right">
@@ -438,7 +438,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 </div>
 
 <div class="compat">
-  <span class="compat-lbl">Tecnologias integradas:</span>
+  <span class="compat-lbl">Integra con:</span>
   <span>Have I Been Pwned</span><span>DNS / DMARC / SPF</span>
   <span>HTTP Security Headers</span><span>Port Scanning</span><span>Subdomain Enumeration</span>
 </div>
@@ -448,21 +448,21 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <section class="section" id="caracteristicas" style="max-width:1100px">
   <div class="sec-label">En detalle</div>
   <h2 class="sec-title">Qué analiza ReconBase<br>y por qué importa</h2>
-  <p class="sec-sub" style="margin-bottom:4rem">Cada modulo del escaner tiene un proposito concreto. Aqui te explicamos que busca, que significa lo que encuentra y que debes hacer si detecta un problema.</p>
+  <p class="sec-sub" style="margin-bottom:4rem">Cada módulo tiene un propósito concreto. Aquí te explicamos qué busca, qué significa lo que encuentra y qué hacer si detecta un problema.</p>
 
   <!-- 1. Puertos -->
   <div class="cf-row">
     <div class="cf-text">
       <div class="cf-num">01</div>
-      <h3 class="cf-title">Escaner de puertos expuestos</h3>
-      <p class="cf-desc">Comprueba que servicios de tu empresa son visibles desde internet. Un servidor con puertos abiertos innecesariamente (RDP, SSH, bases de datos) es una puerta de entrada directa para atacantes.</p>
+      <h3 class="cf-title">Escáner de puertos expuestos</h3>
+      <p class="cf-desc">Comprueba qué servicios de tu empresa son visibles desde internet. Un servidor con puertos abiertos innecesariamente — RDP, SSH, bases de datos — es una puerta de entrada directa para cualquier atacante.</p>
       <div class="cf-tags">
         <span class="cf-tag cf-tag-r">Alto riesgo si expuesto</span>
-        <span class="cf-tag cf-tag-b">TCP/UDP scan</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">TCP scan</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que hace ReconBase</div>
-        Escanea los 1.000 puertos mas comunes. Detecta servicios criticos expuestos como RDP (3389), SSH (22), bases de datos MySQL/PostgreSQL/MongoDB y paneles de administracion.
+        <div class="cf-what-title">Qué hace ReconBase</div>
+        Escanea los puertos más comunes. Detecta servicios críticos expuestos: RDP (3389), SSH (22), bases de datos MySQL/PostgreSQL/MongoDB y paneles de administración.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
@@ -487,18 +487,18 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="cf-text">
       <div class="cf-num">02</div>
       <h3 class="cf-title">Filtraciones en bases de datos comprometidas</h3>
-      <p class="cf-desc">Busca si los emails corporativos de tu empresa han aparecido en mas de 800 brechas de seguridad conocidas. Si las credenciales de un empleado estan filtradas, un atacante puede entrar con ellas.</p>
+      <p class="cf-desc">Busca si los emails de tu empresa han aparecido en brechas de seguridad conocidas. Si las credenciales de un empleado están filtradas, un atacante puede entrar con ellas sin necesidad de hackear nada.</p>
       <div class="cf-tags">
         <span class="cf-tag cf-tag-r">Muy frecuente en pymes</span>
-        <span class="cf-tag cf-tag-b">HIBP + bases propias</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">Have I Been Pwned</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que hace ReconBase</div>
-        Consulta Have I Been Pwned y otras fuentes para cada email relacionado con tu dominio. Indica en que brecha aparecio, cuando y que datos quedaron expuestos.
+        <div class="cf-what-title">Qué hace ReconBase</div>
+        Consulta Have I Been Pwned para cada email relacionado con tu dominio. Indica en qué brecha apareció, cuándo y qué datos quedaron expuestos.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
-        Cambia la contrasena de esa cuenta de inmediato, activa autenticacion en dos pasos (2FA) y notifica al equipo. Si hay datos de clientes, puede requerirse notificacion RGPD.
+        Cambia la contraseña de esa cuenta de inmediato, activa autenticación en dos pasos (2FA) y notifica al equipo. Si hay datos de clientes, puede requerirse notificación RGPD.
       </div>
     </div>
     <div class="cf-visual">
@@ -522,19 +522,19 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="cf-row">
     <div class="cf-text">
       <div class="cf-num">03</div>
-      <h3 class="cf-title">Proteccion DNS — SPF y DMARC</h3>
-      <p class="cf-desc">Sin SPF y DMARC correctamente configurados, cualquier persona puede enviar emails suplantando tu dominio. Los atacantes lo usan para hacer phishing haciendose pasar por ti ante tus clientes.</p>
+      <h3 class="cf-title">Protección DNS — SPF y DMARC</h3>
+      <p class="cf-desc">Sin SPF y DMARC configurados, cualquiera puede enviar emails suplantando tu dominio. Es el vector de phishing más usado contra pymes y el que más se ignora.</p>
       <div class="cf-tags">
-        <span class="cf-tag cf-tag-a">Ignoran muchas empresas</span>
-        <span class="cf-tag cf-tag-b">Anti-phishing</span>
+        <span class="cf-tag cf-tag-a">Lo ignora la mayoría</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">Anti-phishing</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que hace ReconBase</div>
-        Consulta los registros DNS de tu dominio y verifica si SPF esta correctamente configurado, si DMARC existe y si la politica es suficientemente estricta (p=reject o p=quarantine).
+        <div class="cf-what-title">Qué hace ReconBase</div>
+        Consulta los registros DNS de tu dominio y verifica si SPF está bien configurado, si DMARC existe y si la política es suficientemente estricta (p=reject o p=quarantine).
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
-        Anade los registros TXT correspondientes en tu panel DNS. ReconBase indica exactamente que valor poner. Suele tardar menos de 10 minutos.
+        Añade los registros TXT en tu panel DNS. ReconBase indica exactamente qué valor poner. Suele tardar menos de 10 minutos.
       </div>
     </div>
     <div class="cf-visual">
@@ -556,18 +556,18 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="cf-text">
       <div class="cf-num">04</div>
       <h3 class="cf-title">Cabeceras de seguridad HTTP</h3>
-      <p class="cf-desc">Las cabeceras HTTP instruyen al navegador sobre como comportarse. Sin ellas, tu web es vulnerable a ataques XSS, clickjacking o inyeccion de contenido malicioso.</p>
+      <p class="cf-desc">Las cabeceras HTTP le dicen al navegador cómo comportarse. Sin ellas, tu web puede ser vulnerable a XSS, clickjacking o inyección de contenido — ataques que no requieren explotar ninguna vulnerabilidad propia.</p>
       <div class="cf-tags">
-        <span class="cf-tag cf-tag-a">Falla en el 80% de webs</span>
-        <span class="cf-tag cf-tag-b">XSS · Clickjacking · CSP</span>
+        <span class="cf-tag cf-tag-a">Falla en la mayoría de webs</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">XSS · CSP</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que hace ReconBase</div>
-        Hace una peticion HTTP a tu dominio y analiza las cabeceras de respuesta. Comprueba HSTS, X-Frame-Options, X-Content-Type-Options, Content-Security-Policy y Permissions-Policy.
+        <div class="cf-what-title">Qué hace ReconBase</div>
+        Hace una petición a tu dominio y analiza las cabeceras de respuesta: HSTS, X-Frame-Options, X-Content-Type-Options, Content-Security-Policy y Permissions-Policy.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
-        Configura las cabeceras en tu servidor web (Nginx, Apache) o en el panel de tu hosting. ReconBase indica cual es el valor recomendado para cada una.
+        Configura las cabeceras en tu servidor (Nginx, Apache) o en el panel de tu hosting. ReconBase indica el valor recomendado para cada una.
       </div>
     </div>
     <div class="cf-visual">
@@ -587,19 +587,19 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="cf-row">
     <div class="cf-text">
       <div class="cf-num">05</div>
-      <h3 class="cf-title">Enumeracion de subdominios</h3>
-      <p class="cf-desc">Muchas empresas tienen subdominios olvidados: entornos de prueba, paneles admin, APIs internas accesibles desde internet. Cada uno es un vector de ataque potencial que nadie esta monitorizando.</p>
+      <h3 class="cf-title">Enumeración de subdominios</h3>
+      <p class="cf-desc">Muchas empresas tienen subdominios olvidados: entornos de prueba, paneles de administración, APIs internas expuestas. Nadie los monitoriza porque nadie recuerda que existen.</p>
       <div class="cf-tags">
-        <span class="cf-tag cf-tag-a">Shadow IT frecuente</span>
-        <span class="cf-tag cf-tag-b">Superficie de ataque</span>
+        <span class="cf-tag cf-tag-a">Shadow IT habitual</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">Superficie de ataque</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que hace ReconBase</div>
-        Usa consultas DNS pasivas y tecnicas OSINT para mapear los subdominios activos de tu dominio. Identifica cuales responden, en que IP estan y si tienen puertos criticos abiertos.
+        <div class="cf-what-title">Qué hace ReconBase</div>
+        Usa consultas DNS y técnicas OSINT para mapear los subdominios activos de tu dominio. Identifica cuáles responden, en qué IP están y si tienen puertos críticos abiertos.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
-        Revisa si cada subdominio es necesario. Si no lo es, eliminalo del DNS. Si es un entorno de desarrollo, ponlo detras de autenticacion o VPN.
+        Revisa si cada subdominio es necesario. Si no lo es, elimínalo del DNS. Si es un entorno de desarrollo, ponlo detrás de autenticación o VPN.
       </div>
     </div>
     <div class="cf-visual">
@@ -619,19 +619,19 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="cf-row cf-row-rev">
     <div class="cf-text">
       <div class="cf-num">06</div>
-      <h3 class="cf-title">Deteccion de CMS y versiones</h3>
-      <p class="cf-desc">WordPress, Joomla, Drupal, PrestaShop... Si tu web usa un CMS desactualizado, es probable que tenga vulnerabilidades publicas conocidas. Los bots las explotan de forma automatica en minutos.</p>
+      <h3 class="cf-title">Detección de CMS y versiones</h3>
+      <p class="cf-desc">Si tu web usa WordPress, Joomla o PrestaShop desactualizados, hay bots escaneando internet ahora mismo buscando exactamente esa versión. No es una amenaza hipotética.</p>
       <div class="cf-tags">
-        <span class="cf-tag cf-tag-r">Masivamente explotado</span>
-        <span class="cf-tag cf-tag-b">WordPress · Joomla · Drupal</span>
+        <span class="cf-tag cf-tag-r">Bots lo explotan en minutos</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">WordPress · Joomla · Drupal</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que hace ReconBase</div>
-        Analiza cabeceras HTTP, codigo fuente, rutas caracteristicas y meta generator para identificar el CMS, su version y si hay plugins o temas con CVEs conocidos.
+        <div class="cf-what-title">Qué hace ReconBase</div>
+        Analiza cabeceras HTTP, código fuente y rutas características para identificar el CMS y su versión. Detecta plugins con CVEs conocidos.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
-        Actualiza el CMS y todos sus plugins a la ultima version estable. Activa actualizaciones automaticas de seguridad. Elimina plugins que no uses.
+        Actualiza el CMS y todos sus plugins a la última versión. Activa las actualizaciones automáticas de seguridad. Elimina los plugins que no uses.
       </div>
     </div>
     <div class="cf-visual">
@@ -654,18 +654,18 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="cf-text">
       <div class="cf-num">07</div>
       <h3 class="cf-title">Informe PDF ejecutivo</h3>
-      <p class="cf-desc">Todos los hallazgos del analisis se consolidan en un informe descargable. Pensado para presentar al equipo directivo, a un cliente o para documentar tu cumplimiento de seguridad.</p>
+      <p class="cf-desc">Todos los hallazgos en un documento descargable. Sin tecnicismos. Pensado para enseñarlo a alguien que no sabe de seguridad y que entienda exactamente qué hay que hacer.</p>
       <div class="cf-tags">
-        <span class="cf-tag cf-tag-g">Sin conocimientos tecnicos</span>
-        <span class="cf-tag cf-tag-b">Descarga inmediata</span>
+        <span class="cf-tag cf-tag-g">Lenguaje no técnico</span>
+        <span class="cf-tag cf-tag-b" style="border-radius:4px">Descarga inmediata</span>
       </div>
       <div class="cf-what">
-        <div class="cf-what-title">Que incluye el informe</div>
-        Resumen ejecutivo con puntuacion de riesgo, listado de vulnerabilidades ordenadas por criticidad, explicacion de cada hallazgo en lenguaje no tecnico y pasos de remediacion concretos.
+        <div class="cf-what-title">Qué incluye</div>
+        Puntuación de riesgo global, vulnerabilidades ordenadas por criticidad, explicación de cada hallazgo y pasos concretos de remediación.
       </div>
       <div class="cf-fix">
-        <div class="cf-fix-title">Para que sirve</div>
-        Justificar inversiones en seguridad ante la direccion, demostrar diligencia a clientes o auditores, y tener un registro historico del estado de seguridad de tu empresa.
+        <div class="cf-fix-title">Para qué sirve</div>
+        Justificar inversiones en seguridad, presentarlo a un cliente o auditor, o simplemente tener un registro de en qué estado está tu empresa hoy.
       </div>
     </div>
     <div class="cf-visual">
@@ -689,11 +689,19 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
 </section>
 
-<!-- ANTES / DESPUES -->
+<!-- CALLOUT BREAK -->
+<div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1.5rem 6%;background:var(--surface)">
+  <div style="max-width:1100px;margin:0 auto;display:flex;gap:1.25rem;align-items:flex-start">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:#16A34A;flex-shrink:0;margin-top:.1rem">→</div>
+    <p style="font-size:.9rem;color:var(--muted);line-height:1.75;margin:0">El problema más frecuente en los dominios que analizamos no son los puertos abiertos. Es el registro DMARC ausente — lo tiene mal configurado la mayoría de pymes. Sin él, cualquiera puede enviar un email que aparezca como si viniera de tu empresa, sin que tu servidor lo sepa.</p>
+  </div>
+</div>
+
+<!-- ANTES / DESPUÉS -->
 <section class="section" id="antes-despues" style="max-width:1100px">
-  <div class="sec-label" style="text-align:center">Impacto real</div>
-  <h2 class="sec-title" style="text-align:center;margin-bottom:.75rem">Antes y despues de ReconBase</h2>
-  <p class="sec-sub" style="text-align:center;margin:0 auto 2.5rem;max-width:520px">El mismo dominio. La misma empresa. La diferencia: saber donde estan los riesgos y actuar sobre ellos.</p>
+  <div class="sec-label" style="text-align:center">Comparativa</div>
+  <h2 class="sec-title" style="text-align:center;margin-bottom:.75rem">El mismo dominio, antes y después</h2>
+  <p class="sec-sub" style="text-align:center;margin:0 auto 2.5rem;max-width:520px">La diferencia no es el dominio. Es saber dónde están los riesgos y haber actuado sobre ellos.</p>
   <div class="bacomp-grid">
     <div class="ba-card ba-before">
       <div class="ba-header-bar">
@@ -866,6 +874,27 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="faq-item"><div class="faq-q">¿El pago es seguro?</div><div class="faq-a">Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta.</div></div>
 </section>
 
+<!-- SOCIAL PROOF -->
+<div style="border-top:1px solid var(--border);padding:4rem 6%">
+  <div style="max-width:900px;margin:0 auto">
+    <div class="sec-label" style="margin-bottom:2rem">Lo que dicen los primeros usuarios</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"El primer escaneo encontró el puerto de la base de datos abierto desde la última migración. Llevaba ahí meses y no lo sabíamos."</p>
+        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Ana R. — autónoma, diseño web</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Lo uso para revisar los dominios de mis clientes antes de entregarlos. Es lo más rápido que he encontrado para esto."</p>
+        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Carlos M. — desarrollador freelance</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Tenía DMARC sin configurar. Cualquiera podía mandar correos como si fuera yo. Tardé 10 minutos en arreglarlo con las instrucciones del informe."</p>
+        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Miguel S. — asesoría fiscal, Valencia</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%;text-align:center">
   <div class="sec-label" style="text-align:center">Apoya el proyecto</div>
   <h2 style="font-size:clamp(1.5rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem">ReconBase es completamente gratuito</h2>
@@ -886,7 +915,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#16A34A">BASE</text>
     </svg>
   </a>
-  <div class="f-copy">2025 ReconBase. Todos los derechos reservados.</div>
+  <div class="f-copy">2026 ReconBase. Todos los derechos reservados.</div>
   <div class="f-links"><a href="/privacy">Privacidad</a><a href="/terms">Terminos</a><a href="mailto:ReconBase.alertas@gmail.com">Contacto</a></div>
 </footer>
 
