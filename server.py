@@ -73,13 +73,30 @@ def google_verify():
 
 @app.route("/")
 def index():
-    stats_scans   = Scan.query.count()
-    stats_vulns   = int((db.session.query(db.func.sum(Scan.riesgo)).scalar() or 0) / 10)
-    stats_breaches = User.query.count()
+    plan        = "guest"
+    scans_mes   = 0
+    ultimo_auto = None
+    scan_hora   = 3
+    scan_dias   = []
+    if current_user.is_authenticated:
+        from sqlalchemy import extract
+        now = datetime.utcnow()
+        scans_mes = Scan.query.filter(
+            Scan.user_id == current_user.id,
+            extract('month', Scan.timestamp) == now.month,
+            extract('year',  Scan.timestamp) == now.year
+        ).count()
+        ultimo_auto = Scan.query.filter_by(user_id=current_user.id).filter(
+            Scan.resultado.op('->>')('automatico') == 'true'
+        ).order_by(Scan.timestamp.desc()).first()
+        plan      = current_user.plan
+        scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
+        scan_dias = current_user.scan_dias.split(',') if current_user.scan_dias else []
     return render_template("landing.html", user=current_user,
-                           stats_scans=stats_scans,
-                           stats_vulns=stats_vulns,
-                           stats_breaches=stats_breaches)
+                           plan=plan, scans_mes=scans_mes,
+                           ultimo_auto=ultimo_auto,
+                           api_key_ok=bool(API_KEY),
+                           scan_hora=scan_hora, scan_dias=scan_dias)
 
 @app.route("/login")
 def login_page():
