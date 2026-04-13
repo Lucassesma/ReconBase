@@ -490,11 +490,6 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="nav-right">
     {% if user and user.is_authenticated %}
     <a href="/perfil" class="btn-login">Mi perfil</a>
-    {% if user.plan == 'free' %}
-    <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 29€/mes</button>
-    {% else %}
-    <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .7rem;border-radius:20px;font-weight:700">PRO</span>
-    {% endif %}
     <button class="btn-login" onclick="cerrarSesionLanding()">Salir</button>
     {% else %}
     <a href="/login" class="btn-login">Iniciar sesión</a>
