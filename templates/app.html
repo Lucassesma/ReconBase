@@ -1015,6 +1015,23 @@ if(urlTab) {
     .catch(function(){});
   }
 })();
+
+// Auto-fill y auto-scan desde la landing
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var target = params.get('target');
+  if(target) {
+    var input = document.getElementById('objetivo');
+    if(input) {
+      input.value = decodeURIComponent(target);
+      history.replaceState(null, '', '/app');
+      setTimeout(function() {
+        var btn = document.getElementById('btn-scan');
+        if(btn && !btn.disabled) lanzarScan();
+      }, 400);
+    }
+  }
+})();
 </script>
 </body>
 </html>

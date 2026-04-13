@@ -297,6 +297,15 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 .f-copy{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .f-links{display:flex;gap:1.5rem;font-size:.75rem;color:#64748B;font-family:'JetBrains Mono',monospace}
 @media(max-width:768px){.demo-grid{grid-template-columns:1fr}.nav-links{display:none}}
+/* HERO SCANNER */
+.hero-scan-form{margin-top:1.75rem}
+.hsf-wrap{display:flex;background:rgba(255,255,255,.07);border:1px solid rgba(134,239,172,.3);border-radius:10px;overflow:hidden;max-width:480px;transition:border-color .2s}
+.hsf-wrap:focus-within{border-color:rgba(134,239,172,.6);box-shadow:0 0 0 3px rgba(22,163,74,.12)}
+.hsf-input{flex:1;background:transparent;border:none;color:#F0FDF4;font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.9rem 1.1rem;outline:none;min-width:0}
+.hsf-input::placeholder{color:rgba(134,239,172,.35)}
+.hsf-btn{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.9rem 1.4rem;font-family:'Inter',sans-serif;font-weight:700;font-size:.83rem;cursor:pointer;white-space:nowrap;transition:opacity .15s;letter-spacing:.02em;flex-shrink:0}
+.hsf-btn:hover{opacity:.88}
+.hsf-hint{font-size:.65rem;color:rgba(134,239,172,.4);font-family:'JetBrains Mono',monospace;margin-top:.55rem;padding-left:.15rem}
 @media(max-width:480px){.hero{padding:3rem 5% 2.5rem}.hero h1{font-size:1.9rem}.hero-btns{flex-direction:column}.hero-counter-inner{gap:1rem}.section,.demo-section{padding:3rem 5%}.cf-row{gap:1.5rem}.pricing-grid{grid-template-columns:1fr}.bacomp-grid{grid-template-columns:1fr}footer{flex-direction:column;text-align:center}}
 
 /* CARACTERISTICAS */
@@ -395,9 +404,19 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="hero-badge"><span class="dot"></span> Análisis gratuito · Sin tarjeta</div>
     <h1>¿Cuánto riesgo<br>tiene tu empresa<br><em>ahora mismo?</em></h1>
     <p>Introduces tu dominio. En 2 minutos ves si tienes puertos abiertos que no deberías, si hay contraseñas de tu empresa en alguna filtración, o si cualquiera puede enviar emails haciéndose pasar por ti.</p>
-    <div class="hero-btns">
-      <a href="/app" class="btn-primary">Escanea tu dominio gratis</a>
-      <a href="#como-funciona" class="btn-ghost">Cómo funciona</a>
+    <div class="hero-scan-form">
+      <div class="hsf-wrap">
+        <input type="text" id="hero-domain" class="hsf-input" placeholder="tuempresa.com" onkeydown="if(event.key==='Enter')heroScan()" autocomplete="off" spellcheck="false">
+        <button class="hsf-btn" onclick="heroScan()">Analizar ahora →</button>
+      </div>
+      <div class="hsf-hint">También acepta emails corporativos e IPs · Gratis, sin tarjeta</div>
+    </div>
+    <div style="margin-top:.75rem;display:flex;align-items:center;gap:.5rem">
+      <span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0;animation:pulse 2s ease infinite"></span>
+      <span style="font-size:.65rem;color:rgba(134,239,172,.45);font-family:'JetBrains Mono',monospace">{{ stats_scans }} análisis realizados · {{ stats_breaches }} empresas registradas</span>
+    </div>
+    <div style="margin-top:.65rem">
+      <a href="#como-funciona" style="font-size:.78rem;color:rgba(134,239,172,.55);font-family:'JetBrains Mono',monospace">¿Cómo funciona? →</a>
     </div>
   </div>
   <div class="hero-right">
@@ -791,11 +810,52 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
         <div class="demo-result-item"><div class="dri-dot" style="background:var(--red)"></div><div class="dri-label">Filtraciones HIBP</div><div class="dri-status status-err">1 brecha</div></div>
         <div style="margin-top:1rem;background:#080C14;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--dim)">Duración total: <span style="color:var(--green)">1 min 43 seg</span></div>
       </div>
-      <div class="demo-panel" id="dp-2">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Informe de riesgos</div>
-        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding:.75rem;background:#080C14;border-radius:8px"><div style="font-size:2rem;font-weight:800;color:var(--amber)">42%</div><div><div style="font-size:.75rem;font-weight:700;color:var(--amber)">RIESGO MODERADO</div><div style="font-size:.72rem;color:var(--muted)">Se requiere acción en 2 vectores</div></div></div>
-        <div style="background:rgba(239,68,68,.08);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:.75rem;margin-bottom:.5rem"><div style="font-size:.68rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">DATA BREACH DETECTED</div><div style="font-size:.78rem;color:var(--muted)">admin@miempresa.com aparece en 1 base de datos comprometida. Cambia las credenciales.</div></div>
-        <div style="background:rgba(245,158,11,.08);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;padding:.75rem"><div style="font-size:.68rem;font-weight:700;color:#FBBF24;font-family:'JetBrains Mono',monospace;margin-bottom:.3rem">HTTP HEADERS INCOMPLETE</div><div style="font-size:.78rem;color:var(--muted)">CSP y Permissions-Policy no configuradas.</div></div>
+      <div class="demo-panel" id="dp-2" style="padding:.75rem">
+        <!-- Browser chrome -->
+        <div style="border-radius:8px;overflow:hidden;border:1px solid #1E293B;box-shadow:0 8px 32px rgba(0,0,0,.4)">
+          <div style="background:#0F172A;padding:.45rem .75rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid #1E293B">
+            <div style="display:flex;gap:4px;flex-shrink:0"><div style="width:8px;height:8px;border-radius:50%;background:#EF4444;opacity:.7"></div><div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;opacity:.7"></div><div style="width:8px;height:8px;border-radius:50%;background:#22C55E;opacity:.7"></div></div>
+            <div style="flex:1;background:#1E293B;border-radius:4px;padding:.18rem .6rem;font-size:.6rem;color:#475569;font-family:'JetBrains Mono',monospace;overflow:hidden;white-space:nowrap">reconbase.app · Dashboard</div>
+          </div>
+          <!-- App UI -->
+          <div style="background:#060D09;padding:.85rem">
+            <!-- Risk header -->
+            <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.7rem;padding:.6rem .85rem;background:#0A1410;border:1px solid #152B1E;border-radius:7px">
+              <div style="font-size:2rem;font-weight:800;color:#EF4444;letter-spacing:-.05em;line-height:1">73%</div>
+              <div style="flex:1">
+                <div style="font-size:.58rem;font-weight:700;color:#EF4444;font-family:'JetBrains Mono',monospace;letter-spacing:.1em">RIESGO ALTO</div>
+                <div style="font-size:.62rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;margin-top:.1rem;opacity:.8">miempresa.com · hace 2 min</div>
+              </div>
+              <div style="display:flex;gap:.35rem;flex-shrink:0">
+                <div style="background:#152B1E;border:1px solid #1A3526;border-radius:4px;padding:.25rem .55rem;font-size:.58rem;color:#4ADE80;font-family:'JetBrains Mono',monospace">PDF</div>
+                <div style="background:#152B1E;border:1px solid #1A3526;border-radius:4px;padding:.25rem .55rem;font-size:.58rem;color:#4ADE80;font-family:'JetBrains Mono',monospace">JSON</div>
+              </div>
+            </div>
+            <!-- Cards 2x2 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem">
+              <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:2px solid #EF4444;border-radius:6px;padding:.55rem .7rem">
+                <div style="font-size:.55rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">CRÍTICO</div>
+                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">Puerto 3389 abierto</div>
+                <div style="font-size:.62rem;color:#475569">RDP expuesto a internet</div>
+              </div>
+              <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:2px solid #EF4444;border-radius:6px;padding:.55rem .7rem">
+                <div style="font-size:.55rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">CRÍTICO</div>
+                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">Filtración detectada</div>
+                <div style="font-size:.62rem;color:#475569">admin@ en LinkedIn 2021</div>
+              </div>
+              <div style="background:#0A1410;border:1px solid #3B1F0A;border-left:2px solid #F59E0B;border-radius:6px;padding:.55rem .7rem">
+                <div style="font-size:.55rem;color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">ADVERTENCIA</div>
+                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">DMARC ausente</div>
+                <div style="font-size:.62rem;color:#475569">Dominio suplantable</div>
+              </div>
+              <div style="background:#0A1410;border:1px solid #0A2615;border-left:2px solid #22C55E;border-radius:6px;padding:.55rem .7rem">
+                <div style="font-size:.55rem;color:#22C55E;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">OK</div>
+                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">SSL/TLS válido</div>
+                <div style="font-size:.62rem;color:#475569">Caduca en 187 días</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="demo-panel" id="dp-3">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Vista previa PDF ejecutivo</div>
@@ -881,32 +941,21 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="sec-label" style="margin-bottom:2rem">Lo que dicen los primeros usuarios</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"El primer escaneo encontró el puerto de la base de datos abierto desde la última migración. Llevaba ahí meses y no lo sabíamos."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Ana R. — autónoma, diseño web</div>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"El primer escaneo encontró el puerto de la base de datos abierto desde la última migración. Llevaba meses así y nadie en la empresa lo sabía."</p>
+        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Ana R. — freelance, desarrollo web · Barcelona</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Lo uso para revisar los dominios de mis clientes antes de entregarlos. Es lo más rápido que he encontrado para esto."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Carlos M. — desarrollador freelance</div>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Lo paso a todos los dominios que entrego a clientes. En 2 minutos sé si hay algo que arreglar antes de la entrega. No he encontrado nada más rápido."</p>
+        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Carlos M. — desarrollador freelance · Madrid</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Tenía DMARC sin configurar. Cualquiera podía mandar correos como si fuera yo. Tardé 10 minutos en arreglarlo con las instrucciones del informe."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Miguel S. — asesoría fiscal, Valencia</div>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Tenía DMARC sin configurar desde siempre. Cualquiera podía mandar emails como si fuera yo. Con las instrucciones del informe lo arreglé en 10 minutos."</p>
+        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Miguel S. — gestoría fiscal, 6 empleados · Valencia</div>
       </div>
     </div>
   </div>
 </div>
 
-<div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%;text-align:center">
-  <div class="sec-label" style="text-align:center">Apoya el proyecto</div>
-  <h2 style="font-size:clamp(1.5rem,2.5vw,2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem">ReconBase es completamente gratuito</h2>
-  <p style="color:var(--muted);font-size:.95rem;max-width:480px;margin:0 auto 2rem;line-height:1.7">Si te ha sido útil y quieres ayudar a mantener el proyecto, cualquier donación es bienvenida y nos ayuda a seguir mejorando la herramienta.</p>
-  <a href="https://paypal.me/ReconBase" target="_blank" rel="noopener">
-    <button style="background:#0070E0;color:#fff;border:none;padding:.85rem 2.2rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#005bb5'" onmouseout="this.style.background='#0070E0'">
-      Donar con PayPal
-    </button>
-  </a>
-  <p style="font-size:.72rem;color:var(--dim);margin-top:1rem;font-family:'JetBrains Mono',monospace">Pago seguro a través de PayPal. Sin compromisos.</p>
-</div>
 
 </main>
 <footer>
@@ -999,6 +1048,11 @@ async function pagarPlan(plan){
     if(data.url){window.open(data.url,'_blank');}
     else{alert(data.error||'Error al iniciar el pago');}
   }catch(e){alert('Error de conexión. Inténtalo de nuevo.');}
+}
+function heroScan(){
+  var v=(document.getElementById('hero-domain').value||'').trim();
+  if(!v){document.getElementById('hero-domain').focus();return;}
+  window.location.href='/app?target='+encodeURIComponent(v);
 }
 </script>
 </body>
