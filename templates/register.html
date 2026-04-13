@@ -138,7 +138,7 @@ function handleRegister(e) {
         window.open(stripeUrl, '_blank', 'noopener,noreferrer');
         document.getElementById('success-msg').textContent = 'Cuenta creada. Completando pago en nueva pestana...';
         document.getElementById('success-msg').classList.add('show');
-        setTimeout(function(){ window.location.href = '/app'; }, 3000);
+        setTimeout(function(){ window.location.href = '/'; }, 3000);
       } else {
         var el = document.getElementById('error-msg');
         el.textContent = res.error || 'Error al crear la cuenta';
@@ -156,7 +156,7 @@ function handleRegister(e) {
   .then(function(res) {
     if(res.ok) {
       document.getElementById('success-msg').classList.add('show');
-      setTimeout(function(){ window.location.href = '/app'; }, 1500);
+      setTimeout(function(){ window.location.href = '/'; }, 1500);
     } else {
       var el = document.getElementById('error-msg');
       el.textContent = res.error || 'Error al crear la cuenta';

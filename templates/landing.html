@@ -1680,11 +1680,11 @@ function scRenderResults(d) {
   var rEl = document.getElementById('sc-m-riesgo'); if(rEl) { rEl.textContent = d.riesgo + '%'; rEl.style.color = col; }
   var lEl = document.getElementById('sc-m-label'); if(lEl) { lEl.textContent = d.label; lEl.style.color = col; }
   document.getElementById('sc-m-puertos').textContent = (d.puertos || []).length;
-  document.getElementById('sc-m-subs').textContent = (d.subdominios || []).length;
-  var spf = d.dns && d.dns.spf, dmarc = d.dns && d.dns.dmarc;
+  document.getElementById('sc-m-subs').textContent = (d.subs || []).length;
+  var spf = d.dns && d.dns.SPF, dmarc = d.dns && d.dns.DMARC;
   var dnsEl = document.getElementById('sc-m-dns'); if(dnsEl) dnsEl.textContent = (spf && dmarc) ? '✓' : (spf || dmarc) ? '~' : '✗';
   var dnsSub = document.getElementById('sc-m-dns-sub'); if(dnsSub) dnsSub.textContent = (spf && dmarc) ? 'OK' : (!spf && !dmarc) ? 'Ambos ausentes' : 'Parcial';
-  document.getElementById('sc-m-leaks').textContent = (d.filtraciones || []).length;
+  document.getElementById('sc-m-leaks').textContent = d.leaks || 0;
 
   document.getElementById('sc-results').style.display = 'block';
 
@@ -1695,11 +1695,11 @@ function scRenderResults(d) {
 
   // Subdominios
   var subsEl = document.getElementById('sc-subs-sec');
-  if ((d.subdominios || []).length > 0) {
+  if ((d.subs || []).length > 0) {
     subsEl.style.display = 'block';
     var tbody = document.getElementById('sc-subs-body');
-    tbody.innerHTML = d.subdominios.map(function(s, i) {
-      return '<tr><td>' + (i+1) + '</td><td>' + s.subdominio + '</td><td style="color:var(--muted)">' + (s.ip || '—') + '</td></tr>';
+    tbody.innerHTML = d.subs.map(function(s, i) {
+      return '<tr><td>' + (i+1) + '</td><td>' + (s.subdominio || s) + '</td><td style="color:var(--muted)">' + (s.ip || '—') + '</td></tr>';
     }).join('');
   } else { subsEl.style.display = 'none'; }
 }
@@ -1720,15 +1720,16 @@ function scRenderGauge(pct, lbl) {
 
 function scRenderCards(d) {
   var html = '';
-  var critPorts = (d.puertos || []).filter(function(p){ return [3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443].indexOf(p) !== -1; });
-  if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles desde internet: ' + critPorts.join(', ') + '. Ciérralos en el firewall.');
+  var serviciosCrit = ["RDP","Telnet","MySQL","MongoDB","Redis","PostgreSQL","MSSQL","Docker API","Elasticsearch","VNC"];
+  var critPorts = (d.puertos || []).filter(function(p){ return serviciosCrit.indexOf(p.servicio) !== -1; });
+  if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles: ' + critPorts.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '. Ciérralos en el firewall.');
   else if ((d.puertos || []).length === 0) html += scCard('ok', 'Sin puertos críticos expuestos', 'No se detectaron servicios sensibles accesibles.');
-  else html += scCard('ok', 'Puertos bajo control', 'Solo puertos estándar (80/443) detectados.');
+  else html += scCard('ok', 'Puertos bajo control', 'Solo puertos estándar detectados.');
 
   if (d.dns) {
-    if (!d.dns.spf && !d.dns.dmarc) html += scCard('crit', 'SPF y DMARC ausentes', 'Cualquiera puede enviar emails haciéndose pasar por tu empresa.');
-    else if (!d.dns.dmarc) html += scCard('warn', 'DMARC no configurado', 'Tu dominio puede ser suplantado. Añade el registro TXT.');
-    else if (!d.dns.spf) html += scCard('warn', 'SPF no configurado', 'Riesgo de suplantación de correo.');
+    if (!d.dns.SPF && !d.dns.DMARC) html += scCard('crit', 'SPF y DMARC ausentes', 'Cualquiera puede enviar emails haciéndose pasar por tu empresa.');
+    else if (!d.dns.DMARC) html += scCard('warn', 'DMARC no configurado', 'Tu dominio puede ser suplantado. Añade el registro TXT.');
+    else if (!d.dns.SPF) html += scCard('warn', 'SPF no configurado', 'Riesgo de suplantación de correo.');
     else html += scCard('ok', 'SPF y DMARC correctos', 'Tu dominio está protegido contra suplantación.');
   }
 
@@ -1749,8 +1750,8 @@ function scRenderCards(d) {
     else html += scCard('ok', 'SSL/TLS válido', 'Caduca en ' + (d.ssl.dias_restantes || '?') + ' días.');
   }
 
-  if ((d.filtraciones || []).length > 0) {
-    html += scCard('crit', d.filtraciones.length + ' filtración' + (d.filtraciones.length > 1 ? 'es' : '') + ' detectada' + (d.filtraciones.length > 1 ? 's' : ''), d.filtraciones.slice(0,3).map(function(f){return f.fuente||f;}).join(', '));
+  if ((d.leaks || 0) > 0) {
+    html += scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' detectada' + (d.leaks > 1 ? 's' : ''), (d.leaks_raw||[]).slice(0,3).map(function(f){return f.fuente||f;}).join(', ') || 'Credenciales comprometidas encontradas.');
   } else {
     html += scCard('ok', 'Sin filtraciones conocidas', 'No se encontraron datos en bases de brechas.');
   }
@@ -1791,7 +1792,7 @@ function scRenderRadarChart(d, canvasId) {
   var canvas = document.getElementById(canvasId);
   if (!canvas) return;
   var puertos = Math.min((d.puertos||[]).length * 10, 100);
-  var dns = (d.dns && d.dns.spf && d.dns.dmarc) ? 0 : (d.dns && (d.dns.spf || d.dns.dmarc)) ? 40 : 80;
+  var dns = (d.dns && d.dns.SPF && d.dns.DMARC) ? 0 : (d.dns && (d.dns.SPF || d.dns.DMARC)) ? 40 : 80;
   var headers = 100 - Math.min(Object.values(d.headers||{}).filter(Boolean).length * 15, 100);
   var ssl = d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado ? 0 : 70;
   var leaks = Math.min((d.filtraciones||[]).length * 25, 100);
@@ -1885,10 +1886,10 @@ function scRenderHistorial(scans) {
       '<td style="color:var(--muted)">' + (i+1) + '</td>' +
       '<td><code style="font-size:.8rem">' + s.objetivo + '</code></td>' +
       '<td><span style="color:' + col + ';font-weight:700">' + s.riesgo + '%</span></td>' +
-      '<td>' + s.puertos + '</td>' +
-      '<td>' + s.filtraciones + '</td>' +
-      '<td style="color:var(--muted);font-size:.78rem">' + s.fecha + '</td>' +
-      '<td><button onclick="scVerScanHistorial(' + s.id + ')" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.3rem .75rem;border-radius:5px;font-size:.75rem;cursor:pointer">Ver</button></td>' +
+      '<td>' + (s.puertos||[]).length + '</td>' +
+      '<td>' + (s.leaks||0) + '</td>' +
+      '<td style="color:var(--muted);font-size:.78rem">' + (s.timestamp||'') + '</td>' +
+      '<td><button onclick="scVerScanHistorial(' + s.scan_id + ')" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.3rem .75rem;border-radius:5px;font-size:.75rem;cursor:pointer">Ver</button></td>' +
       '</tr>';
   }).join('');
 }
@@ -1911,7 +1912,7 @@ function scVerScanHistorial(id) {
 
 function scRenderTendencia() {
   fetch('/api/historial').then(function(r){return r.json();}).then(function(d){
-    var scans = (d.scans || []).reverse();
+    var scans = (d.scans || d || []).slice().reverse();
     var empty = document.getElementById('sc-tend-empty');
     var content = document.getElementById('sc-tend-content');
     if (scans.length < 2) { empty.style.display = 'block'; content.style.display = 'none'; return; }
@@ -1936,7 +1937,7 @@ function scRenderTendencia() {
       scTendChart = new Chart(canvas, {
         type: 'line',
         data: {
-          labels: scans.map(function(s){return s.fecha.split(' ')[0];}),
+          labels: scans.map(function(s){return (s.timestamp||'').split(' ')[0];}),
           datasets: [{ label: 'Riesgo (%)', data: riesgos, borderColor: '#DC2626', backgroundColor: 'rgba(220,38,38,.08)', tension: 0.4, fill: true, pointBackgroundColor: '#DC2626', pointRadius: 4 }]
         },
         options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, x: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { display: false } } } }
@@ -1947,7 +1948,7 @@ function scRenderTendencia() {
     var tbody = document.getElementById('sc-tend-body');
     if (tbody) tbody.innerHTML = scans.map(function(s, i) {
       var col = s.riesgo >= 70 ? '#DC2626' : s.riesgo >= 40 ? '#D97706' : '#16A34A';
-      return '<tr><td>' + (i+1) + '</td><td><code style="font-size:.78rem">' + s.objetivo + '</code></td><td style="color:' + col + ';font-weight:700">' + s.riesgo + '%</td><td>' + s.puertos + '</td><td>' + s.filtraciones + '</td><td>' + (s.subdominios||0) + '</td><td style="font-size:.78rem;color:var(--muted)">' + s.fecha + '</td></tr>';
+      return '<tr><td>' + (i+1) + '</td><td><code style="font-size:.78rem">' + s.objetivo + '</code></td><td style="color:' + col + ';font-weight:700">' + s.riesgo + '%</td><td>' + (s.puertos||[]).length + '</td><td>' + (s.leaks||0) + '</td><td>' + (s.subs||[]).length + '</td><td style="font-size:.78rem;color:var(--muted)">' + (s.timestamp||'') + '</td></tr>';
     }).join('');
   }).catch(function(){});
 }
@@ -1970,7 +1971,7 @@ function scGuardarHorario() {
       if (el && el.checked) dias.push(d);
     });
   }
-  fetch('/api/vigilancia', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({hora:hora, dias:dias, activo:activo})})
+  fetch('/api/horario', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({hora:hora, dias:dias, activo:activo})})
   .then(function(r){return r.json();})
   .then(function(d) {
     var msg = document.getElementById('sc-vig-msg');
@@ -1979,7 +1980,7 @@ function scGuardarHorario() {
 }
 
 function cerrarSesionLanding() {
-  fetch('/logout', {method:'POST'}).then(function(){window.location.reload();}).catch(function(){window.location.href='/logout';});
+  fetch('/api/logout', {method:'POST'}).then(function(){window.location.href='/';}).catch(function(){window.location.href='/';});
 }
 
 function pagarPlanLanding(plan) {

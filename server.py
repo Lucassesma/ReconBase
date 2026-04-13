@@ -362,23 +362,8 @@ def cambiar_password():
 
 # ── APP ──
 @app.route("/app")
-@login_required
 def dashboard():
-    from sqlalchemy import extract
-    now = datetime.utcnow()
-    scans_mes = Scan.query.filter(
-        Scan.user_id == current_user.id,
-        extract('month', Scan.timestamp) == now.month,
-        extract('year',  Scan.timestamp) == now.year
-    ).count()
-    ultimo_auto = Scan.query.filter_by(user_id=current_user.id).filter(
-        Scan.resultado.op('->>')('automatico') == 'true'
-    ).order_by(Scan.timestamp.desc()).first()
-    return render_template("app.html", api_key_ok=bool(API_KEY),
-                           plan=current_user.plan, scans_mes=scans_mes,
-                           ultimo_auto=ultimo_auto,
-                           scan_hora=current_user.scan_hora if current_user.scan_hora is not None else 3,
-                           scan_dias=current_user.scan_dias.split(',') if current_user.scan_dias else [])
+    return redirect(url_for('index'))
 
 # ── SCAN ──
 def calcular_riesgo(puertos, dns, leaks, headers):
@@ -628,7 +613,15 @@ def scan():
 def historial():
     limite = 3 if current_user.plan == 'free' else 50
     scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).limit(limite).all()
-    return jsonify([s.resultado for s in scans])
+    return jsonify({"scans": [s.resultado for s in scans]})
+
+@app.route("/api/scan/<int:scan_id>", methods=["GET"])
+@login_required
+def get_scan(scan_id):
+    scan = Scan.query.filter_by(id=scan_id, user_id=current_user.id).first()
+    if not scan:
+        return jsonify({"error": "Escaneo no encontrado"}), 404
+    return jsonify(scan.resultado)
 
 @app.route("/api/pdf", methods=["POST"])
 @login_required

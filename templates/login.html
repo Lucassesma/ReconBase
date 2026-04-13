@@ -78,7 +78,7 @@ function handleLogin(e) {
   .then(function(r){ return r.json(); })
   .then(function(data) {
     if(data.ok) {
-      window.location.href = '/app';
+      window.location.href = '/';
     } else {
       var el = document.getElementById('error-msg');
       el.textContent = data.error || 'Email o contrasena incorrectos';
