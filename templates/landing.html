@@ -4,411 +4,212 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ReconBase — Analiza la seguridad de tu empresa gratis</title>
-
-<!-- SEO básico -->
 <meta name="description" content="ReconBase analiza gratis la seguridad de tu dominio: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.">
 <meta name="keywords" content="analizar seguridad dominio, escaner seguridad web, filtraciones datos empresa, seguridad pymes, auditoría seguridad gratis, SPF DMARC, puertos expuestos">
 <meta name="author" content="ReconBase">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://reconbase-production.up.railway.app/">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2316A34A'>B</text></svg>">
-
-<!-- Open Graph (redes sociales) -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://reconbase-production.up.railway.app/">
 <meta property="og:title" content="ReconBase — Analiza la seguridad de tu empresa gratis">
 <meta property="og:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
 <meta property="og:image" content="https://reconbase-production.up.railway.app/static/og-image.svg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
 <meta property="og:locale" content="es_ES">
-
-<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ReconBase — Analiza la seguridad de tu empresa gratis">
-<meta name="twitter:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
+<meta name="twitter:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS.">
 <meta name="twitter:image" content="https://reconbase-production.up.railway.app/static/og-image.svg">
-
-<!-- JSON-LD Structured Data -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "ReconBase",
-      "url": "https://reconbase-production.up.railway.app",
-      "description": "ReconBase analiza la seguridad perimetral de tu empresa: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.",
-      "applicationCategory": "SecurityApplication",
-      "operatingSystem": "Web",
-      "offers": [
-        {
-          "@type": "Offer",
-          "name": "Plan Free",
-          "price": "0",
-          "priceCurrency": "EUR",
-          "description": "10 análisis al mes, informe básico"
-        },
-        {
-          "@type": "Offer",
-          "name": "Plan Pro",
-          "price": "29",
-          "priceCurrency": "EUR",
-          "priceSpecification": {
-            "@type": "UnitPriceSpecification",
-            "billingDuration": "P1M"
-          },
-          "description": "Escaneos ilimitados, vigilancia nocturna automática, alertas por email, informes PDF ejecutivos"
-        }
-      ],
-      "featureList": [
-        "Escáner de puertos",
-        "Detección de filtraciones en dark web",
-        "Verificación SPF y DMARC",
-        "Auditoría de cabeceras HTTP",
-        "Enumeración de subdominios",
-        "Detección de CMS",
-        "Informes PDF ejecutivos",
-        "Vigilancia nocturna automática"
-      ]
-    },
-    {
-      "@type": "Organization",
-      "name": "ReconBase",
-      "url": "https://reconbase-production.up.railway.app",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "ReconBase.alertas@gmail.com",
-        "contactType": "customer support",
-        "availableLanguage": "Spanish"
-      }
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "¿Necesito conocimientos de ciberseguridad para usar ReconBase?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. Diseñado para dueños de negocio sin perfil técnico. Los informes explican cada riesgo con pasos de acción concretos."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Es legal escanear mi propio dominio?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Completamente legal. Solo puedes analizar dominios que tú mismo introduzcas. El motor usa técnicas pasivas sobre infraestructura pública."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Qué pasa si ReconBase detecta una filtración de datos?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contraseñas, 2FA, notificación RGPD si aplica."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Puedo cancelar el plan Pro en cualquier momento?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Sí, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿El pago es seguro?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta."
-          }
-        }
-      ]
-    }
-  ]
-}
-</script>
-
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"SoftwareApplication","name":"ReconBase","url":"https://reconbase-production.up.railway.app","applicationCategory":"SecurityApplication","operatingSystem":"Web"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#F8FAFC;--surface:#FFFFFF;--border:#E2E8F0;
   --text:#0F172A;--muted:#64748B;--dim:#94A3B8;
   --accent:#16A34A;--accent-lt:#22C55E;--accent-dk:#15803D;
-  --red:#DC2626;--amber:#D97706;--blue:#2563EB;--blue-lt:#3B82F6;--blue-dk:#1D4ED8;
-  --green:#10B981;--dark:#0F172A;--dark-surface:#1E293B;
+  --red:#DC2626;--amber:#D97706;--green:#10B981;
 }
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6;overflow-x:hidden}
 a{text-decoration:none;color:inherit}
 
-/* NAV */
+/* ── NAV (idéntico al landing original) ── */
 nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 6%;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(248,250,252,.96);backdrop-filter:blur(16px)}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em;color:var(--text)}
 .nav-links{display:flex;gap:2.5rem}
 .nav-links a{font-size:.87rem;color:var(--muted);transition:color .2s;font-weight:500}
 .nav-links a:hover{color:var(--text)}
+.nav-links a.active{color:var(--accent);font-weight:700}
 .nav-right{display:flex;align-items:center;gap:.75rem}
 .btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.55rem 1.1rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.83rem;cursor:pointer;transition:all .2s;min-height:44px;display:inline-flex;align-items:center}
 .btn-login:hover{border-color:var(--text);color:var(--text)}
-/* HERO VERDE OSCURO */
-.hero-wrap{background:linear-gradient(160deg,#021a0a 0%,#052e16 45%,#063a1c 100%);position:relative;overflow:hidden}
-.hero-wrap::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 15% 60%,rgba(22,163,74,.1) 0%,transparent 55%),radial-gradient(ellipse at 85% 15%,rgba(22,163,74,.07) 0%,transparent 45%)}
-.hero{padding:5rem 6% 4rem;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;position:relative;z-index:1}
-.hero-left{animation:fadeUp .7s ease both}
-.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);border-radius:20px;padding:.3rem .9rem;font-size:.72rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;margin-bottom:1.5rem}
-.dot{width:6px;height:6px;border-radius:50%;background:#22C55E;animation:pulse 2s ease infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.hero h1{font-size:clamp(2rem,3.8vw,3.2rem);font-weight:800;letter-spacing:-.04em;line-height:1.08;margin-bottom:1.25rem;color:#F0FDF4}
-.hero h1 em{font-style:normal;color:#4ADE80}
-.hero p{font-size:1rem;color:#86EFAC;opacity:.85;max-width:480px;margin-bottom:2rem;line-height:1.7}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-.hero-btns{display:flex;gap:.75rem;flex-wrap:wrap}
-/* GAUGE */
-.hero-right{display:flex;flex-direction:column;align-items:center;gap:1.5rem;animation:fadeUp .7s .15s ease both}
-.gauge-wrap{position:relative;width:260px;height:260px;flex-shrink:0}
-.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.gauge-pct{font-size:3.5rem;font-weight:800;color:#F0FDF4;letter-spacing:-.05em;line-height:1}
-.gauge-risk-label{font-size:.68rem;font-family:'JetBrains Mono',monospace;letter-spacing:.15em;margin-top:.35rem;font-weight:700}
-.gauge-sublabel{font-size:.62rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;margin-top:.2rem;opacity:.65}
-.gauge-items{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;width:260px}
-.gauge-item{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:.6rem .85rem}
-.gauge-item-val{font-size:1.1rem;font-weight:800;color:#F0FDF4;letter-spacing:-.03em}
-.gauge-item-lbl{font-size:.59rem;font-family:'JetBrains Mono',monospace;color:#4ADE80;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-top:.1rem}
-/* COUNTER BAR */
-.hero-counter{background:rgba(0,0,0,.3);border-top:1px solid rgba(22,163,74,.15);padding:1.2rem 6%;position:relative;z-index:1}
-.hero-counter-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:3rem;flex-wrap:wrap}
-.hc-stat{display:flex;align-items:center;gap:.6rem}
-.hc-num{font-size:1.5rem;font-weight:800;color:#4ADE80;font-family:'Inter',sans-serif;letter-spacing:-.04em}
-.hc-lbl{font-size:.72rem;color:rgba(134,239,172,.65);font-family:'JetBrains Mono',monospace}
-.hc-div{width:1px;height:28px;background:rgba(22,163,74,.2)}
-/* BUTTONS */
-.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s;min-height:44px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(22,163,74,.35)}
-.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
-.btn-ghost{background:transparent;color:#86EFAC;border:1px solid rgba(134,239,172,.3);padding:.85rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:border-color .2s,color .2s;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
-.btn-ghost:hover{border-color:#86EFAC;color:#F0FDF4}
 .btn-nav{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:opacity .2s;min-height:44px;display:inline-flex;align-items:center;box-shadow:0 2px 10px rgba(22,163,74,.3)}
 .btn-nav:hover{opacity:.85}
-@media(max-width:900px){.hero{grid-template-columns:1fr;gap:2.5rem}.hero-right{display:none}.hero-counter-inner{gap:1.5rem}}
-.compat{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1rem 6%;display:flex;align-items:center;justify-content:center;gap:2.5rem;flex-wrap:wrap}
-.compat-lbl{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:#64748B;letter-spacing:.1em;text-transform:uppercase}
-.compat span{font-size:.8rem;color:#94A3B8}
-.section{padding:5rem 6%;max-width:1200px;margin:0 auto}
-.sec-label{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--blue);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.75rem}
-.sec-title{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem}
-.sec-sub{color:var(--muted);font-size:.95rem;line-height:1.7;max-width:520px}
 
-.dark-band{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 6%}
-.dark-band-inner{max-width:1100px;margin:0 auto}
-.terminal{background:#050810;border:1px solid var(--border);border-radius:10px;padding:1.5rem;font-family:'JetBrains Mono',monospace;font-size:.77rem;margin-top:2rem;position:relative;overflow:hidden}
-.terminal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue-lt),transparent)}
-.t-bar{display:flex;gap:6px;margin-bottom:1.2rem}
-.td{width:11px;height:11px;border-radius:50%}
-.log{display:flex;gap:1rem;padding:.32rem 0;border-bottom:1px solid #0a0f1a;align-items:baseline}
-.log:last-child{border:none}
-.lt{color:#1E3A5F;min-width:60px}.lok{color:var(--green);min-width:72px}.lwarn{color:var(--amber);min-width:72px}.lcrit{color:var(--red);min-width:72px}.lmsg{color:var(--dim);flex:1}.ltgt{color:#60A5FA}
-.demo-section{padding:5rem 6%;max-width:1200px;margin:0 auto}
-.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2.5rem;align-items:start}
-.demo-steps-nav{display:flex;flex-direction:column;gap:.5rem}
-.demo-step-btn{display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;text-align:left}
-.demo-step-btn.active{border-color:var(--blue-lt);background:rgba(37,99,235,.06)}
-.demo-step-btn:hover{border-color:var(--blue-lt)}
-.dsb-num{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:var(--dim);flex-shrink:0;transition:all .2s}
-.demo-step-btn.active .dsb-num{background:var(--blue-dk);color:#fff}
-.dsb-title{font-weight:700;font-size:.88rem;margin-bottom:.2rem}
-.dsb-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
-.demo-preview{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:360px}
-.demo-panel{display:none;padding:1.5rem;animation:fadeIn .3s ease}
-.demo-panel.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.dp-scan{display:flex;gap:.5rem;margin-bottom:1rem}
-.dp-input{flex:1;background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:.55rem .85rem;outline:none}
-.dp-btn{background:var(--blue-dk);color:#fff;border:none;padding:.55rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer}
-.demo-result-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:#080C14;border-radius:6px;margin-bottom:.5rem}
-.dri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dri-label{font-size:.8rem;font-family:'JetBrains Mono',monospace;flex:1}
-.dri-status{font-size:.72rem;font-weight:700;font-family:'JetBrains Mono',monospace}
-.status-ok{color:var(--green)}.status-err{color:var(--red)}.status-warn{color:var(--amber)}
-.demo-pdf-preview{background:#080C14;border-radius:8px;padding:1.25rem;border:1px solid var(--border)}
-.pdf-header{background:var(--blue-dk);border-radius:6px;padding:.75rem 1rem;margin-bottom:1rem;text-align:center}
-.pdf-row{display:flex;justify-content:space-between;align-items:center;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.78rem}
-.pdf-row:last-child{border:none}
-.pdf-key{color:var(--muted);font-family:'JetBrains Mono',monospace}
-.alert-demo{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:1rem;margin-bottom:.75rem}
-.alert-demo-title{font-size:.78rem;font-weight:700;color:#F87171;margin-bottom:.3rem;font-family:'JetBrains Mono',monospace}
-.alert-demo-body{font-size:.75rem;color:var(--muted);line-height:1.5}
-.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-top:2.5rem}
-.plan{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;position:relative}
-.plan.hot{border:2px solid var(--blue-dk)}
-.plan-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--blue-dk);color:#fff;font-size:.67rem;font-family:'JetBrains Mono',monospace;padding:.2rem .85rem;border-radius:20px;white-space:nowrap;letter-spacing:.08em}
-.plan-name{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
-.plan-price{font-size:2.4rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.25rem}
-.plan-price span{font-size:.9rem;font-weight:400;color:var(--muted)}
-.plan-desc{font-size:.82rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.5}
-.plan-div{height:1px;background:var(--border);margin-bottom:1.2rem}
-.pf{display:flex;align-items:flex-start;gap:8px;font-size:.83rem;color:#CBD5E1;margin-bottom:.65rem;line-height:1.4}
-.pf.off{color:#2d3e5a}
-.ck{color:var(--green);font-size:13px;flex-shrink:0;margin-top:1px}
-.cx{color:#1E2D4A;font-size:13px;flex-shrink:0;margin-top:1px}
-.btn-plan{width:100%;margin-top:1.75rem;padding:.75rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:all .15s;min-height:44px;display:flex;align-items:center;justify-content:center}
-.btn-plan.ol{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-plan.ol:hover{border-color:var(--blue-lt)}
-.btn-plan.sl{background:var(--blue-dk);border:none;color:#fff}
-.btn-plan.sl:hover{background:#1e40af}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.modal-overlay.open{display:flex}
-.modal{background:#0D1220;border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:440px;position:relative}
-.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer}
-.modal-title{font-size:1.2rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.4rem}
-.modal-sub{font-size:.83rem;color:var(--muted);margin-bottom:1.5rem}
-.modal-plan-info{background:#080C14;border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center}
-.mpi-name{font-size:.85rem;font-weight:700}
-.mpi-price{font-size:1.4rem;font-weight:800;color:var(--blue-lt)}
-.sf-label{font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:.4rem}
-.sf-input{width:100%;background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.65rem .85rem;outline:none;margin-bottom:1rem;transition:border-color .2s}
-.sf-input:focus{border-color:var(--blue-lt)}
-.sf-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-.sf-card-mock{width:100%;background:#080C14;border:1px solid var(--border);border-radius:6px;padding:.65rem .85rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem;font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--dim)}
-.sf-card-icons{display:flex;gap:.4rem;margin-left:auto}
-.card-icon{width:32px;height:20px;border-radius:3px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;color:var(--muted)}
-.btn-pay{width:100%;background:var(--blue-dk);color:#fff;border:none;padding:.85rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;transition:background .2s;margin-top:.5rem}
-.btn-pay:hover{background:#1e40af}
-.stripe-badge{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.85rem;font-size:.72rem;color:#2d3e5a;font-family:'JetBrains Mono',monospace}
-.faq-item{border-bottom:1px solid var(--border);padding:1.4rem 0;cursor:pointer}
-.faq-q{font-weight:700;font-size:.93rem;display:flex;justify-content:space-between;align-items:center}
-.faq-q::after{content:'+';color:var(--blue-lt);font-size:1.2rem;transition:transform .2s}
-.faq-item.open .faq-q::after{transform:rotate(45deg)}
-.faq-a{font-size:.85rem;color:var(--muted);line-height:1.7;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s}
-.faq-item.open .faq-a{max-height:200px;padding-top:.75rem}
-.cta-band{background:var(--surface);border-top:1px solid var(--border);padding:6rem 6%;text-align:center}
-.cta-band h2{font-size:clamp(1.8rem,3.5vw,2.7rem);font-weight:800;letter-spacing:-.04em;line-height:1.1;margin-bottom:1rem}
-.cta-band p{font-size:.95rem;color:var(--muted);margin-bottom:2.5rem}
-footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
-.f-logo{font-weight:800;font-size:1rem;letter-spacing:-.03em}
-.f-copy{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
-.f-links{display:flex;gap:1.5rem;font-size:.75rem;color:#64748B;font-family:'JetBrains Mono',monospace}
-@media(max-width:768px){.demo-grid{grid-template-columns:1fr}.nav-links{display:none}}
-/* DEMO RESULTS */
-#landing-results{background:linear-gradient(180deg,#021a0a 0%,#040e06 100%);border-top:1px solid rgba(22,163,74,.2)}
-.dr-wrap{max-width:1100px;margin:0 auto;padding:2.5rem 6%}
-.dr-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
-.dr-score{font-size:clamp(3rem,7vw,5rem);font-weight:800;letter-spacing:-.05em;line-height:1}
-.dr-bar{height:7px;background:rgba(255,255,255,.06);border-radius:4px;margin-bottom:2rem;overflow:hidden}
-.dr-bar-fill{height:100%;background:linear-gradient(90deg,#22C55E 0%,#F59E0B 50%,#EF4444 100%);border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1)}
-.dr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.8rem;margin-bottom:1.75rem}
-.dr-card{background:#0A1410;border-radius:9px;padding:.85rem 1rem;border:1px solid}
-.dr-badge{font-size:.55rem;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .55rem;border-radius:3px;letter-spacing:.07em;display:inline-block;margin-bottom:.35rem}
-.dr-card-title{font-size:.82rem;font-weight:700;color:#F0FDF4;margin-bottom:.2rem}
-.dr-card-desc{font-size:.68rem;color:#64748B;line-height:1.55}
-.dr-steps{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
-.dr-step{font-size:.65rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;opacity:0;transition:opacity .3s}
-.dr-step.show{opacity:1}
-.dr-cta{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:12px;padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
-@media(max-width:600px){.dr-header{gap:.85rem}.dr-score{font-size:3.5rem}.dr-cta{flex-direction:column;text-align:center}}
-/* HERO SCANNER */
-.hero-scan-form{margin-top:1.75rem}
-.hsf-wrap{display:flex;background:rgba(255,255,255,.07);border:1px solid rgba(134,239,172,.3);border-radius:10px;overflow:hidden;max-width:480px;transition:border-color .2s}
-.hsf-wrap:focus-within{border-color:rgba(134,239,172,.6);box-shadow:0 0 0 3px rgba(22,163,74,.12)}
-.hsf-input{flex:1;background:transparent;border:none;color:#F0FDF4;font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.9rem 1.1rem;outline:none;min-width:0}
-.hsf-input::placeholder{color:rgba(134,239,172,.35)}
-.hsf-btn{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.9rem 1.4rem;font-family:'Inter',sans-serif;font-weight:700;font-size:.83rem;cursor:pointer;white-space:nowrap;transition:opacity .15s;letter-spacing:.02em;flex-shrink:0}
-.hsf-btn:hover{opacity:.88}
-.hsf-hint{font-size:.65rem;color:rgba(134,239,172,.4);font-family:'JetBrains Mono',monospace;margin-top:.55rem;padding-left:.15rem}
-@media(max-width:480px){.hero{padding:3rem 5% 2.5rem}.hero h1{font-size:1.9rem}.hero-btns{flex-direction:column}.hero-counter-inner{gap:1rem}.section,.demo-section{padding:3rem 5%}.cf-row{gap:1.5rem}.pricing-grid{grid-template-columns:1fr}.bacomp-grid{grid-template-columns:1fr}footer{flex-direction:column;text-align:center}}
+/* ── PLAN BANNER ── */
+.plan-banner{background:linear-gradient(90deg,rgba(220,252,231,.8),rgba(187,247,208,.4));border-bottom:1px solid #BBF7D0;padding:.85rem 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
 
-/* CARACTERISTICAS */
-.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;margin-bottom:5rem;padding-bottom:5rem;border-bottom:1px solid var(--border)}
-.cf-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.cf-row-rev .cf-text{order:2}.cf-row-rev .cf-visual{order:1}
-.cf-num{font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:800;color:#BBF7D0;line-height:1;margin-bottom:.75rem;letter-spacing:-.05em}
-.cf-title{font-size:1.35rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.85rem;line-height:1.25}
-.cf-desc{font-size:.9rem;color:var(--muted);line-height:1.75;margin-bottom:1.25rem}
-.cf-tags{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.25rem}
-.cf-tag{font-size:.68rem;font-family:'JetBrains Mono',monospace;padding:.25rem .75rem;border-radius:20px;font-weight:600}
-.cf-tag-r{background:rgba(220,38,38,.08);color:#F87171;border:1px solid rgba(220,38,38,.2)}
-.cf-tag-a{background:rgba(217,119,6,.08);color:#FBBF24;border:1px solid rgba(217,119,6,.2)}
-.cf-tag-b{background:rgba(37,99,235,.08);color:#93C5FD;border:1px solid rgba(37,99,235,.2)}
-.cf-tag-g{background:rgba(16,185,129,.08);color:#6EE7B7;border:1px solid rgba(16,185,129,.2)}
-.cf-what{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:.75rem;font-size:.82rem;color:var(--muted);line-height:1.7}
-.cf-what-title{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem}
-.cf-fix{background:rgba(22,163,74,.05);border:1px solid rgba(22,163,74,.15);border-radius:8px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.7}
-.cf-fix-title{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem}
-.cf-mock{background:#050810;border:1px solid #0F1E35;border-radius:10px;padding:1.25rem;position:relative}
-.cf-mock-bar{margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid #0F1E35}
-.cf-port{display:flex;align-items:center;gap:.75rem;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.75rem}
-.cf-port.ok{background:rgba(16,185,129,.04)}.cf-port.warn{background:rgba(217,119,6,.06)}.cf-port.err{background:rgba(220,38,38,.06)}
-.cf-port-num{color:#60A5FA;min-width:45px;font-weight:700}
-.cf-port-svc{color:#94A3B8;flex:1}
-.cf-port-st{font-size:.65rem;font-weight:700}
-.st-ok{color:#10B981}.st-warn{color:#F59E0B}.st-err{color:#EF4444}
-.cf-breach{display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;background:#080C14;border-radius:5px;margin-bottom:.3rem}
-.cf-breach-name{font-size:.75rem;font-weight:700;color:#F87171;font-family:'JetBrains Mono',monospace;min-width:110px}
-.cf-breach-date{font-size:.65rem;color:#475569;font-family:'JetBrains Mono',monospace;margin-left:auto}
-.cf-dns-row{display:flex;align-items:center;gap:.6rem;padding:.5rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.73rem}
-.cf-dns-row.ok{background:rgba(16,185,129,.04)}.cf-dns-row.warn{background:rgba(217,119,6,.06)}.cf-dns-row.err{background:rgba(220,38,38,.06)}
-.cf-dns-label{color:#60A5FA;min-width:55px;font-weight:700}
-.cf-dns-val{color:#94A3B8;flex:1;font-size:.68rem}
-.cf-hdr{display:flex;align-items:center;justify-content:space-between;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.72rem}
-.cf-hdr.ok{background:rgba(16,185,129,.04)}.cf-hdr.err{background:rgba(220,38,38,.06)}.cf-hdr.warn{background:rgba(217,119,6,.06)}
-.cf-hdr-name{color:#94A3B8}
-.cf-sub{display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.72rem}
-.cf-sub.ok{background:rgba(16,185,129,.04)}.cf-sub.warn{background:rgba(217,119,6,.06)}.cf-sub.err{background:rgba(220,38,38,.06)}
-.cf-sub-name{color:#93C5FD;flex:1}
-.cf-cms-plugin{display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;border-radius:5px;margin-bottom:.35rem;font-family:'JetBrains Mono',monospace;font-size:.75rem}
-.cf-cms-plugin.ok{background:rgba(16,185,129,.04)}.cf-cms-plugin.warn{background:rgba(217,119,6,.06)}.cf-cms-plugin.err{background:rgba(220,38,38,.06)}
-.cf-cms-plugin span:first-child{color:#E2E8F0;flex:1}
-@media(max-width:900px){.cf-row{grid-template-columns:1fr;gap:2rem}.cf-row-rev .cf-text{order:1}.cf-row-rev .cf-visual{order:2}}
-/* ANTES / DESPUES */
-.bacomp-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
-.ba-card{border-radius:14px;overflow:hidden;border:1px solid}
-.ba-before{background:#0c0a09;border-color:rgba(220,38,38,.25)}
-.ba-after{background:#040e07;border-color:rgba(22,163,74,.25)}
-.ba-header-bar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.05)}
-.ba-tag{font-size:.7rem;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.25rem .8rem;border-radius:20px;letter-spacing:.06em}
-.ba-score{font-size:.82rem;font-weight:800;font-family:'JetBrains Mono',monospace}
-.ba-risk-bar{height:5px;background:rgba(255,255,255,.04)}
-.ba-risk-fill{height:100%}
-.ba-items{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.65rem}
-.ba-item{display:flex;align-items:flex-start;gap:.75rem;font-size:.83rem;line-height:1.5}
-.ba-icon{font-weight:800;flex-shrink:0;width:16px;margin-top:.05rem}
-.ba-item.bad .ba-icon{color:#F87171}
-.ba-item.good .ba-icon{color:#4ADE80}
-.ba-item.bad .ba-text{color:#94A3B8}
-.ba-item.good .ba-text{color:#94A3B8}
-.ba-item.neutral .ba-text{color:#475569}
-@media(max-width:768px){.bacomp-grid{grid-template-columns:1fr}}
+/* ── SCANNER TABS ── */
+.sc-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 6%;overflow-x:auto;gap:0}
+.sc-tab{padding:.8rem 1.25rem;font-size:.84rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.sc-tab:hover{color:var(--text)}
+.sc-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+
+/* ── PANELS ── */
+.sc-content{padding:2rem 6%;max-width:1300px;margin:0 auto}
+.sc-panel{display:none}
+.sc-panel.active{display:block;padding-top:1.5rem}
+
+/* ── SCANNER BAR ── */
+.scanner-bar{display:flex;gap:.75rem;margin-bottom:1.5rem}
+.scan-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.92rem;padding:.8rem 1.1rem;outline:none;transition:border-color .2s;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.scan-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+.scan-input::placeholder{color:var(--dim)}
+.btn-scan{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.8rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.03em;cursor:pointer;transition:all .15s;white-space:nowrap;box-shadow:0 4px 12px rgba(22,163,74,.3)}
+.btn-scan:hover:not(:disabled){opacity:.9;transform:translateY(-1px)}
+.btn-scan:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── LOADING ── */
+.loading{display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.loading.show{display:block}
+.load-title{font-size:.9rem;font-weight:700;margin-bottom:1rem;color:var(--text)}
+.load-steps{display:flex;flex-direction:column;gap:.5rem}
+.load-step{display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-family:'JetBrains Mono',monospace}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s}
+.step-dot.done{background:var(--green)}
+.step-dot.active{background:var(--accent-lt);animation:blink .8s ease infinite}
+.step-txt{color:var(--muted);transition:color .3s}
+.step-txt.active{color:var(--text)}
+.step-txt.done{color:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.progress-bar{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:1.25rem;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#16A34A,#22C55E);width:0%;transition:width .5s ease;border-radius:2px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── RESULTS ── */
+.results{display:none}
+.results.show{display:block}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.5rem}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.metric-lbl{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
+.metric-val{font-size:1.7rem;font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--text)}
+.metric-sub{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+.main-grid{display:grid;grid-template-columns:260px 1fr;gap:1rem;margin-bottom:1rem}
+.gauge-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.gauge-wrap{position:relative;width:200px;height:110px;margin:.5rem auto}
+.gauge-center{position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center}
+.gauge-pct{font-size:2.2rem;font-weight:800;letter-spacing:-.04em;line-height:1}
+.gauge-label-txt{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:.2rem}
+.cards-col{display:flex;flex-direction:column;gap:.75rem}
+.rcard{background:var(--surface);border:1px solid var(--border);border-left:3px solid;border-radius:0 10px 10px 0;padding:1.1rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.rcard-crit{border-left-color:var(--red)}
+.rcard-ok{border-left-color:var(--green)}
+.badge{display:inline-block;padding:.18rem .55rem;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:.5rem}
+.b-red{background:rgba(220,38,38,.08);color:#B91C1C;border:1px solid rgba(220,38,38,.2)}
+.b-green{background:rgba(16,185,129,.08);color:#065F46;border:1px solid rgba(16,185,129,.2)}
+.rcard-title{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:.3rem}
+.rcard-body{font-size:.8rem;color:var(--muted);line-height:1.6}
+.rcard-body code{background:#F1F5F9;padding:.1rem .3rem;border-radius:3px;color:#1D4ED8;font-size:.78rem}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.chart-card h4{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
+.chart-wrap{position:relative;overflow:hidden;height:220px}
+.chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
+.subs-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.subs-card h4{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
+.subs-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.subs-table th{text-align:left;padding:.5rem .75rem;color:var(--muted);font-size:.7rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.subs-table td{padding:.55rem .75rem;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;color:#1D4ED8}
+.subs-table tr:last-child td{border-bottom:none}
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem}
+.export-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.75rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.export-title{font-size:1rem;font-weight:700;margin-bottom:.5rem;color:var(--text)}
+.export-desc{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem}
+.btn-export{width:100%;padding:.75rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;letter-spacing:.02em;transition:all .15s}
+.btn-export.primary{background:linear-gradient(135deg,#16A34A,#22C55E);border:none;color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.25)}
+.btn-export.primary:hover{opacity:.9}
+.btn-export.secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-export.secondary:hover{border-color:var(--accent);color:var(--accent)}
+.hist-table{width:100%;border-collapse:collapse;font-size:.83rem;margin-top:1rem}
+.hist-table th{text-align:left;padding:.5rem .75rem;color:var(--muted);font-size:.7rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.hist-table td{padding:.65rem .75rem;border-bottom:1px solid var(--border)}
+.hist-table tr:last-child td{border-bottom:none}
+.hist-table tr:hover td{background:#F8FAFC}
+.risk-pill{padding:.2rem .6rem;border-radius:4px;font-size:.72rem;font-family:'JetBrains Mono',monospace;font-weight:700}
+.rp-low{background:rgba(16,185,129,.1);color:#065F46}
+.rp-med{background:rgba(217,119,6,.1);color:#92400E}
+.rp-high{background:rgba(220,38,38,.1);color:#991B1B}
+.sc-empty{text-align:center;padding:5rem 2rem;color:var(--muted)}
+.sc-empty-icon{font-size:2.5rem;margin-bottom:1rem;opacity:.25}
+.sc-empty h3{font-size:1.05rem;font-weight:700;color:var(--dim);margin-bottom:.5rem}
+.sc-empty p{font-size:.85rem}
+.api-warn{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.82rem;color:#92400E;font-family:'JetBrains Mono',monospace}
+.btn-clear{margin-top:1rem;background:transparent;border:1px solid var(--border);color:var(--muted);padding:.5rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+
+/* ── LOGIN WALL ── */
+.login-wall{min-height:calc(100vh - 65px);display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-wall-box{text-align:center;max-width:400px}
+.login-wall-icon{width:72px;height:72px;border-radius:16px;background:#F0FDF4;border:1px solid #BBF7D0;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.75rem}
+.login-wall-label{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.6rem}
+.login-wall h1{font-size:1.6rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem;line-height:1.2;color:var(--text)}
+.login-wall p{color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:2rem}
+.login-wall-btns{display:flex;flex-direction:column;gap:.75rem;max-width:260px;margin:0 auto}
+
+/* ── FOOTER ── */
+.sc-footer{border-top:1px solid var(--border);padding:1.5rem 6%;text-align:center;font-size:.75rem;color:var(--dim)}
+.sc-footer a{color:var(--muted)}
+.sc-footer a:hover{color:var(--text)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .metrics{grid-template-columns:repeat(3,1fr)}
+  .main-grid{grid-template-columns:1fr}
+  .sec-grid{grid-template-columns:1fr}
+  .export-grid{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .sc-content{padding:1.25rem 1rem}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .scanner-bar{flex-direction:column}
+  .btn-scan{width:100%}
+}
 </style>
 </head>
 <body>
 
+<!-- ── NAV ── -->
 <nav>
   <a href="/" class="logo" aria-label="ReconBase — Inicio">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="36" aria-hidden="true">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="32">
       <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#0F172A">RECON</text>
       <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#16A34A">BASE</text>
     </svg>
   </a>
   <div class="nav-links">
-    <a href="#caracteristicas">Características</a>
-    <a href="#como-funciona">Cómo funciona</a>
-    <a href="#precios">Precios</a>
-    <a href="#faq">FAQ</a>
     {% if user and user.is_authenticated %}
-    <a href="/app" style="color:#16A34A;font-weight:700">Escáner</a>
+    <a href="/" class="active">Escáner</a>
+    <a href="/perfil">Mi perfil</a>
+    {% else %}
+    <a href="/#caracteristicas">Características</a>
+    <a href="/#precios">Precios</a>
     {% endif %}
   </div>
   <div class="nav-right">
     {% if user and user.is_authenticated %}
-    <a href="/perfil" class="btn-login">Mi perfil</a>
+      {% if user.plan == 'free' %}
+      <span style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ user.email }}</span>
+      <button class="btn-nav" onclick="pagarPlan('pro')">Pro — 29€/mes</button>
+      {% else %}
+      <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .7rem;border-radius:20px;font-weight:700">PRO</span>
+      <span style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ user.email }}</span>
+      {% endif %}
+      <button class="btn-login" onclick="cerrarSesion()">Cerrar sesión</button>
     {% else %}
     <a href="/login" class="btn-login">Iniciar sesión</a>
     <a href="/register" class="btn-nav">Registro gratuito</a>
@@ -416,898 +217,648 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   </div>
 </nav>
 
-<main>
-<div class="hero-wrap">
-<section class="hero">
-  <div class="hero-left">
-    <div class="hero-badge"><span class="dot"></span> Análisis gratuito · Sin tarjeta</div>
-    <h1>¿Cuánto riesgo<br>tiene tu empresa<br><em>ahora mismo?</em></h1>
-    <p>Introduces tu dominio. En 2 minutos ves si tienes puertos abiertos que no deberías, si hay contraseñas de tu empresa en alguna filtración, o si cualquiera puede enviar emails haciéndose pasar por ti.</p>
-    <div class="hero-scan-form">
-      <div class="hsf-wrap">
-        <input type="text" id="hero-domain" class="hsf-input" placeholder="tuempresa.com" onkeydown="if(event.key==='Enter')heroScan()" autocomplete="off" spellcheck="false">
-        <button class="hsf-btn" onclick="heroScan()">Analizar ahora →</button>
-      </div>
-      <div class="hsf-hint">También acepta emails corporativos e IPs · Gratis, sin tarjeta</div>
-    </div>
-    <div style="margin-top:.75rem;display:flex;align-items:center;gap:.5rem">
-      <span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0;animation:pulse 2s ease infinite"></span>
-      <span style="font-size:.65rem;color:rgba(134,239,172,.45);font-family:'JetBrains Mono',monospace">{{ stats_scans }} análisis realizados · {{ stats_breaches }} empresas registradas</span>
-    </div>
-    <div style="margin-top:.65rem">
-      <a href="#como-funciona" style="font-size:.78rem;color:rgba(134,239,172,.55);font-family:'JetBrains Mono',monospace">¿Cómo funciona? →</a>
-    </div>
-  </div>
-  <div class="hero-right">
-    <div class="gauge-wrap">
-      <svg viewBox="0 0 260 260" width="260" height="260" style="transform:rotate(-90deg)">
-        <defs>
-          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#22C55E"/>
-            <stop offset="50%" stop-color="#F59E0B"/>
-            <stop offset="100%" stop-color="#EF4444"/>
-          </linearGradient>
-        </defs>
-        <circle cx="130" cy="130" r="100" fill="none" stroke="rgba(22,163,74,.1)" stroke-width="18"/>
-        <circle id="gauge-track" cx="130" cy="130" r="100" fill="none" stroke="url(#gaugeGrad)" stroke-width="18" stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="628"/>
-      </svg>
-      <div class="gauge-center">
-        <div class="gauge-pct" id="gauge-pct">0%</div>
-        <div class="gauge-risk-label" id="gauge-risk-label" style="color:#EF4444">—</div>
-        <div class="gauge-sublabel">empresa media española</div>
-      </div>
-    </div>
-    <div class="gauge-items">
-      <div class="gauge-item"><div class="gauge-item-val" style="color:#EF4444">2</div><div class="gauge-item-lbl">Puertos expuestos</div></div>
-      <div class="gauge-item"><div class="gauge-item-val" style="color:#EF4444">1</div><div class="gauge-item-lbl">Filtración</div></div>
-      <div class="gauge-item"><div class="gauge-item-val" style="color:#F59E0B">SPF</div><div class="gauge-item-lbl">DNS sin proteger</div></div>
-      <div class="gauge-item"><div class="gauge-item-val" style="color:#4ADE80">3</div><div class="gauge-item-lbl">Subdominios</div></div>
-    </div>
-  </div>
-</section>
-<div class="hero-counter">
-  <div class="hero-counter-inner">
-    <div class="hc-stat"><span class="hc-num" id="cnt-dominios">0</span><span class="hc-lbl">escaneos realizados</span></div>
-    <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-vulns">0</span><span class="hc-lbl">riesgos analizados</span></div>
-    <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-breaches">0</span><span class="hc-lbl">empresas registradas</span></div>
-  </div>
-</div>
-</div>
+{% if user and user.is_authenticated %}
 
-<!-- RESULTADOS DEL SCAN DEMO (rellenado por JS) -->
-<div id="landing-results" style="display:none">
-  <div class="dr-wrap">
-    <div class="dr-steps" id="dr-steps"></div>
-    <div class="dr-header" id="dr-header"></div>
-    <div class="dr-bar"><div class="dr-bar-fill" id="dr-bar-fill" style="width:0%"></div></div>
-    <div class="dr-grid" id="dr-grid"></div>
-    <div class="dr-cta" id="dr-cta"></div>
-  </div>
-</div>
-
-<div class="compat">
-  <span class="compat-lbl">Integra con:</span>
-  <span>Have I Been Pwned</span><span>DNS / DMARC / SPF</span>
-  <span>HTTP Security Headers</span><span>Port Scanning</span><span>Subdomain Enumeration</span>
-</div>
-
-
-<!-- PRODUCT PREVIEW -->
-<section style="padding:4.5rem 6% 5rem;background:var(--surface);border-top:1px solid var(--border)">
-  <div style="max-width:1100px;margin:0 auto">
-    <div class="sec-label" style="text-align:center">El producto</div>
-    <h2 style="text-align:center;font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.6rem">Esto es lo que ves cuando escaneas</h2>
-    <p style="text-align:center;color:var(--muted);font-size:.9rem;max-width:480px;margin:0 auto 2.5rem;line-height:1.7">El panel completo. Resultados en tiempo real, tarjetas por criticidad y descarga del informe PDF en menos de 2 minutos.</p>
-    <!-- Browser frame -->
-    <div style="border-radius:12px;overflow:hidden;border:1px solid #1E293B;box-shadow:0 24px 64px rgba(0,0,0,.25)">
-      <!-- Chrome bar -->
-      <div style="background:#0F172A;padding:.55rem 1rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid #1E293B">
-        <div style="display:flex;gap:5px;flex-shrink:0">
-          <div style="width:10px;height:10px;border-radius:50%;background:#EF4444;opacity:.6"></div>
-          <div style="width:10px;height:10px;border-radius:50%;background:#F59E0B;opacity:.6"></div>
-          <div style="width:10px;height:10px;border-radius:50%;background:#22C55E;opacity:.6"></div>
+{% if plan == 'free' %}
+<div class="plan-banner">
+  <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
+    <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .8rem;border-radius:20px;letter-spacing:.05em;font-weight:700">PLAN FREE</span>
+    <div>
+      <div style="font-size:.83rem;color:#374151">Tu empresa no está siendo vigilada automáticamente cada noche</div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-top:.3rem">
+        <div style="height:5px;width:120px;background:#BBF7D0;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#DC2626{% elif scans_mes >= 5 %}#D97706{% else %}#16A34A{% endif %};border-radius:3px"></div>
         </div>
-        <div style="flex:1;background:#1E293B;border-radius:5px;padding:.28rem 1rem;font-size:.68rem;color:#475569;font-family:'JetBrains Mono',monospace">reconbase.app/dashboard</div>
+        <span style="font-size:.74rem;color:{% if scans_mes >= 8 %}#DC2626{% elif scans_mes >= 5 %}#D97706{% else %}#64748B{% endif %}">{{ scans_mes }}/10 escaneos este mes</span>
       </div>
-      <!-- App header -->
-      <div style="background:#040D07;border-bottom:1px solid #0F1E10;padding:.6rem 1.5rem;display:flex;align-items:center;gap:1rem">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="26">
-          <text x="0" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#E2EDF8">RECON</text>
-          <text x="86" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#22C55E">BASE</text>
-        </svg>
-        <div style="background:rgba(22,163,74,.12);border:1px solid rgba(22,163,74,.25);border-radius:4px;padding:.15rem .55rem;font-size:.6rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;font-weight:700">FREE</div>
-        <div style="margin-left:auto;font-size:.7rem;color:#475569;font-family:'JetBrains Mono',monospace">admin@miempresa.com</div>
+    </div>
+  </div>
+  <button onclick="pagarPlan('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button>
+</div>
+{% endif %}
+
+<!-- ── TABS ── -->
+<div class="sc-tabs">
+  <div class="sc-tab active" onclick="switchTab('auditoria',this)">Auditoría</div>
+  <div class="sc-tab" onclick="switchTab('dashboard',this)">Dashboard</div>
+  <div class="sc-tab" onclick="switchTab('exportar',this)">Exportar</div>
+  <div class="sc-tab" onclick="switchTab('historial',this)">Historial</div>
+  <div class="sc-tab" onclick="switchTab('tendencia',this)">Tendencia</div>
+  <div class="sc-tab" onclick="switchTab('vigilancia',this)">Vigilancia
+    {% if plan == 'free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}
+  </div>
+</div>
+
+<!-- ── PANELS ── -->
+<div class="sc-content">
+
+  {% if not api_key_ok %}
+  <div class="api-warn">RECONBASE_API_KEY no configurada. Las búsquedas de filtraciones estarán desactivadas.</div>
+  {% endif %}
+
+  <!-- AUDITORÍA -->
+  <div class="sc-panel active" id="panel-auditoria">
+    <div class="scanner-bar">
+      <input class="scan-input" id="objetivo" type="text" placeholder="empresa.com · admin@empresa.com · 192.168.1.1" onkeydown="if(event.key==='Enter')lanzarScan()" autocomplete="off" spellcheck="false">
+      <button class="btn-scan" id="btn-scan" onclick="lanzarScan()">ESCANEAR</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="load-title">Analizando infraestructura...</div>
+      <div class="load-steps">
+        <div class="load-step"><span class="step-dot" id="d0"></span><span class="step-txt" id="t0">Escaneando puertos críticos de red</span></div>
+        <div class="load-step"><span class="step-dot" id="d1"></span><span class="step-txt" id="t1">Verificando registros DNS / SPF / DMARC</span></div>
+        <div class="load-step"><span class="step-dot" id="d2"></span><span class="step-txt" id="t2">Comprobando cabeceras de seguridad HTTP</span></div>
+        <div class="load-step"><span class="step-dot" id="d3"></span><span class="step-txt" id="t3">Analizando certificado SSL/TLS</span></div>
+        <div class="load-step"><span class="step-dot" id="d4"></span><span class="step-txt" id="t4">Consultando bases de datos de filtraciones</span></div>
       </div>
-      <!-- Tabs -->
-      <div style="background:#040D07;border-bottom:1px solid #0F1E10;padding:0 1.5rem;display:flex;gap:0">
-        <div style="padding:.65rem 1rem;font-size:.75rem;font-weight:700;color:#22C55E;border-bottom:2px solid #22C55E;font-family:'Inter',sans-serif;cursor:pointer">Auditoría</div>
-        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Dashboard</div>
-        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Exportar</div>
-        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Historial</div>
-        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Vigilancia</div>
+      <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    </div>
+
+    <div class="results" id="results">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap">
+        <span style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">OBJETIVO</span>
+        <code id="res-objetivo" style="background:#F1F5F9;border:1px solid var(--border);padding:.2rem .6rem;border-radius:4px;color:#1D4ED8;font-size:.83rem"></code>
+        <span id="res-timestamp" style="font-size:.7rem;color:var(--dim)"></span>
       </div>
-      <!-- Panel content -->
-      <div style="background:#060D09;padding:1.5rem">
-        <!-- Scan bar -->
-        <div style="display:flex;gap:.75rem;margin-bottom:1.5rem;align-items:center">
-          <div style="flex:1;background:#0A1410;border:1px solid #152B1E;border-radius:7px;padding:.7rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#4ADE80">miempresa.com</div>
-          <div style="background:#15803D;color:#fff;border-radius:7px;padding:.7rem 1.4rem;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.05em;white-space:nowrap">ESCANEAR</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-lbl">Riesgo Global</div><div class="metric-val" id="m-riesgo">—</div><div class="metric-sub" id="m-label" style="font-weight:700">—</div></div>
+        <div class="metric"><div class="metric-lbl">Puertos Abiertos</div><div class="metric-val" id="m-puertos">—</div><div class="metric-sub">detectados</div></div>
+        <div class="metric"><div class="metric-lbl">Subdominios</div><div class="metric-val" id="m-subs">—</div><div class="metric-sub">encontrados</div></div>
+        <div class="metric"><div class="metric-lbl">SPF / DMARC</div><div class="metric-val" id="m-dns" style="font-size:1.1rem;padding-top:.3rem">—</div><div class="metric-sub" id="m-dns-sub">—</div></div>
+        <div class="metric"><div class="metric-lbl">Filtraciones</div><div class="metric-val" id="m-leaks">—</div><div class="metric-sub">en Deep Web</div></div>
+      </div>
+      <div class="main-grid">
+        <div class="gauge-card">
+          <div style="font-size:.68rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Score de Riesgo</div>
+          <div class="gauge-wrap">
+            <canvas id="gauge" width="200" height="110"></canvas>
+            <div class="gauge-center">
+              <div class="gauge-pct" id="gauge-pct">—</div>
+              <div class="gauge-label-txt" id="gauge-label">—</div>
+            </div>
+          </div>
         </div>
-        <!-- Results grid -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
-          <!-- Left: gauge + meters -->
+        <div class="cards-col" id="cards-col"></div>
+      </div>
+      <div class="sec-grid">
+        <div class="chart-card"><h4>Cabeceras HTTP</h4><div class="chart-wrap" id="headers-wrap"><canvas id="chart-headers"></canvas></div></div>
+        <div class="chart-card"><h4>Vectores de Ataque</h4><div class="chart-wrap" style="height:200px"><canvas id="chart-radar"></canvas></div></div>
+      </div>
+      <div class="subs-card" id="subs-section" style="display:none">
+        <h4>Subdominios Detectados</h4>
+        <table class="subs-table"><thead><tr><th>#</th><th>Subdominio</th><th>IP</th></tr></thead><tbody id="subs-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="sc-empty" id="empty-state">
+      <div class="sc-empty-icon">[ ]</div>
+      <h3>Introduce un objetivo para comenzar</h3>
+      <p>Acepta dominios (empresa.com), emails (admin@empresa.com) o IPs</p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="sc-panel" id="panel-dashboard">
+    <div class="sc-empty" id="dash-empty"><div class="sc-empty-icon">[ ]</div><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
+    <div id="dash-content" style="display:none">
+      <div class="sec-grid">
+        <div class="chart-card"><h4>Cabeceras HTTP</h4><div class="chart-wrap" id="dash-headers-wrap" style="height:200px"><canvas id="dash-headers"></canvas></div></div>
+        <div class="chart-card"><h4>Radar de Superficie</h4><div class="chart-wrap" style="height:200px"><canvas id="dash-radar"></canvas></div></div>
+      </div>
+      <div class="chart-card" style="margin-top:1rem"><h4>Desglose del Score</h4><div class="chart-wrap" style="height:120px"><canvas id="dash-desglose"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- EXPORTAR -->
+  <div class="sc-panel" id="panel-exportar">
+    {% if plan == 'free' %}
+    <div class="export-grid" style="margin-bottom:1rem">
+      <div class="export-card" id="pdf-free-card" style="position:relative">
+        <div style="position:absolute;top:1rem;right:1rem;font-size:1.1rem" id="pdf-free-icon">🔒</div>
+        <div style="font-size:2rem;margin-bottom:.75rem">📄</div>
+        <div class="export-title">Informe PDF Ejecutivo</div>
+        <div class="export-desc" id="pdf-free-desc">Ejecuta un escaneo para obtener el informe completo.</div>
+        <div id="pdf-free-btn"><button class="btn-export primary" style="opacity:.5;cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></div>
+      </div>
+      <div class="export-card" style="opacity:.4;position:relative">
+        <div style="position:absolute;top:1rem;right:1rem;font-size:1.1rem">🔒</div>
+        <div style="font-size:2rem;margin-bottom:.75rem">📦</div>
+        <div class="export-title">Datos Raw (JSON) <span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:4px">PRO</span></div>
+        <div class="export-desc">Exporta todos los datos en formato JSON. Disponible en el plan Pro.</div>
+        <button class="btn-export secondary" disabled style="cursor:not-allowed">Requiere plan Pro</button>
+      </div>
+    </div>
+    {% endif %}
+    <div class="sc-empty" id="exp-empty" {% if plan == 'free' %}style="display:none"{% endif %}><div class="sc-empty-icon">[ ]</div><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
+    <div id="exp-content" style="display:none">
+      <div id="exp-summary" style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:.85rem;color:var(--muted);margin-bottom:1rem"></div>
+      <div class="export-grid">
+        {% if plan != 'free' %}
+        <div class="export-card">
+          <div style="font-size:2rem;margin-bottom:.75rem">📄</div>
+          <div class="export-title">Informe PDF Ejecutivo</div>
+          <div class="export-desc">Documento profesional con todos los hallazgos y recomendaciones.</div>
+          <button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>
+        </div>
+        {% endif %}
+        <div class="export-card">
+          <div style="font-size:2rem;margin-bottom:.75rem">📦</div>
+          <div class="export-title">Datos Raw (JSON)</div>
+          <div class="export-desc">Exporta todos los datos del análisis en formato JSON estructurado.</div>
+          <button class="btn-export secondary" onclick="descargarJSON()">Exportar JSON</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="sc-panel" id="panel-historial">
+    {% if plan == 'free' %}
+    <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <span style="font-size:.82rem;color:#15803D">Plan Free: solo se muestran los últimos 3 escaneos.</span>
+      <span onclick="pagarPlan('pro')" style="font-size:.78rem;font-weight:700;color:var(--accent);white-space:nowrap;cursor:pointer">Ver historial completo con Pro →</span>
+    </div>
+    {% endif %}
+    <div class="sc-empty" id="hist-empty"><div class="sc-empty-icon">[ ]</div><h3>Sin escaneos recientes</h3><p>El historial aparecerá aquí.</p></div>
+    <div id="hist-content" style="display:none">
+      <table class="hist-table">
+        <thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th><th></th></tr></thead>
+        <tbody id="hist-tbody"></tbody>
+      </table>
+      <button class="btn-clear" onclick="clearHistorial()">Limpiar historial</button>
+    </div>
+  </div>
+
+  <!-- TENDENCIA -->
+  <div class="sc-panel" id="panel-tendencia">
+    <div class="sc-empty" id="tend-empty"><div class="sc-empty-icon">📈</div><h3>Sin datos de tendencia</h3><p>Haz al menos 2 escaneos para ver la evolución del riesgo.</p></div>
+    <div id="tend-content" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.5rem" id="tend-stats"></div>
+      <div class="chart-card" style="margin-bottom:1rem"><h4>Evolución del riesgo</h4><div class="chart-wrap" style="height:280px"><canvas id="tend-chart"></canvas></div></div>
+      <div class="chart-card"><h4>Desglose por escaneo</h4><div style="overflow-x:auto;margin-top:.5rem"><table class="hist-table" id="tend-table"><thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Subdominios</th><th>Fecha</th></tr></thead><tbody id="tend-tbody"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <!-- VIGILANCIA -->
+  <div class="sc-panel" id="panel-vigilancia">
+    {% if plan == 'free' %}
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;text-align:center;padding:2rem">
+      <div style="width:72px;height:72px;border-radius:16px;background:#F0FDF4;border:1px solid #BBF7D0;display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1.5rem">🔒</div>
+      <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.75rem">Solo disponible en Pro</div>
+      <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem">Vigilancia nocturna 24/7</h2>
+      <p style="color:var(--muted);font-size:.9rem;max-width:440px;line-height:1.7;margin-bottom:2rem">Cada noche ReconBase escanea tu dominio automáticamente. Si detecta algo nuevo o el riesgo sube, recibes un email al instante.</p>
+      <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem;text-align:left;width:100%;max-width:300px">
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green)">✓</span> Escaneo automático cada noche</div>
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green)">✓</span> Alerta por email si sube el riesgo</div>
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green)">✓</span> Historial completo de vigilancia</div>
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green)">✓</span> Sin hacer nada, funciona solo</div>
+      </div>
+      <button onclick="pagarPlan('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 2.5rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer;box-shadow:0 4px 12px rgba(22,163,74,.3)">Activar vigilancia — Pro 29€/mes</button>
+    </div>
+    {% else %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Estado</div>
+        {% if scan_dias %}
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease infinite"></span><span style="font-weight:700;font-size:1rem">Vigilancia activa</span></div>
+        <div style="font-size:.82rem;color:var(--muted)">Tu dominio se escanea según tu horario configurado</div>
+        {% else %}
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem"><span style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span><span style="font-weight:700;font-size:1rem;color:var(--muted)">Vigilancia desactivada</span></div>
+        <div style="font-size:.82rem;color:var(--dim)">Activa el escaneo automático abajo</div>
+        {% endif %}
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Horario</div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ '%02d:00'|format(scan_hora) }} · hora de Madrid</div>
+        <div style="font-size:.82rem;color:var(--muted)">{% set dias_n=['L','M','X','J','V','S','D'] %}{% for d in range(7) %}<span style="{% if d|string in scan_dias %}color:var(--accent);font-weight:700{% else %}color:var(--dim){% endif %};margin-right:5px">{{ dias_n[d] }}</span>{% endfor %}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Último automático</div>
+        {% if ultimo_auto %}
+        <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ ultimo_auto.resultado.get('riesgo',0) }}% — {{ ultimo_auto.resultado.get('label','') }}</div>
+        <div style="font-size:.82rem;color:var(--muted)">{{ ultimo_auto.timestamp.strftime('%d %b %Y · %H:%M') }}</div>
+        {% else %}
+        <div style="font-weight:700;font-size:1rem;color:var(--muted)">Pendiente</div>
+        {% endif %}
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
+      <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Configurar horario</div>
+      <div style="margin-bottom:1.25rem">
+        <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer">
+          <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px" onchange="toggleVigConfig()">
+          <span style="font-size:.88rem;font-weight:600">Activar escaneo automático</span>
+        </label>
+      </div>
+      <div id="vig-config" style="{% if not scan_dias %}display:none{% endif %}">
+        <div style="display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start">
           <div>
-            <!-- Risk score -->
-            <div style="background:#0A1410;border:1px solid #152B1E;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1rem">
-              <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
-                <div style="font-size:3rem;font-weight:800;color:#EF4444;letter-spacing:-.05em;line-height:1">73%</div>
-                <div>
-                  <div style="font-size:.65rem;font-weight:700;color:#EF4444;font-family:'JetBrains Mono',monospace;letter-spacing:.1em">RIESGO ALTO</div>
-                  <div style="font-size:.65rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;opacity:.7;margin-top:.2rem">miempresa.com · 1 min 48 seg</div>
-                </div>
-              </div>
-              <!-- Risk bar -->
-              <div style="height:6px;background:#0F1E10;border-radius:3px;overflow:hidden">
-                <div style="width:73%;height:100%;background:linear-gradient(90deg,#22C55E,#F59E0B,#EF4444);border-radius:3px"></div>
-              </div>
-            </div>
-            <!-- Category meters -->
-            <div style="background:#0A1410;border:1px solid #152B1E;border-radius:10px;padding:1rem 1.25rem">
-              <div style="font-size:.62rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.85rem;opacity:.7">ANÁLISIS POR CATEGORÍA</div>
-              <div style="display:flex;flex-direction:column;gap:.65rem">
-                <div style="display:flex;align-items:center;gap:.75rem">
-                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Puertos</div>
-                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:80%;height:100%;background:#EF4444;border-radius:2px"></div></div>
-                  <div style="font-size:.6rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">CRÍTICO</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:.75rem">
-                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Filtraciones</div>
-                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:60%;height:100%;background:#EF4444;border-radius:2px"></div></div>
-                  <div style="font-size:.6rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">CRÍTICO</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:.75rem">
-                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">DNS</div>
-                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:45%;height:100%;background:#F59E0B;border-radius:2px"></div></div>
-                  <div style="font-size:.6rem;color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">ALERTA</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:.75rem">
-                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Headers</div>
-                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:35%;height:100%;background:#F59E0B;border-radius:2px"></div></div>
-                  <div style="font-size:.6rem;color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">ALERTA</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:.75rem">
-                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Subdominios</div>
-                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:15%;height:100%;background:#22C55E;border-radius:2px"></div></div>
-                  <div style="font-size:.6rem;color:#22C55E;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">OK</div>
-                </div>
-              </div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Hora del escaneo</div>
+            <select id="vig-hora" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.5rem .85rem;outline:none">
+              {% for h in range(24) %}<option value="{{ h }}" {% if h==scan_hora %}selected{% endif %}>{{ '%02d:00'|format(h) }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Días de la semana</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              {% for nombre,num in [('L',0),('M',1),('X',2),('J',3),('V',4),('S',5),('D',6)] %}
+              <label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer">
+                <input type="checkbox" id="dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px">
+                <span style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ nombre }}</span>
+              </label>
+              {% endfor %}
             </div>
           </div>
-          <!-- Right: result cards -->
-          <div style="display:flex;flex-direction:column;gap:.65rem">
-            <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:3px solid #EF4444;border-radius:8px;padding:.8rem 1rem">
-              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-                <span style="font-size:.55rem;background:rgba(239,68,68,.15);color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">CRÍTICO</span>
-              </div>
-              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">Puerto RDP 3389 expuesto</div>
-              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Escritorio remoto accesible desde internet. Vector de ataque activo.</div>
-            </div>
-            <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:3px solid #EF4444;border-radius:8px;padding:.8rem 1rem">
-              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-                <span style="font-size:.55rem;background:rgba(239,68,68,.15);color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">CRÍTICO</span>
-              </div>
-              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">admin@ en filtración LinkedIn 2021</div>
-              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Email y contraseña hasheada comprometidos. Cambiar credenciales.</div>
-            </div>
-            <div style="background:#0A1410;border:1px solid #3B1F0A;border-left:3px solid #F59E0B;border-radius:8px;padding:.8rem 1rem">
-              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-                <span style="font-size:.55rem;background:rgba(245,158,11,.12);color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">ADVERTENCIA</span>
-              </div>
-              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">DMARC ausente en el dominio</div>
-              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Cualquiera puede enviar emails suplantando tu empresa.</div>
-            </div>
-            <div style="background:#0A1410;border:1px solid #0A2615;border-left:3px solid #22C55E;border-radius:8px;padding:.8rem 1rem">
-              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
-                <span style="font-size:.55rem;background:rgba(34,197,94,.1);color:#22C55E;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">OK</span>
-              </div>
-              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">SSL/TLS válido · Caduca en 187 días</div>
-              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Certificado activo y sin vulnerabilidades conocidas.</div>
-            </div>
+          <div style="display:flex;align-items:flex-end">
+            <button onclick="guardarHorario()" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar horario</button>
           </div>
         </div>
+        <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
+      </div>
+      <div id="vig-save-off" style="margin-top:1rem;{% if scan_dias %}display:none{% endif %}">
+        <button onclick="guardarHorario()" style="background:#E2E8F0;color:var(--muted);border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button>
       </div>
     </div>
-    <p style="text-align:center;margin-top:1.5rem;font-size:.8rem;color:var(--muted)">Pruébalo ahora — <a href="/app" style="color:var(--accent);font-weight:600">escanea tu dominio gratis →</a></p>
-  </div>
-</section>
-
-<!-- CARACTERISTICAS DETALLADAS -->
-<section class="section" id="caracteristicas" style="max-width:1100px">
-  <div class="sec-label">En detalle</div>
-  <h2 class="sec-title">Qué analiza ReconBase<br>y por qué importa</h2>
-  <p class="sec-sub" style="margin-bottom:4rem">Cada módulo tiene un propósito concreto. Aquí te explicamos qué busca, qué significa lo que encuentra y qué hacer si detecta un problema.</p>
-
-  <!-- 1. Puertos -->
-  <div class="cf-row">
-    <div class="cf-text">
-      <div class="cf-num">01</div>
-      <h3 class="cf-title">Escáner de puertos expuestos</h3>
-      <p class="cf-desc">Comprueba qué servicios de tu empresa son visibles desde internet. Un servidor con puertos abiertos innecesariamente — RDP, SSH, bases de datos — es una puerta de entrada directa para cualquier atacante.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-r">Alto riesgo si expuesto</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">TCP scan</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué hace ReconBase</div>
-        Escanea los puertos más comunes. Detecta servicios críticos expuestos: RDP (3389), SSH (22), bases de datos MySQL/PostgreSQL/MongoDB y paneles de administración.
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Si encuentra algo</div>
-        Cierra el puerto en el firewall o restringe el acceso por IP. Nunca dejes bases de datos accesibles desde internet sin VPN.
-      </div>
-    </div>
-    <div class="cf-visual">
-      <div class="cf-mock">
-        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">PUERTOS — tuempresa.com</span></div>
-        <div class="cf-port ok"><span class="cf-port-num">80</span><span class="cf-port-svc">HTTP</span><span class="cf-port-st st-ok">ABIERTO — Normal</span></div>
-        <div class="cf-port ok"><span class="cf-port-num">443</span><span class="cf-port-svc">HTTPS</span><span class="cf-port-st st-ok">ABIERTO — Normal</span></div>
-        <div class="cf-port warn"><span class="cf-port-num">22</span><span class="cf-port-svc">SSH</span><span class="cf-port-st st-warn">ABIERTO — Revisar</span></div>
-        <div class="cf-port err"><span class="cf-port-num">3389</span><span class="cf-port-svc">RDP</span><span class="cf-port-st st-err">EXPUESTO — Critico</span></div>
-        <div class="cf-port err"><span class="cf-port-num">27017</span><span class="cf-port-svc">MongoDB</span><span class="cf-port-st st-err">EXPUESTO — Critico</span></div>
-        <div style="margin-top:1rem;padding:.6rem .75rem;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:.72rem;color:#F87171;font-family:'JetBrains Mono',monospace">2 puertos criticos expuestos · Riesgo +30pts</div>
-      </div>
-    </div>
+    {% endif %}
   </div>
 
-  <!-- 2. Filtraciones -->
-  <div class="cf-row cf-row-rev">
-    <div class="cf-text">
-      <div class="cf-num">02</div>
-      <h3 class="cf-title">Filtraciones en bases de datos comprometidas</h3>
-      <p class="cf-desc">Busca si los emails de tu empresa han aparecido en brechas de seguridad conocidas. Si las credenciales de un empleado están filtradas, un atacante puede entrar con ellas sin necesidad de hackear nada.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-r">Muy frecuente en pymes</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">Have I Been Pwned</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué hace ReconBase</div>
-        Consulta Have I Been Pwned para cada email relacionado con tu dominio. Indica en qué brecha apareció, cuándo y qué datos quedaron expuestos.
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Si encuentra algo</div>
-        Cambia la contraseña de esa cuenta de inmediato, activa autenticación en dos pasos (2FA) y notifica al equipo. Si hay datos de clientes, puede requerirse notificación RGPD.
-      </div>
-    </div>
-    <div class="cf-visual">
-      <div class="cf-mock">
-        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">FILTRACIONES — tuempresa.com</span></div>
-        <div style="margin-bottom:.75rem">
-          <div style="font-size:.68rem;color:#94A3B8;font-family:'JetBrains Mono',monospace;margin-bottom:.4rem">admin@tuempresa.com</div>
-          <div class="cf-breach"><div class="cf-breach-name">LinkedIn 2021</div><div style="font-size:.7rem;color:#94A3B8">Email, contrasena hasheada, nombre</div><div class="cf-breach-date">Jun 2021</div></div>
-          <div class="cf-breach"><div class="cf-breach-name">Adobe 2019</div><div style="font-size:.7rem;color:#94A3B8">Email, contrasena, ciudad</div><div class="cf-breach-date">Oct 2019</div></div>
-        </div>
-        <div style="margin-bottom:.75rem">
-          <div style="font-size:.68rem;color:#94A3B8;font-family:'JetBrains Mono',monospace;margin-bottom:.4rem">info@tuempresa.com</div>
-          <div style="font-size:.75rem;color:#10B981;font-family:'JetBrains Mono',monospace;padding:.4rem .6rem;background:rgba(16,185,129,.06);border-radius:4px">Sin filtraciones conocidas</div>
-        </div>
-        <div style="padding:.6rem .75rem;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:.72rem;color:#F87171;font-family:'JetBrains Mono',monospace">1 email comprometido · Cambia credenciales YA</div>
-      </div>
-    </div>
-  </div>
+</div><!-- /sc-content -->
 
-  <!-- 3. DNS -->
-  <div class="cf-row">
-    <div class="cf-text">
-      <div class="cf-num">03</div>
-      <h3 class="cf-title">Protección DNS — SPF y DMARC</h3>
-      <p class="cf-desc">Sin SPF y DMARC configurados, cualquiera puede enviar emails suplantando tu dominio. Es el vector de phishing más usado contra pymes y el que más se ignora.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-a">Lo ignora la mayoría</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">Anti-phishing</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué hace ReconBase</div>
-        Consulta los registros DNS de tu dominio y verifica si SPF está bien configurado, si DMARC existe y si la política es suficientemente estricta (p=reject o p=quarantine).
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Si encuentra algo</div>
-        Añade los registros TXT en tu panel DNS. ReconBase indica exactamente qué valor poner. Suele tardar menos de 10 minutos.
-      </div>
-    </div>
-    <div class="cf-visual">
-      <div class="cf-mock">
-        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">DNS — tuempresa.com</span></div>
-        <div class="cf-dns-row ok"><span class="cf-dns-label">SPF</span><span class="cf-dns-val">v=spf1 include:_spf.google.com ~all</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
-        <div class="cf-dns-row err"><span class="cf-dns-label">DMARC</span><span class="cf-dns-val" style="color:#64748B;font-style:italic">No encontrado</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">FALTA</span></div>
-        <div class="cf-dns-row warn"><span class="cf-dns-label">DKIM</span><span class="cf-dns-val" style="color:#64748B;font-style:italic">Solo selector google</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">PARCIAL</span></div>
-        <div style="margin-top:1rem;background:#050810;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.7rem">
-          <div style="color:#64748B;margin-bottom:.35rem">Añadir en tu DNS (TXT):</div>
-          <div style="color:#86EFAC;word-break:break-all">_dmarc.tuempresa.com → v=DMARC1; p=quarantine; rua=mailto:dmarc@tuempresa.com</div>
-        </div>
-      </div>
-    </div>
-  </div>
+{% else %}
 
-  <!-- 4. Cabeceras HTTP -->
-  <div class="cf-row cf-row-rev">
-    <div class="cf-text">
-      <div class="cf-num">04</div>
-      <h3 class="cf-title">Cabeceras de seguridad HTTP</h3>
-      <p class="cf-desc">Las cabeceras HTTP le dicen al navegador cómo comportarse. Sin ellas, tu web puede ser vulnerable a XSS, clickjacking o inyección de contenido — ataques que no requieren explotar ninguna vulnerabilidad propia.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-a">Falla en la mayoría de webs</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">XSS · CSP</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué hace ReconBase</div>
-        Hace una petición a tu dominio y analiza las cabeceras de respuesta: HSTS, X-Frame-Options, X-Content-Type-Options, Content-Security-Policy y Permissions-Policy.
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Si encuentra algo</div>
-        Configura las cabeceras en tu servidor (Nginx, Apache) o en el panel de tu hosting. ReconBase indica el valor recomendado para cada una.
-      </div>
+<!-- ── LOGIN WALL ── -->
+<div class="login-wall">
+  <div class="login-wall-box">
+    <div class="login-wall-icon">🔍</div>
+    <div class="login-wall-label">Acceso restringido</div>
+    <h1>Inicia sesión para usar el Escáner</h1>
+    <p>Analiza puertos, DNS, cabeceras HTTP, filtraciones y más. Resultados en 2 minutos.</p>
+    <div class="login-wall-btns">
+      <a href="/login" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;text-align:center;display:block;box-shadow:0 4px 12px rgba(22,163,74,.3)">Iniciar sesión</a>
+      <a href="/register" style="background:transparent;border:1px solid var(--border);color:var(--text);padding:.9rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.92rem;text-align:center;display:block">Crear cuenta gratis</a>
     </div>
-    <div class="cf-visual">
-      <div class="cf-mock">
-        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">HTTP HEADERS — tuempresa.com</span></div>
-        <div class="cf-hdr ok"><span class="cf-hdr-name">Strict-Transport-Security</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
-        <div class="cf-hdr ok"><span class="cf-hdr-name">X-Content-Type-Options</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
-        <div class="cf-hdr err"><span class="cf-hdr-name">Content-Security-Policy</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">AUSENTE</span></div>
-        <div class="cf-hdr err"><span class="cf-hdr-name">X-Frame-Options</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">AUSENTE</span></div>
-        <div class="cf-hdr warn"><span class="cf-hdr-name">Permissions-Policy</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">PARCIAL</span></div>
-        <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);border-radius:6px;font-size:.72rem;color:#FBBF24;font-family:'JetBrains Mono',monospace">2 cabeceras criticas ausentes · Riesgo clickjacking y XSS</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 5. Subdominios -->
-  <div class="cf-row">
-    <div class="cf-text">
-      <div class="cf-num">05</div>
-      <h3 class="cf-title">Enumeración de subdominios</h3>
-      <p class="cf-desc">Muchas empresas tienen subdominios olvidados: entornos de prueba, paneles de administración, APIs internas expuestas. Nadie los monitoriza porque nadie recuerda que existen.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-a">Shadow IT habitual</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">Superficie de ataque</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué hace ReconBase</div>
-        Usa consultas DNS y técnicas OSINT para mapear los subdominios activos de tu dominio. Identifica cuáles responden, en qué IP están y si tienen puertos críticos abiertos.
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Si encuentra algo</div>
-        Revisa si cada subdominio es necesario. Si no lo es, elimínalo del DNS. Si es un entorno de desarrollo, ponlo detrás de autenticación o VPN.
-      </div>
-    </div>
-    <div class="cf-visual">
-      <div class="cf-mock">
-        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">SUBDOMINIOS — tuempresa.com</span></div>
-        <div class="cf-sub ok"><span class="cf-sub-name">www.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">93.184.x.x</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Normal</span></div>
-        <div class="cf-sub ok"><span class="cf-sub-name">mail.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">74.125.x.x</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Normal</span></div>
-        <div class="cf-sub warn"><span class="cf-sub-name">staging.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">34.90.x.x</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Revisar</span></div>
-        <div class="cf-sub err"><span class="cf-sub-name">admin.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">45.33.x.x</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Expuesto</span></div>
-        <div class="cf-sub err"><span class="cf-sub-name">dev.tuempresa.com</span><span style="color:#64748B;font-size:.68rem;font-family:'JetBrains Mono',monospace">18.195.x.x</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">Sin auth</span></div>
-        <div style="margin-top:.75rem;padding:.5rem .75rem;background:#050810;border-radius:6px;font-size:.7rem;color:#64748B;font-family:'JetBrains Mono',monospace">5 subdominios detectados · 2 requieren atencion</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 6. CMS -->
-  <div class="cf-row cf-row-rev">
-    <div class="cf-text">
-      <div class="cf-num">06</div>
-      <h3 class="cf-title">Detección de CMS y versiones</h3>
-      <p class="cf-desc">Si tu web usa WordPress, Joomla o PrestaShop desactualizados, hay bots escaneando internet ahora mismo buscando exactamente esa versión. No es una amenaza hipotética.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-r">Bots lo explotan en minutos</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">WordPress · Joomla · Drupal</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué hace ReconBase</div>
-        Analiza cabeceras HTTP, código fuente y rutas características para identificar el CMS y su versión. Detecta plugins con CVEs conocidos.
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Si encuentra algo</div>
-        Actualiza el CMS y todos sus plugins a la última versión. Activa las actualizaciones automáticas de seguridad. Elimina los plugins que no uses.
-      </div>
-    </div>
-    <div class="cf-visual">
-      <div class="cf-mock">
-        <div class="cf-mock-bar"><span style="color:#64748B;font-size:.65rem;font-family:'JetBrains Mono',monospace">CMS DETECTION — tuempresa.com</span></div>
-        <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);border-radius:8px;margin-bottom:.75rem">
-          <div style="width:36px;height:36px;background:rgba(139,92,246,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem">W</div>
-          <div><div style="font-size:.85rem;font-weight:700;color:#C4B5FD">WordPress 6.2.1</div><div style="font-size:.7rem;color:#64748B;font-family:'JetBrains Mono',monospace">Desactualizado — ultima: 6.7.2</div></div>
-        </div>
-        <div class="cf-cms-plugin warn"><span>WooCommerce</span><span style="font-size:.68rem;color:#64748B;font-family:'JetBrains Mono',monospace">v8.1.0</span><span class="st-warn" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">DESACTUALIZADO</span></div>
-        <div class="cf-cms-plugin err"><span>Contact Form 7</span><span style="font-size:.68rem;color:#64748B;font-family:'JetBrains Mono',monospace">v5.7</span><span class="st-err" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">CVE CONOCIDO</span></div>
-        <div class="cf-cms-plugin ok"><span>Yoast SEO</span><span style="font-size:.68rem;color:#64748B;font-family:'JetBrains Mono',monospace">v22.5</span><span class="st-ok" style="font-size:.65rem;font-family:'JetBrains Mono',monospace">OK</span></div>
-        <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px;font-size:.72rem;color:#F87171;font-family:'JetBrains Mono',monospace">CMS + 1 plugin vulnerable · Actualiza urgente</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 7. Informe PDF -->
-  <div class="cf-row">
-    <div class="cf-text">
-      <div class="cf-num">07</div>
-      <h3 class="cf-title">Informe PDF ejecutivo</h3>
-      <p class="cf-desc">Todos los hallazgos en un documento descargable. Sin tecnicismos. Pensado para enseñarlo a alguien que no sabe de seguridad y que entienda exactamente qué hay que hacer.</p>
-      <div class="cf-tags">
-        <span class="cf-tag cf-tag-g">Lenguaje no técnico</span>
-        <span class="cf-tag cf-tag-b" style="border-radius:4px">Descarga inmediata</span>
-      </div>
-      <div class="cf-what">
-        <div class="cf-what-title">Qué incluye</div>
-        Puntuación de riesgo global, vulnerabilidades ordenadas por criticidad, explicación de cada hallazgo y pasos concretos de remediación.
-      </div>
-      <div class="cf-fix">
-        <div class="cf-fix-title">Para qué sirve</div>
-        Justificar inversiones en seguridad, presentarlo a un cliente o auditor, o simplemente tener un registro de en qué estado está tu empresa hoy.
-      </div>
-    </div>
-    <div class="cf-visual">
-      <div class="cf-mock" style="padding:0;overflow:hidden">
-        <div style="background:linear-gradient(135deg,#1D4ED8,#3B82F6);padding:1.25rem 1.5rem">
-          <div style="font-size:.95rem;font-weight:800;color:#fff;letter-spacing:-.03em">ReconBase</div>
-          <div style="font-size:.68rem;color:rgba(255,255,255,.7);font-family:'JetBrains Mono',monospace;margin-top:.2rem">Informe de Auditoría de Seguridad</div>
-        </div>
-        <div style="padding:1rem 1.25rem">
-          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;padding:.6rem;background:#080C14;border-radius:6px"><div style="font-size:1.6rem;font-weight:800;color:#D97706">47%</div><div><div style="font-size:.7rem;font-weight:700;color:#D97706;font-family:'JetBrains Mono',monospace">RIESGO MODERADO</div><div style="font-size:.65rem;color:#64748B">3 vectores requieren accion</div></div></div>
-          <div class="pdf-row"><span class="pdf-key">Dominio</span><span style="color:#93C5FD;font-family:'JetBrains Mono',monospace;font-size:.75rem">tuempresa.com</span></div>
-          <div class="pdf-row"><span class="pdf-key">Puertos criticos</span><span style="color:#EF4444;font-family:'JetBrains Mono',monospace;font-size:.75rem">2 expuestos</span></div>
-          <div class="pdf-row"><span class="pdf-key">Filtraciones</span><span style="color:#EF4444;font-family:'JetBrains Mono',monospace;font-size:.75rem">1 brecha</span></div>
-          <div class="pdf-row"><span class="pdf-key">DNS / SPF / DMARC</span><span style="color:#D97706;font-family:'JetBrains Mono',monospace;font-size:.75rem">Parcial</span></div>
-          <div class="pdf-row"><span class="pdf-key">HTTP Headers</span><span style="color:#D97706;font-family:'JetBrains Mono',monospace;font-size:.75rem">2 ausentes</span></div>
-          <div class="pdf-row" style="border:none"><span class="pdf-key">Subdominios</span><span style="color:#10B981;font-family:'JetBrains Mono',monospace;font-size:.75rem">5 (2 revisar)</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</section>
-
-<!-- CALLOUT BREAK -->
-<div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1.5rem 6%;background:var(--surface)">
-  <div style="max-width:1100px;margin:0 auto;display:flex;gap:1.25rem;align-items:flex-start">
-    <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:#16A34A;flex-shrink:0;margin-top:.1rem">→</div>
-    <p style="font-size:.9rem;color:var(--muted);line-height:1.75;margin:0">El problema más frecuente en los dominios que analizamos no son los puertos abiertos. Es el registro DMARC ausente — lo tiene mal configurado la mayoría de pymes. Sin él, cualquiera puede enviar un email que aparezca como si viniera de tu empresa, sin que tu servidor lo sepa.</p>
+    <p style="margin-top:1.75rem;font-size:.78rem;color:var(--dim)">Gratis · Sin tarjeta · Resultados en 2 minutos</p>
   </div>
 </div>
 
-<!-- ANTES / DESPUÉS -->
-<section class="section" id="antes-despues" style="max-width:1100px">
-  <div class="sec-label" style="text-align:center">Comparativa</div>
-  <h2 class="sec-title" style="text-align:center;margin-bottom:.75rem">El mismo dominio, antes y después</h2>
-  <p class="sec-sub" style="text-align:center;margin:0 auto 2.5rem;max-width:520px">La diferencia no es el dominio. Es saber dónde están los riesgos y haber actuado sobre ellos.</p>
-  <div class="bacomp-grid">
-    <div class="ba-card ba-before">
-      <div class="ba-header-bar">
-        <div class="ba-tag" style="background:rgba(220,38,38,.15);color:#F87171;border:1px solid rgba(220,38,38,.2)">Sin ReconBase</div>
-        <div class="ba-score" style="color:#F87171">87% — RIESGO ALTO</div>
-      </div>
-      <div class="ba-risk-bar"><div class="ba-risk-fill" style="width:87%;background:linear-gradient(90deg,#7f1d1d,#EF4444)"></div></div>
-      <div class="ba-items">
-        <div class="ba-item bad"><span class="ba-icon">✗</span><span class="ba-text">3 puertos criticos expuestos: RDP, SSH, MongoDB</span></div>
-        <div class="ba-item bad"><span class="ba-icon">✗</span><span class="ba-text">3 emails corporativos en filtraciones conocidas</span></div>
-        <div class="ba-item bad"><span class="ba-icon">✗</span><span class="ba-text">SPF y DMARC ausentes — cualquiera puede suplantar tu dominio</span></div>
-        <div class="ba-item bad"><span class="ba-icon">✗</span><span class="ba-text">4 cabeceras HTTP de seguridad sin configurar</span></div>
-        <div class="ba-item bad"><span class="ba-icon">✗</span><span class="ba-text">Panel de admin accesible desde internet sin autenticacion</span></div>
-        <div class="ba-item neutral"><span class="ba-icon" style="color:#475569">?</span><span class="ba-text" style="color:#475569">Ultimo analisis de seguridad: nunca realizado</span></div>
-      </div>
-    </div>
-    <div class="ba-card ba-after">
-      <div class="ba-header-bar">
-        <div class="ba-tag" style="background:rgba(22,163,74,.15);color:#4ADE80;border:1px solid rgba(22,163,74,.2)">Con ReconBase</div>
-        <div class="ba-score" style="color:#4ADE80">12% — RIESGO BAJO</div>
-      </div>
-      <div class="ba-risk-bar"><div class="ba-risk-fill" style="width:12%;background:linear-gradient(90deg,#14532d,#22C55E)"></div></div>
-      <div class="ba-items">
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Firewall configurado — 0 puertos expuestos al exterior</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Credenciales renovadas y 2FA activado en todas las cuentas</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">SPF + DMARC con política estricta — dominio protegido</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Todas las cabeceras HTTP configuradas correctamente</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Admin restringido por IP + autenticación de doble factor</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Vigilancia nocturna activa — último escaneo hace 2 horas</span></div>
-      </div>
-    </div>
-  </div>
-  <div style="text-align:center;margin-top:2.5rem">
-    <a href="/register" class="btn-primary" style="display:inline-flex">Descubre en qué estado está tu empresa — es gratis</a>
-  </div>
-</section>
+{% endif %}
 
-<div class="dark-band">
-  <div class="dark-band-inner">
-    <div class="sec-label">Motor en tiempo real</div>
-    <h2 class="sec-title">Vigilancia nocturna automatica</h2>
-    <p class="sec-sub">Tu infraestructura se escanea cada noche. Si algo cambia, recibes una alerta.</p>
-    <div class="terminal">
-      <div class="t-bar"><div class="td" style="background:#EF4444"></div><div class="td" style="background:#F59E0B"></div><div class="td" style="background:#10B981"></div></div>
-      <div class="log" id="tlog1" style="opacity:0"><span class="lt">03:00:01</span><span class="lok">[SCAN]</span><span class="lmsg">Iniciando ronda nocturna</span><span class="ltgt">tuempresa.com</span></div>
-      <div class="log" id="tlog2" style="opacity:0"><span class="lt">03:00:04</span><span class="lok">[OK]</span><span class="lmsg">Red perimetral limpia. 0 puertos expuestos.</span></div>
-      <div class="log" id="tlog3" style="opacity:0"><span class="lt">03:00:07</span><span class="lok">[OK]</span><span class="lmsg">SPF y DMARC verificados correctamente.</span></div>
-      <div class="log" id="tlog4" style="opacity:0"><span class="lt">03:00:12</span><span class="lwarn">[WARN]</span><span class="lmsg">Nuevo subdominio detectado</span><span class="ltgt" style="color:#FBBF24">staging.tuempresa.com</span></div>
-      <div class="log" id="tlog5" style="opacity:0"><span class="lt">03:00:18</span><span class="lcrit">[ALERT]</span><span class="lmsg">Filtración detectada en HIBP</span><span class="ltgt" style="color:#F87171">admin@tuempresa.com</span></div>
-      <div class="log" id="tlog6" style="opacity:0"><span class="lt">03:00:19</span><span class="lcrit">[NOTIF]</span><span class="lmsg">Alerta enviada al responsable de seguridad.</span></div>
-    </div>
-  </div>
+<!-- ── FOOTER ── -->
+<div class="sc-footer">
+  ReconBase &copy; 2026 &nbsp;·&nbsp;
+  <a href="/privacidad">Privacidad</a> &nbsp;·&nbsp;
+  <a href="/terminos">Términos</a> &nbsp;·&nbsp;
+  <a href="mailto:ReconBase.alertas@gmail.com">Contacto</a>
 </div>
-
-<section class="demo-section" id="como-funciona">
-  <div class="sec-label">Tutorial interactivo</div>
-  <h2 class="sec-title">Así funciona ReconBase</h2>
-  <p class="sec-sub">Haz clic en cada paso para ver exactamente lo que hace la plataforma.</p>
-  <div class="demo-grid">
-    <div class="demo-steps-nav">
-      <div class="demo-step-btn active" onclick="setDemo(0,this)"><div class="dsb-num">1</div><div><div class="dsb-title">Introduces tu dominio</div><div class="dsb-desc">Solo necesitas escribir tu dominio o email corporativo.</div></div></div>
-      <div class="demo-step-btn" onclick="setDemo(1,this)"><div class="dsb-num">2</div><div><div class="dsb-title">El motor escanea en tiempo real</div><div class="dsb-desc">ReconBase analiza puertos, DNS, subdominios y cabeceras HTTP.</div></div></div>
-      <div class="demo-step-btn" onclick="setDemo(2,this)"><div class="dsb-num">3</div><div><div class="dsb-title">Recibes el informe de riesgos</div><div class="dsb-desc">Cada vulnerabilidad explicada con pasos de acción concretos.</div></div></div>
-      <div class="demo-step-btn" onclick="setDemo(3,this)"><div class="dsb-num">4</div><div><div class="dsb-title">Descargas el PDF ejecutivo</div><div class="dsb-desc">Listo para presentar al equipo directivo o a un cliente.</div></div></div>
-      <div class="demo-step-btn" onclick="setDemo(4,this)"><div class="dsb-num">5</div><div><div class="dsb-title">Vigilancia nocturna automática</div><div class="dsb-desc">El motor revisa tu infraestructura cada noche y alerta si algo cambia.</div></div></div>
-    </div>
-    <div class="demo-preview">
-      <div class="demo-panel active" id="dp-0">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Centro de analisis</div>
-        <div class="dp-scan"><label for="demo-input" style="display:none">Dominio a analizar</label><input class="dp-input" type="text" value="miempresa.com" id="demo-input" aria-label="Dominio a analizar"><button class="dp-btn" onclick="setDemo(1,document.querySelectorAll('.demo-step-btn')[1])">ESCANEAR</button></div>
-        <div style="font-size:.78rem;color:var(--dim);margin-top:.5rem">Tambien acepta emails: <span style="color:#60A5FA">admin@tuempresa.com</span></div>
-        <div style="margin-top:1.5rem;padding:1rem;background:#080C14;border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:.75rem">ULTIMOS ANALISIS</div>
-          <div style="font-size:.8rem;color:#475569;font-family:'JetBrains Mono',monospace;line-height:2">
-            <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">google.com</span><span style="color:var(--green)">BAJO 12%</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">example.com</span><span style="color:var(--amber)">MODERADO 45%</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="demo-panel" id="dp-1">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Analizando miempresa.com</div>
-        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Puertos críticos</div><div class="dri-status status-ok">Completado</div></div>
-        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">DNS / SPF / DMARC</div><div class="dri-status status-ok">Completado</div></div>
-        <div class="demo-result-item"><div class="dri-dot" style="background:var(--amber)"></div><div class="dri-label">Cabeceras HTTP</div><div class="dri-status status-warn">2 ausentes</div></div>
-        <div class="demo-result-item"><div class="dri-dot" style="background:var(--green)"></div><div class="dri-label">Subdominios</div><div class="dri-status status-ok">3 encontrados</div></div>
-        <div class="demo-result-item"><div class="dri-dot" style="background:var(--red)"></div><div class="dri-label">Filtraciones HIBP</div><div class="dri-status status-err">1 brecha</div></div>
-        <div style="margin-top:1rem;background:#080C14;border-radius:6px;padding:.75rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--dim)">Duración total: <span style="color:var(--green)">1 min 43 seg</span></div>
-      </div>
-      <div class="demo-panel" id="dp-2" style="padding:.75rem">
-        <!-- Browser chrome -->
-        <div style="border-radius:8px;overflow:hidden;border:1px solid #1E293B;box-shadow:0 8px 32px rgba(0,0,0,.4)">
-          <div style="background:#0F172A;padding:.45rem .75rem;display:flex;align-items:center;gap:.5rem;border-bottom:1px solid #1E293B">
-            <div style="display:flex;gap:4px;flex-shrink:0"><div style="width:8px;height:8px;border-radius:50%;background:#EF4444;opacity:.7"></div><div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;opacity:.7"></div><div style="width:8px;height:8px;border-radius:50%;background:#22C55E;opacity:.7"></div></div>
-            <div style="flex:1;background:#1E293B;border-radius:4px;padding:.18rem .6rem;font-size:.6rem;color:#475569;font-family:'JetBrains Mono',monospace;overflow:hidden;white-space:nowrap">reconbase.app · Dashboard</div>
-          </div>
-          <!-- App UI -->
-          <div style="background:#060D09;padding:.85rem">
-            <!-- Risk header -->
-            <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.7rem;padding:.6rem .85rem;background:#0A1410;border:1px solid #152B1E;border-radius:7px">
-              <div style="font-size:2rem;font-weight:800;color:#EF4444;letter-spacing:-.05em;line-height:1">73%</div>
-              <div style="flex:1">
-                <div style="font-size:.58rem;font-weight:700;color:#EF4444;font-family:'JetBrains Mono',monospace;letter-spacing:.1em">RIESGO ALTO</div>
-                <div style="font-size:.62rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;margin-top:.1rem;opacity:.8">miempresa.com · hace 2 min</div>
-              </div>
-              <div style="display:flex;gap:.35rem;flex-shrink:0">
-                <div style="background:#152B1E;border:1px solid #1A3526;border-radius:4px;padding:.25rem .55rem;font-size:.58rem;color:#4ADE80;font-family:'JetBrains Mono',monospace">PDF</div>
-                <div style="background:#152B1E;border:1px solid #1A3526;border-radius:4px;padding:.25rem .55rem;font-size:.58rem;color:#4ADE80;font-family:'JetBrains Mono',monospace">JSON</div>
-              </div>
-            </div>
-            <!-- Cards 2x2 -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem">
-              <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:2px solid #EF4444;border-radius:6px;padding:.55rem .7rem">
-                <div style="font-size:.55rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">CRÍTICO</div>
-                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">Puerto 3389 abierto</div>
-                <div style="font-size:.62rem;color:#475569">RDP expuesto a internet</div>
-              </div>
-              <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:2px solid #EF4444;border-radius:6px;padding:.55rem .7rem">
-                <div style="font-size:.55rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">CRÍTICO</div>
-                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">Filtración detectada</div>
-                <div style="font-size:.62rem;color:#475569">admin@ en LinkedIn 2021</div>
-              </div>
-              <div style="background:#0A1410;border:1px solid #3B1F0A;border-left:2px solid #F59E0B;border-radius:6px;padding:.55rem .7rem">
-                <div style="font-size:.55rem;color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">ADVERTENCIA</div>
-                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">DMARC ausente</div>
-                <div style="font-size:.62rem;color:#475569">Dominio suplantable</div>
-              </div>
-              <div style="background:#0A1410;border:1px solid #0A2615;border-left:2px solid #22C55E;border-radius:6px;padding:.55rem .7rem">
-                <div style="font-size:.55rem;color:#22C55E;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.2rem">OK</div>
-                <div style="font-size:.72rem;font-weight:700;color:#F0FDF4;margin-bottom:.15rem">SSL/TLS válido</div>
-                <div style="font-size:.62rem;color:#475569">Caduca en 187 días</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="demo-panel" id="dp-3">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Vista previa PDF ejecutivo</div>
-        <div class="demo-pdf-preview">
-          <div class="pdf-header"><div style="font-size:.9rem;font-weight:700">ReconBase Enterprise</div><div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:.15rem">Informe de Auditoría de Seguridad</div></div>
-          <div class="pdf-row"><span class="pdf-key">Objetivo</span><span style="color:#93C5FD;font-family:'JetBrains Mono',monospace;font-size:.78rem">miempresa.com</span></div>
-          <div class="pdf-row"><span class="pdf-key">Riesgo global</span><span style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:.78rem">42% MODERADO</span></div>
-          <div class="pdf-row"><span class="pdf-key">SPF / DMARC</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.78rem">[OK]</span></div>
-          <div class="pdf-row"><span class="pdf-key">Puertos expuestos</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.78rem">Ninguno</span></div>
-          <div class="pdf-row"><span class="pdf-key">Filtraciones</span><span style="color:var(--red);font-family:'JetBrains Mono',monospace;font-size:.78rem">1 brecha</span></div>
-        </div>
-      </div>
-      <div class="demo-panel" id="dp-4">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Alertas automáticas — Plan Pro</div>
-        <div class="alert-demo"><div class="alert-demo-title">NUEVA ALERTA - miempresa.com</div><div class="alert-demo-body">Nuevo subdominio detectado: <span style="color:#60A5FA">api2.miempresa.com</span>. Verifica si fue creado intencionalmente.</div></div>
-        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:1rem"><div style="font-size:.75rem;font-weight:700;color:var(--green);margin-bottom:.5rem;font-family:'JetBrains Mono',monospace">ULTIMA RONDA - 03:00</div><div style="font-size:.78rem;color:var(--muted);line-height:1.8">Red perimetral: <span style="color:var(--green)">Limpia</span><br>SPF / DMARC: <span style="color:var(--green)">Verificados</span><br>Subdominios nuevos: <span style="color:var(--amber)">1 detectado</span></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="dark-band" id="precios">
-  <div class="dark-band-inner">
-    <div style="text-align:center;margin-bottom:2.5rem"><div class="sec-label" style="text-align:center">Precios</div><h2 class="sec-title" style="text-align:center">Simple. Sin sorpresas.</h2></div>
-    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));max-width:800px;margin:0 auto">
-
-      <div class="plan">
-        <div class="plan-name">Gratuito</div>
-        <div class="plan-price">0 <span>/ mes</span></div>
-        <div class="plan-desc">Para cualquier empresa que quiera conocer su estado de seguridad sin coste.</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>10 análisis al mes</div>
-        <div class="pf"><span class="ck">v</span>Escáner de puertos expuestos</div>
-        <div class="pf"><span class="ck">v</span>Verificación DNS / SPF / DMARC</div>
-        <div class="pf"><span class="ck">v</span>Cabeceras de seguridad HTTP</div>
-        <div class="pf"><span class="ck">v</span>Enumeración de subdominios</div>
-        <div class="pf"><span class="ck">v</span>Informe PDF básico</div>
-        <div class="plan-div" style="margin-top:1.2rem"></div>
-        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
-          Cada análisis gratuito te muestra qué servicios de tu empresa son visibles desde internet, si tu dominio de correo puede ser suplantado y si tu web tiene configuraciones de seguridad incorrectas. Obtienes un informe descargable con los resultados.
-        </div>
-        <div class="pf off"><span class="cx">x</span>Filtraciones Deep Web</div>
-        <div class="pf off"><span class="cx">x</span>Alertas automáticas por email</div>
-        <div class="pf off"><span class="cx">x</span>Vigilancia nocturna 24/7</div>
-        <a href="/register" class="btn-plan ol" style="margin-top:1.75rem;display:block;text-align:center">Empezar gratis</a>
-      </div>
-
-      <div class="plan hot">
-        <div class="plan-badge">RECOMENDADO</div>
-        <div class="plan-name">Pro</div>
-        <div class="plan-price">29 <span>/ mes</span></div>
-        <div class="plan-desc">Para empresas que necesitan proteccion continua, no solo analisis puntuales.</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>Todo lo del plan gratuito</div>
-        <div class="pf"><span class="ck">v</span>Filtraciones Deep Web</div>
-        <div class="pf"><span class="ck">v</span>Alertas por email automaticas</div>
-        <div class="pf"><span class="ck">v</span>Vigilancia nocturna 24/7</div>
-        <div class="pf"><span class="ck">v</span>Informe PDF ejecutivo avanzado</div>
-        <div class="pf"><span class="ck">v</span>Soporte prioritario</div>
-        <div class="plan-div" style="margin-top:1.2rem"></div>
-        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
-          Ademas del analisis completo, ReconBase busca si los emails de tu empresa han aparecido en filtraciones de datos conocidas. Cada noche revisamos tu dominio automaticamente y te avisamos por email si detectamos algo nuevo, sin que tengas que hacer nada.
-        </div>
-        <button class="btn-plan sl" onclick="pagarPlan('pro')">Suscribirse — 29€/mes</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<section class="section" id="faq" style="max-width:720px">
-  <div class="sec-label">FAQ</div><h2 class="sec-title">Preguntas frecuentes</h2><br>
-  <div class="faq-item"><div class="faq-q">¿Necesito conocimientos de ciberseguridad?</div><div class="faq-a">No. Diseñado para dueños de negocio sin perfil técnico. Los informes explican cada riesgo con pasos de acción concretos.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente legal. Solo puedes analizar dominios que tú mismo introduzcas. El motor usa técnicas pasivas sobre infraestructura pública.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Qué pasa si detecta una filtración?</div><div class="faq-a">Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contraseñas, 2FA, notificación RGPD si aplica.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Puedo cancelar en cualquier momento?</div><div class="faq-a">Sí, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado.</div></div>
-  <div class="faq-item"><div class="faq-q">¿El pago es seguro?</div><div class="faq-a">Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta.</div></div>
-</section>
-
-<!-- SOCIAL PROOF -->
-<div style="border-top:1px solid var(--border);padding:4rem 6%">
-  <div style="max-width:900px;margin:0 auto">
-    <div class="sec-label" style="margin-bottom:2rem">Lo que dicen los primeros usuarios</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"El primer escaneo encontró el puerto de la base de datos abierto desde la última migración. Llevaba meses así y nadie en la empresa lo sabía."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Ana R. — freelance, desarrollo web · Barcelona</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Lo paso a todos los dominios que entrego a clientes. En 2 minutos sé si hay algo que arreglar antes de la entrega. No he encontrado nada más rápido."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Carlos M. — desarrollador freelance · Madrid</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Tenía DMARC sin configurar desde siempre. Cualquiera podía mandar emails como si fuera yo. Con las instrucciones del informe lo arreglé en 10 minutos."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Miguel S. — gestoría fiscal, 6 empleados · Valencia</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-</main>
-<footer>
-  <a href="/" class="f-logo" aria-label="ReconBase — Inicio">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="22" aria-hidden="true">
-      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#0F172A">RECON</text>
-      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#16A34A">BASE</text>
-    </svg>
-  </a>
-  <div class="f-copy">2026 ReconBase. Todos los derechos reservados.</div>
-  <div class="f-links"><a href="/privacy">Privacidad</a><a href="/terms">Términos</a><a href="mailto:ReconBase.alertas@gmail.com">Contacto</a></div>
-</footer>
 
 <script>
-// Gauge animation
-function animateGauge(){
-  var circle=document.getElementById('gauge-track');
-  var pctEl=document.getElementById('gauge-pct');
-  var riskEl=document.getElementById('gauge-risk-label');
-  if(!circle)return;
-  var target=73,circ=628,duration=2000,start=null;
-  function step(ts){
-    if(!start)start=ts;
-    var p=Math.min((ts-start)/duration,1);
-    var ease=1-Math.pow(1-p,3);
-    var cur=Math.round(target*ease);
-    circle.style.strokeDashoffset=circ-(circ*ease*target/100);
-    pctEl.textContent=cur+'%';
-    if(cur<30){riskEl.style.color='#4ADE80';riskEl.textContent='RIESGO BAJO';}
-    else if(cur<60){riskEl.style.color='#F59E0B';riskEl.textContent='RIESGO MODERADO';}
-    else{riskEl.style.color='#EF4444';riskEl.textContent='RIESGO ALTO';}
-    if(p<1)requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
+var lastData  = null;
+var historial = [];
+var gaugeChart = null, headersChart = null, radarChart = null;
+var dashHeadersChart = null, dashRadarChart = null, dashDesglosChart = null;
+var tendChart = null;
+
+// ── TABS ──
+function switchTab(name, el) {
+  document.querySelectorAll('.sc-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.sc-panel').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='dashboard' && lastData) renderDashboard();
+  if(name==='exportar') renderExport();
+  if(name==='historial') renderHistorial();
+  if(name==='tendencia') renderTendencia();
 }
-function animateCounter(id,target,dur){
-  var el=document.getElementById(id);
-  if(!el)return;
-  var start=null;
-  function step(ts){
-    if(!start)start=ts;
-    var p=Math.min((ts-start)/dur,1);
-    var ease=1-Math.pow(1-p,2);
-    el.textContent=Math.round(target*ease).toLocaleString('es-ES');
-    if(p<1)requestAnimationFrame(step);
+
+// ── SCAN ──
+function lanzarScan() {
+  var objetivo = document.getElementById('objetivo').value.trim();
+  if(!objetivo) { document.getElementById('objetivo').focus(); return; }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('btn-scan').disabled = true;
+  document.getElementById('progress').style.width = '0%';
+
+  for(var i=0;i<5;i++){
+    document.getElementById('d'+i).className='step-dot';
+    document.getElementById('t'+i).className='step-txt';
   }
-  requestAnimationFrame(step);
-}
-var heroAnimated=false;
-var gaugeEl=document.querySelector('.gauge-wrap');
-if(gaugeEl){
-  var obs=new IntersectionObserver(function(e){
-    if(e[0].isIntersecting&&!heroAnimated){
-      heroAnimated=true;
-      animateGauge();
-      animateCounter('cnt-dominios',{{ stats_scans }},2000);
-      animateCounter('cnt-vulns',{{ stats_vulns }},2200);
-      animateCounter('cnt-breaches',{{ stats_breaches }},1800);
-      obs.disconnect();
+  var step=0;
+  var iv=setInterval(function(){
+    if(step<5){
+      if(step>0){document.getElementById('d'+(step-1)).className='step-dot done';document.getElementById('t'+(step-1)).className='step-txt done';}
+      document.getElementById('d'+step).className='step-dot active';
+      document.getElementById('t'+step).className='step-txt active';
+      document.getElementById('progress').style.width=((step+1)/5*85)+'%';
+      step++;
     }
-  },{threshold:.2});
-  obs.observe(gaugeEl);
+  },1800);
+
+  fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({objetivo:objetivo})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    clearInterval(iv);
+    if(data.error){
+      if(data.error==='limite_free') alert('Has alcanzado el límite de 10 escaneos este mes.\nPásate a Pro para escaneos ilimitados.');
+      else alert('Error: '+data.error);
+      resetLoading(); return;
+    }
+    for(var i=0;i<5;i++){document.getElementById('d'+i).className='step-dot done';document.getElementById('t'+i).className='step-txt done';}
+    document.getElementById('progress').style.width='100%';
+    setTimeout(function(){
+      document.getElementById('loading').classList.remove('show');
+      document.getElementById('btn-scan').disabled=false;
+      lastData=data;
+      historial.unshift(data);
+      if(historial.length>20) historial.pop();
+      renderResults(data);
+      updatePdfFreeCard(data);
+    },500);
+  })
+  .catch(function(){clearInterval(iv);alert('Error de conexión con el servidor.');resetLoading();});
 }
-function animarTerminal(){
-  ['tlog1','tlog2','tlog3','tlog4','tlog5','tlog6'].forEach((id,i)=>{
-    setTimeout(()=>{
-      const el=document.getElementById(id);
-      if(el){el.style.transition='opacity .4s ease';el.style.opacity='1';}
-    },i*900);
+
+function resetLoading(){
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('btn-scan').disabled=false;
+  document.getElementById('empty-state').style.display='block';
+  document.getElementById('progress').style.width='0%';
+  for(var i=0;i<5;i++){document.getElementById('d'+i).className='step-dot';document.getElementById('t'+i).className='step-txt';}
+}
+
+// ── RENDER ──
+function renderResults(d){
+  document.getElementById('res-objetivo').textContent=d.objetivo;
+  document.getElementById('res-timestamp').textContent=d.timestamp;
+  document.getElementById('m-riesgo').textContent=d.riesgo+'%';
+  document.getElementById('m-label').textContent=d.label;
+  document.getElementById('m-label').style.color=d.color;
+  document.getElementById('m-puertos').textContent=(d.puertos||[]).length;
+  document.getElementById('m-subs').textContent=(d.subs||[]).length;
+  document.getElementById('m-leaks').textContent=d.leaks||0;
+  var dnsOk=d.dns&&d.dns.SPF&&d.dns.DMARC;
+  document.getElementById('m-dns').textContent=dnsOk?'OK':(Object.keys(d.dns||{}).length===0?'N/A':'FALTA');
+  document.getElementById('m-dns').style.color=dnsOk?'#15803D':(Object.keys(d.dns||{}).length===0?'#94A3B8':'#DC2626');
+  document.getElementById('m-dns-sub').textContent=dnsOk?'Correcto':(Object.keys(d.dns||{}).length===0?'IP directa':'Vulnerable');
+  renderGauge(d.riesgo,d.color);
+  renderCards(d);
+  renderHeadersChart(d.headers||{},'chart-headers','headers-wrap',headersChart,function(c){headersChart=c;});
+  renderRadarChart(d,'chart-radar',radarChart,function(c){radarChart=c;});
+  if((d.subs||[]).length>0){
+    document.getElementById('subs-section').style.display='block';
+    document.getElementById('subs-tbody').innerHTML=d.subs.map(function(s,i){return '<tr><td style="color:var(--dim)">'+(i+1)+'</td><td>'+s.subdominio+'</td><td style="color:var(--muted)">'+s.ip+'</td></tr>';}).join('');
+  } else { document.getElementById('subs-section').style.display='none'; }
+  document.getElementById('results').classList.add('show');
+}
+
+function renderGauge(pct,color){
+  if(gaugeChart) gaugeChart.destroy();
+  gaugeChart=new Chart(document.getElementById('gauge').getContext('2d'),{
+    type:'doughnut',
+    data:{datasets:[{data:[pct,100-pct],backgroundColor:[color,'#E2E8F0'],borderWidth:0,circumference:180,rotation:270}]},
+    options:{cutout:'75%',responsive:false,plugins:{tooltip:{enabled:false},legend:{display:false}}}
   });
+  document.getElementById('gauge-pct').textContent=pct+'%';
+  document.getElementById('gauge-pct').style.color=color;
+  document.getElementById('gauge-label').textContent=pct>=70?'CRÍTICO':pct>=40?'MODERADO':'BAJO';
 }
-const termEl=document.querySelector('.terminal');
-if(termEl){
-  const obs=new IntersectionObserver(e=>{if(e[0].isIntersecting){animarTerminal();obs.disconnect();}},{threshold:.3});
-  obs.observe(termEl);
+
+function renderCards(d){
+  var col=document.getElementById('cards-col'); var html='';
+  if((d.puertos||[]).length){
+    var lista=d.puertos.slice(0,6).map(function(p){return '<code>'+p.puerto+'/'+p.servicio+'</code>';}).join(' ');
+    html+=card('crit','b-red','CRITICAL EXPOSURE',d.puertos.length+' puerto(s) expuesto(s)','Servicios accesibles: '+lista+'. Revise el firewall.');
+  } else { html+=card('ok','b-green','NETWORK SECURE','Perímetro correcto','No se detectan puertos expuestos al exterior.'); }
+  if(Object.keys(d.dns||{}).length>0){
+    var spf=d.dns.SPF,dmarc=d.dns.DMARC;
+    if(!spf||!dmarc){ var f=[!spf&&'SPF',!dmarc&&'DMARC'].filter(Boolean).join(', '); html+=card('crit','b-red','HIGH RISK SPOOFING',f+' ausente','Permite suplantar el dominio en ataques de phishing.'); }
+    else { html+=card('ok','b-green','IDENTITY PROTECTED','SPF y DMARC OK','Firmas criptográficas correctamente implementadas.'); }
+  }
+  if((d.leaks||0)>0){ html+=card('crit','b-red','DATA BREACH',d.leaks+' filtración(es)','Aparece en bases de datos comprometidas. Cambia las credenciales urgentemente.'); }
+  else if(d.objetivo&&d.objetivo.indexOf('@')!==-1){ html+=card('ok','b-green','NO LEAKS','Sin filtraciones','No se encontraron credenciales comprometidas.'); }
+  if(d.cms&&d.cms.cms){ html+=card(d.cms.riesgo?'crit':'ok',d.cms.riesgo?'b-red':'b-green','CMS DETECTADO',d.cms.cms+(d.cms.version?' v'+d.cms.version:''),d.cms.detalle||''); }
+  if(d.ssl){
+    if(!d.ssl.tiene_ssl){ html+=card('crit','b-red','SIN SSL/TLS','No se detecta HTTPS','El servidor no tiene certificado SSL. Comunicaciones en texto plano.'); }
+    else if(d.ssl.caducado){ html+=card('crit','b-red','SSL CADUCADO','Expirado hace '+Math.abs(d.ssl.dias_restantes)+' días','Renueva el certificado urgentemente.'); }
+    else if(d.ssl.pronto_a_caducar){ html+=card('crit','b-red','SSL POR CADUCAR','Expira en '+d.ssl.dias_restantes+' días','Renueva antes de que caduque.'); }
+    else { html+=card('ok','b-green','SSL/TLS OK',d.ssl.sujeto||'Certificado válido',(d.ssl.version_ssl||'')+(d.ssl.cifrado?' · '+d.ssl.cifrado:'')+(d.ssl.expira?' · Expira '+d.ssl.expira:'')); }
+  }
+  if(d.os){ html+=card('ok','b-green','SISTEMA DETECTADO',d.os,'Inferido desde banners de servicios activos.'); }
+  var bp=d.banners?Object.keys(d.banners):[];
+  if(bp.length){ html+=card('ok','b-green','BANNERS CAPTURADOS',bp.length+' servicio(s)','Respuesta en: '+bp.map(function(p){return '<code>'+p+'</code>';}).join(' ')); }
+  col.innerHTML=html;
 }
-function setDemo(idx,btn){
-  document.querySelectorAll('.demo-step-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.demo-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('dp-'+idx).classList.add('active');
+
+function card(type,badge,bt,title,body){
+  return '<div class="rcard rcard-'+type+'"><span class="badge '+badge+'">'+bt+'</span><div class="rcard-title">'+title+'</div><div class="rcard-body">'+body+'</div></div>';
 }
-document.querySelectorAll('.faq-item').forEach(item=>{
-  item.addEventListener('click',()=>item.classList.toggle('open'));
-});
-var isLoggedIn = {{ 'true' if user and user.is_authenticated else 'false' }};
+
+function renderHeadersChart(headers,cid,wid,ex,setter){
+  if(ex) ex.destroy();
+  var labels=Object.keys(headers); if(!labels.length) return;
+  var vals=labels.map(function(k){return headers[k];});
+  var colors=vals.map(function(v){return v?'rgba(16,185,129,.75)':'rgba(220,38,38,.75)';});
+  var wrap=document.getElementById(wid); if(wrap) wrap.style.height=(labels.length*36)+'px';
+  var canvas=document.getElementById(cid); if(!canvas) return;
+  setter(new Chart(canvas.getContext('2d'),{type:'bar',data:{labels:labels,datasets:[{data:vals.map(function(){return 1;}),backgroundColor:colors,borderRadius:4,borderWidth:0,barThickness:18}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{display:false,max:1.3},y:{ticks:{color:'#64748B',font:{size:10}},grid:{color:'#F1F5F9'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return vals[ctx.dataIndex]?' Presente':' Ausente';}}}}}}));
+}
+
+function renderRadarChart(d,cid,ex,setter){
+  if(ex) ex.destroy();
+  var canvas=document.getElementById(cid); if(!canvas) return;
+  var vals=[Math.min((d.puertos||[]).length*20,100),(d.dns&&d.dns.SPF)?0:100,(d.dns&&d.dns.DMARC)?0:100,Math.min((d.subs||[]).length*10,100),Math.min((d.leaks||0)*25,100)];
+  setter(new Chart(canvas.getContext('2d'),{type:'radar',data:{labels:['Red','SPF','DMARC','Subdominios','Filtraciones'],datasets:[{data:vals,backgroundColor:'rgba(22,163,74,.1)',borderColor:'#16A34A',pointBackgroundColor:'#16A34A',pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#E2E8F0'},pointLabels:{color:'#64748B',font:{size:11}}}},plugins:{legend:{display:false}}}}));
+}
+
+// ── DASHBOARD ──
+function renderDashboard(){
+  if(!lastData) return;
+  document.getElementById('dash-empty').style.display='none';
+  document.getElementById('dash-content').style.display='block';
+  renderHeadersChart(lastData.headers||{},'dash-headers','dash-headers-wrap',dashHeadersChart,function(c){dashHeadersChart=c;});
+  renderRadarChart(lastData,'dash-radar',dashRadarChart,function(c){dashRadarChart=c;});
+  if(dashDesglosChart) dashDesglosChart.destroy();
+  var des=lastData.desglose||{}; var keys=Object.keys(des).filter(function(k){return des[k]>0;}); var vals=keys.map(function(k){return des[k];});
+  if(!keys.length) return;
+  dashDesglosChart=new Chart(document.getElementById('dash-desglose').getContext('2d'),{type:'bar',data:{labels:keys,datasets:[{data:vals,backgroundColor:'rgba(22,163,74,.5)',borderRadius:4,borderWidth:0,barThickness:16}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{ticks:{color:'#64748B'},grid:{color:'#F1F5F9'},max:40},y:{ticks:{color:'#64748B',font:{size:11}},grid:{color:'#F1F5F9'}}},plugins:{legend:{display:false}}}});
+}
+
+// ── EXPORTAR ──
+function renderExport(){
+  var emp=document.getElementById('exp-empty'),con=document.getElementById('exp-content');
+  if(!lastData){ if(emp)emp.style.display='block'; if(con)con.style.display='none'; return; }
+  if(emp)emp.style.display='none'; if(con)con.style.display='block';
+  var s=document.getElementById('exp-summary');
+  if(s) s.innerHTML='Objetivo: <strong style="color:#1D4ED8">'+lastData.objetivo+'</strong> &nbsp; Riesgo: <strong style="color:'+lastData.color+'">'+lastData.riesgo+'% ('+lastData.label+')</strong> &nbsp; '+lastData.timestamp;
+}
+
+function updatePdfFreeCard(d){
+  var c=document.getElementById('pdf-free-card'); if(!c) return;
+  if(d.pdf_unlocked){
+    document.getElementById('pdf-free-icon').textContent='✓';
+    document.getElementById('pdf-free-desc').textContent='Informe desbloqueado. Descárgalo ahora.';
+    document.getElementById('pdf-free-btn').innerHTML='<button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>';
+  } else if(d.scan_id){
+    document.getElementById('pdf-free-icon').textContent='📄';
+    document.getElementById('pdf-free-desc').textContent='Obtén el informe ejecutivo completo de este escaneo.';
+    document.getElementById('pdf-free-btn').innerHTML='<button class="btn-export primary" onclick="comprarInforme('+d.scan_id+')">Obtener informe — 9€</button>';
+  }
+}
+
+function comprarInforme(scanId){
+  var btn=event.target; btn.textContent='Redirigiendo...'; btn.disabled=true;
+  fetch('/api/checkout-informe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scan_id:scanId})})
+  .then(function(r){return r.json();}).then(function(j){ if(j.url)window.location.href=j.url; else{alert('Error al iniciar el pago.');btn.textContent='Obtener informe — 9€';btn.disabled=false;} })
+  .catch(function(){alert('Error de red.');btn.textContent='Obtener informe — 9€';btn.disabled=false;});
+}
+
+function descargarPDF(){
+  if(!lastData) return; var btn=event.target; btn.textContent='Generando...'; btn.disabled=true;
+  fetch('/api/pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(lastData)})
+  .then(function(r){if(!r.ok)throw new Error();return r.blob();})
+  .then(function(b){var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='reconbase_'+(lastData.dominio||'scan')+'.pdf';a.click();URL.revokeObjectURL(u);})
+  .catch(function(){alert('Error generando PDF.');})
+  .finally(function(){btn.textContent='Descargar PDF';btn.disabled=false;});
+}
+
+function descargarJSON(){
+  if(!lastData) return;
+  var b=new Blob([JSON.stringify(lastData,null,2)],{type:'application/json'});
+  var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='reconbase_'+(lastData.dominio||'scan')+'.json';a.click();URL.revokeObjectURL(u);
+}
+
+// ── HISTORIAL ──
+function loadHistorial(){
+  fetch('/api/historial').then(function(r){return r.json();}).then(function(d){historial=d;}).catch(function(){});
+}
+
+function renderHistorial(){
+  if(!historial.length){ document.getElementById('hist-empty').style.display='block'; document.getElementById('hist-content').style.display='none'; return; }
+  document.getElementById('hist-empty').style.display='none'; document.getElementById('hist-content').style.display='block';
+  document.getElementById('hist-tbody').innerHTML=historial.map(function(h,i){
+    var cls=h.riesgo>=70?'rp-high':h.riesgo>=40?'rp-med':'rp-low';
+    var auto=h.automatico?'<span style="font-size:.65rem;color:var(--accent);font-family:\'JetBrains Mono\',monospace;margin-left:4px">AUTO</span>':'';
+    return '<tr><td style="color:var(--dim)">'+(i+1)+'</td><td style="color:#1D4ED8">'+h.objetivo+auto+'</td><td><span class="risk-pill '+cls+'">'+h.riesgo+'% '+h.label+'</span></td><td style="color:var(--muted)">'+(h.puertos?h.puertos.length:0)+'</td><td style="color:var(--muted)">'+(h.leaks||0)+'</td><td style="color:var(--dim);font-size:.78rem">'+h.timestamp+'</td><td><button onclick="verScanHistorial('+i+')" style="background:transparent;border:1px solid var(--border);color:var(--accent);padding:.25rem .7rem;border-radius:5px;font-family:\'Inter\',sans-serif;font-size:.75rem;cursor:pointer;transition:all .2s">Ver</button></td></tr>';
+  }).join('');
+}
+
+function clearHistorial(){ historial=[]; renderHistorial(); }
+
+function verScanHistorial(i){
+  var h=historial[i]; if(!h) return; lastData=h;
+  document.querySelectorAll('.sc-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.sc-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelector('.sc-tab').classList.add('active');
+  document.getElementById('panel-auditoria').classList.add('active');
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('results').classList.add('show');
+  renderResults(h); updatePdfFreeCard(h);
+}
+
+// ── TENDENCIA ──
+function renderTendencia(){
+  if(historial.length<2){ document.getElementById('tend-empty').style.display='block'; document.getElementById('tend-content').style.display='none'; return; }
+  document.getElementById('tend-empty').style.display='none'; document.getElementById('tend-content').style.display='block';
+  var rev=historial.slice().reverse();
+  var labels=rev.map(function(h,i){return h.dominio||h.objetivo||('#'+(i+1));});
+  var scores=rev.map(function(h){return h.riesgo;});
+  var colors=scores.map(function(r){return r>=70?'#DC2626':r>=40?'#D97706':'#16A34A';});
+  var max=Math.max.apply(null,scores),min=Math.min.apply(null,scores);
+  var avg=Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length);
+  var trend=scores[scores.length-1]-scores[0];
+  document.getElementById('tend-stats').innerHTML=
+    stat('Riesgo máximo',max+'%',max>=70?'#DC2626':max>=40?'#D97706':'#16A34A')+
+    stat('Riesgo mínimo',min+'%',min>=70?'#DC2626':min>=40?'#D97706':'#16A34A')+
+    stat('Media',avg+'%','#64748B')+
+    stat('Tendencia',(trend>0?'+':'')+trend+'%',trend>0?'#DC2626':trend<0?'#16A34A':'#64748B');
+  if(tendChart) tendChart.destroy();
+  tendChart=new Chart(document.getElementById('tend-chart').getContext('2d'),{type:'line',data:{labels:labels,datasets:[{data:scores,borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.06)',pointBackgroundColor:colors,pointBorderColor:colors,pointRadius:5,pointHoverRadius:7,tension:.35,fill:true,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,scales:{x:{ticks:{color:'#64748B',font:{size:10}},grid:{color:'#F1F5F9'}},y:{min:0,max:100,ticks:{color:'#64748B',callback:function(v){return v+'%';}},grid:{color:'#F1F5F9'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' Riesgo: '+ctx.parsed.y+'%';}}}}}});
+  document.getElementById('tend-tbody').innerHTML=rev.map(function(h,i){
+    var cls=h.riesgo>=70?'rp-high':h.riesgo>=40?'rp-med':'rp-low';
+    return '<tr><td style="color:var(--dim)">'+(i+1)+'</td><td style="color:#1D4ED8">'+(h.objetivo||'-')+'</td><td><span class="risk-pill '+cls+'">'+h.riesgo+'% '+h.label+'</span></td><td style="color:var(--muted)">'+(h.puertos?h.puertos.length:0)+'</td><td style="color:var(--muted)">'+(h.leaks||0)+'</td><td style="color:var(--muted)">'+(h.subs?h.subs.length:0)+'</td><td style="color:var(--dim);font-size:.78rem">'+(h.timestamp||'-')+'</td></tr>';
+  }).join('');
+}
+
+function stat(label,val,color){
+  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,.04)"><div style="font-size:.68rem;font-family:\'JetBrains Mono\',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem">'+label+'</div><div style="font-size:1.6rem;font-weight:800;letter-spacing:-.04em;color:'+color+'">'+val+'</div></div>';
+}
+
+// ── VIGILANCIA ──
+function toggleVigConfig(){
+  var a=document.getElementById('vig-activo').checked;
+  document.getElementById('vig-config').style.display=a?'block':'none';
+  document.getElementById('vig-save-off').style.display=a?'none':'block';
+}
+
+async function guardarHorario(){
+  var a=document.getElementById('vig-activo').checked;
+  var hora=a?parseInt(document.getElementById('vig-hora').value):3;
+  var dias=[];
+  if(a){ for(var i=0;i<7;i++){var cb=document.getElementById('dia-'+i);if(cb&&cb.checked)dias.push(i);} if(!dias.length){mostrarMsgVig('Selecciona al menos un día',false);return;} }
+  var r=await fetch('/api/horario',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hora,dias})});
+  var d=await r.json();
+  if(d.ok){mostrarMsgVig('Guardado.',true);setTimeout(function(){location.reload();},800);}
+  else mostrarMsgVig(d.error||'Error al guardar',false);
+}
+
+function mostrarMsgVig(txt,ok){
+  var el=document.getElementById('vig-msg'); if(!el) return;
+  el.textContent=txt; el.style.color=ok?'#15803D':'#DC2626'; el.style.display='block';
+  setTimeout(function(){el.style.display='none';},3000);
+}
+
+function cerrarSesion(){
+  fetch('/api/logout',{method:'POST'}).then(function(){window.location.href='/';});
+}
+
 async function pagarPlan(plan){
   try{
-    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
-    const data=await res.json();
-    if(data.url){window.open(data.url,'_blank');}
-    else{alert(data.error||'Error al iniciar el pago');}
-  }catch(e){alert('Error de conexión. Inténtalo de nuevo.');}
-}
-function heroScan(){
-  var v=(document.getElementById('hero-domain').value||'').trim();
-  if(!v){document.getElementById('hero-domain').focus();return;}
-  var btn=document.querySelector('.hsf-btn');
-  var inp=document.getElementById('hero-domain');
-  btn.textContent='Analizando...';btn.disabled=true;inp.disabled=true;
-
-  // Pasos animados mientras carga
-  var steps=['→ Escaneando puertos...','→ Verificando DNS y correo...','→ Analizando cabeceras HTTP...','→ Comprobando SSL/TLS...'];
-  var stepsEl=document.getElementById('dr-steps');
-  stepsEl.innerHTML=steps.map(function(s,i){return'<span class="dr-step" id="drs'+i+'">'+s+'</span>';}).join('');
-  document.getElementById('landing-results').style.display='block';
-  document.getElementById('landing-results').scrollIntoView({behavior:'smooth',block:'start'});
-  steps.forEach(function(_,i){setTimeout(function(){var el=document.getElementById('drs'+i);if(el)el.classList.add('show');},i*1800);});
-
-  fetch('/api/scan-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({objetivo:v})})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
-    if(d.error){document.getElementById('landing-results').style.display='none';alert(d.error);return;}
-    renderDemoResult(d);
-  })
-  .catch(function(){
-    btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
-    document.getElementById('landing-results').style.display='none';
-    alert('Error de conexión. Inténtalo de nuevo.');
-  });
+    var r=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
+    var d=await r.json();
+    if(d.url) window.open(d.url,'_blank'); else alert(d.error||'Error al iniciar el pago');
+  }catch(e){alert('Error de conexión.');}
 }
 
-function demoCard(type,title,desc){
-  var C={crit:{b:'#3B0D0D',l:'#EF4444',bg:'rgba(239,68,68,.13)',c:'#EF4444',lbl:'CRÍTICO'},warn:{b:'#3B1F0A',l:'#F59E0B',bg:'rgba(245,158,11,.11)',c:'#F59E0B',lbl:'ADVERTENCIA'},ok:{b:'#0A2615',l:'#22C55E',bg:'rgba(34,197,94,.1)',c:'#22C55E',lbl:'OK'}};
-  var s=C[type]||C.ok;
-  return '<div class="dr-card" style="border-color:'+s.b+';border-left:3px solid '+s.l+'"><span class="dr-badge" style="background:'+s.bg+';color:'+s.c+'">'+s.lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div></div>';
+// ── INICIALIZAR ──
+loadHistorial();
+
+var urlParams=new URLSearchParams(window.location.search);
+
+// Tab por URL param
+var urlTab=urlParams.get('tab');
+if(urlTab){
+  var tabMap={auditoria:1,dashboard:2,exportar:3,historial:4,tendencia:5,vigilancia:6};
+  var tabEl=document.querySelector('.sc-tab:nth-child('+(tabMap[urlTab]||1)+')');
+  if(tabEl) switchTab(urlTab,tabEl);
 }
 
-function renderDemoResult(d){
-  var col=d.riesgo>=70?'#EF4444':d.riesgo>=40?'#F59E0B':'#22C55E';
-
-  // Header
-  document.getElementById('dr-header').innerHTML=
-    '<div class="dr-score" style="color:'+col+'">'+d.riesgo+'%</div>'+
-    '<div><div style="font-size:.7rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.15em">'+d.label+'</div>'+
-    '<div style="font-size:.85rem;color:#86EFAC;margin-top:.3rem">'+d.objetivo+' · '+d.timestamp+'</div></div>'+
-    (isLoggedIn
-      ? '<a href="/app?target='+encodeURIComponent(d.objetivo)+'" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap">Ver en el dashboard →</a>'
-      : '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap">Guardar informe →</a>');
-
-  // Barra de riesgo
-  setTimeout(function(){document.getElementById('dr-bar-fill').style.width=d.riesgo+'%';},100);
-
-  // Cards
-  var html='';
-  var critPorts=(d.puertos||[]).filter(function(p){return[3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443].indexOf(p)!==-1;});
-  if(critPorts.length) html+=demoCard('crit',critPorts.length+' puerto'+(critPorts.length>1?'s críticos':' crítico')+' expuesto'+(critPorts.length>1?'s':''),'Accesibles desde internet: '+critPorts.join(', ')+'. Ciérralos en el firewall.');
-  else if((d.puertos||[]).length===0) html+=demoCard('ok','Sin puertos críticos expuestos','No se detectaron servicios sensibles accesibles desde internet.');
-  else html+=demoCard('ok','Puertos bajo control','Solo puertos estándar (80/443) detectados.');
-
-  if(d.dns){
-    if(!d.dns.spf&&!d.dns.dmarc) html+=demoCard('crit','SPF y DMARC ausentes','Cualquiera puede enviar emails haciéndose pasar por tu empresa ahora mismo.');
-    else if(!d.dns.dmarc) html+=demoCard('warn','DMARC no configurado','Tu dominio puede ser suplantado. Añade el registro TXT en tu DNS.');
-    else if(!d.dns.spf) html+=demoCard('warn','SPF no configurado','Riesgo de suplantación de correo. Añade el registro SPF en tu DNS.');
-    else html+=demoCard('ok','SPF y DMARC correctos','Tu dominio está protegido contra suplantación de email.');
+// Verificar pago Stripe
+(function(){
+  var informeOk=urlParams.get('informe_ok'),sid=urlParams.get('sid');
+  if(informeOk&&sid){
+    fetch('/api/verificar-informe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scan_id:informeOk,session_id:sid})})
+    .then(function(r){return r.json();}).then(function(j){
+      if(j.ok){
+        var c=document.getElementById('pdf-free-card');
+        if(c){document.getElementById('pdf-free-icon').textContent='✓';document.getElementById('pdf-free-desc').textContent='Pago confirmado. Descarga tu informe.';document.getElementById('pdf-free-btn').innerHTML='<button class="btn-export primary" onclick="descargarPDF()">Descargar PDF</button>';}
+        var te=document.querySelector('.sc-tab:nth-child(3)'); if(te) switchTab('exportar',te);
+        history.replaceState(null,'','/?tab=exportar');
+      }
+    }).catch(function(){});
   }
+})();
 
-  if(d.headers){
-    var miss=[];
-    if(!d.headers['X-Frame-Options']&&!d.headers['Content-Security-Policy']) miss.push('X-Frame-Options');
-    if(!d.headers['Content-Security-Policy']) miss.push('CSP');
-    if(!d.headers['X-Content-Type-Options']) miss.push('X-Content-Type-Options');
-    if(miss.length>=2) html+=demoCard('warn',miss.length+' cabeceras HTTP ausentes',miss.slice(0,3).join(', ')+' — expuesto a XSS y clickjacking.');
-    else if(miss.length===1) html+=demoCard('warn','Cabecera '+miss[0]+' ausente','Configúrala en tu servidor para protegerte de ataques de inyección.');
-    else html+=demoCard('ok','Cabeceras HTTP correctas','Las principales cabeceras de seguridad están configuradas.');
+// Auto-scan desde ?target=
+(function(){
+  var target=urlParams.get('target');
+  if(target){
+    var inp=document.getElementById('objetivo');
+    if(inp){ inp.value=decodeURIComponent(target); history.replaceState(null,'','/'); setTimeout(function(){var b=document.getElementById('btn-scan');if(b&&!b.disabled)lanzarScan();},400); }
   }
-
-  if(d.ssl){
-    if(!d.ssl.tiene_ssl) html+=demoCard('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. La comunicación va en texto plano.');
-    else if(d.ssl.caducado) html+=demoCard('crit','Certificado SSL caducado','Expiró el '+(d.ssl.expira||'?')+'. Los navegadores muestran aviso de inseguridad.');
-    else if(d.ssl.pronto_a_caducar) html+=demoCard('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de que expire para evitar interrupciones.');
-    else html+=demoCard('ok','SSL/TLS válido','Certificado activo, caduca en '+(d.ssl.dias_restantes||'?')+' días.');
-  }
-
-  if(d.os) html+=demoCard('ok','Sistema detectado: '+d.os,'Información obtenida por análisis de banners de servicio.');
-
-  html+='<div class="dr-card" style="border-color:#1E1B4B;border-left:3px solid #818CF8"><span class="dr-badge" style="background:rgba(129,140,248,.12);color:#818CF8">REQUIERE CUENTA</span><div class="dr-card-title">Filtraciones en bases de datos</div><div class="dr-card-desc">Crea una cuenta gratis para comprobar si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).</div></div>';
-
-  document.getElementById('dr-grid').innerHTML=html;
-
-  // CTA
-  document.getElementById('dr-cta').innerHTML = isLoggedIn
-    ? '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">Escaneo completado</div>'+
-      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Entra al escáner para guardar el historial, activar vigilancia nocturna y descargar el PDF.</div></div>'+
-      '<a href="/app?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Abrir escáner →</a>'
-    : '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">¿Quieres guardar el informe y activar vigilancia nocturna?</div>'+
-      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Historial de escaneos, alertas automáticas por email y PDF ejecutivo. Gratis.</div></div>'+
-      '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Crear cuenta gratis →</a>';
-
-  // Limpiar pasos de carga
-  document.getElementById('dr-steps').innerHTML='';
-}
+})();
 </script>
 </body>
 </html>
