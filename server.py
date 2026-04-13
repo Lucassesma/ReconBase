@@ -150,7 +150,7 @@ def scan_demo():
     if not dominio:
         return jsonify({"error": "Dominio inválido"}), 400
 
-    es_ip_flag = es_ip(dominio)
+    es_ip_flag = engine.es_ip(dominio)
 
     try: puertos = engine.scan_critical_ports_fast(dominio)
     except Exception: puertos = []
