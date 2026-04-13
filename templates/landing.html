@@ -297,6 +297,23 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 .f-copy{font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .f-links{display:flex;gap:1.5rem;font-size:.75rem;color:#64748B;font-family:'JetBrains Mono',monospace}
 @media(max-width:768px){.demo-grid{grid-template-columns:1fr}.nav-links{display:none}}
+/* DEMO RESULTS */
+#landing-results{background:linear-gradient(180deg,#021a0a 0%,#040e06 100%);border-top:1px solid rgba(22,163,74,.2)}
+.dr-wrap{max-width:1100px;margin:0 auto;padding:2.5rem 6%}
+.dr-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.dr-score{font-size:clamp(3rem,7vw,5rem);font-weight:800;letter-spacing:-.05em;line-height:1}
+.dr-bar{height:7px;background:rgba(255,255,255,.06);border-radius:4px;margin-bottom:2rem;overflow:hidden}
+.dr-bar-fill{height:100%;background:linear-gradient(90deg,#22C55E 0%,#F59E0B 50%,#EF4444 100%);border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.dr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.8rem;margin-bottom:1.75rem}
+.dr-card{background:#0A1410;border-radius:9px;padding:.85rem 1rem;border:1px solid}
+.dr-badge{font-size:.55rem;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .55rem;border-radius:3px;letter-spacing:.07em;display:inline-block;margin-bottom:.35rem}
+.dr-card-title{font-size:.82rem;font-weight:700;color:#F0FDF4;margin-bottom:.2rem}
+.dr-card-desc{font-size:.68rem;color:#64748B;line-height:1.55}
+.dr-steps{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.dr-step{font-size:.65rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;opacity:0;transition:opacity .3s}
+.dr-step.show{opacity:1}
+.dr-cta{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:12px;padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+@media(max-width:600px){.dr-header{gap:.85rem}.dr-score{font-size:3.5rem}.dr-cta{flex-direction:column;text-align:center}}
 /* HERO SCANNER */
 .hero-scan-form{margin-top:1.75rem}
 .hsf-wrap{display:flex;background:rgba(255,255,255,.07);border:1px solid rgba(134,239,172,.3);border-radius:10px;overflow:hidden;max-width:480px;transition:border-color .2s}
@@ -455,6 +472,17 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <div class="hc-stat"><span class="hc-num" id="cnt-breaches">0</span><span class="hc-lbl">empresas registradas</span></div>
   </div>
 </div>
+</div>
+
+<!-- RESULTADOS DEL SCAN DEMO (rellenado por JS) -->
+<div id="landing-results" style="display:none">
+  <div class="dr-wrap">
+    <div class="dr-steps" id="dr-steps"></div>
+    <div class="dr-header" id="dr-header"></div>
+    <div class="dr-bar"><div class="dr-bar-fill" id="dr-bar-fill" style="width:0%"></div></div>
+    <div class="dr-grid" id="dr-grid"></div>
+    <div class="dr-cta" id="dr-cta"></div>
+  </div>
 </div>
 
 <div class="compat">
@@ -1181,7 +1209,96 @@ async function pagarPlan(plan){
 function heroScan(){
   var v=(document.getElementById('hero-domain').value||'').trim();
   if(!v){document.getElementById('hero-domain').focus();return;}
-  window.location.href='/app?target='+encodeURIComponent(v);
+  var btn=document.querySelector('.hsf-btn');
+  var inp=document.getElementById('hero-domain');
+  btn.textContent='Analizando...';btn.disabled=true;inp.disabled=true;
+
+  // Pasos animados mientras carga
+  var steps=['→ Escaneando puertos...','→ Verificando DNS y correo...','→ Analizando cabeceras HTTP...','→ Comprobando SSL/TLS...'];
+  var stepsEl=document.getElementById('dr-steps');
+  stepsEl.innerHTML=steps.map(function(s,i){return'<span class="dr-step" id="drs'+i+'">'+s+'</span>';}).join('');
+  document.getElementById('landing-results').style.display='block';
+  document.getElementById('landing-results').scrollIntoView({behavior:'smooth',block:'start'});
+  steps.forEach(function(_,i){setTimeout(function(){var el=document.getElementById('drs'+i);if(el)el.classList.add('show');},i*1800);});
+
+  fetch('/api/scan-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({objetivo:v})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
+    if(d.error){document.getElementById('landing-results').style.display='none';alert(d.error);return;}
+    renderDemoResult(d);
+  })
+  .catch(function(){
+    btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
+    document.getElementById('landing-results').style.display='none';
+    alert('Error de conexión. Inténtalo de nuevo.');
+  });
+}
+
+function demoCard(type,title,desc){
+  var C={crit:{b:'#3B0D0D',l:'#EF4444',bg:'rgba(239,68,68,.13)',c:'#EF4444',lbl:'CRÍTICO'},warn:{b:'#3B1F0A',l:'#F59E0B',bg:'rgba(245,158,11,.11)',c:'#F59E0B',lbl:'ADVERTENCIA'},ok:{b:'#0A2615',l:'#22C55E',bg:'rgba(34,197,94,.1)',c:'#22C55E',lbl:'OK'}};
+  var s=C[type]||C.ok;
+  return '<div class="dr-card" style="border-color:'+s.b+';border-left:3px solid '+s.l+'"><span class="dr-badge" style="background:'+s.bg+';color:'+s.c+'">'+s.lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div></div>';
+}
+
+function renderDemoResult(d){
+  var col=d.riesgo>=70?'#EF4444':d.riesgo>=40?'#F59E0B':'#22C55E';
+
+  // Header
+  document.getElementById('dr-header').innerHTML=
+    '<div class="dr-score" style="color:'+col+'">'+d.riesgo+'%</div>'+
+    '<div><div style="font-size:.7rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.15em">'+d.label+'</div>'+
+    '<div style="font-size:.85rem;color:#86EFAC;margin-top:.3rem">'+d.objetivo+' · '+d.timestamp+'</div></div>'+
+    '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap">Guardar informe →</a>';
+
+  // Barra de riesgo
+  setTimeout(function(){document.getElementById('dr-bar-fill').style.width=d.riesgo+'%';},100);
+
+  // Cards
+  var html='';
+  var critPorts=(d.puertos||[]).filter(function(p){return[3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443].indexOf(p)!==-1;});
+  if(critPorts.length) html+=demoCard('crit',critPorts.length+' puerto'+(critPorts.length>1?'s críticos':' crítico')+' expuesto'+(critPorts.length>1?'s':''),'Accesibles desde internet: '+critPorts.join(', ')+'. Ciérralos en el firewall.');
+  else if((d.puertos||[]).length===0) html+=demoCard('ok','Sin puertos críticos expuestos','No se detectaron servicios sensibles accesibles desde internet.');
+  else html+=demoCard('ok','Puertos bajo control','Solo puertos estándar (80/443) detectados.');
+
+  if(d.dns){
+    if(!d.dns.spf&&!d.dns.dmarc) html+=demoCard('crit','SPF y DMARC ausentes','Cualquiera puede enviar emails haciéndose pasar por tu empresa ahora mismo.');
+    else if(!d.dns.dmarc) html+=demoCard('warn','DMARC no configurado','Tu dominio puede ser suplantado. Añade el registro TXT en tu DNS.');
+    else if(!d.dns.spf) html+=demoCard('warn','SPF no configurado','Riesgo de suplantación de correo. Añade el registro SPF en tu DNS.');
+    else html+=demoCard('ok','SPF y DMARC correctos','Tu dominio está protegido contra suplantación de email.');
+  }
+
+  if(d.headers){
+    var miss=[];
+    if(!d.headers['X-Frame-Options']&&!d.headers['Content-Security-Policy']) miss.push('X-Frame-Options');
+    if(!d.headers['Content-Security-Policy']) miss.push('CSP');
+    if(!d.headers['X-Content-Type-Options']) miss.push('X-Content-Type-Options');
+    if(miss.length>=2) html+=demoCard('warn',miss.length+' cabeceras HTTP ausentes',miss.slice(0,3).join(', ')+' — expuesto a XSS y clickjacking.');
+    else if(miss.length===1) html+=demoCard('warn','Cabecera '+miss[0]+' ausente','Configúrala en tu servidor para protegerte de ataques de inyección.');
+    else html+=demoCard('ok','Cabeceras HTTP correctas','Las principales cabeceras de seguridad están configuradas.');
+  }
+
+  if(d.ssl){
+    if(!d.ssl.tiene_ssl) html+=demoCard('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. La comunicación va en texto plano.');
+    else if(d.ssl.caducado) html+=demoCard('crit','Certificado SSL caducado','Expiró el '+(d.ssl.expira||'?')+'. Los navegadores muestran aviso de inseguridad.');
+    else if(d.ssl.pronto_a_caducar) html+=demoCard('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de que expire para evitar interrupciones.');
+    else html+=demoCard('ok','SSL/TLS válido','Certificado activo, caduca en '+(d.ssl.dias_restantes||'?')+' días.');
+  }
+
+  if(d.os) html+=demoCard('ok','Sistema detectado: '+d.os,'Información obtenida por análisis de banners de servicio.');
+
+  html+='<div class="dr-card" style="border-color:#1E1B4B;border-left:3px solid #818CF8"><span class="dr-badge" style="background:rgba(129,140,248,.12);color:#818CF8">REQUIERE CUENTA</span><div class="dr-card-title">Filtraciones en bases de datos</div><div class="dr-card-desc">Crea una cuenta gratis para comprobar si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).</div></div>';
+
+  document.getElementById('dr-grid').innerHTML=html;
+
+  // CTA
+  document.getElementById('dr-cta').innerHTML=
+    '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">¿Quieres guardar el informe y activar vigilancia nocturna?</div>'+
+    '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Historial de escaneos, alertas automáticas por email y PDF ejecutivo. Gratis.</div></div>'+
+    '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Crear cuenta gratis →</a>';
+
+  // Limpiar pasos de carga
+  document.getElementById('dr-steps').innerHTML='';
 }
 </script>
 </body>

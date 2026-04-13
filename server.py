@@ -134,6 +134,56 @@ def api_logout():
     logout_user()
     return jsonify({"ok": True})
 
+@app.route("/api/scan-demo", methods=["POST"])
+def scan_demo():
+    """Escaneo público sin login para la landing. No guarda resultados en BD."""
+    data     = request.get_json() or {}
+    objetivo = (data.get("objetivo") or "").strip()[:200]
+    if not objetivo:
+        return jsonify({"error": "Introduce un dominio"}), 400
+
+    dominio = objetivo
+    if "@" in objetivo:
+        dominio = objetivo.split("@")[-1]
+    import re as _re2
+    dominio = _re2.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
+    if not dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+
+    es_ip_flag = es_ip(dominio)
+
+    try: puertos = engine.scan_critical_ports_fast(dominio)
+    except Exception: puertos = []
+    try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
+    except Exception: dns = {}
+    try: headers = engine.check_security_headers(dominio)
+    except Exception: headers = {}
+    try: ssl_info = engine.ssl_scan(dominio)
+    except Exception: ssl_info = {}
+    try:
+        banners = engine.banner_grab(dominio, puertos)
+        os_det  = engine.detect_os_from_banners(banners)
+    except Exception: banners = {}; os_det = None
+
+    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+    if ssl_info.get("caducado"):
+        riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
+    elif ssl_info.get("pronto_a_caducar"):
+        riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
+    label, color = label_riesgo(riesgo)
+
+    return jsonify({
+        "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
+        "puertos": puertos, "dns": dns,
+        "headers": {k: bool(v) for k, v in headers.items()},
+        "subs": [], "leaks": 0, "leaks_raw": [],
+        "riesgo": riesgo, "label": label, "color": color,
+        "desglose": desglose, "ssl": ssl_info,
+        "banners": banners, "os": os_det,
+        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "demo": True
+    })
+
 @app.route("/api/checkout", methods=["POST"])
 def crear_checkout():
     data = request.get_json()
