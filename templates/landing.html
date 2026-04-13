@@ -464,6 +464,135 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 </div>
 
 
+<!-- PRODUCT PREVIEW -->
+<section style="padding:4.5rem 6% 5rem;background:var(--surface);border-top:1px solid var(--border)">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="sec-label" style="text-align:center">El producto</div>
+    <h2 style="text-align:center;font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.6rem">Esto es lo que ves cuando escaneas</h2>
+    <p style="text-align:center;color:var(--muted);font-size:.9rem;max-width:480px;margin:0 auto 2.5rem;line-height:1.7">El panel completo. Resultados en tiempo real, tarjetas por criticidad y descarga del informe PDF en menos de 2 minutos.</p>
+    <!-- Browser frame -->
+    <div style="border-radius:12px;overflow:hidden;border:1px solid #1E293B;box-shadow:0 24px 64px rgba(0,0,0,.25)">
+      <!-- Chrome bar -->
+      <div style="background:#0F172A;padding:.55rem 1rem;display:flex;align-items:center;gap:.75rem;border-bottom:1px solid #1E293B">
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <div style="width:10px;height:10px;border-radius:50%;background:#EF4444;opacity:.6"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#F59E0B;opacity:.6"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:#22C55E;opacity:.6"></div>
+        </div>
+        <div style="flex:1;background:#1E293B;border-radius:5px;padding:.28rem 1rem;font-size:.68rem;color:#475569;font-family:'JetBrains Mono',monospace">reconbase.app/dashboard</div>
+      </div>
+      <!-- App header -->
+      <div style="background:#040D07;border-bottom:1px solid #0F1E10;padding:.6rem 1.5rem;display:flex;align-items:center;gap:1rem">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="26">
+          <text x="0" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#E2EDF8">RECON</text>
+          <text x="86" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#22C55E">BASE</text>
+        </svg>
+        <div style="background:rgba(22,163,74,.12);border:1px solid rgba(22,163,74,.25);border-radius:4px;padding:.15rem .55rem;font-size:.6rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;font-weight:700">FREE</div>
+        <div style="margin-left:auto;font-size:.7rem;color:#475569;font-family:'JetBrains Mono',monospace">admin@miempresa.com</div>
+      </div>
+      <!-- Tabs -->
+      <div style="background:#040D07;border-bottom:1px solid #0F1E10;padding:0 1.5rem;display:flex;gap:0">
+        <div style="padding:.65rem 1rem;font-size:.75rem;font-weight:700;color:#22C55E;border-bottom:2px solid #22C55E;font-family:'Inter',sans-serif;cursor:pointer">Auditoría</div>
+        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Dashboard</div>
+        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Exportar</div>
+        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Historial</div>
+        <div style="padding:.65rem 1rem;font-size:.75rem;color:#475569;font-family:'Inter',sans-serif;cursor:pointer">Vigilancia</div>
+      </div>
+      <!-- Panel content -->
+      <div style="background:#060D09;padding:1.5rem">
+        <!-- Scan bar -->
+        <div style="display:flex;gap:.75rem;margin-bottom:1.5rem;align-items:center">
+          <div style="flex:1;background:#0A1410;border:1px solid #152B1E;border-radius:7px;padding:.7rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#4ADE80">miempresa.com</div>
+          <div style="background:#15803D;color:#fff;border-radius:7px;padding:.7rem 1.4rem;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.05em;white-space:nowrap">ESCANEAR</div>
+        </div>
+        <!-- Results grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+          <!-- Left: gauge + meters -->
+          <div>
+            <!-- Risk score -->
+            <div style="background:#0A1410;border:1px solid #152B1E;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1rem">
+              <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+                <div style="font-size:3rem;font-weight:800;color:#EF4444;letter-spacing:-.05em;line-height:1">73%</div>
+                <div>
+                  <div style="font-size:.65rem;font-weight:700;color:#EF4444;font-family:'JetBrains Mono',monospace;letter-spacing:.1em">RIESGO ALTO</div>
+                  <div style="font-size:.65rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;opacity:.7;margin-top:.2rem">miempresa.com · 1 min 48 seg</div>
+                </div>
+              </div>
+              <!-- Risk bar -->
+              <div style="height:6px;background:#0F1E10;border-radius:3px;overflow:hidden">
+                <div style="width:73%;height:100%;background:linear-gradient(90deg,#22C55E,#F59E0B,#EF4444);border-radius:3px"></div>
+              </div>
+            </div>
+            <!-- Category meters -->
+            <div style="background:#0A1410;border:1px solid #152B1E;border-radius:10px;padding:1rem 1.25rem">
+              <div style="font-size:.62rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;margin-bottom:.85rem;opacity:.7">ANÁLISIS POR CATEGORÍA</div>
+              <div style="display:flex;flex-direction:column;gap:.65rem">
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Puertos</div>
+                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:80%;height:100%;background:#EF4444;border-radius:2px"></div></div>
+                  <div style="font-size:.6rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">CRÍTICO</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Filtraciones</div>
+                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:60%;height:100%;background:#EF4444;border-radius:2px"></div></div>
+                  <div style="font-size:.6rem;color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">CRÍTICO</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">DNS</div>
+                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:45%;height:100%;background:#F59E0B;border-radius:2px"></div></div>
+                  <div style="font-size:.6rem;color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">ALERTA</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Headers</div>
+                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:35%;height:100%;background:#F59E0B;border-radius:2px"></div></div>
+                  <div style="font-size:.6rem;color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">ALERTA</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  <div style="font-size:.68rem;color:#94A3B8;min-width:80px;font-family:'JetBrains Mono',monospace">Subdominios</div>
+                  <div style="flex:1;height:4px;background:#0F1E10;border-radius:2px"><div style="width:15%;height:100%;background:#22C55E;border-radius:2px"></div></div>
+                  <div style="font-size:.6rem;color:#22C55E;font-family:'JetBrains Mono',monospace;font-weight:700;min-width:50px;text-align:right">OK</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Right: result cards -->
+          <div style="display:flex;flex-direction:column;gap:.65rem">
+            <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:3px solid #EF4444;border-radius:8px;padding:.8rem 1rem">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+                <span style="font-size:.55rem;background:rgba(239,68,68,.15);color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">CRÍTICO</span>
+              </div>
+              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">Puerto RDP 3389 expuesto</div>
+              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Escritorio remoto accesible desde internet. Vector de ataque activo.</div>
+            </div>
+            <div style="background:#0A1410;border:1px solid #3B0D0D;border-left:3px solid #EF4444;border-radius:8px;padding:.8rem 1rem">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+                <span style="font-size:.55rem;background:rgba(239,68,68,.15);color:#EF4444;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">CRÍTICO</span>
+              </div>
+              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">admin@ en filtración LinkedIn 2021</div>
+              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Email y contraseña hasheada comprometidos. Cambiar credenciales.</div>
+            </div>
+            <div style="background:#0A1410;border:1px solid #3B1F0A;border-left:3px solid #F59E0B;border-radius:8px;padding:.8rem 1rem">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+                <span style="font-size:.55rem;background:rgba(245,158,11,.12);color:#F59E0B;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">ADVERTENCIA</span>
+              </div>
+              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">DMARC ausente en el dominio</div>
+              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Cualquiera puede enviar emails suplantando tu empresa.</div>
+            </div>
+            <div style="background:#0A1410;border:1px solid #0A2615;border-left:3px solid #22C55E;border-radius:8px;padding:.8rem 1rem">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem">
+                <span style="font-size:.55rem;background:rgba(34,197,94,.1);color:#22C55E;font-family:'JetBrains Mono',monospace;font-weight:700;padding:.15rem .5rem;border-radius:3px;letter-spacing:.06em">OK</span>
+              </div>
+              <div style="font-size:.8rem;font-weight:700;color:#F0FDF4;margin-bottom:.25rem">SSL/TLS válido · Caduca en 187 días</div>
+              <div style="font-size:.68rem;color:#64748B;line-height:1.5">Certificado activo y sin vulnerabilidades conocidas.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:1.5rem;font-size:.8rem;color:var(--muted)">Pruébalo ahora — <a href="/app" style="color:var(--accent);font-weight:600">escanea tu dominio gratis →</a></p>
+  </div>
+</section>
+
 <!-- CARACTERISTICAS DETALLADAS -->
 <section class="section" id="caracteristicas" style="max-width:1100px">
   <div class="sec-label">En detalle</div>
