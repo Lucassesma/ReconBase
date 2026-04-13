@@ -157,6 +157,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 6
 .nav-links{display:flex;gap:2.5rem}
 .nav-links a{font-size:.87rem;color:var(--muted);transition:color .2s;font-weight:500}
 .nav-links a:hover{color:var(--text)}
+.nav-links a.nav-active{color:var(--accent);font-weight:700}
 .nav-right{display:flex;align-items:center;gap:.75rem}
 .btn-login{background:transparent;color:var(--muted);border:1px solid var(--border);padding:.55rem 1.1rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.83rem;cursor:pointer;transition:all .2s;min-height:44px;display:inline-flex;align-items:center}
 .btn-login:hover{border-color:var(--text);color:var(--text)}
@@ -480,17 +481,21 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   </a>
   <div class="nav-links">
     {% if user and user.is_authenticated %}
-    <a href="#escaner" style="color:var(--accent);font-weight:700">Escáner</a>
+    <a href="#escaner" class="nav-link" id="nav-escaner" onclick="navSwitch('escaner')">Escáner</a>
     {% endif %}
-    <a href="#caracteristicas">Características</a>
-    <a href="#como-funciona">Cómo funciona</a>
-    <a href="#precios">Precios</a>
-    <a href="#faq">FAQ</a>
+    <a href="#caracteristicas" class="nav-link" onclick="navSwitch('landing')">Características</a>
+    <a href="#como-funciona" class="nav-link" onclick="navSwitch('landing')">Cómo funciona</a>
+    <a href="#precios" class="nav-link" onclick="navSwitch('landing')">Precios</a>
+    <a href="#faq" class="nav-link" onclick="navSwitch('landing')">FAQ</a>
   </div>
   <div class="nav-right">
     {% if user and user.is_authenticated %}
     <a href="/perfil" class="btn-login">Mi perfil</a>
-    <button class="btn-login" onclick="cerrarSesionLanding()">Salir</button>
+    {% if user.plan == 'free' %}
+    <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 29€/mes</button>
+    {% else %}
+    <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .7rem;border-radius:20px;font-weight:700">PRO</span>
+    {% endif %}
     {% else %}
     <a href="/login" class="btn-login">Iniciar sesión</a>
     <a href="/register" class="btn-nav">Registro gratuito</a>
@@ -1445,9 +1450,9 @@ if(gaugeEl){
     if(e[0].isIntersecting&&!heroAnimated){
       heroAnimated=true;
       animateGauge();
-      animateCounter('cnt-dominios',{{ stats_scans }},2000);
-      animateCounter('cnt-vulns',{{ stats_vulns }},2200);
-      animateCounter('cnt-breaches',{{ stats_breaches }},1800);
+      animateCounter('cnt-dominios',{{ stats_scans | default(0) }},2000);
+      animateCounter('cnt-vulns',{{ stats_vulns | default(0) }},2200);
+      animateCounter('cnt-breaches',{{ stats_breaches | default(0) }},1800);
       obs.disconnect();
     }
   },{threshold:.2});
@@ -1582,6 +1587,36 @@ function renderDemoResult(d){
   // Limpiar pasos de carga
   document.getElementById('dr-steps').innerHTML='';
 }
+
+/* ── NAV SWITCH ── */
+function navSwitch(mode) {
+  var mainEl = document.querySelector('main');
+  var footerEl = document.querySelector('footer');
+  var scannerEl = document.getElementById('escaner');
+  var links = document.querySelectorAll('.nav-link');
+
+  links.forEach(function(l){ l.classList.remove('nav-active'); });
+
+  if (mode === 'escaner') {
+    if (mainEl) mainEl.style.display = 'none';
+    if (footerEl) footerEl.style.display = 'none';
+    if (scannerEl) scannerEl.style.display = 'block';
+    var navEsc = document.getElementById('nav-escaner');
+    if (navEsc) navEsc.classList.add('nav-active');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  } else {
+    if (mainEl) mainEl.style.display = '';
+    if (footerEl) footerEl.style.display = '';
+    // Si el escáner existe, sigue visible arriba del main (ya está fuera del main)
+  }
+}
+
+// Al cargar: si la URL tiene #escaner, activar modo escáner
+(function(){
+  if (window.location.hash === '#escaner' && document.getElementById('escaner')) {
+    navSwitch('escaner');
+  }
+})();
 
 /* ═══════════════════════════════════════════════
    ESCÁNER INTEGRADO — funciones sc*
