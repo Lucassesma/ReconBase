@@ -904,6 +904,8 @@ with app.app_context():
         "ALTER TABLE users ADD COLUMN scan_hora INTEGER DEFAULT 3",
         "ALTER TABLE users ADD COLUMN scan_dias VARCHAR(20) DEFAULT '0,1,2,3,4,5,6'",
         "ALTER TABLE scans ADD COLUMN pdf_unlocked BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN verify_token VARCHAR(64)",
     ]:
         try:
             db.session.execute(text(col_sql))
