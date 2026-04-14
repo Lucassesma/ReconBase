@@ -438,8 +438,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 .sc-2col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 .sc-chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .sc-chart-card h4{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
-.sc-chart-wrap{position:relative;overflow:hidden;height:220px}
-.sc-chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
+.sc-chart-wrap{position:relative;height:220px}
+.sc-chart-wrap canvas{display:block}
 .sc-subs-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
 .sc-subs-card h4{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
 .sc-subs-tbl{width:100%;border-collapse:collapse;font-size:.82rem}
@@ -1816,7 +1816,7 @@ function scRenderHeadersChart(headers, canvasId) {
     type: 'bar',
     data: { labels: labels, datasets: [{ data: presente.map(function(){ return 1; }), backgroundColor: colors, borderRadius: 4, barThickness: 16 }] },
     options: {
-      indexAxis: 'y', responsive: true,
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return presente[c.dataIndex] ? '✓ Presente' : '✗ Ausente'; } } } },
       scales: { x: { display: false, max: 1, min: 0 }, y: { ticks: { font: { size: 10, family: 'JetBrains Mono' }, color: '#64748B' }, grid: { display: false } } }
     }
@@ -1836,7 +1836,7 @@ function scRenderRadarChart(d, canvasId) {
   var newChart = new Chart(canvas, {
     type: 'radar',
     data: { labels: ['Puertos','DNS','Cabeceras','SSL','Filtraciones'], datasets: [{ data: [puertos, dns, headers, ssl, leaks], backgroundColor: 'rgba(220,38,38,.15)', borderColor: '#DC2626', borderWidth: 2, pointBackgroundColor: '#DC2626', pointRadius: 3 }] },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#E2E8F0' }, pointLabels: { font: { size: 10 }, color: '#64748B' } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: '#E2E8F0' }, pointLabels: { font: { size: 10 }, color: '#64748B' } } } }
   });
   if (canvasId === 'sc-cr') scRadarChart = newChart;
   else if (canvasId === 'sc-dr') scDashRadarChart = newChart;
@@ -1856,7 +1856,7 @@ function scRenderDashboard(d) {
     scDashBarChart = new Chart(canvas, {
       type: 'bar',
       data: { labels: [d.objetivo || 'Objetivo'], datasets: [{ data: [d.riesgo], backgroundColor: col, borderRadius: 6, barThickness: 32 }] },
-      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { max: 100, ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, y: { ticks: { color: '#64748B', font: { size: 11 } }, grid: { display: false } } } }
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { max: 100, ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, y: { ticks: { color: '#64748B', font: { size: 11 } }, grid: { display: false } } } }
     });
   }
 }
@@ -1977,7 +1977,7 @@ function scRenderTendencia() {
           labels: scans.map(function(s){return (s.timestamp||'').split(' ')[0];}),
           datasets: [{ label: 'Riesgo (%)', data: riesgos, borderColor: '#DC2626', backgroundColor: 'rgba(220,38,38,.08)', tension: 0.4, fill: true, pointBackgroundColor: '#DC2626', pointRadius: 4 }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, x: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { display: false } } } }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, x: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { display: false } } } }
       });
     }
 
