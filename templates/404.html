@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>404 — Página no encontrada · ReconBase</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--green:#22C55E}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+nav{display:flex;align-items:center;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem;text-align:center}
+.code{font-family:'JetBrains Mono',monospace;font-size:6rem;font-weight:700;color:var(--green);line-height:1;margin-bottom:1rem;opacity:.9}
+.title{font-size:1.5rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem}
+.sub{font-size:.95rem;color:var(--muted);max-width:400px;line-height:1.6;margin-bottom:2.5rem}
+.actions{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn{padding:.75rem 1.5rem;border-radius:7px;font-weight:700;font-size:.9rem;text-decoration:none;transition:background .2s}
+.btn-primary{background:#15803D;color:#fff}.btn-primary:hover{background:#166534}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--green);color:var(--text)}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" style="text-decoration:none">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="24">
+      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
+      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#22C55E">BASE</text>
+    </svg>
+  </a>
+</nav>
+<div class="main">
+  <div class="code">404</div>
+  <div class="title">Página no encontrada</div>
+  <div class="sub">La página que buscas no existe o ha sido movida. Puede que la URL esté mal escrita.</div>
+  <div class="actions">
+    <a href="/" class="btn btn-primary">Volver al inicio</a>
+    <a href="/login" class="btn btn-ghost">Iniciar sesión</a>
+  </div>
+</div>
+</body>
+</html>

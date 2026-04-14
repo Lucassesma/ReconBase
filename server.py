@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from models import db, User, Scan
 import reconbase_engine as engine
-import os, io, json, stripe, threading
+import os, io, json, stripe, threading, logging
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -29,6 +31,19 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USER", "")
 
 db.init_app(app)
 mail = Mail(app)
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://"
+)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger("reconbase")
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -122,6 +137,7 @@ def register_page():
 
 # ── AUTH API ──
 @app.route("/api/login", methods=["POST"])
+@limiter.limit("10 per minute; 30 per hour")
 def api_login():
     data     = request.get_json()
     email    = data.get("email", "").strip().lower()
@@ -132,7 +148,32 @@ def api_login():
     login_user(user)
     return jsonify({"ok": True})
 
+def enviar_email_verificacion(user):
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            link = f"{base_url}/verify-email/{user.verify_token}"
+            cuerpo = (
+                f"Hola {user.empresa},\n\n"
+                f"Gracias por registrarte en ReconBase.\n\n"
+                f"Confirma tu direccion de email haciendo clic en el siguiente enlace:\n"
+                f"{link}\n\n"
+                f"Si no has creado esta cuenta, ignora este mensaje.\n\n"
+                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject="Confirma tu email — ReconBase",
+                    recipients=[user.email],
+                    body=cuerpo
+                ))
+                print(f"[Verify] Email enviado a {user.email}")
+        except Exception as e:
+            print(f"[!] Error enviando verificacion {user.email}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
 @app.route("/api/register", methods=["POST"])
+@limiter.limit("5 per hour")
 def api_register():
     data     = request.get_json()
     email    = data.get("email", "").strip().lower()
@@ -146,10 +187,24 @@ def api_register():
         return jsonify({"ok": False, "error": "Este email ya está registrado"}), 400
     user = User(email=email, empresa=empresa)
     user.set_password(password)
+    user.generate_verify_token()
     db.session.add(user)
     db.session.commit()
     login_user(user)
+    enviar_email_verificacion(user)
     return jsonify({"ok": True})
+
+@app.route("/verify-email/<token>")
+def verify_email(token):
+    user = User.query.filter_by(verify_token=token).first()
+    if not user:
+        return render_template("verify_result.html", ok=False,
+                               msg="Enlace no válido o ya utilizado.")
+    user.email_verified = True
+    user.verify_token   = None
+    db.session.commit()
+    return render_template("verify_result.html", ok=True,
+                           msg="Email verificado correctamente. Ya puedes usar ReconBase.")
 
 @app.route("/api/logout", methods=["POST"])
 @login_required
@@ -158,6 +213,7 @@ def api_logout():
     return jsonify({"ok": True})
 
 @app.route("/api/scan-demo", methods=["POST"])
+@limiter.limit("5 per hour")
 def scan_demo():
     """Escaneo público sin login para la landing. No guarda resultados en BD."""
     data     = request.get_json() or {}
@@ -321,13 +377,21 @@ def stripe_webhook():
                         print(f"[Webhook] Usuario no encontrado: {email}")
 
         elif tipo == "customer.subscription.deleted":
-            metadata = getattr(obj, "metadata", None)
-            email = metadata.get("email") if metadata else None
+            # Look up the customer in Stripe to get their email
+            customer_id = getattr(obj, "customer", None)
+            email = None
+            if customer_id:
+                try:
+                    customer = stripe.Customer.retrieve(customer_id)
+                    email = getattr(customer, "email", None)
+                except Exception as e:
+                    print(f"[Webhook] Error obteniendo customer: {e}")
             if email:
                 user = User.query.filter_by(email=email).first()
                 if user:
                     user.plan = "free"
                     db.session.commit()
+                    print(f"[Webhook] Plan degradado a free para {email}")
     except Exception as e:
         print(f"[Webhook] Error procesando evento: {e}")
         return jsonify({"error": str(e)}), 500
@@ -499,6 +563,7 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
 
 @app.route("/api/scan", methods=["POST"])
 @login_required
+@limiter.limit("20 per hour")
 def scan():
     if current_user.plan == "free":
         from sqlalchemy import extract
@@ -844,6 +909,19 @@ with app.app_context():
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({"error": "Demasiadas peticiones. Espera un momento e inténtalo de nuevo."}), 429
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("404.html"), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    logger.error(f"Error 500: {e}")
+    return render_template("500.html"), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

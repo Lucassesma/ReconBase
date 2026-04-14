@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificación de email — ReconBase</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--green:#22C55E;--red:#EF4444}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+nav{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;padding:1.1rem 6%;border-bottom:1px solid var(--border);background:var(--bg)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2.5rem;width:100%;max-width:420px;text-align:center}
+.icon{font-size:3rem;margin-bottom:1rem}
+.title{font-size:1.4rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.75rem}
+.msg{font-size:.9rem;color:var(--muted);line-height:1.6;margin-bottom:2rem}
+.btn{display:inline-block;background:#15803D;color:#fff;padding:.75rem 1.75rem;border-radius:7px;font-weight:700;font-size:.9rem;text-decoration:none;transition:background .2s}
+.btn:hover{background:#166534}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" style="text-decoration:none">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="24">
+      <text x="0" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
+      <text x="86" y="29" font-family="Arial Black, sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#22C55E">BASE</text>
+    </svg>
+  </a>
+</nav>
+<div class="card">
+  {% if ok %}
+  <div class="icon">✅</div>
+  <div class="title" style="color:var(--green)">Email verificado</div>
+  {% else %}
+  <div class="icon">❌</div>
+  <div class="title" style="color:var(--red)">Enlace no válido</div>
+  {% endif %}
+  <div class="msg">{{ msg }}</div>
+  <a href="/" class="btn">Ir al inicio</a>
+</div>
+</body>
+</html>

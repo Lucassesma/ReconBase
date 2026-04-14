@@ -2,20 +2,26 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import secrets
 
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id         = db.Column(db.Integer, primary_key=True)
-    email      = db.Column(db.String(120), unique=True, nullable=False)
-    password   = db.Column(db.String(255), nullable=False)
-    empresa    = db.Column(db.String(120), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    plan       = db.Column(db.String(20), default='free', nullable=False)
-    scan_hora  = db.Column(db.Integer, default=3)
-    scan_dias  = db.Column(db.String(20), default='0,1,2,3,4,5,6')
-    scans      = db.relationship('Scan', backref='user', lazy=True)
+    id             = db.Column(db.Integer, primary_key=True)
+    email          = db.Column(db.String(120), unique=True, nullable=False)
+    password       = db.Column(db.String(255), nullable=False)
+    empresa        = db.Column(db.String(120), nullable=False)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    plan           = db.Column(db.String(20), default='free', nullable=False)
+    scan_hora      = db.Column(db.Integer, default=3)
+    scan_dias      = db.Column(db.String(20), default='0,1,2,3,4,5,6')
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    verify_token   = db.Column(db.String(64), nullable=True)
+    scans          = db.relationship('Scan', backref='user', lazy=True)
+
+    def generate_verify_token(self):
+        self.verify_token = secrets.token_urlsafe(32)
 
     def set_password(self, password):
         self.password = generate_password_hash(password)

@@ -236,7 +236,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 6
 .dp-btn{background:var(--blue-dk);color:#fff;border:none;padding:.55rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer}
 .demo-result-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:#080C14;border-radius:6px;margin-bottom:.5rem}
 .dri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dri-label{font-size:.8rem;font-family:'JetBrains Mono',monospace;flex:1}
+.dri-label{font-size:.8rem;font-family:'JetBrains Mono',monospace;flex:1;color:var(--text)}
 .dri-status{font-size:.72rem;font-weight:700;font-family:'JetBrains Mono',monospace}
 .status-ok{color:var(--green)}.status-err{color:var(--red)}.status-warn{color:var(--amber)}
 .demo-pdf-preview{background:#080C14;border-radius:8px;padding:1.25rem;border:1px solid var(--border)}
@@ -510,6 +510,17 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 ════════════════════════════════════════ -->
 <section id="escaner" style="display:none">
 
+{% if user and user.is_authenticated and scans_mes == 0 %}
+<div style="background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+  <div style="font-size:1.5rem;line-height:1;margin-top:.1rem">👋</div>
+  <div style="flex:1;min-width:200px">
+    <div style="font-size:.9rem;font-weight:700;color:#E2EDF8;margin-bottom:.3rem">Bienvenido a ReconBase</div>
+    <div style="font-size:.82rem;color:#94A3B8;line-height:1.6">Empieza introduciendo el dominio de tu empresa arriba y pulsa <strong style="color:#22C55E">ESCANEAR</strong>. En menos de 2 minutos verás si tienes puertos expuestos, si tu dominio puede ser suplantado y si alguna contraseña ha filtrado.</div>
+  </div>
+  <button onclick="this.closest('div[style]').remove()" style="background:none;border:none;color:#64748B;font-size:1.1rem;cursor:pointer;padding:.1rem .3rem;line-height:1;align-self:flex-start">✕</button>
+</div>
+{% endif %}
+
 {% if plan == 'free' %}
 <div class="sc-plan-banner">
   <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
@@ -602,12 +613,15 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="sc-panel" id="sc-exportar">
     {% if plan == 'free' %}
     <div class="sc-export-grid" style="margin-bottom:1rem">
-      <div class="sc-export-card" id="sc-pdf-card" style="position:relative">
-        <div style="position:absolute;top:1rem;right:1rem" id="sc-pdf-icon">🔒</div>
+      <div class="sc-export-card" id="sc-pdf-card" style="position:relative;border-color:#15803D">
+        <div style="position:absolute;top:.75rem;right:.75rem;background:#DCFCE7;color:#15803D;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono',monospace;padding:.15rem .55rem;border-radius:20px">PAGO ÚNICO</div>
         <div style="font-size:2rem;margin-bottom:.75rem">📄</div>
         <div class="sc-export-title">Informe PDF Ejecutivo</div>
-        <div class="sc-export-desc" id="sc-pdf-desc">Ejecuta un escaneo para obtener el informe completo.</div>
-        <div id="sc-pdf-btn"><button class="sc-btn-exp p" style="opacity:.5;cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></div>
+        <div class="sc-export-desc" id="sc-pdf-desc">Descarga el informe completo de este escaneo en PDF.</div>
+        <div id="sc-pdf-btn">
+          <button class="sc-btn-exp p" style="opacity:.45;cursor:not-allowed" disabled id="sc-pdf-btn-buy">Escanea primero para desbloquear</button>
+          <div style="text-align:center;margin-top:.5rem;font-size:.72rem;color:var(--muted)">o <span onclick="pagarPlanLanding('pro')" style="color:#22C55E;cursor:pointer;font-weight:600">suscríbete a Pro (29€/mes)</span> para PDF ilimitados</div>
+        </div>
       </div>
       <div class="sc-export-card" style="opacity:.4">
         <div style="font-size:2rem;margin-bottom:.75rem">📦</div>
@@ -631,7 +645,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
   <!-- HISTORIAL -->
   <div class="sc-panel" id="sc-historial">
-    {% if plan == 'free' %}<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap"><span style="font-size:.82rem;color:#15803D">Plan Free: últimos 3 escaneos.</span><span onclick="pagarPlanLanding('pro')" style="font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer">Ver historial completo con Pro →</span></div>{% endif %}
+    {% if plan == 'free' %}<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap"><span style="font-size:.82rem;color:#15803D">Plan Free: últimos 10 escaneos.</span><span onclick="pagarPlanLanding('pro')" style="font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer">Historial ilimitado con Pro →</span></div>{% endif %}
     <div class="sc-empty" id="sc-hist-empty"><h3>Sin escaneos recientes</h3><p>El historial aparecerá aquí.</p></div>
     <div id="sc-hist-content" style="display:none">
       <table class="sc-hist-tbl"><thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th><th></th></tr></thead><tbody id="sc-hist-body"></tbody></table>
@@ -1362,6 +1376,33 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       </div>
 
     </div>
+
+    <!-- Tabla comparativa -->
+    <div style="max-width:700px;margin:2.5rem auto 0;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:.7rem 1rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Característica</th>
+            <th style="text-align:center;padding:.7rem 1rem;color:var(--text);font-weight:700;border-bottom:1px solid var(--border)">Gratuito</th>
+            <th style="text-align:center;padding:.7rem 1rem;color:#22C55E;font-weight:700;border-bottom:1px solid var(--border)">Pro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Escaneos al mes</td><td style="text-align:center;color:var(--text)">10</td><td style="text-align:center;color:#22C55E;font-weight:700">Ilimitados</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Puertos expuestos</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">DNS / SPF / DMARC</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Cabeceras HTTP</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Subdominios</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Filtraciones Deep Web</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Vigilancia nocturna 24/7</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Alertas por email automáticas</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Historial de escaneos</td><td style="text-align:center;color:var(--muted)">Últimos 10</td><td style="text-align:center;color:#22C55E">Ilimitado</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Informe PDF ejecutivo</td><td style="text-align:center;color:var(--muted)">9€/informe</td><td style="text-align:center;color:#22C55E">Incluido</td></tr>
+          <tr><td style="padding:.65rem 1rem;color:var(--muted)">Soporte prioritario</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -1683,6 +1724,7 @@ function scLanzar() {
     if (d.error) { alert(d.error); document.getElementById('sc-empty').style.display='block'; return; }
     scCurrentData = d;
     scRenderResults(d);
+    if (d.scan_id) { scActivarBtnPDF(d.scan_id); }
   })
   .catch(function() {
     scResetLoading();
@@ -1883,6 +1925,30 @@ function scUpdatePdfFreeCard(d) {
 }
 
 function scComprarInforme() { pagarPlanLanding('pro'); }
+
+function scActivarBtnPDF(scanId) {
+  var btn = document.getElementById('sc-pdf-btn-buy');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+  btn.textContent = 'Desbloquear informe — 9€';
+  btn.onclick = function() { scComprarInforme9(scanId); };
+}
+
+function scComprarInforme9(scanId) {
+  fetch('/api/checkout-informe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({scan_id: scanId})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.url) { window.open(d.url, '_blank'); }
+    else { alert(d.error || 'Error al iniciar el pago'); }
+  })
+  .catch(function(){ alert('Error de conexión'); });
+}
 
 function scDescargarPDF() {
   if (!scCurrentData) return;
