@@ -533,7 +533,18 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       </div>
     </div>
   </div>
-  <button onclick="pagarPlanLanding('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+    {% if not user.trial_end %}
+    <button onclick="activarTrial()" id="btn-trial" style="background:transparent;color:#22C55E;border:1px solid #166534;padding:.6rem 1.1rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;white-space:nowrap">7 días Pro gratis →</button>
+    {% endif %}
+    <button onclick="pagarPlanLanding('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button>
+  </div>
+</div>
+{% endif %}
+{% if user and user.is_authenticated and user.trial_end and plan == 'pro' and user.plan != 'pro' %}
+<div style="background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:8px;padding:.75rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+  <span style="font-size:.82rem;color:#4ADE80">Trial Pro activo — acceso completo hasta el {{ user.trial_end.strftime('%d/%m/%Y') }}</span>
+  <button onclick="pagarPlanLanding('pro')" style="background:#15803D;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.76rem;cursor:pointer">Suscribirse antes de que expire →</button>
 </div>
 {% endif %}
 
@@ -543,6 +554,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="sc-tab" onclick="scSwitch('exportar',this)">Exportar</div>
   <div class="sc-tab" onclick="scSwitch('historial',this)">Historial</div>
   <div class="sc-tab" onclick="scSwitch('tendencia',this)">Tendencia</div>
+  <div class="sc-tab" onclick="scSwitch('comparar',this)">Comparar</div>
   <div class="sc-tab" onclick="scSwitch('vigilancia',this)">Vigilancia{% if plan=='free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}</div>
 </div>
 
@@ -550,6 +562,37 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
   <!-- AUDITORÍA -->
   <div class="sc-panel active" id="sc-auditoria">
+
+    <!-- Onboarding checklist (se oculta cuando se completa) -->
+    {% if user and user.is_authenticated and scans_mes < 3 %}
+    <div id="sc-checklist" style="background:#0A1410;border:1px solid #152B1E;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:#22C55E;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Primeros pasos</span>
+        <button onclick="document.getElementById('sc-checklist').remove()" style="background:none;border:none;color:#475569;cursor:pointer;font-size:.9rem;line-height:1">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.82rem">
+          <span style="color:#22C55E;font-size:.9rem">✓</span>
+          <span style="color:#94A3B8;text-decoration:line-through">Crear tu cuenta</span>
+        </div>
+        <div id="ck-scan" style="display:flex;align-items:center;gap:.75rem;font-size:.82rem">
+          <span style="color:{% if scans_mes >= 1 %}#22C55E{% else %}#334155{% endif %};font-size:.9rem">{% if scans_mes >= 1 %}✓{% else %}○{% endif %}</span>
+          <span style="color:{% if scans_mes >= 1 %}#94A3B8;text-decoration:line-through{% else %}#E2EDF8{% endif %}">Escanear tu dominio por primera vez</span>
+          {% if scans_mes == 0 %}<span style="font-size:.7rem;color:#22C55E;cursor:pointer;font-weight:600" onclick="document.getElementById('sc-objetivo').focus()">→ Hazlo ahora</span>{% endif %}
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.82rem">
+          <span style="color:#334155;font-size:.9rem">○</span>
+          <span style="color:#E2EDF8">Revisar los problemas encontrados</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;font-size:.82rem">
+          <span style="color:#334155;font-size:.9rem">○</span>
+          <span style="color:#E2EDF8">Activar vigilancia nocturna</span>
+          {% if plan == 'free' %}<span style="font-size:.65rem;background:#DCFCE7;color:#15803D;padding:.1rem .5rem;border-radius:10px;font-weight:700">PRO</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="scanner-bar">
       <input class="scan-input" id="sc-objetivo" type="text" placeholder="empresa.com · admin@empresa.com · 192.168.1.1" onkeydown="if(event.key==='Enter')scLanzar()" autocomplete="off" spellcheck="false">
       <button class="btn-scan" id="sc-btn" onclick="scLanzar()">ESCANEAR</button>
@@ -660,6 +703,26 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="sc-chart-card" style="margin-bottom:1rem"><h4>Evolución del riesgo</h4><div class="sc-chart-wrap" style="height:280px"><canvas id="sc-tend-chart"></canvas></div></div>
       <div class="sc-chart-card"><h4>Desglose por escaneo</h4><div style="overflow-x:auto;margin-top:.5rem"><table class="sc-hist-tbl"><thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Subdominios</th><th>Fecha</th></tr></thead><tbody id="sc-tend-body"></tbody></table></div></div>
     </div>
+  </div>
+
+  <!-- COMPARAR -->
+  <div class="sc-panel" id="sc-comparar">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Selecciona dos escaneos para comparar</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div>
+          <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.3rem">Escaneo A (anterior)</label>
+          <select id="sc-cmp-a" style="width:100%;background:#080C14;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:.78rem"><option value="">— Selecciona —</option></select>
+        </div>
+        <div>
+          <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.3rem">Escaneo B (reciente)</label>
+          <select id="sc-cmp-b" style="width:100%;background:#080C14;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:.5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:.78rem"><option value="">— Selecciona —</option></select>
+        </div>
+      </div>
+      <button onclick="scComparar()" style="background:#15803D;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Comparar →</button>
+    </div>
+    <div id="sc-cmp-result" style="display:none"></div>
+    <div class="sc-empty" id="sc-cmp-empty"><h3>Sin historial</h3><p>Necesitas al menos 2 escaneos para comparar.</p></div>
   </div>
 
   <!-- VIGILANCIA -->
@@ -1332,7 +1395,17 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
 <div class="dark-band" id="precios">
   <div class="dark-band-inner">
-    <div style="text-align:center;margin-bottom:2.5rem"><div class="sec-label" style="text-align:center">Precios</div><h2 class="sec-title" style="text-align:center">Simple. Sin sorpresas.</h2></div>
+    <div style="text-align:center;margin-bottom:2rem"><div class="sec-label" style="text-align:center">Precios</div><h2 class="sec-title" style="text-align:center">Simple. Sin sorpresas.</h2></div>
+
+    <!-- Toggle mensual / anual -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:.75rem;margin-bottom:2rem">
+      <span id="lbl-mensual" style="font-size:.85rem;font-weight:700;color:#E2EDF8">Mensual</span>
+      <div onclick="toggleBilling()" id="billing-toggle" style="width:44px;height:24px;background:#152B1E;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;border:1px solid #166534">
+        <div id="billing-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#22C55E;transition:left .2s"></div>
+      </div>
+      <span id="lbl-anual" style="font-size:.85rem;color:#64748B">Anual <span style="font-size:.7rem;background:#DCFCE7;color:#15803D;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.25rem">2 meses gratis</span></span>
+    </div>
+
     <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));max-width:800px;margin:0 auto">
 
       <div class="plan">
@@ -1359,7 +1432,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div class="plan hot">
         <div class="plan-badge">RECOMENDADO</div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price">29 <span>/ mes</span></div>
+        <div class="plan-price"><span id="pro-price">29</span> <span>/ mes</span></div>
+        <div id="pro-anual-note" style="display:none;font-size:.72rem;color:#22C55E;margin-top:-.5rem;margin-bottom:.25rem">290€/año · ahorras 58€</div>
         <div class="plan-desc">Para empresas que necesitan proteccion continua, no solo analisis puntuales.</div>
         <div class="plan-div"></div>
         <div class="pf"><span class="ck">v</span>Todo lo del plan gratuito</div>
@@ -1372,7 +1446,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
         <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
           Ademas del analisis completo, ReconBase busca si los emails de tu empresa han aparecido en filtraciones de datos conocidas. Cada noche revisamos tu dominio automaticamente y te avisamos por email si detectamos algo nuevo, sin que tengas que hacer nada.
         </div>
-        <button class="btn-plan sl" onclick="pagarPlan('pro')">Suscribirse — 29€/mes</button>
+        <button class="btn-plan sl" id="btn-pro-subscribe" onclick="pagarPlanActual()">Suscribirse — 29€/mes</button>
       </div>
 
     </div>
@@ -1794,14 +1868,14 @@ function scRenderCards(d) {
   var html = '';
   var serviciosCrit = ["RDP","Telnet","MySQL","MongoDB","Redis","PostgreSQL","MSSQL","Docker API","Elasticsearch","VNC"];
   var critPorts = (d.puertos || []).filter(function(p){ return serviciosCrit.indexOf(p.servicio) !== -1; });
-  if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles: ' + critPorts.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '. Ciérralos en el firewall.');
+  if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles: ' + critPorts.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '. Ciérralos en el firewall.', 'puerto');
   else if ((d.puertos || []).length === 0) html += scCard('ok', 'Sin puertos críticos expuestos', 'No se detectaron servicios sensibles accesibles.');
   else html += scCard('ok', 'Puertos bajo control', 'Solo puertos estándar detectados.');
 
   if (d.dns) {
-    if (!d.dns.SPF && !d.dns.DMARC) html += scCard('crit', 'SPF y DMARC ausentes', 'Cualquiera puede enviar emails haciéndose pasar por tu empresa.');
-    else if (!d.dns.DMARC) html += scCard('warn', 'DMARC no configurado', 'Tu dominio puede ser suplantado. Añade el registro TXT.');
-    else if (!d.dns.SPF) html += scCard('warn', 'SPF no configurado', 'Riesgo de suplantación de correo.');
+    if (!d.dns.SPF && !d.dns.DMARC) html += scCard('crit', 'SPF y DMARC ausentes', 'Cualquiera puede enviar emails haciéndose pasar por tu empresa.', 'spf');
+    else if (!d.dns.DMARC) html += scCard('warn', 'DMARC no configurado', 'Tu dominio puede ser suplantado. Añade el registro TXT.', 'dmarc');
+    else if (!d.dns.SPF) html += scCard('warn', 'SPF no configurado', 'Riesgo de suplantación de correo.', 'spf');
     else html += scCard('ok', 'SPF y DMARC correctos', 'Tu dominio está protegido contra suplantación.');
   }
 
@@ -1810,20 +1884,20 @@ function scRenderCards(d) {
     if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) miss.push('X-Frame-Options');
     if (!d.headers['Content-Security-Policy']) miss.push('CSP');
     if (!d.headers['X-Content-Type-Options']) miss.push('X-Content-Type-Options');
-    if (miss.length >= 2) html += scCard('warn', miss.length + ' cabeceras HTTP ausentes', miss.slice(0,3).join(', ') + ' — expuesto a XSS y clickjacking.');
-    else if (miss.length === 1) html += scCard('warn', 'Cabecera ' + miss[0] + ' ausente', 'Configúrala en tu servidor.');
+    if (miss.length >= 2) html += scCard('warn', miss.length + ' cabeceras HTTP ausentes', miss.slice(0,3).join(', ') + ' — expuesto a XSS y clickjacking.', 'headers');
+    else if (miss.length === 1) html += scCard('warn', 'Cabecera ' + miss[0] + ' ausente', 'Configúrala en tu servidor.', 'headers');
     else html += scCard('ok', 'Cabeceras HTTP correctas', 'Las principales cabeceras de seguridad están configuradas.');
   }
 
   if (d.ssl) {
-    if (!d.ssl.tiene_ssl) html += scCard('crit', 'Sin certificado SSL/TLS', 'Tu dominio no tiene HTTPS.');
-    else if (d.ssl.caducado) html += scCard('crit', 'Certificado SSL caducado', 'Expiró el ' + (d.ssl.expira || '?') + '.');
-    else if (d.ssl.pronto_a_caducar) html += scCard('warn', 'SSL caduca en ' + d.ssl.dias_restantes + ' días', 'Renuévalo pronto.');
+    if (!d.ssl.tiene_ssl) html += scCard('crit', 'Sin certificado SSL/TLS', 'Tu dominio no tiene HTTPS.', 'ssl');
+    else if (d.ssl.caducado) html += scCard('crit', 'Certificado SSL caducado', 'Expiró el ' + (d.ssl.expira || '?') + '.', 'ssl');
+    else if (d.ssl.pronto_a_caducar) html += scCard('warn', 'SSL caduca en ' + d.ssl.dias_restantes + ' días', 'Renuévalo pronto.', 'ssl');
     else html += scCard('ok', 'SSL/TLS válido', 'Caduca en ' + (d.ssl.dias_restantes || '?') + ' días.');
   }
 
   if ((d.leaks || 0) > 0) {
-    html += scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' detectada' + (d.leaks > 1 ? 's' : ''), (d.leaks_raw||[]).slice(0,3).map(function(f){return f.fuente||f;}).join(', ') || 'Credenciales comprometidas encontradas.');
+    html += scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' detectada' + (d.leaks > 1 ? 's' : ''), (d.leaks_raw||[]).slice(0,3).map(function(f){return f.fuente||f;}).join(', ') || 'Credenciales comprometidas encontradas.', 'leaks');
   } else {
     html += scCard('ok', 'Sin filtraciones conocidas', 'No se encontraron datos en bases de brechas.');
   }
@@ -1831,17 +1905,35 @@ function scRenderCards(d) {
   document.getElementById('sc-cards').innerHTML = html;
 }
 
-function scCard(type, title, desc) {
+var SC_REMEDIATION = {
+  'puerto':   ['1. Accede al panel de firewall de tu hosting o servidor.', '2. Bloquea el tráfico entrante en los puertos listados (salvo si los necesitas explícitamente).', '3. Si son servicios internos (MySQL, Redis), asegúrate de que solo escuchan en 127.0.0.1.', '4. Vuelve a escanear para confirmar que están cerrados.'],
+  'spf':      ['1. Accede al panel DNS de tu dominio (GoDaddy, Cloudflare, etc.).', '2. Crea un registro TXT con el valor: v=spf1 include:_spf.google.com ~all (ajusta según tu proveedor de email).', '3. Los cambios DNS tardan hasta 48h en propagarse.', '4. Verifica con: dig TXT tudominio.com'],
+  'dmarc':    ['1. Accede al panel DNS de tu dominio.', '2. Crea un registro TXT en _dmarc.tudominio.com con: v=DMARC1; p=quarantine; rua=mailto:dmarc@tudominio.com', '3. Empieza con p=none para monitorizar antes de bloquear.', '4. Verifica con: dig TXT _dmarc.tudominio.com'],
+  'headers':  ['1. Accede a la configuración de tu servidor web (nginx/Apache) o panel de hosting.', '2. Añade las cabeceras faltantes en la configuración HTTP.', '3. Ejemplo nginx: add_header X-Frame-Options "SAMEORIGIN";', '4. Recarga la configuración del servidor y vuelve a escanear.'],
+  'ssl':      ['1. Accede al panel de tu proveedor de hosting.', '2. Busca la sección "SSL/TLS" o "Certificados".', '3. Si usas Let\'s Encrypt, ejecuta: sudo certbot renew', '4. Activa la renovación automática para evitar que caduque de nuevo.'],
+  'leaks':    ['1. Identifica qué contraseñas están comprometidas en el informe detallado.', '2. Cámbia esas contraseñas INMEDIATAMENTE en todos los servicios afectados.', '3. Activa la autenticación en dos factores (2FA) en los servicios críticos.', '4. Notifica a los empleados afectados y registra el incidente (obligatorio en RGPD).']
+};
+
+function scCard(type, title, desc, remedKey) {
   var C = {
     crit: {b:'#FEE2E2',l:'#DC2626',bg:'#FEF2F2',c:'#DC2626',lbl:'CRÍTICO'},
     warn: {b:'#FEF3C7',l:'#D97706',bg:'#FFFBEB',c:'#D97706',lbl:'ADVERTENCIA'},
     ok:   {b:'#DCFCE7',l:'#16A34A',bg:'#F0FDF4',c:'#16A34A',lbl:'OK'}
   };
   var s = C[type] || C.ok;
+  var remedHtml = '';
+  if (remedKey && SC_REMEDIATION[remedKey] && type !== 'ok') {
+    var steps = SC_REMEDIATION[remedKey].map(function(s){ return '<li style="margin-bottom:.3rem">' + s + '</li>'; }).join('');
+    var uid = 'remed-' + Math.random().toString(36).slice(2,8);
+    remedHtml = '<div style="margin-top:.6rem">' +
+      '<span onclick="var el=document.getElementById(\'' + uid + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\'" style="font-size:.72rem;color:' + s.c + ';cursor:pointer;font-weight:600">▸ Cómo solucionarlo</span>' +
+      '<ol id="' + uid + '" style="display:none;margin-top:.5rem;padding-left:1.2rem;font-size:.75rem;color:#475569;line-height:1.7">' + steps + '</ol>' +
+      '</div>';
+  }
   return '<div style="background:' + s.bg + ';border:1px solid ' + s.b + ';border-left:3px solid ' + s.l + ';border-radius:8px;padding:.9rem 1rem;margin-bottom:.5rem">' +
     '<span style="font-size:.6rem;font-family:\'JetBrains Mono\',monospace;background:' + s.b + ';color:' + s.c + ';padding:.15rem .5rem;border-radius:4px;font-weight:700;letter-spacing:.08em">' + s.lbl + '</span>' +
     '<div style="font-size:.85rem;font-weight:700;color:#0F172A;margin:.4rem 0 .2rem">' + title + '</div>' +
-    '<div style="font-size:.78rem;color:#64748B">' + desc + '</div></div>';
+    '<div style="font-size:.78rem;color:#64748B">' + desc + '</div>' + remedHtml + '</div>';
 }
 
 function scRenderHeadersChart(headers, canvasId) {
@@ -1969,10 +2061,86 @@ function scDescargarJSON() {
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
+function scLoadComparar(scans) {
+  var selA = document.getElementById('sc-cmp-a');
+  var selB = document.getElementById('sc-cmp-b');
+  var empty = document.getElementById('sc-cmp-empty');
+  if (!selA || !selB) return;
+  if (!scans || scans.length < 2) {
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  selA.innerHTML = '<option value="">— Selecciona —</option>';
+  selB.innerHTML = '<option value="">— Selecciona —</option>';
+  scans.forEach(function(s, i) {
+    var label = (s.objetivo || s.dominio) + ' · ' + (s.timestamp || '') + ' · ' + s.riesgo + '%';
+    selA.innerHTML += '<option value="' + i + '">' + label + '</option>';
+    selB.innerHTML += '<option value="' + i + '">' + label + '</option>';
+  });
+  // Pre-seleccionar: A = más antiguo, B = más reciente
+  selA.value = scans.length - 1;
+  selB.value = 0;
+  window._scCmpScans = scans;
+}
+
+function scComparar() {
+  var selA = document.getElementById('sc-cmp-a');
+  var selB = document.getElementById('sc-cmp-b');
+  var result = document.getElementById('sc-cmp-result');
+  if (!selA.value || !selB.value || selA.value === selB.value) {
+    alert('Selecciona dos escaneos distintos.'); return;
+  }
+  var scans = window._scCmpScans || [];
+  var a = scans[parseInt(selA.value)];
+  var b = scans[parseInt(selB.value)];
+  if (!a || !b) return;
+
+  function delta(val_b, val_a, invert) {
+    var d = val_b - val_a;
+    if (d === 0) return '<span style="color:#64748B">= sin cambio</span>';
+    var better = invert ? d < 0 : d > 0;
+    var color = better ? '#DC2626' : '#16A34A';
+    var arrow = d > 0 ? '▲' : '▼';
+    return '<span style="color:' + color + '">' + arrow + ' ' + Math.abs(d) + '</span>';
+  }
+
+  var rows = [
+    ['Riesgo', a.riesgo + '%', b.riesgo + '%', delta(b.riesgo, a.riesgo, false)],
+    ['Puertos expuestos', (a.puertos||[]).length, (b.puertos||[]).length, delta((b.puertos||[]).length, (a.puertos||[]).length, false)],
+    ['Filtraciones', a.leaks||0, b.leaks||0, delta(b.leaks||0, a.leaks||0, false)],
+    ['Subdominios', (a.subs||[]).length, (b.subs||[]).length, delta((b.subs||[]).length, (a.subs||[]).length, true)],
+    ['SPF', a.dns&&a.dns.SPF?'✓':'✗', b.dns&&b.dns.SPF?'✓':'✗', ''],
+    ['DMARC', a.dns&&a.dns.DMARC?'✓':'✗', b.dns&&b.dns.DMARC?'✓':'✗', ''],
+  ];
+
+  var html = '<div style="overflow-x:auto"><table class="sc-hist-tbl"><thead><tr>' +
+    '<th>Métrica</th><th>Escaneo A<br><span style="font-weight:400;color:var(--muted)">' + (a.timestamp||'') + '</span></th>' +
+    '<th>Escaneo B<br><span style="font-weight:400;color:var(--muted)">' + (b.timestamp||'') + '</span></th><th>Cambio</th></tr></thead><tbody>';
+  rows.forEach(function(r) {
+    html += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Nuevos puertos en B que no estaban en A
+  var puertosA = (a.puertos||[]).map(function(p){return p.puerto;});
+  var puertosNuevos = (b.puertos||[]).filter(function(p){return puertosA.indexOf(p.puerto) === -1;});
+  if (puertosNuevos.length) {
+    html += '<div style="margin-top:1rem;background:#FEF2F2;border:1px solid #FEE2E2;border-radius:8px;padding:.85rem 1rem">' +
+      '<div style="font-size:.72rem;font-family:\'JetBrains Mono\',monospace;color:#DC2626;font-weight:700;margin-bottom:.4rem">NUEVOS PUERTOS EN B</div>' +
+      '<div style="font-size:.8rem;color:#7F1D1D">' + puertosNuevos.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '</div></div>';
+  }
+
+  result.innerHTML = html;
+  result.style.display = 'block';
+}
+
 function scLoadHistorial() {
   fetch('/api/historial').then(function(r){return r.json();}).then(function(d){
-    scRenderHistorial(d.scans || []);
-  }).catch(function(){ scRenderHistorial([]); });
+    var scans = d.scans || [];
+    scRenderHistorial(scans);
+    scLoadComparar(scans);
+  }).catch(function(){ scRenderHistorial([]); scLoadComparar([]); });
 }
 
 function scRenderHistorial(scans) {
@@ -2086,6 +2254,56 @@ function cerrarSesionLanding() {
   fetch('/api/logout', {method:'POST'}).then(function(){window.location.href='/';}).catch(function(){window.location.href='/';});
 }
 
+function activarTrial() {
+  var btn = document.getElementById('btn-trial');
+  if (btn) { btn.disabled = true; btn.textContent = 'Activando...'; }
+  fetch('/api/activar-trial', {method:'POST', headers:{'Content-Type':'application/json'}})
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      alert('Trial Pro activado hasta el ' + d.trial_end + '. Recarga la página para ver los cambios.');
+      location.reload();
+    } else {
+      alert(d.error || 'Error al activar el trial');
+      if (btn) { btn.disabled = false; btn.textContent = '7 días Pro gratis →'; }
+    }
+  })
+  .catch(function(){ alert('Error de conexión'); if (btn) { btn.disabled = false; } });
+}
+
+var billingAnual = false;
+function toggleBilling() {
+  billingAnual = !billingAnual;
+  var knob = document.getElementById('billing-knob');
+  var toggle = document.getElementById('billing-toggle');
+  var lblM = document.getElementById('lbl-mensual');
+  var lblA = document.getElementById('lbl-anual');
+  var price = document.getElementById('pro-price');
+  var note = document.getElementById('pro-anual-note');
+  var btn = document.getElementById('btn-pro-subscribe');
+  if (billingAnual) {
+    if (knob) knob.style.left = '23px';
+    if (toggle) toggle.style.background = '#166534';
+    if (lblM) lblM.style.color = '#64748B';
+    if (lblA) lblA.style.color = '#E2EDF8';
+    if (price) price.textContent = '24';
+    if (note) note.style.display = 'block';
+    if (btn) btn.textContent = 'Suscribirse — 290€/año';
+  } else {
+    if (knob) knob.style.left = '3px';
+    if (toggle) toggle.style.background = '#152B1E';
+    if (lblM) lblM.style.color = '#E2EDF8';
+    if (lblA) lblA.style.color = '#64748B';
+    if (price) price.textContent = '29';
+    if (note) note.style.display = 'none';
+    if (btn) btn.textContent = 'Suscribirse — 29€/mes';
+  }
+}
+function pagarPlanActual() {
+  var plan = billingAnual ? 'pro_anual' : 'pro';
+  pagarPlanLanding(plan);
+}
+
 function pagarPlanLanding(plan) {
   fetch('/api/checkout', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({plan:plan})})
   .then(function(r){return r.json();})
@@ -2117,6 +2335,32 @@ function pagarPlanLanding(plan) {
     setTimeout(function(){ alert('¡Pago completado! Tu plan Pro ya está activo. Recarga la página si no ves los cambios.'); }, 800);
   }
 })();
+</script>
+
+<!-- GDPR Cookie Banner -->
+<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+  <div style="font-size:.8rem;color:#94A3B8;max-width:600px;line-height:1.5">
+    Usamos cookies técnicas esenciales para el funcionamiento de la plataforma. No usamos cookies de seguimiento ni publicidad. <a href="/privacy" style="color:#22C55E;text-decoration:underline">Política de privacidad</a>
+  </div>
+  <div style="display:flex;gap:.75rem;flex-shrink:0">
+    <button onclick="aceptarCookies()" style="background:#15803D;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Aceptar</button>
+    <button onclick="rechazarCookies()" style="background:transparent;color:#64748B;border:1px solid #1E293B;padding:.5rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-size:.82rem;cursor:pointer">Solo esenciales</button>
+  </div>
+</div>
+<script>
+(function(){
+  if (!localStorage.getItem('rb_cookie_consent')) {
+    document.getElementById('cookie-banner').style.display = 'flex';
+  }
+})();
+function aceptarCookies() {
+  localStorage.setItem('rb_cookie_consent', 'accepted');
+  document.getElementById('cookie-banner').style.display = 'none';
+}
+function rechazarCookies() {
+  localStorage.setItem('rb_cookie_consent', 'essential');
+  document.getElementById('cookie-banner').style.display = 'none';
+}
 </script>
 </body>
 </html>

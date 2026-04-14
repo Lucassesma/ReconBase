@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('server.py'\\)\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(pip show:*)",
+      "Bash(pip3 show:*)",
+      "Bash(python -m flask --version)",
+      "Bash(python3 -m flask --version)",
+      "Bash(python3 -c \"import flask\")",
+      "Bash(python -c \"import flask\")",
+      "Bash(where python:*)",
+      "Read(//c/Users/lucas/AppData/Local/Programs/Python//**)",
+      "Bash(ls /c/Python*)",
+      "Read(//c/Users/lucas/miniconda3/bin/**)",
+      "Bash(/c/Users/lucas/AppData/Local/Programs/Python/Python312/python.exe -c \"import flask; print\\(flask.__version__\\)\")",
+      "Bash(/c/Users/lucas/AppData/Local/Python/bin/python.exe -c \"import flask; print\\(flask.__version__\\)\")",
+      "Bash(wc -l /c/Users/lucas/Desktop/ReconBase/templates/*.html)"
+    ]
+  }
+}

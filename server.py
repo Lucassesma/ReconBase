@@ -105,7 +105,7 @@ def index():
         ultimo_auto = Scan.query.filter_by(user_id=current_user.id).filter(
             Scan.resultado.op('->>')('automatico') == 'true'
         ).order_by(Scan.timestamp.desc()).first()
-        plan      = current_user.plan
+        plan      = current_user.plan_efectivo
         scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
         scan_dias = current_user.scan_dias.split(',') if current_user.scan_dias else []
     stats_scans   = Scan.query.count()
@@ -194,6 +194,15 @@ def api_register():
     login_user(user)
     enviar_email_verificacion(user)
     return jsonify({"ok": True})
+
+@app.route("/api/activar-trial", methods=["POST"])
+@login_required
+def activar_trial():
+    if current_user.trial_end is not None or current_user.plan == 'pro':
+        return jsonify({"ok": False, "error": "Ya usaste el periodo de prueba o tienes plan Pro"}), 400
+    current_user.trial_end = datetime.utcnow() + timedelta(days=7)
+    db.session.commit()
+    return jsonify({"ok": True, "trial_end": current_user.trial_end.strftime("%d/%m/%Y")})
 
 @app.route("/verify-email/<token>")
 def verify_email(token):
@@ -490,6 +499,56 @@ def enviar_email_onboarding(destinatario):
             print(f"[!] Error onboarding {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
+def enviar_email_post_escaneo(destinatario, empresa, objetivo, riesgo, label, desglose, puertos, num_subs):
+    def _send():
+        try:
+            nivel = "CRÍTICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
+            consejos = {
+                "Red":            "Tienes puertos de red expuestos. Contacta con tu proveedor para cerrarlos.",
+                "SPF ausente":    "Tu dominio no tiene protección SPF. Añade un registro SPF en tu DNS.",
+                "DMARC ausente":  "Sin DMARC, cualquiera puede enviar emails suplantando tu empresa.",
+                "Filtraciones":   "Hay datos de tu empresa en filtraciones. Cambia contraseñas afectadas.",
+                "SSL caducado":   "Tu certificado SSL ha caducado. Renuévalo urgentemente.",
+                "SSL por caducar":"Tu certificado SSL caduca pronto. Programa la renovación.",
+            }
+            problemas = ""
+            for k, v in desglose.items():
+                if v > 0:
+                    problemas += f"  ⚠ {k}: {consejos.get(k, 'Revisa este punto en el dashboard.')}\n"
+            if not problemas:
+                problemas = "  ✓ No se detectaron problemas críticos.\n"
+
+            puertos_txt = ""
+            if puertos:
+                lista = ", ".join([f"{p['puerto']}/{p['servicio']}" for p in puertos[:5]])
+                puertos_txt = f"\nPuertos expuestos: {lista}"
+
+            cuerpo = (
+                f"Hola {empresa},\n\n"
+                f"Acabas de completar tu primer análisis de seguridad en ReconBase.\n\n"
+                f"{'='*50}\n"
+                f"DOMINIO ANALIZADO: {objetivo}\n"
+                f"NIVEL DE RIESGO:   {riesgo}% — {label} ({nivel})\n"
+                f"SUBDOMINIOS:       {num_subs}{puertos_txt}\n"
+                f"{'='*50}\n\n"
+                f"PUNTOS A REVISAR:\n{problemas}\n"
+                f"Cada uno de estos problemas tiene una solución concreta. Entra al dashboard para ver el informe completo con los pasos exactos:\n\n"
+                f"https://reconbase-production.up.railway.app/\n\n"
+                f"Si quieres que ReconBase vigile tu dominio automáticamente cada noche y te avise si algo cambia, activa el plan Pro:\n"
+                f"https://reconbase-production.up.railway.app/#precios\n\n"
+                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject=f"[ReconBase] Tu primer análisis de {objetivo} — Riesgo {nivel}",
+                    recipients=[destinatario],
+                    body=cuerpo
+                ))
+                print(f"[PostScan] Email enviado a {destinatario}")
+        except Exception as e:
+            print(f"[!] Error post-scan email {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
 def enviar_email_limite_free(destinatario):
     def _send():
         try:
@@ -566,7 +625,7 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
 @login_required
 @limiter.limit("20 per hour")
 def scan():
-    if current_user.plan == "free":
+    if current_user.plan_efectivo == "free":
         from sqlalchemy import extract
         now = datetime.utcnow()
         scans_mes = Scan.query.filter(
@@ -654,6 +713,11 @@ def scan():
     db.session.commit()
     resultado["scan_id"]      = scan.id
     resultado["pdf_unlocked"] = scan.pdf_unlocked
+
+    # Email post-primer-escaneo
+    total_scans_usuario = Scan.query.filter_by(user_id=current_user.id).count()
+    if total_scans_usuario == 1:
+        enviar_email_post_escaneo(current_user.email, current_user.empresa, objetivo, riesgo, label, desglose, puertos, len(subs) if not es_ip else 0)
 
     # Email de límite Free cuando se agota el último escaneo del mes
     if current_user.plan == 'free':
@@ -859,6 +923,96 @@ def escaneo_automatico():
             except Exception as e:
                 print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
 
+def enviar_alerta_ssl(destinatario, dominio, dias_restantes):
+    def _send():
+        try:
+            urgencia = "URGENTE: " if dias_restantes <= 7 else ""
+            cuerpo = (
+                f"Hola,\n\n"
+                f"{urgencia}El certificado SSL de {dominio} caduca en {dias_restantes} días.\n\n"
+                f"Si no lo renuevas, los navegadores mostrarán un aviso de seguridad a tus visitantes "
+                f"y tu web dejará de funcionar correctamente.\n\n"
+                f"Pasos para renovarlo:\n"
+                f"  1. Accede al panel de tu proveedor de hosting\n"
+                f"  2. Busca la opción 'Renovar certificado SSL'\n"
+                f"  3. Si usas Let's Encrypt, ejecuta: certbot renew\n\n"
+                f"Ver detalles en tu dashboard:\n"
+                f"https://reconbase-production.up.railway.app/\n\n"
+                f"--\nReconBase - Vigilancia automática Pro\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject=f"[ReconBase] SSL de {dominio} caduca en {dias_restantes} días",
+                    recipients=[destinatario],
+                    body=cuerpo
+                ))
+                print(f"[SSL] Alerta enviada a {destinatario} ({dominio}, {dias_restantes}d)")
+        except Exception as e:
+            print(f"[!] Error alerta SSL {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def cron_ssl_alerts():
+    """Alerta a usuarios Pro cuando su SSL caduca en ≤30 días."""
+    with app.app_context():
+        usuarios_pro = User.query.filter_by(plan='pro').all()
+        for user in usuarios_pro:
+            ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
+            if not ultimo or not ultimo.resultado:
+                continue
+            ssl_info = ultimo.resultado.get('ssl', {})
+            dias = ssl_info.get('dias_restantes')
+            if dias is not None and 0 < dias <= 30:
+                # Solo avisar una vez por umbral (7 días y 30 días)
+                if dias <= 7 or (dias <= 30 and dias > 7):
+                    enviar_alerta_ssl(user.email, ultimo.dominio, dias)
+
+def enviar_resumen_mensual(destinatario, empresa, scans_mes, riesgo_promedio, dominios):
+    def _send():
+        try:
+            cuerpo = (
+                f"Hola {empresa},\n\n"
+                f"Aquí tienes el resumen de seguridad de este mes en ReconBase.\n\n"
+                f"{'='*50}\n"
+                f"ESCANEOS REALIZADOS: {scans_mes}\n"
+                f"RIESGO PROMEDIO:     {riesgo_promedio}%\n"
+                f"DOMINIOS ANALIZADOS: {', '.join(dominios[:5]) if dominios else 'Ninguno'}\n"
+                f"{'='*50}\n\n"
+                f"Entra al dashboard para ver el historial completo:\n"
+                f"https://reconbase-production.up.railway.app/\n\n"
+                f"--\nReconBase - Resumen mensual de seguridad\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject=f"[ReconBase] Resumen de seguridad de {empresa} — {datetime.utcnow().strftime('%B %Y')}",
+                    recipients=[destinatario],
+                    body=cuerpo
+                ))
+                print(f"[Mensual] Resumen enviado a {destinatario}")
+        except Exception as e:
+            print(f"[!] Error resumen mensual {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def cron_resumen_mensual():
+    """El día 1 de cada mes envía resumen del mes anterior a todos los usuarios."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        if ahora.day != 1:
+            return
+        mes_ant_fin = ahora.replace(day=1) - timedelta(seconds=1)
+        mes_ant_ini = mes_ant_fin.replace(day=1, hour=0, minute=0, second=0)
+        usuarios = User.query.all()
+        for user in usuarios:
+            scans = Scan.query.filter(
+                Scan.user_id == user.id,
+                Scan.timestamp >= mes_ant_ini,
+                Scan.timestamp <= mes_ant_fin
+            ).all()
+            if not scans:
+                continue
+            riesgo_prom = int(sum(s.riesgo for s in scans) / len(scans))
+            dominios = list({s.dominio for s in scans})
+            enviar_resumen_mensual(user.email, user.empresa, len(scans), riesgo_prom, dominios)
+
 def cron_onboarding():
     """Envía email a usuarios registrados hace ~2 días que no han hecho ningún escaneo."""
     with app.app_context():
@@ -874,8 +1028,10 @@ def cron_onboarding():
                 enviar_email_onboarding(user.email)
 
 scheduler = BackgroundScheduler(timezone="Europe/Madrid")
-scheduler.add_job(escaneo_automatico, 'cron', minute=0)   # cada hora en punto
-scheduler.add_job(cron_onboarding,    'cron', hour=10, minute=0)  # diario a las 10:00
+scheduler.add_job(escaneo_automatico,   'cron', minute=0)
+scheduler.add_job(cron_onboarding,      'cron', hour=10, minute=0)
+scheduler.add_job(cron_ssl_alerts,      'cron', hour=9,  minute=0)
+scheduler.add_job(cron_resumen_mensual, 'cron', hour=8,  minute=0)
 scheduler.start()
 
 @app.route("/api/horario", methods=["POST"])
@@ -906,6 +1062,7 @@ with app.app_context():
         "ALTER TABLE scans ADD COLUMN pdf_unlocked BOOLEAN DEFAULT FALSE",
         "ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL",
         "ALTER TABLE users ADD COLUMN verify_token VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN trial_end TIMESTAMP",
     ]:
         try:
             db.session.execute(text(col_sql))

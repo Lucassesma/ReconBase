@@ -18,7 +18,15 @@ class User(UserMixin, db.Model):
     scan_dias      = db.Column(db.String(20), default='0,1,2,3,4,5,6')
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     verify_token   = db.Column(db.String(64), nullable=True)
+    trial_end      = db.Column(db.DateTime, nullable=True)
     scans          = db.relationship('Scan', backref='user', lazy=True)
+
+    @property
+    def plan_efectivo(self):
+        """Devuelve 'pro' si está en trial activo, si no el plan real."""
+        if self.trial_end and datetime.utcnow() < self.trial_end:
+            return 'pro'
+        return self.plan
 
     def generate_verify_token(self):
         self.verify_token = secrets.token_urlsafe(32)
