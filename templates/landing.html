@@ -1688,16 +1688,43 @@ function renderDemoResult(d){
 
   html+='<div class="dr-card" style="border-color:#1E1B4B;border-left:3px solid #818CF8"><span class="dr-badge" style="background:rgba(129,140,248,.12);color:#818CF8">REQUIERE CUENTA</span><div class="dr-card-title">Filtraciones en bases de datos</div><div class="dr-card-desc">Crea una cuenta gratis para comprobar si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).</div></div>';
 
+  if (!isLoggedIn) {
+    html += '<div style="margin-top:.75rem;background:rgba(15,23,42,.6);border:1px dashed #334155;border-radius:8px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">' +
+      '<div><div style="font-size:.78rem;font-weight:700;color:#CBD5E1;margin-bottom:.2rem">📄 Informe PDF ejecutivo</div>' +
+      '<div style="font-size:.73rem;color:#64748B">Disponible tras crear tu cuenta gratuita · 9€ por informe o incluido en Pro</div></div>' +
+      '<button onclick="scPDFLoginRequired()" style="background:transparent;border:1px solid #334155;color:#94A3B8;padding:.45rem 1rem;border-radius:6px;font-family:\'Inter\',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap">Desbloquear →</button>' +
+      '</div>';
+  }
+
   document.getElementById('dr-grid').innerHTML=html;
+
+  // Contar problemas para CTA personalizado
+  var numProblemas = 0;
+  if (d.puertos && d.puertos.length) numProblemas++;
+  if (d.dns && (!d.dns.SPF || !d.dns.DMARC)) numProblemas++;
+  if (d.ssl && (!d.ssl.tiene_ssl || d.ssl.caducado || d.ssl.pronto_a_caducar)) numProblemas++;
+  var missingH = 0;
+  if (d.headers) { if (!d.headers['Content-Security-Policy']) missingH++; if (!d.headers['X-Content-Type-Options']) missingH++; if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) missingH++; }
+  if (missingH >= 2) numProblemas++;
+  var problemaTxt = numProblemas === 0 ? 'Sin problemas críticos detectados' : numProblemas === 1 ? '1 problema detectado' : numProblemas + ' problemas detectados';
+  var problemaColor = numProblemas === 0 ? '#4ADE80' : numProblemas >= 3 ? '#F87171' : '#FCD34D';
 
   // CTA
   document.getElementById('dr-cta').innerHTML= isLoggedIn
     ? '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">Usa el escáner completo con historial y vigilancia nocturna</div>'+
-      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Todos los datos guardados, alertas por email y PDF ejecutivo.</div></div>'+
-      '<a href="#escaner" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Abrir escáner →</a>'
-    : '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">¿Quieres guardar el informe y activar vigilancia nocturna?</div>'+
-      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Historial de escaneos, alertas automáticas por email y PDF ejecutivo. Gratis.</div></div>'+
-      '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Crear cuenta gratis →</a>';
+      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Datos guardados, alertas por email y guías de remediación paso a paso.</div></div>'+
+      '<a href="#escaner" onclick="navSwitch(\'escaner\')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Abrir escáner →</a>'
+    : '<div style="flex:1">'+
+        '<div style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,0,0,.2);border-radius:6px;padding:.3rem .8rem;margin-bottom:.6rem">'+
+          '<span style="font-size:.75rem;font-weight:700;color:'+problemaColor+';font-family:\'JetBrains Mono\',monospace">● '+problemaTxt+' en '+d.objetivo+'</span>'+
+        '</div>'+
+        '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem;letter-spacing:-.03em">Guarda el informe y activa la vigilancia</div>'+
+        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9;line-height:1.6">Crea una cuenta gratis en 30 segundos. Sin tarjeta. Recibirás el informe completo con pasos de acción concretos.</div>'+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:.5rem;flex-shrink:0">'+
+        '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;display:block;text-align:center">Crear cuenta gratis →</a>'+
+        '<a href="/login" style="color:#86EFAC;font-size:.78rem;text-align:center;opacity:.8">Ya tengo cuenta</a>'+
+      '</div>';
 
   // Limpiar pasos de carga
   document.getElementById('dr-steps').innerHTML='';
@@ -2028,6 +2055,11 @@ function scActivarBtnPDF(scanId) {
   btn.onclick = function() { scComprarInforme9(scanId); };
 }
 
+function scPDFLoginRequired() {
+  rbToast('Inicia sesión para desbloquear el informe PDF', 'error');
+  setTimeout(function(){ window.location.href = '/login'; }, 1400);
+}
+
 function scComprarInforme9(scanId) {
   fetch('/api/checkout-informe', {
     method: 'POST',
@@ -2254,6 +2286,21 @@ function cerrarSesionLanding() {
   fetch('/api/logout', {method:'POST'}).then(function(){window.location.href='/';}).catch(function(){window.location.href='/';});
 }
 
+function rbToast(msg, type) {
+  var existing = document.getElementById('rb-toast');
+  if (existing) existing.remove();
+  var t = document.createElement('div');
+  t.id = 'rb-toast';
+  var isOk = type !== 'error';
+  t.style.cssText = 'position:fixed;bottom:1.75rem;left:50%;transform:translateX(-50%);z-index:99999;background:#0A1410;border:1px solid '+(isOk?'#166534':'#7F1D1D')+';color:'+(isOk?'#4ADE80':'#F87171')+';padding:.85rem 1.75rem;border-radius:9px;font-size:.87rem;font-weight:600;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.5);transition:opacity .3s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){
+    t.style.opacity = '0';
+    setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+  }, 3200);
+}
+
 function activarTrial() {
   var btn = document.getElementById('btn-trial');
   if (btn) { btn.disabled = true; btn.textContent = 'Activando...'; }
@@ -2261,14 +2308,14 @@ function activarTrial() {
   .then(function(r){ return r.json(); })
   .then(function(d) {
     if (d.ok) {
-      alert('Trial Pro activado hasta el ' + d.trial_end + '. Recarga la página para ver los cambios.');
-      location.reload();
+      rbToast('✓ Trial Pro activado hasta el ' + d.trial_end, 'ok');
+      setTimeout(function(){ location.reload(); }, 1800);
     } else {
-      alert(d.error || 'Error al activar el trial');
+      rbToast(d.error || 'Error al activar el trial', 'error');
       if (btn) { btn.disabled = false; btn.textContent = '7 días Pro gratis →'; }
     }
   })
-  .catch(function(){ alert('Error de conexión'); if (btn) { btn.disabled = false; } });
+  .catch(function(){ rbToast('Error de conexión', 'error'); if (btn) { btn.disabled = false; } });
 }
 
 var billingAnual = false;

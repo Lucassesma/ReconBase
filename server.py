@@ -195,6 +195,16 @@ def api_register():
     enviar_email_verificacion(user)
     return jsonify({"ok": True})
 
+@app.route("/api/reenviar-verificacion", methods=["POST"])
+@login_required
+def reenviar_verificacion():
+    if current_user.email_verified:
+        return jsonify({"ok": False, "error": "El email ya está verificado"}), 400
+    current_user.generate_verify_token()
+    db.session.commit()
+    enviar_email_verificacion(current_user)
+    return jsonify({"ok": True})
+
 @app.route("/api/activar-trial", methods=["POST"])
 @login_required
 def activar_trial():
