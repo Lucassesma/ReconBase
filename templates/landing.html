@@ -508,7 +508,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
      ESCÁNER — integrado en la landing
      Solo visible para usuarios con sesión
 ════════════════════════════════════════ -->
-<section id="escaner">
+<section id="escaner" style="display:none">
 
 {% if plan == 'free' %}
 <div class="sc-plan-banner">
@@ -1805,14 +1805,21 @@ function scCard(type, title, desc) {
 function scRenderHeadersChart(headers, canvasId) {
   var canvas = document.getElementById(canvasId);
   if (!canvas) return;
+  if (canvasId === 'sc-ch' && scHeadersChart) { scHeadersChart.destroy(); scHeadersChart = null; }
+  if (canvasId === 'sc-dh' && scDashHeadersChart) { scDashHeadersChart.destroy(); scDashHeadersChart = null; }
   var keys = ['Content-Security-Policy','X-Frame-Options','X-Content-Type-Options','Strict-Transport-Security','Referrer-Policy','Permissions-Policy'];
-  var vals = keys.map(function(k){ return headers && headers[k] ? 1 : 0; });
-  var colors = vals.map(function(v){ return v ? 'rgba(22,163,74,.8)' : 'rgba(220,38,38,.7)'; });
-  var chart = canvasId === 'sc-ch' ? (scHeadersChart ? (scHeadersChart.destroy(), null) : null) : null;
+  var labels = ['CSP','X-Frame','X-Type','HSTS','Referrer','Permissions'];
+  var presente = keys.map(function(k){ return headers && headers[k] ? true : false; });
+  // Siempre valor 1 para que la barra sea visible; color indica estado
+  var colors = presente.map(function(v){ return v ? 'rgba(22,163,74,.85)' : 'rgba(220,38,38,.75)'; });
   var newChart = new Chart(canvas, {
     type: 'bar',
-    data: { labels: ['CSP','X-Frame','X-Type','HSTS','Referrer','Permissions'], datasets: [{ data: vals, backgroundColor: colors, borderRadius: 4, barThickness: 18 }] },
-    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return c.raw ? '✓ Presente' : '✗ Ausente'; } } } }, scales: { x: { display: false, max: 1 }, y: { ticks: { font: { size: 10, family: 'JetBrains Mono' }, color: '#64748B' }, grid: { display: false } } } }
+    data: { labels: labels, datasets: [{ data: presente.map(function(){ return 1; }), backgroundColor: colors, borderRadius: 4, barThickness: 16 }] },
+    options: {
+      indexAxis: 'y', responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c){ return presente[c.dataIndex] ? '✓ Presente' : '✗ Ausente'; } } } },
+      scales: { x: { display: false, max: 1, min: 0 }, y: { ticks: { font: { size: 10, family: 'JetBrains Mono' }, color: '#64748B' }, grid: { display: false } } }
+    }
   });
   if (canvasId === 'sc-ch') scHeadersChart = newChart;
   else if (canvasId === 'sc-dh') scDashHeadersChart = newChart;
@@ -1825,7 +1832,7 @@ function scRenderRadarChart(d, canvasId) {
   var dns = (d.dns && d.dns.SPF && d.dns.DMARC) ? 0 : (d.dns && (d.dns.SPF || d.dns.DMARC)) ? 40 : 80;
   var headers = 100 - Math.min(Object.values(d.headers||{}).filter(Boolean).length * 15, 100);
   var ssl = d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado ? 0 : 70;
-  var leaks = Math.min((d.filtraciones||[]).length * 25, 100);
+  var leaks = Math.min((d.leaks||0) * 25, 100);
   var newChart = new Chart(canvas, {
     type: 'radar',
     data: { labels: ['Puertos','DNS','Cabeceras','SSL','Filtraciones'], datasets: [{ data: [puertos, dns, headers, ssl, leaks], backgroundColor: 'rgba(220,38,38,.15)', borderColor: '#DC2626', borderWidth: 2, pointBackgroundColor: '#DC2626', pointRadius: 3 }] },

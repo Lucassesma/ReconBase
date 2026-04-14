@@ -619,7 +619,13 @@ def scan():
 def historial():
     limite = 3 if current_user.plan == 'free' else 50
     scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).limit(limite).all()
-    return jsonify({"scans": [s.resultado for s in scans]})
+    result = []
+    for s in scans:
+        r = dict(s.resultado)
+        r['scan_id'] = s.id
+        r['timestamp'] = s.timestamp.strftime('%d/%m/%Y %H:%M')
+        result.append(r)
+    return jsonify({"scans": result})
 
 @app.route("/api/scan/<int:scan_id>", methods=["GET"])
 @login_required
