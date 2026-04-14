@@ -1607,7 +1607,7 @@ function navSwitch(mode) {
   } else {
     if (mainEl) mainEl.style.display = '';
     if (footerEl) footerEl.style.display = '';
-    // Si el escáner existe, sigue visible arriba del main (ya está fuera del main)
+    if (scannerEl) scannerEl.style.display = 'none';
   }
 }
 
