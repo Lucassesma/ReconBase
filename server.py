@@ -6,7 +6,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from models import db, User, Scan
 import reconbase_engine as engine
-import os, io, json, stripe, threading, logging
+import os, io, json, stripe, threading, logging, urllib.request, urllib.error
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -32,6 +32,50 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USER", "")
 
 db.init_app(app)
 mail = Mail(app)
+
+# ─── Wrapper de envío con fallback a Resend (HTTPS) ───
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+RESEND_FROM    = os.getenv("RESEND_FROM", "ReconBase <onboarding@resend.dev>")
+
+def send_email(to, subject, body):
+    """Envía un email. Usa Resend (HTTPS) si RESEND_API_KEY está configurado,
+    si no cae a SMTP via Flask-Mail. Lanza excepción si falla para que el caller decida."""
+    if RESEND_API_KEY:
+        payload = json.dumps({
+            "from": RESEND_FROM,
+            "to": [to] if isinstance(to, str) else to,
+            "subject": subject,
+            "text": body,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                resp_body = resp.read().decode("utf-8", errors="ignore")
+                logger.info(f"[Resend] OK a {to}: {resp_body[:100]}")
+                return True
+        except urllib.error.HTTPError as he:
+            err = he.read().decode("utf-8", errors="ignore")
+            logger.error(f"[Resend] HTTPError {he.code} a {to}: {err}")
+            raise RuntimeError(f"Resend {he.code}: {err[:200]}")
+        except Exception as e:
+            logger.exception(f"[Resend] Fallo a {to}: {e}")
+            raise
+    else:
+        # Fallback a SMTP
+        mail.send(Message(
+            subject=subject,
+            recipients=[to] if isinstance(to, str) else to,
+            body=body,
+        ))
+        return True
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -315,33 +359,46 @@ def stripe_portal():
 @app.route("/api/debug-mail")
 @login_required
 def debug_mail():
-    """Diagnostico: verifica si el servidor tiene configurado el email. Solo para usuario logueado."""
+    """Diagnostico: verifica si el servidor puede enviar emails (Resend HTTPS o SMTP)."""
     import smtplib
     mail_user = app.config.get('MAIL_USERNAME') or ''
     mail_pass = app.config.get('MAIL_PASSWORD') or ''
     info = {
+        "provider_preferido": "Resend (HTTPS)" if RESEND_API_KEY else "SMTP (Gmail)",
+        "RESEND_API_KEY_set": bool(RESEND_API_KEY),
+        "RESEND_FROM": RESEND_FROM if RESEND_API_KEY else None,
         "MAIL_USERNAME_set": bool(mail_user),
         "MAIL_USERNAME_masked": (mail_user[:3] + "***" + mail_user[-10:]) if mail_user else None,
         "MAIL_PASSWORD_set": bool(mail_pass),
-        "MAIL_PASSWORD_length": len(mail_pass) if mail_pass else 0,
         "MAIL_SERVER": app.config.get('MAIL_SERVER'),
         "MAIL_PORT": app.config.get('MAIL_PORT'),
-        "MAIL_USE_TLS": app.config.get('MAIL_USE_TLS'),
         "current_user_email": current_user.email,
         "email_verified": current_user.email_verified,
     }
-    # Intenta una conexion real a Gmail
+    # Test SMTP
     if mail_user and mail_pass:
         try:
             s = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'), timeout=10)
-            s.starttls()
-            s.login(mail_user, mail_pass)
-            s.quit()
+            s.starttls(); s.login(mail_user, mail_pass); s.quit()
             info["smtp_login_test"] = "OK - credenciales validas"
         except Exception as e:
             info["smtp_login_test"] = f"FALLO: {str(e)[:200]}"
     else:
         info["smtp_login_test"] = "NO SE PROBO (faltan credenciales)"
+    # Test Resend: solo verificar que la clave tiene formato
+    if RESEND_API_KEY:
+        try:
+            req = urllib.request.Request(
+                "https://api.resend.com/domains",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+                method="GET",
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                info["resend_api_test"] = f"OK ({resp.status})"
+        except urllib.error.HTTPError as he:
+            info["resend_api_test"] = f"HTTP {he.code}: {he.read().decode('utf-8','ignore')[:150]}"
+        except Exception as e:
+            info["resend_api_test"] = f"FALLO: {str(e)[:200]}"
     return jsonify(info)
 
 @app.route("/api/reenviar-verificacion", methods=["POST"])
@@ -349,17 +406,11 @@ def debug_mail():
 def reenviar_verificacion():
     if current_user.email_verified:
         return jsonify({"ok": False, "error": "El email ya está verificado"}), 400
-    # Diagnostico explicito del estado del servicio de email
-    mail_user = app.config.get('MAIL_USERNAME')
-    mail_pass = app.config.get('MAIL_PASSWORD')
-    if not mail_user or not mail_pass:
-        logger.error(f"[Reverify] MAIL_USER/MAIL_PASS faltan. USER={'si' if mail_user else 'NO'} PASS={'si' if mail_pass else 'NO'}")
-        return jsonify({"ok": False, "error": "El servidor no tiene configuradas las credenciales de email (MAIL_USER/MAIL_PASS en Railway). Contacta con el administrador."}), 500
+    if not RESEND_API_KEY and (not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD')):
+        return jsonify({"ok": False, "error": "El servidor no tiene configurado ningún proveedor de email (RESEND_API_KEY o MAIL_USER/MAIL_PASS)."}), 500
 
     current_user.generate_verify_token()
     db.session.commit()
-
-    # Envio SINCRONO para poder devolver el error real al usuario si falla
     try:
         base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
         link = f"{base_url}/verify-email/{current_user.verify_token}"
@@ -370,26 +421,18 @@ def reenviar_verificacion():
             f"Si no has solicitado esto, ignora este mensaje.\n\n"
             f"--\nReconBase\n"
         )
-        mail.send(Message(
-            subject="Confirma tu email — ReconBase",
-            recipients=[current_user.email],
-            body=cuerpo
-        ))
-        logger.info(f"[Reverify] Email enviado OK a {current_user.email} desde {mail_user}")
+        send_email(current_user.email, "Confirma tu email — ReconBase", cuerpo)
         return jsonify({
             "ok": True,
             "msg": f"Email enviado a {current_user.email}. Revisa tu bandeja (y carpeta de spam, puede tardar 1-2 min)."
         })
     except Exception as e:
-        logger.exception(f"[Reverify] Fallo SMTP enviando a {current_user.email}: {e}")
+        logger.exception(f"[Reverify] Fallo a {current_user.email}: {e}")
         err_str = str(e)[:300]
-        # Errores comunes de Gmail traducidos
-        if "Username and Password not accepted" in err_str or "534" in err_str:
-            msg = "Gmail rechaza las credenciales. Necesitas una 'contraseña de aplicación' (no la contraseña normal). Configurala en myaccount.google.com/apppasswords."
-        elif "Connection refused" in err_str or "timed out" in err_str:
-            msg = "No se puede conectar al servidor SMTP. Revisa MAIL_SERVER/MAIL_PORT en Railway."
-        elif "authentication" in err_str.lower():
-            msg = f"Error de autenticación SMTP: {err_str}"
+        if "Network is unreachable" in err_str:
+            msg = "Railway bloquea SMTP saliente. Añade RESEND_API_KEY en Railway (gratis en resend.com)."
+        elif "Username and Password not accepted" in err_str or "534" in err_str:
+            msg = "Gmail rechaza las credenciales. Usa una 'contraseña de aplicación' (myaccount.google.com/apppasswords)."
         else:
             msg = f"Error al enviar: {err_str}"
         return jsonify({"ok": False, "error": msg}), 500
