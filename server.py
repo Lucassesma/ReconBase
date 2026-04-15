@@ -124,6 +124,78 @@ def index():
 def login_page():
     return render_template("login.html")
 
+@app.route("/forgot-password")
+def forgot_password_page():
+    return render_template("forgot_password.html")
+
+@app.route("/api/forgot-password", methods=["POST"])
+@limiter.limit("5 per hour")
+def api_forgot_password():
+    data  = request.get_json()
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return jsonify({"ok": False, "error": "Introduce tu email"}), 400
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.generate_reset_token()
+        db.session.commit()
+        enviar_email_reset(user)
+    # Siempre OK para no revelar si el email existe
+    return jsonify({"ok": True})
+
+@app.route("/reset-password/<token>")
+def reset_password_page(token):
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or not user.reset_token_expiry or datetime.utcnow() > user.reset_token_expiry:
+        return render_template("verify_result.html", ok=False,
+                               msg="Enlace no válido o ha expirado. Solicita uno nuevo.")
+    return render_template("reset_password.html", token=token)
+
+@app.route("/api/reset-password", methods=["POST"])
+def api_reset_password():
+    data     = request.get_json()
+    token    = data.get("token", "")
+    password = data.get("password", "")
+    if len(password) < 8:
+        return jsonify({"ok": False, "error": "Mínimo 8 caracteres"}), 400
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or not user.reset_token_expiry or datetime.utcnow() > user.reset_token_expiry:
+        return jsonify({"ok": False, "error": "Enlace expirado"}), 400
+    user.set_password(password)
+    user.reset_token = None
+    user.reset_token_expiry = None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/share-scan", methods=["POST"])
+@login_required
+def share_scan():
+    """Genera un link público para compartir un escaneo."""
+    data    = request.get_json()
+    scan_id = data.get("scan_id")
+    if not scan_id:
+        return jsonify({"ok": False, "error": "scan_id requerido"}), 400
+    scan_obj = Scan.query.filter_by(id=int(scan_id), user_id=current_user.id).first()
+    if not scan_obj:
+        return jsonify({"ok": False, "error": "Escaneo no encontrado"}), 404
+    if not scan_obj.share_token:
+        import secrets as _sec
+        scan_obj.share_token = _sec.token_urlsafe(16)
+        db.session.commit()
+    base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+    return jsonify({"ok": True, "url": f"{base_url}/report/{scan_obj.share_token}"})
+
+@app.route("/report/<token>")
+def report_publico(token):
+    scan_obj = Scan.query.filter_by(share_token=token).first()
+    if not scan_obj:
+        return render_template("404.html"), 404
+    return render_template("report_public.html", scan=scan_obj, resultado=scan_obj.resultado)
+
+@app.route("/pago-exito")
+def pago_exito():
+    return render_template("pago_exito.html")
+
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
@@ -150,12 +222,18 @@ def api_login():
     return jsonify({"ok": True})
 
 def enviar_email_verificacion(user):
+    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+        logger.error(f"[Verify] MAIL_USER/MAIL_PASS no configurados — no se envía email a {user.email}")
+        return False
+    email_destino = user.email
+    token = user.verify_token
+    empresa = user.empresa
     def _send():
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
-            link = f"{base_url}/verify-email/{user.verify_token}"
+            link = f"{base_url}/verify-email/{token}"
             cuerpo = (
-                f"Hola {user.empresa},\n\n"
+                f"Hola {empresa},\n\n"
                 f"Gracias por registrarte en ReconBase.\n\n"
                 f"Confirma tu direccion de email haciendo clic en el siguiente enlace:\n"
                 f"{link}\n\n"
@@ -165,13 +243,14 @@ def enviar_email_verificacion(user):
             with app.app_context():
                 mail.send(Message(
                     subject="Confirma tu email — ReconBase",
-                    recipients=[user.email],
+                    recipients=[email_destino],
                     body=cuerpo
                 ))
-                print(f"[Verify] Email enviado a {user.email}")
+                logger.info(f"[Verify] Email enviado a {email_destino}")
         except Exception as e:
-            print(f"[!] Error enviando verificacion {user.email}: {e}")
+            logger.exception(f"[Verify] Error enviando a {email_destino}: {e}")
     threading.Thread(target=_send, daemon=True).start()
+    return True
 
 @app.route("/api/register", methods=["POST"])
 @limiter.limit("5 per hour")
@@ -193,7 +272,40 @@ def api_register():
     db.session.commit()
     login_user(user)
     enviar_email_verificacion(user)
+    enviar_email_bienvenida(user)
     return jsonify({"ok": True})
+
+@app.route("/api/stripe-portal", methods=["POST"])
+@login_required
+def stripe_portal():
+    """Crea una sesión del portal de clientes de Stripe para gestionar/cancelar suscripción."""
+    if not stripe.api_key:
+        return jsonify({"ok": False, "error": "Stripe no está configurado en el servidor"}), 500
+    try:
+        customers = stripe.Customer.list(email=current_user.email, limit=1)
+        if customers.data:
+            customer_id = customers.data[0].id
+        else:
+            return jsonify({"ok": False, "error": "No se encontró un cliente con tu email en Stripe. ¿Has realizado algún pago?"}), 404
+        base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+        try:
+            session = stripe.billing_portal.Session.create(
+                customer=customer_id,
+                return_url=f"{base_url}/perfil"
+            )
+        except stripe.error.InvalidRequestError as ire:
+            # Error típico: portal no configurado en el dashboard de Stripe
+            msg = str(ire)
+            logger.error(f"[Portal] InvalidRequest: {msg}")
+            if "configuration" in msg.lower() or "no configuration" in msg.lower():
+                return jsonify({"ok": False, "error": "El portal de facturación no está activado en Stripe. Escríbenos a soporte@reconbase.io y cancelamos tu suscripción manualmente."}), 500
+            return jsonify({"ok": False, "error": f"Stripe: {msg}"}), 500
+        return jsonify({"ok": True, "url": session.url})
+    except stripe.error.AuthenticationError:
+        return jsonify({"ok": False, "error": "Credenciales de Stripe inválidas"}), 500
+    except Exception as e:
+        logger.exception(f"[Portal] Error inesperado: {e}")
+        return jsonify({"ok": False, "error": f"Error al abrir el portal: {str(e)[:200]}"}), 500
 
 @app.route("/api/reenviar-verificacion", methods=["POST"])
 @login_required
@@ -202,8 +314,10 @@ def reenviar_verificacion():
         return jsonify({"ok": False, "error": "El email ya está verificado"}), 400
     current_user.generate_verify_token()
     db.session.commit()
-    enviar_email_verificacion(current_user)
-    return jsonify({"ok": True})
+    ok = enviar_email_verificacion(current_user)
+    if not ok:
+        return jsonify({"ok": False, "error": "El servicio de email no está configurado. Contacta con soporte."}), 500
+    return jsonify({"ok": True, "msg": f"Email enviado a {current_user.email}. Revisa tu bandeja (y carpeta de spam)."})
 
 @app.route("/api/activar-trial", methods=["POST"])
 @login_required
@@ -253,6 +367,22 @@ def scan_demo():
 
     try: puertos = engine.scan_critical_ports_fast(dominio)
     except Exception: puertos = []
+
+    # Usuarios sin cuenta: SOLO puertos. El resto se muestra bloqueado en el frontend.
+    if not current_user.is_authenticated:
+        # Riesgo aproximado basado solo en puertos para mostrar algo orientativo
+        critical_set = {3389, 22, 3306, 5432, 27017, 6379, 5900, 23, 21, 1433}
+        crit_count = len([p for p in puertos if p in critical_set])
+        riesgo_aprox = min(100, crit_count * 25)
+        label_aprox, color_aprox = label_riesgo(riesgo_aprox)
+        return jsonify({
+            "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
+            "puertos": puertos,
+            "riesgo": riesgo_aprox, "label": label_aprox, "color": color_aprox,
+            "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "demo": True, "locked": True
+        })
+
     try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
     except Exception: dns = {}
     try: headers = engine.check_security_headers(dominio)
@@ -280,7 +410,7 @@ def scan_demo():
         "desglose": desglose, "ssl": ssl_info,
         "banners": banners, "os": os_det,
         "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "demo": True
+        "demo": True, "locked": False
     })
 
 @app.route("/api/checkout", methods=["POST"])
@@ -294,7 +424,7 @@ def crear_checkout():
             mode="subscription",
             customer_email=current_user.email if current_user.is_authenticated else None,
             line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
-            success_url=request.host_url + "app?pago=ok",
+            success_url=request.host_url + "pago-exito",
             cancel_url=request.host_url + "#precios",
         )
         return jsonify({"url": session.url})
@@ -392,6 +522,7 @@ def stripe_webhook():
                     if user:
                         user.plan = "pro"
                         db.session.commit()
+                        enviar_email_pro_activado(user)
                         print(f"[Webhook] Plan actualizado a pro para {email}")
                     else:
                         print(f"[Webhook] Usuario no encontrado: {email}")
@@ -557,6 +688,114 @@ def enviar_email_post_escaneo(destinatario, empresa, objetivo, riesgo, label, de
                 print(f"[PostScan] Email enviado a {destinatario}")
         except Exception as e:
             print(f"[!] Error post-scan email {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def enviar_email_bienvenida(user):
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            cuerpo = (
+                f"Hola {user.empresa},\n\n"
+                f"Bienvenido a ReconBase. Tu cuenta está lista.\n\n"
+                f"Qué puedes hacer ahora:\n"
+                f"  1. Escanear tu dominio para ver tu nivel de riesgo actual\n"
+                f"  2. Revisar si tu correo aparece en filtraciones conocidas\n"
+                f"  3. Descargar un informe PDF con los hallazgos\n\n"
+                f"Empieza ahora:\n"
+                f"{base_url}/\n\n"
+                f"Si tienes cualquier duda, responde a este email.\n\n"
+                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject=f"Bienvenido a ReconBase, {user.empresa}",
+                    recipients=[user.email],
+                    body=cuerpo
+                ))
+                print(f"[Welcome] Email enviado a {user.email}")
+        except Exception as e:
+            print(f"[!] Error welcome email {user.email}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def enviar_email_pro_activado(user):
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            cuerpo = (
+                f"Hola {user.empresa},\n\n"
+                f"Tu plan Pro de ReconBase está activo. Ahora tienes acceso a:\n\n"
+                f"  - Escaneos ilimitados\n"
+                f"  - Vigilancia nocturna automática de tu dominio\n"
+                f"  - Alertas por email cuando se detecta algo nuevo\n"
+                f"  - Búsqueda de filtraciones en bases de datos filtradas\n"
+                f"  - Informes PDF ejecutivos completos\n"
+                f"  - Historial ilimitado de escaneos\n\n"
+                f"Configura la vigilancia nocturna desde el escáner > pestaña Vigilancia:\n"
+                f"{base_url}/\n\n"
+                f"Gracias por confiar en nosotros.\n\n"
+                f"--\nReconBase - Tu seguridad, vigilada 24/7\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject="Tu plan Pro está activo — ReconBase",
+                    recipients=[user.email],
+                    body=cuerpo
+                ))
+                print(f"[Pro] Email activación enviado a {user.email}")
+        except Exception as e:
+            print(f"[!] Error pro email {user.email}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def enviar_email_trial_expirando(user, dias_restantes):
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            cuerpo = (
+                f"Hola {user.empresa},\n\n"
+                f"Tu periodo de prueba de ReconBase Pro termina en {dias_restantes} día{'s' if dias_restantes != 1 else ''}.\n\n"
+                f"Cuando termine, perderás acceso a:\n"
+                f"  - Vigilancia nocturna automática\n"
+                f"  - Alertas por email\n"
+                f"  - Búsqueda de filtraciones\n"
+                f"  - Informes PDF ejecutivos\n\n"
+                f"Si quieres mantener la protección completa, suscríbete antes de que expire:\n"
+                f"{base_url}/#precios\n\n"
+                f"Si no haces nada, tu cuenta pasará automáticamente al plan gratuito.\n\n"
+                f"--\nReconBase\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject=f"Tu trial Pro termina en {dias_restantes} día{'s' if dias_restantes != 1 else ''} — ReconBase",
+                    recipients=[user.email],
+                    body=cuerpo
+                ))
+                print(f"[Trial] Aviso enviado a {user.email} ({dias_restantes}d)")
+        except Exception as e:
+            print(f"[!] Error trial email {user.email}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def enviar_email_reset(user):
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            link = f"{base_url}/reset-password/{user.reset_token}"
+            cuerpo = (
+                f"Hola,\n\n"
+                f"Has solicitado restablecer tu contraseña en ReconBase.\n\n"
+                f"Haz clic en el siguiente enlace (válido 1 hora):\n"
+                f"{link}\n\n"
+                f"Si no has solicitado esto, ignora este mensaje.\n\n"
+                f"--\nReconBase\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject="Restablece tu contraseña — ReconBase",
+                    recipients=[user.email],
+                    body=cuerpo
+                ))
+                print(f"[Reset] Email enviado a {user.email}")
+        except Exception as e:
+            print(f"[!] Error reset email {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_limite_free(destinatario):
@@ -1023,6 +1262,56 @@ def cron_resumen_mensual():
             dominios = list({s.dominio for s in scans})
             enviar_resumen_mensual(user.email, user.empresa, len(scans), riesgo_prom, dominios)
 
+def cron_trial_expiring():
+    """Avisa a usuarios cuyo trial expira en 2 días o en 1 día."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        usuarios = User.query.filter(
+            User.trial_end.isnot(None),
+            User.plan == 'free'
+        ).all()
+        for user in usuarios:
+            dias = (user.trial_end - ahora).days
+            if dias in (1, 2):
+                enviar_email_trial_expirando(user, dias)
+
+def enviar_email_reengagement(user):
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            cuerpo = (
+                f"Hola {user.empresa},\n\n"
+                f"Hace tiempo que no escaneas tu dominio en ReconBase.\n\n"
+                f"Las amenazas cambian constantemente. En las últimas 2 semanas:\n"
+                f"  - Nuevas brechas de datos pueden haber expuesto emails de tu empresa\n"
+                f"  - Los certificados SSL pueden haber caducado\n"
+                f"  - Nuevos puertos pueden haberse abierto sin que lo sepas\n\n"
+                f"Un escaneo tarda 2 minutos y es gratis:\n"
+                f"{base_url}/\n\n"
+                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            )
+            with app.app_context():
+                mail.send(Message(
+                    subject=f"Hace 2 semanas que no revisas la seguridad de {user.empresa} — ReconBase",
+                    recipients=[user.email],
+                    body=cuerpo
+                ))
+                print(f"[Reengage] Email enviado a {user.email}")
+        except Exception as e:
+            print(f"[!] Error reengage {user.email}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+def cron_reengagement():
+    """Envía email a usuarios que no han escaneado en 14 días."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        limite = ahora - timedelta(days=14)
+        usuarios = User.query.all()
+        for user in usuarios:
+            ultimo_scan = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
+            if ultimo_scan and limite - timedelta(days=1) <= ultimo_scan.timestamp <= limite:
+                enviar_email_reengagement(user)
+
 def cron_onboarding():
     """Envía email a usuarios registrados hace ~2 días que no han hecho ningún escaneo."""
     with app.app_context():
@@ -1042,6 +1331,8 @@ scheduler.add_job(escaneo_automatico,   'cron', minute=0)
 scheduler.add_job(cron_onboarding,      'cron', hour=10, minute=0)
 scheduler.add_job(cron_ssl_alerts,      'cron', hour=9,  minute=0)
 scheduler.add_job(cron_resumen_mensual, 'cron', hour=8,  minute=0)
+scheduler.add_job(cron_trial_expiring,  'cron', hour=9,  minute=30)
+scheduler.add_job(cron_reengagement,    'cron', hour=11, minute=0)
 scheduler.start()
 
 @app.route("/api/horario", methods=["POST"])
@@ -1073,6 +1364,10 @@ with app.app_context():
         "ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE NOT NULL",
         "ALTER TABLE users ADD COLUMN verify_token VARCHAR(64)",
         "ALTER TABLE users ADD COLUMN trial_end TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN reset_token VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN reset_token_expiry TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN share_token VARCHAR(32)",
+        "ALTER TABLE scans ADD COLUMN share_token VARCHAR(32)",
     ]:
         try:
             db.session.execute(text(col_sql))

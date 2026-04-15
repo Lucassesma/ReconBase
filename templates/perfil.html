@@ -272,9 +272,14 @@ function activarTrialPerfil() {
 }
 
 function abrirPortalStripe() {
-  toast('Redirigiendo al portal de Stripe...', 'green');
-  // Cuando tengas el portal de Stripe configurado, añade aquí la URL
-  setTimeout(function(){ window.open('https://billing.stripe.com/p/login/test_00000000', '_blank'); }, 800);
+  toast('Conectando con Stripe...', 'green');
+  fetch('/api/stripe-portal', {method:'POST', headers:{'Content-Type':'application/json'}})
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.ok && d.url) { window.location.href = d.url; }
+    else { toast(d.error || 'Error al abrir el portal', 'red'); }
+  })
+  .catch(function(){ toast('Error de conexión', 'red'); });
 }
 
 function reenviarVerificacion() {

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Informe de seguridad — {{ resultado.objetivo }} · ReconBase</title>
+<meta name="description" content="Informe de seguridad de {{ resultado.objetivo }} generado por ReconBase.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--green:#22C55E;--red:#EF4444;--amber:#F59E0B}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.main{max-width:800px;margin:2.5rem auto;padding:0 6%}
+.header{display:flex;align-items:center;gap:1.25rem;margin-bottom:2rem;flex-wrap:wrap}
+.score{font-size:3rem;font-weight:800;letter-spacing:-.05em;line-height:1}
+.meta{flex:1}
+.label{font-size:.7rem;font-family:'JetBrains Mono',monospace;font-weight:700;text-transform:uppercase;letter-spacing:.12em}
+.objetivo{font-size:1rem;color:var(--green);font-family:'JetBrains Mono',monospace;margin-top:.3rem}
+.fecha{font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.card{background:var(--surface);border:1px solid var(--border);border-left:3px solid;border-radius:0 10px 10px 0;padding:1.1rem 1.25rem;margin-bottom:.75rem}
+.card-crit{border-left-color:var(--red)}
+.card-warn{border-left-color:var(--amber)}
+.card-ok{border-left-color:var(--green)}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:.4rem}
+.b-crit{background:rgba(239,68,68,.12);color:var(--red)}
+.b-warn{background:rgba(245,158,11,.12);color:var(--amber)}
+.b-ok{background:rgba(34,197,94,.12);color:var(--green)}
+.card-title{font-size:.88rem;font-weight:700;margin-bottom:.25rem}
+.card-desc{font-size:.8rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:.68rem;font-family:'JetBrains Mono',monospace;color:var(--green);text-transform:uppercase;letter-spacing:.12em;margin:2rem 0 1rem}
+.cta{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;text-align:center;margin-top:2.5rem}
+.cta-title{font-size:1.1rem;font-weight:800;margin-bottom:.5rem}
+.cta-sub{font-size:.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.btn{display:inline-block;background:#15803D;color:#fff;padding:.8rem 2rem;border-radius:8px;font-weight:700;font-size:.9rem;text-decoration:none;transition:background .2s}
+.btn:hover{background:#166534}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin-bottom:1.5rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;text-align:center}
+.stat-num{font-size:1.5rem;font-weight:800;line-height:1;margin-bottom:.3rem}
+.stat-lbl{font-size:.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
+.watermark{text-align:center;margin:3rem 0 2rem;font-size:.72rem;color:#334155}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" style="text-decoration:none">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="24">
+      <text x="0" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
+      <text x="86" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#22C55E">BASE</text>
+    </svg>
+  </a>
+  <a href="/register" style="background:#15803D;color:#fff;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem;text-decoration:none">Crear cuenta gratis</a>
+</nav>
+
+<div class="main">
+  {% set r = resultado %}
+  {% set col = '#EF4444' if r.riesgo >= 70 else '#F59E0B' if r.riesgo >= 40 else '#22C55E' %}
+
+  <div class="header">
+    <div class="score" style="color:{{ col }}">{{ r.riesgo }}%</div>
+    <div class="meta">
+      <div class="label" style="color:{{ col }}">{{ r.label }}</div>
+      <div class="objetivo">{{ r.objetivo }}</div>
+      <div class="fecha">{{ r.timestamp }}</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid">
+    <div class="stat">
+      <div class="stat-num" style="color:{% if (r.puertos or [])|length > 0 %}var(--red){% else %}var(--green){% endif %}">{{ (r.puertos or [])|length }}</div>
+      <div class="stat-lbl">Puertos expuestos</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" style="color:{% if r.leaks and r.leaks > 0 %}var(--red){% else %}var(--green){% endif %}">{{ r.leaks or 0 }}</div>
+      <div class="stat-lbl">Filtraciones</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" style="color:var(--text)">{{ (r.subs or [])|length }}</div>
+      <div class="stat-lbl">Subdominios</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" style="color:{% if r.dns and r.dns.SPF %}var(--green){% else %}var(--red){% endif %}">{{ 'OK' if r.dns and r.dns.SPF else 'FALTA' }}</div>
+      <div class="stat-lbl">SPF</div>
+    </div>
+  </div>
+
+  <!-- Hallazgos -->
+  <div class="section-title">Hallazgos</div>
+
+  {% if r.puertos and r.puertos|length > 0 %}
+  <div class="card card-crit">
+    <span class="badge b-crit">CRITICO</span>
+    <div class="card-title">{{ r.puertos|length }} puerto{{ 's' if r.puertos|length > 1 else '' }} expuesto{{ 's' if r.puertos|length > 1 else '' }}</div>
+    <div class="card-desc">{{ r.puertos[:5]|map(attribute='puerto')|join(', ') }}</div>
+  </div>
+  {% else %}
+  <div class="card card-ok">
+    <span class="badge b-ok">OK</span>
+    <div class="card-title">Sin puertos críticos expuestos</div>
+    <div class="card-desc">No se detectaron servicios sensibles.</div>
+  </div>
+  {% endif %}
+
+  {% if r.dns %}
+    {% if not r.dns.SPF and not r.dns.DMARC %}
+    <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">SPF y DMARC ausentes</div><div class="card-desc">Dominio suplantable por phishing.</div></div>
+    {% elif not r.dns.DMARC %}
+    <div class="card card-warn"><span class="badge b-warn">ADVERTENCIA</span><div class="card-title">DMARC no configurado</div><div class="card-desc">Riesgo de suplantación de email.</div></div>
+    {% elif not r.dns.SPF %}
+    <div class="card card-warn"><span class="badge b-warn">ADVERTENCIA</span><div class="card-title">SPF no configurado</div><div class="card-desc">El dominio no verifica remitentes de correo.</div></div>
+    {% else %}
+    <div class="card card-ok"><span class="badge b-ok">OK</span><div class="card-title">SPF y DMARC correctos</div><div class="card-desc">Dominio protegido contra suplantación.</div></div>
+    {% endif %}
+  {% endif %}
+
+  {% if r.ssl %}
+    {% if r.ssl.caducado %}
+    <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">Certificado SSL caducado</div><div class="card-desc">Los navegadores muestran aviso de inseguridad.</div></div>
+    {% elif r.ssl.pronto_a_caducar %}
+    <div class="card card-warn"><span class="badge b-warn">ADVERTENCIA</span><div class="card-title">SSL caduca en {{ r.ssl.dias_restantes }} días</div><div class="card-desc">Renovar antes de que expire.</div></div>
+    {% elif r.ssl.tiene_ssl %}
+    <div class="card card-ok"><span class="badge b-ok">OK</span><div class="card-title">SSL/TLS válido</div><div class="card-desc">Caduca en {{ r.ssl.dias_restantes or '?' }} días.</div></div>
+    {% endif %}
+  {% endif %}
+
+  {% if r.leaks and r.leaks > 0 %}
+  <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">{{ r.leaks }} filtración{{ 'es' if r.leaks > 1 else '' }} detectada{{ 's' if r.leaks > 1 else '' }}</div><div class="card-desc">Credenciales comprometidas encontradas en bases de datos filtradas.</div></div>
+  {% endif %}
+
+  <!-- CTA -->
+  <div class="cta">
+    <div class="cta-title">¿Quieres monitorizar este dominio automáticamente?</div>
+    <div class="cta-sub">ReconBase vigila tu dominio cada noche y te avisa si algo cambia. Crea tu cuenta gratis y empieza a proteger tu empresa.</div>
+    <a href="/register" class="btn">Crear cuenta gratis →</a>
+  </div>
+
+  <div class="watermark">Informe generado con ReconBase · reconbase-production.up.railway.app</div>
+</div>
+</body>
+</html>
