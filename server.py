@@ -312,17 +312,87 @@ def stripe_portal():
         logger.exception(f"[Portal] Error inesperado: {e}")
         return jsonify({"ok": False, "error": f"Error al abrir el portal: {str(e)[:200]}"}), 500
 
+@app.route("/api/debug-mail")
+@login_required
+def debug_mail():
+    """Diagnostico: verifica si el servidor tiene configurado el email. Solo para usuario logueado."""
+    import smtplib
+    mail_user = app.config.get('MAIL_USERNAME') or ''
+    mail_pass = app.config.get('MAIL_PASSWORD') or ''
+    info = {
+        "MAIL_USERNAME_set": bool(mail_user),
+        "MAIL_USERNAME_masked": (mail_user[:3] + "***" + mail_user[-10:]) if mail_user else None,
+        "MAIL_PASSWORD_set": bool(mail_pass),
+        "MAIL_PASSWORD_length": len(mail_pass) if mail_pass else 0,
+        "MAIL_SERVER": app.config.get('MAIL_SERVER'),
+        "MAIL_PORT": app.config.get('MAIL_PORT'),
+        "MAIL_USE_TLS": app.config.get('MAIL_USE_TLS'),
+        "current_user_email": current_user.email,
+        "email_verified": current_user.email_verified,
+    }
+    # Intenta una conexion real a Gmail
+    if mail_user and mail_pass:
+        try:
+            s = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'), timeout=10)
+            s.starttls()
+            s.login(mail_user, mail_pass)
+            s.quit()
+            info["smtp_login_test"] = "OK - credenciales validas"
+        except Exception as e:
+            info["smtp_login_test"] = f"FALLO: {str(e)[:200]}"
+    else:
+        info["smtp_login_test"] = "NO SE PROBO (faltan credenciales)"
+    return jsonify(info)
+
 @app.route("/api/reenviar-verificacion", methods=["POST"])
 @login_required
 def reenviar_verificacion():
     if current_user.email_verified:
         return jsonify({"ok": False, "error": "El email ya está verificado"}), 400
+    # Diagnostico explicito del estado del servicio de email
+    mail_user = app.config.get('MAIL_USERNAME')
+    mail_pass = app.config.get('MAIL_PASSWORD')
+    if not mail_user or not mail_pass:
+        logger.error(f"[Reverify] MAIL_USER/MAIL_PASS faltan. USER={'si' if mail_user else 'NO'} PASS={'si' if mail_pass else 'NO'}")
+        return jsonify({"ok": False, "error": "El servidor no tiene configuradas las credenciales de email (MAIL_USER/MAIL_PASS en Railway). Contacta con el administrador."}), 500
+
     current_user.generate_verify_token()
     db.session.commit()
-    ok = enviar_email_verificacion(current_user)
-    if not ok:
-        return jsonify({"ok": False, "error": "El servicio de email no está configurado. Contacta con soporte."}), 500
-    return jsonify({"ok": True, "msg": f"Email enviado a {current_user.email}. Revisa tu bandeja (y carpeta de spam)."})
+
+    # Envio SINCRONO para poder devolver el error real al usuario si falla
+    try:
+        base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+        link = f"{base_url}/verify-email/{current_user.verify_token}"
+        cuerpo = (
+            f"Hola {current_user.empresa},\n\n"
+            f"Confirma tu direccion de email haciendo clic en el siguiente enlace:\n"
+            f"{link}\n\n"
+            f"Si no has solicitado esto, ignora este mensaje.\n\n"
+            f"--\nReconBase\n"
+        )
+        mail.send(Message(
+            subject="Confirma tu email — ReconBase",
+            recipients=[current_user.email],
+            body=cuerpo
+        ))
+        logger.info(f"[Reverify] Email enviado OK a {current_user.email} desde {mail_user}")
+        return jsonify({
+            "ok": True,
+            "msg": f"Email enviado a {current_user.email}. Revisa tu bandeja (y carpeta de spam, puede tardar 1-2 min)."
+        })
+    except Exception as e:
+        logger.exception(f"[Reverify] Fallo SMTP enviando a {current_user.email}: {e}")
+        err_str = str(e)[:300]
+        # Errores comunes de Gmail traducidos
+        if "Username and Password not accepted" in err_str or "534" in err_str:
+            msg = "Gmail rechaza las credenciales. Necesitas una 'contraseña de aplicación' (no la contraseña normal). Configurala en myaccount.google.com/apppasswords."
+        elif "Connection refused" in err_str or "timed out" in err_str:
+            msg = "No se puede conectar al servidor SMTP. Revisa MAIL_SERVER/MAIL_PORT en Railway."
+        elif "authentication" in err_str.lower():
+            msg = f"Error de autenticación SMTP: {err_str}"
+        else:
+            msg = f"Error al enviar: {err_str}"
+        return jsonify({"ok": False, "error": msg}), 500
 
 @app.route("/api/activar-trial", methods=["POST"])
 @login_required

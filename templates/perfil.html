@@ -286,13 +286,21 @@ function reenviarVerificacion() {
   var btn = document.getElementById('btn-reverify');
   if (btn) { btn.disabled=true; btn.textContent='Enviando...'; }
   fetch('/api/reenviar-verificacion', {method:'POST', headers:{'Content-Type':'application/json'}})
-  .then(function(r){ return r.json(); })
-  .then(function(d) {
-    if (d.ok) { toast('Email de verificación enviado ✓', 'green'); }
-    else { toast(d.error || 'Error', 'red'); }
+  .then(function(r){ return r.json().then(function(d){ return {status:r.status, body:d}; }); })
+  .then(function(res) {
+    var d = res.body;
+    if (d.ok) {
+      alert('✓ ' + (d.msg || 'Email enviado. Revisa bandeja y spam.'));
+    } else {
+      // Mostrar error COMPLETO para que el usuario entienda que pasa
+      alert('⚠️ No se pudo enviar el email:\n\n' + (d.error || 'Error desconocido') + '\n\nCódigo HTTP: ' + res.status);
+    }
     if (btn) { btn.disabled=false; btn.textContent='Reenviar email'; }
   })
-  .catch(function(){ toast('Error de conexión', 'red'); if (btn) { btn.disabled=false; } });
+  .catch(function(e){
+    alert('Error de conexión: ' + e);
+    if (btn) { btn.disabled=false; btn.textContent='Reenviar email'; }
+  });
 }
 </script>
 </body>
