@@ -62,9 +62,15 @@ def send_email(to, subject, body):
                 logger.info(f"[Resend] OK a {to}: {resp_body[:100]}")
                 return True
         except urllib.error.HTTPError as he:
-            err = he.read().decode("utf-8", errors="ignore")
-            logger.error(f"[Resend] HTTPError {he.code} a {to}: {err}")
-            raise RuntimeError(f"Resend {he.code}: {err[:200]}")
+            err_raw = he.read().decode("utf-8", errors="ignore")
+            logger.error(f"[Resend] HTTPError {he.code} a {to}: {err_raw}")
+            # Intenta extraer el 'message' del JSON de error de Resend
+            try:
+                err_json = json.loads(err_raw)
+                err_msg = err_json.get("message") or err_json.get("error") or err_raw
+            except Exception:
+                err_msg = err_raw
+            raise RuntimeError(f"Resend {he.code}: {err_msg}")
         except Exception as e:
             logger.exception(f"[Resend] Fallo a {to}: {e}")
             raise
@@ -428,13 +434,13 @@ def reenviar_verificacion():
         })
     except Exception as e:
         logger.exception(f"[Reverify] Fallo a {current_user.email}: {e}")
-        err_str = str(e)[:300]
+        err_str = str(e)
         if "Network is unreachable" in err_str:
             msg = "Railway bloquea SMTP saliente. Añade RESEND_API_KEY en Railway (gratis en resend.com)."
         elif "Username and Password not accepted" in err_str or "534" in err_str:
             msg = "Gmail rechaza las credenciales. Usa una 'contraseña de aplicación' (myaccount.google.com/apppasswords)."
         else:
-            msg = f"Error al enviar: {err_str}"
+            msg = err_str[:600]
         return jsonify({"ok": False, "error": msg}), 500
 
 @app.route("/api/activar-trial", methods=["POST"])
