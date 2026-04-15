@@ -66,6 +66,7 @@ def sitemap():
         {"loc": base + "/",        "priority": "1.0",  "changefreq": "weekly"},
         {"loc": base + "/login",   "priority": "0.6",  "changefreq": "monthly"},
         {"loc": base + "/register","priority": "0.8",  "changefreq": "monthly"},
+        {"loc": base + "/pricing", "priority": "0.9",  "changefreq": "monthly"},
         {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly"},
         {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly"},
     ]
@@ -207,6 +208,10 @@ def privacy():
 @app.route("/register")
 def register_page():
     return render_template("register.html")
+
+@app.route("/pricing")
+def pricing_page():
+    return render_template("pricing.html", user=current_user if current_user.is_authenticated else None)
 
 # ── AUTH API ──
 @app.route("/api/login", methods=["POST"])
