@@ -12,6 +12,8 @@ Flask==3.1.3
 Flask-Limiter==3.5.0
 Flask-Login==0.6.3
 Flask-Mail==0.10.0
+Flask-WTF==1.2.1
+sentry-sdk[flask]==2.18.0
 Flask-SQLAlchemy==3.1.1
 fonttools==4.62.1
 fpdf2==2.8.7

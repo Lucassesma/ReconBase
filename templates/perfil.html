@@ -213,6 +213,37 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="msg msg-err" id="msg-err"></div>
   </div>
 
+  <!-- Privacidad (RGPD) -->
+  <div class="card">
+    <div class="card-title">Privacidad y datos (RGPD)</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.5">
+      Tienes derecho a descargar todos tus datos personales (art. 20 RGPD) y a eliminar tu cuenta de forma permanente (art. 17 RGPD).
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
+      <a href="/api/exportar-datos" class="btn" style="background:#0f1b2d;border:1px solid var(--border);color:#93c5fd;padding:.6rem 1.1rem;border-radius:7px;font-size:.82rem;font-weight:600;text-decoration:none;display:inline-block">⬇ Descargar mis datos (JSON)</a>
+    </div>
+
+    <details style="margin-top:.5rem">
+      <summary style="cursor:pointer;color:#F87171;font-size:.85rem;font-weight:600;padding:.4rem 0">Eliminar cuenta de forma permanente</summary>
+      <div style="margin-top:.9rem;padding:1rem;border:1px solid #7F1D1D;border-radius:8px;background:#1a0a0a">
+        <div style="font-size:.8rem;color:#FCA5A5;margin-bottom:.9rem;line-height:1.5">
+          <strong>Acción irreversible.</strong> Se cancelará tu suscripción de Stripe (si tienes una activa), se borrarán todos tus escaneos y se eliminará tu cuenta. No podrás recuperar los datos.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tu contraseña</label>
+          <input class="form-input" type="password" id="del-pass" placeholder="Contraseña actual" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Escribe <code style="color:#F87171">ELIMINAR</code> para confirmar</label>
+          <input class="form-input" type="text" id="del-confirm" placeholder="ELIMINAR" autocomplete="off">
+        </div>
+        <button class="btn-outline-red" onclick="eliminarCuenta()" id="btn-del-cuenta">Eliminar cuenta definitivamente</button>
+        <div class="msg msg-err" id="msg-del-err"></div>
+      </div>
+    </details>
+  </div>
+
   <!-- Cerrar sesión -->
   <div style="margin-bottom:3rem">
     <button class="btn-outline-red" onclick="cerrarSesion()">Cerrar sesión</button>
@@ -257,6 +288,38 @@ async function cambiarPassword() {
 
 function cerrarSesion() {
   fetch('/api/logout', {method:'POST'}).then(function(){ window.location.href='/'; });
+}
+
+async function eliminarCuenta() {
+  var pass    = document.getElementById('del-pass').value;
+  var confirm = document.getElementById('del-confirm').value.trim();
+  var err     = document.getElementById('msg-del-err');
+  var btn     = document.getElementById('btn-del-cuenta');
+  err.style.display = 'none';
+  if (!pass) { err.textContent='Introduce tu contraseña'; err.style.display='block'; return; }
+  if (confirm !== 'ELIMINAR') { err.textContent='Escribe exactamente ELIMINAR'; err.style.display='block'; return; }
+  if (!window.confirm('¿Seguro que quieres eliminar tu cuenta? Esta acción NO se puede deshacer.')) return;
+  btn.disabled = true; btn.textContent = 'Eliminando...';
+  try {
+    var r = await fetch('/api/eliminar-cuenta', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password: pass, confirmacion: confirm})
+    });
+    var d = await r.json();
+    if (d.ok) {
+      alert('Tu cuenta ha sido eliminada. Gracias por haber usado ReconBase.');
+      window.location.href = '/';
+    } else {
+      err.textContent = d.error || 'No se pudo eliminar la cuenta';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Eliminar cuenta definitivamente';
+    }
+  } catch(e) {
+    err.textContent = 'Error de conexión: ' + e;
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Eliminar cuenta definitivamente';
+  }
 }
 
 function activarTrialPerfil() {

@@ -1,15 +1,32 @@
 # ReconBase v2 — build 20260414
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, Response, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from models import db, User, Scan
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
+
+# ─── Sentry (error monitoring) ───
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[FlaskIntegration()],
+            traces_sample_rate=0.1,
+            send_default_pii=False,
+            environment=os.getenv("RAILWAY_ENVIRONMENT_NAME", "production"),
+        )
+    except Exception as _e:
+        print(f"[Sentry] init fallo: {_e}")
 
 try:
     from fpdf import FPDF
@@ -91,6 +108,52 @@ limiter = Limiter(
     default_limits=[],
     storage_uri="memory://"
 )
+
+# ─── CSRF protection ───
+# Pragmatic setup: protege los formularios HTML tradicionales.
+# Los endpoints /api/* se exentan porque usan cookies SameSite=Lax + fetch mismo origen.
+# El webhook de Stripe se exenta porque tiene su propia verificación por firma.
+csrf = CSRFProtect(app)
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600 * 24  # token válido 24h
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = os.getenv("RAILWAY_ENVIRONMENT_NAME") is not None  # True en Railway
+
+@app.context_processor
+def inject_csrf():
+    return dict(csrf_token=generate_csrf)
+
+# ─── Cabeceras HTTP de seguridad ───
+@app.after_request
+def set_security_headers(resp):
+    # HSTS: forzar HTTPS durante 1 año
+    resp.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    # Anti clickjacking
+    resp.headers.setdefault('X-Frame-Options', 'DENY')
+    # Anti MIME-sniffing
+    resp.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    # Referrer: no filtrar URLs internas a terceros
+    resp.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    # Permisos del navegador restringidos
+    resp.headers.setdefault(
+        'Permissions-Policy',
+        'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")'
+    )
+    # CSP relajada pero razonable (el sitio usa inline JS/CSS, Google Fonts y Chart.js CDN)
+    resp.headers.setdefault(
+        'Content-Security-Policy',
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https://api.stripe.com; "
+        "frame-src https://js.stripe.com https://checkout.stripe.com; "
+        "form-action 'self' https://checkout.stripe.com; "
+        "base-uri 'self'; "
+        "object-src 'none'"
+    )
+    return resp
 
 logging.basicConfig(
     level=logging.INFO,
@@ -222,6 +285,7 @@ def api_reset_password():
 
 @app.route("/api/share-scan", methods=["POST"])
 @login_required
+@limiter.limit("10 per hour")
 def share_scan():
     """Genera un link público para compartir un escaneo."""
     data    = request.get_json()
@@ -699,6 +763,7 @@ def perfil():
 
 @app.route("/api/cambiar-password", methods=["POST"])
 @login_required
+@limiter.limit("5 per hour")
 def cambiar_password():
     data = request.get_json()
     actual   = data.get("actual", "")
@@ -710,6 +775,101 @@ def cambiar_password():
     current_user.set_password(nueva)
     db.session.commit()
     return jsonify({"ok": True})
+
+# ── GDPR: exportar datos personales ──
+@app.route("/api/exportar-datos", methods=["GET"])
+@login_required
+@limiter.limit("5 per hour")
+def exportar_datos():
+    """Derecho a la portabilidad (GDPR art. 20). Devuelve un JSON con todos los datos del usuario."""
+    user = current_user
+    scans = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).all()
+    data = {
+        "exportado_en": datetime.utcnow().isoformat() + "Z",
+        "usuario": {
+            "id": user.id,
+            "email": user.email,
+            "empresa": user.empresa,
+            "plan": user.plan,
+            "email_verified": user.email_verified,
+            "trial_end": user.trial_end.isoformat() if user.trial_end else None,
+            "scan_hora": user.scan_hora,
+            "scan_dias": user.scan_dias,
+            "fecha_registro": user.created_at.isoformat() if getattr(user, "created_at", None) else None,
+        },
+        "escaneos": [
+            {
+                "id": s.id,
+                "objetivo": s.objetivo,
+                "dominio": s.dominio,
+                "riesgo": s.riesgo,
+                "label": s.label,
+                "timestamp": s.timestamp.isoformat() if s.timestamp else None,
+                "resultado": s.resultado,
+            }
+            for s in scans
+        ],
+        "total_escaneos": len(scans),
+    }
+    buf = io.BytesIO(json.dumps(data, indent=2, ensure_ascii=False, default=str).encode("utf-8"))
+    nombre = f"reconbase_datos_{user.email.replace('@','_at_')}_{datetime.utcnow().strftime('%Y%m%d')}.json"
+    return send_file(buf, mimetype="application/json", as_attachment=True, download_name=nombre)
+
+# ── GDPR: eliminar cuenta (derecho al olvido) ──
+@app.route("/api/eliminar-cuenta", methods=["POST"])
+@login_required
+@limiter.limit("3 per hour")
+def eliminar_cuenta():
+    """Derecho al olvido (GDPR art. 17). Cancela suscripción Stripe, borra escaneos y borra usuario."""
+    data = request.get_json() or {}
+    password = data.get("password", "")
+    confirmacion = (data.get("confirmacion") or "").strip().upper()
+    if confirmacion != "ELIMINAR":
+        return jsonify({"ok": False, "error": "Debes escribir ELIMINAR para confirmar"}), 400
+    if not current_user.check_password(password):
+        return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 400
+
+    user = current_user
+    user_id = user.id
+    email = user.email
+
+    # 1) Intentar cancelar suscripción activa de Stripe (best effort)
+    if stripe.api_key:
+        try:
+            customers = stripe.Customer.list(email=email, limit=1)
+            if customers.data:
+                customer_id = customers.data[0].id
+                subs = stripe.Subscription.list(customer=customer_id, status="active", limit=10)
+                for sub in subs.data:
+                    try:
+                        stripe.Subscription.delete(sub.id)
+                        logger.info(f"[GDPR] Suscripcion {sub.id} cancelada para {email}")
+                    except Exception as e:
+                        logger.error(f"[GDPR] Error cancelando sub {sub.id}: {e}")
+        except Exception as e:
+            logger.error(f"[GDPR] Error Stripe al eliminar cuenta {email}: {e}")
+
+    # 2) Borrar escaneos del usuario
+    try:
+        Scan.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"[GDPR] Error borrando escaneos de {email}: {e}")
+        return jsonify({"ok": False, "error": "Error borrando escaneos"}), 500
+
+    # 3) Cerrar sesión y borrar usuario
+    try:
+        logout_user()
+        db.session.delete(db.session.get(User, user_id))
+        db.session.commit()
+        logger.info(f"[GDPR] Cuenta {email} eliminada completamente")
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"[GDPR] Error borrando usuario {email}: {e}")
+        return jsonify({"ok": False, "error": "Error borrando la cuenta"}), 500
+
+    return jsonify({"ok": True, "msg": "Cuenta eliminada"})
 
 # ── APP ──
 @app.route("/app")
@@ -1146,6 +1306,7 @@ def get_scan(scan_id):
 
 @app.route("/api/pdf", methods=["POST"])
 @login_required
+@limiter.limit("10 per hour")
 def generar_pdf():
     if not PDF_OK:
         return jsonify({"error": "fpdf2 no instalado"}), 500
@@ -1467,6 +1628,7 @@ scheduler.start()
 
 @app.route("/api/horario", methods=["POST"])
 @login_required
+@limiter.limit("20 per hour")
 def guardar_horario():
     if current_user.plan != 'pro':
         return jsonify({"ok": False, "error": "Solo disponible en Pro"}), 403
@@ -1504,6 +1666,15 @@ with app.app_context():
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+# ─── Exentar rutas /api/* del CSRF ───
+# Las protegemos con SameSite=Lax + HttpOnly + mismo origen (fetch AJAX).
+# El webhook de Stripe (/api/webhook) también queda exento — usa verificación por firma.
+for _rule in app.url_map.iter_rules():
+    if _rule.rule.startswith('/api/'):
+        _view = app.view_functions.get(_rule.endpoint)
+        if _view is not None:
+            csrf.exempt(_view)
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
