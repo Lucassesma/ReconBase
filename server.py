@@ -53,6 +53,8 @@ def send_email(to, subject, body):
             headers={
                 "Authorization": f"Bearer {RESEND_API_KEY}",
                 "Content-Type": "application/json",
+                "User-Agent": "ReconBase/1.0 (+https://reconbase-production.up.railway.app)",
+                "Accept": "application/json",
             },
             method="POST",
         )
@@ -396,7 +398,11 @@ def debug_mail():
         try:
             req = urllib.request.Request(
                 "https://api.resend.com/domains",
-                headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "User-Agent": "ReconBase/1.0",
+                    "Accept": "application/json",
+                },
                 method="GET",
             )
             with urllib.request.urlopen(req, timeout=8) as resp:
