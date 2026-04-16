@@ -25,6 +25,15 @@ class User(UserMixin, db.Model):
     is_admin            = db.Column(db.Boolean, default=False, nullable=False)
     slack_webhook       = db.Column(db.String(500), nullable=True)
     custom_webhook      = db.Column(db.String(500), nullable=True)
+    # 2FA TOTP
+    totp_secret         = db.Column(db.String(64), nullable=True)
+    totp_enabled        = db.Column(db.Boolean, default=False, nullable=False)
+    # Alertas configurables
+    alerta_umbral       = db.Column(db.Integer, default=0)  # 0 = todas, 40 = moderado+, 70 = solo critico
+    # API pública
+    api_key             = db.Column(db.String(64), unique=True, nullable=True)
+    api_calls_month     = db.Column(db.Integer, default=0)
+
     scans               = db.relationship('Scan', backref='user', lazy=True)
     domains             = db.relationship('Domain', backref='user', lazy=True, cascade='all, delete-orphan')
 
@@ -41,6 +50,9 @@ class User(UserMixin, db.Model):
     def generate_reset_token(self):
         self.reset_token = secrets.token_urlsafe(32)
         self.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+
+    def generate_api_key(self):
+        self.api_key = "rb_" + secrets.token_urlsafe(40)
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
@@ -68,5 +80,22 @@ class Domain(db.Model):
     dominio    = db.Column(db.String(255), nullable=False)
     activo     = db.Column(db.Boolean, default=True, nullable=False)
     added_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    # Horario individual por dominio (null = usar global del usuario)
+    scan_hora  = db.Column(db.Integer, nullable=True)
+    scan_dias  = db.Column(db.String(20), nullable=True)
 
     __table_args__ = (db.UniqueConstraint('user_id', 'dominio', name='uq_user_domain'),)
+
+class BlogPost(db.Model):
+    __tablename__ = 'blog_posts'
+    id         = db.Column(db.Integer, primary_key=True)
+    slug       = db.Column(db.String(200), unique=True, nullable=False)
+    titulo     = db.Column(db.String(300), nullable=False)
+    excerpt    = db.Column(db.String(500), nullable=True)
+    contenido  = db.Column(db.Text, nullable=False)
+    autor      = db.Column(db.String(100), default='ReconBase')
+    imagen     = db.Column(db.String(500), nullable=True)
+    publicado  = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    tags       = db.Column(db.String(300), nullable=True)  # comma-separated

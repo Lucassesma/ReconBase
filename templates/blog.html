@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blog de Ciberseguridad — ReconBase</title>
+<meta name="description" content="Artículos, guías y novedades sobre ciberseguridad para PYMEs. Aprende a proteger tu empresa con ReconBase.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase-production.up.railway.app/blog">
+<meta property="og:title" content="Blog — ReconBase">
+<meta property="og:description" content="Artículos y guías de ciberseguridad para PYMEs.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase-production.up.railway.app/blog">
+<meta property="og:image" content="https://reconbase-production.up.railway.app/og/home.png">
+<meta property="og:locale" content="es_ES">
+{% if config.PLAUSIBLE_DOMAIN %}<script defer data-domain="{{ config.PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>{% endif %}
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--green:#22C55E;--green-dk:#15803D}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.container{max-width:800px;margin:0 auto;padding:2rem 5%}
+h1{font-size:1.8rem;font-weight:800;margin-bottom:.5rem}
+.subtitle{color:var(--muted);font-size:.9rem;margin-bottom:2rem}
+.post-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.2rem;transition:border-color .2s}
+.post-card:hover{border-color:var(--green)}
+.post-title{font-size:1.15rem;font-weight:700;margin-bottom:.4rem}
+.post-excerpt{color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:.6rem}
+.post-meta{color:#475569;font-size:.75rem;display:flex;gap:1rem}
+.tag{display:inline-block;background:#0f1b2d;color:var(--green);padding:.15rem .5rem;border-radius:4px;font-size:.7rem;font-weight:600}
+.empty{text-align:center;color:var(--muted);padding:4rem 0}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo-text"><span style="color:var(--text)">RECON</span><span style="color:var(--green)">BASE</span></a>
+  <div style="display:flex;gap:1.5rem;font-size:.85rem">
+    <a href="/" style="color:var(--muted)">Inicio</a>
+    <a href="/pricing" style="color:var(--muted)">Precios</a>
+    <a href="/blog" style="color:var(--green)">Blog</a>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>Blog de Ciberseguridad</h1>
+  <p class="subtitle">Guías, novedades y consejos para proteger tu empresa</p>
+
+  {% if posts %}
+    {% for post in posts %}
+    <a href="/blog/{{ post.slug }}" style="text-decoration:none;color:inherit">
+      <div class="post-card">
+        <div class="post-title">{{ post.titulo }}</div>
+        <div class="post-excerpt">{{ post.excerpt or post.contenido[:200] }}</div>
+        <div class="post-meta">
+          <span>{{ post.autor }}</span>
+          <span>{{ post.created_at.strftime('%d/%m/%Y') if post.created_at else '' }}</span>
+          {% if post.tags %}
+            {% for t in post.tags.split(',') %}
+              <span class="tag">{{ t.strip() }}</span>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty">
+      <p style="font-size:1.2rem;margin-bottom:.5rem">Muy pronto</p>
+      <p>Estamos preparando artículos sobre ciberseguridad para PYMEs.</p>
+    </div>
+  {% endif %}
+</div>
+</body>
+</html>

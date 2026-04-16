@@ -1829,6 +1829,7 @@ window.RB = { isLoggedIn: {{ 'true' if user and user.is_authenticated else 'fals
 function aceptarCookies() {
   localStorage.setItem('rb_cookie_consent', 'accepted');
   document.getElementById('cookie-banner').style.display = 'none';
+  fetch('/api/cookie-consent', {method:'POST'}).catch(function(){});
 }
 function rechazarCookies() {
   localStorage.setItem('rb_cookie_consent', 'essential');

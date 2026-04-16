@@ -443,44 +443,167 @@ function scVerScanHistorial(id) {
   }).catch(function(){ alert('Error al cargar el escaneo.'); });
 }
 
+/* Palette for multi-domain chart lines */
+var _SC_COLORS = [
+  { line: '#DC2626', bg: 'rgba(220,38,38,.10)' },
+  { line: '#2563EB', bg: 'rgba(37,99,235,.10)' },
+  { line: '#D97706', bg: 'rgba(217,119,6,.10)'  },
+  { line: '#7C3AED', bg: 'rgba(124,58,237,.10)' },
+  { line: '#059669', bg: 'rgba(5,150,105,.10)'  },
+  { line: '#DB2777', bg: 'rgba(219,39,119,.10)' },
+];
+
 function scRenderTendencia() {
-  fetch('/api/historial').then(function(r){return r.json();}).then(function(d){
-    var scans = (d.scans || d || []).slice().reverse();
+  fetch('/api/evolucion').then(function(r){return r.json();}).then(function(d){
+    var series = d.series || {};
+    var domainKeys = Object.keys(series);
     var empty = document.getElementById('sc-tend-empty');
     var content = document.getElementById('sc-tend-content');
-    if (scans.length < 2) { empty.style.display = 'block'; content.style.display = 'none'; return; }
+
+    /* Need at least one domain with ≥2 points */
+    var hasData = domainKeys.some(function(k){ return (series[k]||[]).length >= 2; });
+    if (!hasData) { empty.style.display = 'block'; content.style.display = 'none'; return; }
     empty.style.display = 'none'; content.style.display = 'block';
 
-    var riesgos = scans.map(function(s){return s.riesgo;});
-    var avg = Math.round(riesgos.reduce(function(a,b){return a+b;},0)/riesgos.length);
-    var min = Math.min.apply(null, riesgos), max = Math.max.apply(null, riesgos);
-    var trend = riesgos[riesgos.length-1] - riesgos[0];
+    /* Build a unified sorted set of dates across all domains */
+    var dateSet = {};
+    domainKeys.forEach(function(k){
+      (series[k]||[]).forEach(function(p){ dateSet[p.fecha] = true; });
+    });
+    var labels = Object.keys(dateSet).sort();
+
+    /* Aggregate all values for global stats */
+    var allValues = [];
+    domainKeys.forEach(function(k){
+      (series[k]||[]).forEach(function(p){ allValues.push(p.riesgo); });
+    });
+    var avg = Math.round(allValues.reduce(function(a,b){return a+b;},0) / (allValues.length||1));
+    var minV = Math.min.apply(null, allValues), maxV = Math.max.apply(null, allValues);
+
+    /* Per-domain trend (last − first) for each domain */
+    var trendHtml = domainKeys.map(function(k, i){
+      var pts = (series[k]||[]).slice().sort(function(a,b){return a.fecha>b.fecha?1:-1;});
+      var col = _SC_COLORS[i % _SC_COLORS.length];
+      var tval = pts.length >= 2 ? pts[pts.length-1].riesgo - pts[0].riesgo : 0;
+      var tcolor = tval > 0 ? '#DC2626' : tval < 0 ? '#16A34A' : '#64748B';
+      return '<div style="background:var(--surface);border:1px solid ' + col.line + '44;border-radius:8px;padding:.75rem 1rem;display:flex;align-items:center;gap:.6rem">' +
+        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + col.line + ';flex-shrink:0"></span>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:.62rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + k + '</div>' +
+        '<div style="font-size:1.1rem;font-weight:800;color:' + tcolor + '">' + (tval > 0 ? '+' : '') + tval + '%</div></div></div>';
+    }).join('');
+
     var statsEl = document.getElementById('sc-tend-stats');
-    if (statsEl) statsEl.innerHTML =
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">PROMEDIO</div><div style="font-size:1.5rem;font-weight:800">' + avg + '%</div></div>' +
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">MÍNIMO</div><div style="font-size:1.5rem;font-weight:800;color:#16A34A">' + min + '%</div></div>' +
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">MÁXIMO</div><div style="font-size:1.5rem;font-weight:800;color:#DC2626">' + max + '%</div></div>' +
-      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">TENDENCIA</div><div style="font-size:1.5rem;font-weight:800;color:' + (trend > 0 ? '#DC2626' : trend < 0 ? '#16A34A' : '#64748B') + '">' + (trend > 0 ? '+' : '') + trend + '%</div></div>';
+    if (statsEl) {
+      /* Override grid cols to fit domain cards + global stats */
+      statsEl.style.gridTemplateColumns = 'repeat(auto-fill,minmax(140px,1fr))';
+      statsEl.innerHTML =
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">PROMEDIO GLOBAL</div><div style="font-size:1.5rem;font-weight:800">' + avg + '%</div></div>' +
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">MÍNIMO</div><div style="font-size:1.5rem;font-weight:800;color:#16A34A">' + minV + '%</div></div>' +
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">MÁXIMO</div><div style="font-size:1.5rem;font-weight:800;color:#DC2626">' + maxV + '%</div></div>' +
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">DOMINIOS</div><div style="font-size:1.5rem;font-weight:800">' + domainKeys.length + '</div></div>';
+      /* Trend chips per domain below stats (only if >1 domain) */
+      if (domainKeys.length > 0) {
+        var trendWrapper = document.getElementById('sc-tend-trends');
+        if (!trendWrapper) {
+          trendWrapper = document.createElement('div');
+          trendWrapper.id = 'sc-tend-trends';
+          trendWrapper.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.5rem;margin-top:.75rem';
+          statsEl.parentNode.insertBefore(trendWrapper, statsEl.nextSibling);
+        }
+        trendWrapper.innerHTML = trendHtml;
+      }
+    }
+
+    /* Build Chart.js datasets — one per domain */
+    var datasets = domainKeys.map(function(k, i){
+      var col = _SC_COLORS[i % _SC_COLORS.length];
+      var pts = series[k] || [];
+      /* Map to label positions (sparse: null where no data for that date) */
+      var dataMap = {};
+      pts.forEach(function(p){ dataMap[p.fecha] = p.riesgo; });
+      var data = labels.map(function(l){ return dataMap[l] !== undefined ? dataMap[l] : null; });
+      return {
+        label: k,
+        data: data,
+        borderColor: col.line,
+        backgroundColor: col.bg,
+        tension: 0.35,
+        fill: domainKeys.length === 1,  /* fill only when single domain */
+        pointBackgroundColor: col.line,
+        pointRadius: 4,
+        spanGaps: true
+      };
+    });
 
     var canvas = document.getElementById('sc-tend-chart');
     if (canvas) {
       if (scTendChart) scTendChart.destroy();
       scTendChart = new Chart(canvas, {
         type: 'line',
-        data: {
-          labels: scans.map(function(s){return (s.timestamp||'').split(' ')[0];}),
-          datasets: [{ label: 'Riesgo (%)', data: riesgos, borderColor: '#DC2626', backgroundColor: 'rgba(220,38,38,.08)', tension: 0.4, fill: true, pointBackgroundColor: '#DC2626', pointRadius: 4 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 100, ticks: { color: '#64748B' }, grid: { color: '#F1F5F9' } }, x: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { display: false } } } }
+        data: { labels: labels, datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              display: domainKeys.length > 1,
+              labels: { color: '#94A3B8', font: { family: "'JetBrains Mono',monospace", size: 11 }, boxWidth: 12, boxHeight: 12 }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return ' ' + ctx.dataset.label + ': ' + (ctx.parsed.y !== null ? ctx.parsed.y + '%' : '—'); }
+              }
+            }
+          },
+          scales: {
+            y: { min: 0, max: 100, ticks: { color: '#64748B', callback: function(v){ return v + '%'; } }, grid: { color: 'rgba(255,255,255,.05)' } },
+            x: { ticks: { color: '#64748B', font: { size: 10 } }, grid: { display: false } }
+          }
+        }
       });
     }
 
+    /* Table: all scans across all domains sorted by date desc */
+    var allScans = [];
+    domainKeys.forEach(function(k){
+      (series[k]||[]).forEach(function(p){ allScans.push(Object.assign({}, p, {dominio: k})); });
+    });
+    allScans.sort(function(a,b){ return a.fecha > b.fecha ? -1 : 1; });
     var tbody = document.getElementById('sc-tend-body');
-    if (tbody) tbody.innerHTML = scans.map(function(s, i) {
+    if (tbody) tbody.innerHTML = allScans.map(function(s, i){
       var col = s.riesgo >= 70 ? '#DC2626' : s.riesgo >= 40 ? '#D97706' : '#16A34A';
-      return '<tr><td>' + (i+1) + '</td><td><code style="font-size:.78rem">' + s.objetivo + '</code></td><td style="color:' + col + ';font-weight:700">' + s.riesgo + '%</td><td>' + (s.puertos||[]).length + '</td><td>' + (s.leaks||0) + '</td><td>' + (s.subs||[]).length + '</td><td style="font-size:.78rem;color:var(--muted)">' + (s.timestamp||'') + '</td></tr>';
+      var di = domainKeys.indexOf(s.dominio);
+      var dc = _SC_COLORS[di >= 0 ? di % _SC_COLORS.length : 0].line;
+      return '<tr><td>' + (i+1) + '</td><td><code style="font-size:.78rem;color:' + dc + '">' + (s.dominio||s.objetivo||'—') + '</code></td><td style="color:' + col + ';font-weight:700">' + s.riesgo + '%</td><td>—</td><td>—</td><td>—</td><td style="font-size:.78rem;color:var(--muted)">' + (s.label||s.fecha||'') + '</td></tr>';
     }).join('');
-  }).catch(function(){});
+  }).catch(function(){
+    /* Fallback to historial if evolucion not available */
+    fetch('/api/historial').then(function(r){return r.json();}).then(function(d){
+      var scans = (d.scans || d || []).slice().reverse();
+      var empty = document.getElementById('sc-tend-empty');
+      var content = document.getElementById('sc-tend-content');
+      if (scans.length < 2) { empty.style.display = 'block'; content.style.display = 'none'; return; }
+      empty.style.display = 'none'; content.style.display = 'block';
+      var riesgos = scans.map(function(s){return s.riesgo;});
+      var avg = Math.round(riesgos.reduce(function(a,b){return a+b;},0)/riesgos.length);
+      var min = Math.min.apply(null, riesgos), max = Math.max.apply(null, riesgos);
+      var trend = riesgos[riesgos.length-1] - riesgos[0];
+      var statsEl = document.getElementById('sc-tend-stats');
+      if (statsEl) statsEl.innerHTML =
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">PROMEDIO</div><div style="font-size:1.5rem;font-weight:800">' + avg + '%</div></div>' +
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">MÍNIMO</div><div style="font-size:1.5rem;font-weight:800;color:#16A34A">' + min + '%</div></div>' +
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">MÁXIMO</div><div style="font-size:1.5rem;font-weight:800;color:#DC2626">' + max + '%</div></div>' +
+        '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center"><div style="font-size:.65rem;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-bottom:.4rem">TENDENCIA</div><div style="font-size:1.5rem;font-weight:800;color:' + (trend>0?'#DC2626':trend<0?'#16A34A':'#64748B') + '">' + (trend>0?'+':'') + trend + '%</div></div>';
+      var canvas = document.getElementById('sc-tend-chart');
+      if (canvas) {
+        if (scTendChart) scTendChart.destroy();
+        scTendChart = new Chart(canvas, { type:'line', data:{ labels:scans.map(function(s){return(s.timestamp||'').split(' ')[0];}), datasets:[{label:'Riesgo (%)',data:riesgos,borderColor:'#DC2626',backgroundColor:'rgba(220,38,38,.08)',tension:0.4,fill:true,pointBackgroundColor:'#DC2626',pointRadius:4}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}}}}});
+      }
+      var tbody = document.getElementById('sc-tend-body');
+      if (tbody) tbody.innerHTML = scans.map(function(s,i){ var col=s.riesgo>=70?'#DC2626':s.riesgo>=40?'#D97706':'#16A34A'; return '<tr><td>'+(i+1)+'</td><td><code style="font-size:.78rem">'+s.objetivo+'</code></td><td style="color:'+col+';font-weight:700">'+s.riesgo+'%</td><td>'+(s.puertos||[]).length+'</td><td>'+(s.leaks||0)+'</td><td>'+(s.subs||[]).length+'</td><td style="font-size:.78rem;color:var(--muted)">'+(s.timestamp||'')+'</td></tr>'; }).join('');
+    }).catch(function(){});
+  });
 }
 
 function scToggleVig() {

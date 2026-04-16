@@ -1,0 +1,49 @@
+name: CI — Tests & Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    env:
+      DATABASE_URL: "sqlite:///:memory:"
+      SECRET_KEY: "ci-test-secret-key"
+      RECONBASE_API_KEY: ""
+      STRIPE_SECRET_KEY: ""
+      RESEND_API_KEY: ""
+      MAIL_USER: ""
+      MAIL_PASS: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-flask
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Check syntax (py_compile)
+        run: |
+          python -m py_compile server.py
+          python -m py_compile models.py
+          echo "✓ Syntax OK"

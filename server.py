@@ -5,9 +5,9 @@ from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from models import db, User, Scan, Domain
+from models import db, User, Scan, Domain, BlogPost
 import reconbase_engine as engine
-import os, io, json, stripe, threading, logging, urllib.request, urllib.error
+import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -48,8 +48,15 @@ app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASS", "")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USER", "")
 
 # ─── Analytics (opcionales) ───
-app.config['PLAUSIBLE_DOMAIN'] = os.getenv("PLAUSIBLE_DOMAIN", "")  # ej: reconbase-production.up.railway.app
-app.config['GA_ID'] = os.getenv("GA_ID", "")  # ej: G-XXXXXXXXXX
+app.config['PLAUSIBLE_DOMAIN'] = os.getenv("PLAUSIBLE_DOMAIN", "")
+app.config['GA_ID'] = os.getenv("GA_ID", "")
+
+# ─── Compresión gzip ───
+try:
+    from flask_compress import Compress
+    Compress(app)
+except ImportError:
+    pass
 
 db.init_app(app)
 mail = Mail(app)
@@ -188,7 +195,15 @@ def sitemap():
         {"loc": base + "/pricing", "priority": "0.9",  "changefreq": "monthly"},
         {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly"},
         {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly"},
+        {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly"},
     ]
+    # Añadir posts del blog al sitemap
+    try:
+        blog_posts = BlogPost.query.filter_by(publicado=True).all()
+        for bp in blog_posts:
+            urls.append({"loc": f"{base}/blog/{bp.slug}", "priority": "0.6", "changefreq": "monthly"})
+    except Exception:
+        pass
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     for u in urls:
@@ -444,6 +459,10 @@ def api_login():
     user     = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
         return jsonify({"ok": False, "error": "Email o contraseña incorrectos"}), 401
+    # Si tiene 2FA activado, no hacer login todavía — pedir código TOTP
+    if getattr(user, 'totp_enabled', False) and user.totp_secret:
+        session["2fa_pending_user"] = user.id
+        return jsonify({"ok": True, "requires_2fa": True})
     login_user(user)
     return jsonify({"ok": True})
 
@@ -595,14 +614,15 @@ def reenviar_verificacion():
     try:
         base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
         link = f"{base_url}/verify-email/{current_user.verify_token}"
-        cuerpo = (
-            f"Hola {current_user.empresa},\n\n"
-            f"Confirma tu direccion de email haciendo clic en el siguiente enlace:\n"
-            f"{link}\n\n"
-            f"Si no has solicitado esto, ignora este mensaje.\n\n"
-            f"--\nReconBase\n"
+        send_html_email(
+            current_user.email,
+            "Confirma tu email — ReconBase",
+            "Confirma tu dirección de email",
+            f"Hola <strong>{current_user.empresa}</strong>,<br><br>"
+            f"Gracias por registrarte en ReconBase. Solo necesitas confirmar tu email para empezar a analizar la seguridad de tu empresa.",
+            cta_url=link,
+            cta_text="Confirmar email"
         )
-        send_email(current_user.email, "Confirma tu email — ReconBase", cuerpo)
         return jsonify({
             "ok": True,
             "msg": f"Email enviado a {current_user.email}. Revisa tu bandeja (y carpeta de spam, puede tardar 1-2 min)."
@@ -1089,84 +1109,71 @@ def enviar_email_bienvenida(user):
     def _send():
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
-            cuerpo = (
-                f"Hola {user.empresa},\n\n"
-                f"Bienvenido a ReconBase. Tu cuenta está lista.\n\n"
-                f"Qué puedes hacer ahora:\n"
-                f"  1. Escanear tu dominio para ver tu nivel de riesgo actual\n"
-                f"  2. Revisar si tu correo aparece en filtraciones conocidas\n"
-                f"  3. Descargar un informe PDF con los hallazgos\n\n"
-                f"Empieza ahora:\n"
-                f"{base_url}/\n\n"
-                f"Si tienes cualquier duda, responde a este email.\n\n"
-                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
-            )
             with app.app_context():
-                mail.send(Message(
-                    subject=f"Bienvenido a ReconBase, {user.empresa}",
-                    recipients=[user.email],
-                    body=cuerpo
-                ))
-                print(f"[Welcome] Email enviado a {user.email}")
+                send_html_email(
+                    user.email,
+                    f"Bienvenido a ReconBase, {user.empresa}",
+                    f"Bienvenido, {user.empresa} 👋",
+                    f"Tu cuenta está lista. Esto es lo que puedes hacer ahora:<br><br>"
+                    f"<strong>1. Escanear tu dominio</strong> — Conoce tu nivel de riesgo actual en 2 minutos<br>"
+                    f"<strong>2. Detectar filtraciones</strong> — Comprueba si tu empresa aparece en brechas conocidas<br>"
+                    f"<strong>3. Informe PDF</strong> — Descarga un informe ejecutivo con todos los hallazgos<br><br>"
+                    f"Si tienes cualquier duda, responde a este email.",
+                    cta_url=base_url,
+                    cta_text="Hacer mi primer escaneo"
+                )
+                logger.info(f"[Welcome] Email HTML enviado a {user.email}")
         except Exception as e:
-            print(f"[!] Error welcome email {user.email}: {e}")
+            logger.error(f"[Welcome] Error a {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_pro_activado(user):
     def _send():
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
-            cuerpo = (
-                f"Hola {user.empresa},\n\n"
-                f"Tu plan Pro de ReconBase está activo. Ahora tienes acceso a:\n\n"
-                f"  - Escaneos ilimitados\n"
-                f"  - Vigilancia nocturna automática de tu dominio\n"
-                f"  - Alertas por email cuando se detecta algo nuevo\n"
-                f"  - Búsqueda de filtraciones en bases de datos filtradas\n"
-                f"  - Informes PDF ejecutivos completos\n"
-                f"  - Historial ilimitado de escaneos\n\n"
-                f"Configura la vigilancia nocturna desde el escáner > pestaña Vigilancia:\n"
-                f"{base_url}/\n\n"
-                f"Gracias por confiar en nosotros.\n\n"
-                f"--\nReconBase - Tu seguridad, vigilada 24/7\n"
-            )
             with app.app_context():
-                mail.send(Message(
-                    subject="Tu plan Pro está activo — ReconBase",
-                    recipients=[user.email],
-                    body=cuerpo
-                ))
-                print(f"[Pro] Email activación enviado a {user.email}")
+                send_html_email(
+                    user.email,
+                    "Tu plan Pro está activo — ReconBase",
+                    "🎉 Plan Pro activado",
+                    f"Hola <strong>{user.empresa}</strong>,<br><br>"
+                    f"Tu suscripción Pro ya está activa. Ahora tienes acceso completo a:<br><br>"
+                    f"✅ <strong>Escaneos ilimitados</strong><br>"
+                    f"✅ <strong>Vigilancia nocturna automática</strong> de todos tus dominios<br>"
+                    f"✅ <strong>Alertas por email</strong> cuando se detecta algo nuevo<br>"
+                    f"✅ <strong>Búsqueda de filtraciones</strong> en bases de datos filtradas<br>"
+                    f"✅ <strong>Informes PDF ejecutivos</strong> completos<br>"
+                    f"✅ <strong>Historial ilimitado</strong> de escaneos<br>"
+                    f"✅ <strong>Hasta 10 dominios</strong> monitorizados<br><br>"
+                    f"Configura la vigilancia automática desde tu perfil.",
+                    cta_url=base_url,
+                    cta_text="Ir al dashboard"
+                )
+                logger.info(f"[Pro] Email HTML enviado a {user.email}")
         except Exception as e:
-            print(f"[!] Error pro email {user.email}: {e}")
+            logger.error(f"[Pro] Error a {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_trial_expirando(user, dias_restantes):
     def _send():
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
-            cuerpo = (
-                f"Hola {user.empresa},\n\n"
-                f"Tu periodo de prueba de ReconBase Pro termina en {dias_restantes} día{'s' if dias_restantes != 1 else ''}.\n\n"
-                f"Cuando termine, perderás acceso a:\n"
-                f"  - Vigilancia nocturna automática\n"
-                f"  - Alertas por email\n"
-                f"  - Búsqueda de filtraciones\n"
-                f"  - Informes PDF ejecutivos\n\n"
-                f"Si quieres mantener la protección completa, suscríbete antes de que expire:\n"
-                f"{base_url}/#precios\n\n"
-                f"Si no haces nada, tu cuenta pasará automáticamente al plan gratuito.\n\n"
-                f"--\nReconBase\n"
-            )
+            dias_txt = f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}"
             with app.app_context():
-                mail.send(Message(
-                    subject=f"Tu trial Pro termina en {dias_restantes} día{'s' if dias_restantes != 1 else ''} — ReconBase",
-                    recipients=[user.email],
-                    body=cuerpo
-                ))
-                print(f"[Trial] Aviso enviado a {user.email} ({dias_restantes}d)")
+                send_html_email(
+                    user.email,
+                    f"Tu trial Pro termina en {dias_txt} — ReconBase",
+                    f"⏳ Tu trial termina en {dias_txt}",
+                    f"Hola <strong>{user.empresa}</strong>,<br><br>"
+                    f"Tu periodo de prueba Pro termina en <strong>{dias_txt}</strong>.<br><br>"
+                    f"Cuando expire perderás acceso a: vigilancia nocturna, alertas, filtraciones y PDFs.<br><br>"
+                    f"Suscríbete ahora para mantener la protección completa.",
+                    cta_url=f"{base_url}/#precios",
+                    cta_text="Suscribirme a Pro — 29€/mes"
+                )
+                logger.info(f"[Trial] Aviso HTML a {user.email} ({dias_restantes}d)")
         except Exception as e:
-            print(f"[!] Error trial email {user.email}: {e}")
+            logger.error(f"[Trial] Error a {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_reset(user):
@@ -1174,95 +1181,92 @@ def enviar_email_reset(user):
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
             link = f"{base_url}/reset-password/{user.reset_token}"
-            cuerpo = (
-                f"Hola,\n\n"
-                f"Has solicitado restablecer tu contraseña en ReconBase.\n\n"
-                f"Haz clic en el siguiente enlace (válido 1 hora):\n"
-                f"{link}\n\n"
-                f"Si no has solicitado esto, ignora este mensaje.\n\n"
-                f"--\nReconBase\n"
-            )
             with app.app_context():
-                mail.send(Message(
-                    subject="Restablece tu contraseña — ReconBase",
-                    recipients=[user.email],
-                    body=cuerpo
-                ))
-                print(f"[Reset] Email enviado a {user.email}")
+                send_html_email(
+                    user.email,
+                    "Restablece tu contraseña — ReconBase",
+                    "Restablecer contraseña",
+                    "Has solicitado restablecer tu contraseña en ReconBase.<br><br>"
+                    "El enlace es válido durante <strong>1 hora</strong>. Si no lo solicitaste, ignora este email.",
+                    cta_url=link,
+                    cta_text="Restablecer contraseña"
+                )
+                logger.info(f"[Reset] Email HTML enviado a {user.email}")
         except Exception as e:
-            print(f"[!] Error reset email {user.email}: {e}")
+            logger.error(f"[Reset] Error a {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_limite_free(destinatario):
     def _send():
         try:
-            cuerpo = (
-                "Hola,\n\n"
-                "Has usado todos tus escaneos gratuitos de este mes.\n\n"
-                "Tu empresa puede seguir expuesta a amenazas que no puedes revisar ahora.\n\n"
-                "Con el plan Pro a 29 euros al mes tienes:\n"
-                "  - Escaneos ilimitados\n"
-                "  - Vigilancia nocturna automatica cada dia\n"
-                "  - Alertas por email cuando se detecta algo nuevo\n"
-                "  - Informes PDF ejecutivos completos\n"
-                "  - Historial completo de todos tus escaneos\n\n"
-                "Activa el plan Pro ahora:\n"
-                "https://reconbase-production.up.railway.app/#precios\n\n"
-                "--\nReconBase - Seguridad perimetral para PYMEs\n"
-            )
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
             with app.app_context():
-                mail.send(Message(
-                    subject="Has agotado tus escaneos gratuitos este mes — ReconBase",
-                    recipients=[destinatario],
-                    body=cuerpo
-                ))
-                print(f"[Limite] Email enviado a {destinatario}")
+                send_html_email(
+                    destinatario,
+                    "Has agotado tus escaneos gratuitos este mes — ReconBase",
+                    "Has alcanzado el límite gratuito",
+                    "Has usado todos tus escaneos gratuitos de este mes.<br><br>"
+                    "Tu empresa puede seguir expuesta a amenazas que no puedes revisar ahora.<br><br>"
+                    "Con <strong>Pro a 29€/mes</strong>:<br>"
+                    "✅ Escaneos ilimitados<br>✅ Vigilancia nocturna 24/7<br>"
+                    "✅ Alertas automáticas<br>✅ Informes PDF completos",
+                    cta_url=f"{base_url}/#precios",
+                    cta_text="Activar Pro — 29€/mes"
+                )
+                logger.info(f"[Limite] Email HTML enviado a {destinatario}")
         except Exception as e:
-            print(f"[!] Error limite email {destinatario}: {e}")
+            logger.error(f"[Limite] Error a {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_anterior=None):
     def _send():
         try:
             nivel = "CRITICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
+            color_riesgo = "#EF4444" if riesgo >= 70 else "#F59E0B" if riesgo >= 40 else "#22C55E"
             consejos = {
-                "Red":            "Tienes puertos de red expuestos al exterior. Contacta con tu proveedor de hosting para cerrarlos.",
-                "SPF ausente":    "Tu dominio no tiene proteccion SPF. Añade un registro SPF en tu DNS.",
-                "DMARC ausente":  "Tu dominio no tiene DMARC configurado. Añade un registro DMARC en tu DNS.",
-                "Filtraciones":   "Se han encontrado datos en filtraciones conocidas. Cambia las contraseñas afectadas.",
-                "CMS desactualizable": "Se ha detectado un CMS que puede tener vulnerabilidades. Mantén siempre la ultima version.",
+                "Red":            "Tienes puertos de red expuestos. Contacta con tu proveedor para cerrarlos.",
+                "SPF ausente":    "Tu dominio no tiene SPF. Añade un registro SPF en tu DNS.",
+                "DMARC ausente":  "Sin DMARC, cualquiera puede suplantar tu empresa por email.",
+                "Filtraciones":   "Datos en filtraciones conocidas. Cambia contraseñas afectadas.",
+                "CMS desactualizable": "CMS con posibles vulnerabilidades. Actualiza a la última versión.",
+                "SSL caducado":   "Certificado SSL caducado. Renuévalo urgentemente.",
+                "SSL por caducar": "Certificado SSL próximo a caducar. Programa su renovación.",
             }
-            desglose_txt = ""
+            desglose_html = ""
             for k, v in desglose.items():
                 if v > 0:
                     consejo = consejos.get(k, "Revisa este punto en tu dashboard.")
-                    desglose_txt += f"  - {k}: {consejo}\n"
+                    desglose_html += f"<li><strong>{k}</strong> — {consejo}</li>"
 
-            subida_txt = ""
+            cambio_html = ""
             if riesgo_anterior is not None:
-                subida_txt = f"CAMBIO RESPECTO AL ANTERIOR: {riesgo_anterior}% -> {riesgo}% (+{riesgo - riesgo_anterior}%)\n\n"
+                diff = riesgo - riesgo_anterior
+                cambio_html = f"<p style='color:#94A3B8;font-size:13px'>Cambio respecto al anterior: {riesgo_anterior}% → <strong style='color:{color_riesgo}'>{riesgo}%</strong> (+{diff}%)</p>"
 
-            cuerpo = (
-                f"Hola,\n\n"
-                f"ReconBase ha detectado un aumento en el nivel de riesgo de tu dominio.\n\n"
-                f"DOMINIO: {objetivo}\n"
-                f"RIESGO ACTUAL: {riesgo}% - {label} ({nivel})\n"
-                f"{subida_txt}"
-                f"PUNTOS A REVISAR:\n{desglose_txt}\n"
-                f"Ver informe completo:\n"
-                f"https://reconbase-production.up.railway.app/app\n\n"
-                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            cuerpo_html = (
+                f"Se ha detectado un <strong>aumento en el nivel de riesgo</strong> de tu dominio.<br><br>"
+                f"<table style='background:#080C14;border:1px solid #152B1E;border-radius:8px;padding:16px;width:100%;border-collapse:collapse'>"
+                f"<tr><td style='padding:8px 12px;color:#64748B;font-size:13px'>Dominio</td>"
+                f"<td style='padding:8px 12px;color:#E2EDF8;font-weight:700'>{objetivo}</td></tr>"
+                f"<tr><td style='padding:8px 12px;color:#64748B;font-size:13px'>Riesgo</td>"
+                f"<td style='padding:8px 12px;color:{color_riesgo};font-weight:700;font-size:18px'>{riesgo}% — {nivel}</td></tr>"
+                f"</table><br>"
+                f"{cambio_html}"
+                f"{'<p><strong>Puntos a revisar:</strong></p><ul>' + desglose_html + '</ul>' if desglose_html else ''}"
             )
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
             with app.app_context():
-                msg = Message(
-                    subject=f"[ReconBase] Alerta de seguridad en {objetivo} - {nivel}",
-                    recipients=[destinatario],
-                    body=cuerpo
+                send_html_email(
+                    destinatario,
+                    f"⚠️ Alerta de seguridad en {objetivo} — {nivel}",
+                    f"Alerta: {objetivo}",
+                    cuerpo_html,
+                    cta_url=base_url,
+                    cta_text="Ver informe completo"
                 )
-                mail.send(msg)
-                print(f"[Alerta] Email enviado a {destinatario} ({objetivo} {riesgo}%)")
+                logger.info(f"[Alerta] HTML enviado a {destinatario} ({objetivo} {riesgo}%)")
         except Exception as e:
-            print(f"[!] Error enviando email: {e}")
+            logger.error(f"[Alerta] Error a {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 @app.route("/api/scan", methods=["POST"])
@@ -1379,12 +1383,13 @@ def scan():
     scan_anterior = Scan.query.filter_by(user_id=current_user.id, dominio=dominio)\
         .order_by(Scan.timestamp.desc()).offset(1).first()
     riesgo_anterior = scan_anterior.riesgo if scan_anterior else None
-    if riesgo_anterior is None:
-        # Primer escaneo: enviar si riesgo es alto
-        if riesgo >= 50:
+    umbral = getattr(current_user, 'alerta_umbral', 0) or 0
+    if riesgo >= umbral:  # 0 = siempre alertar
+        if riesgo_anterior is None:
+            if riesgo >= 50:
+                enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
+        elif riesgo > riesgo_anterior:
             enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
-    elif riesgo > riesgo_anterior:
-        enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
 
     # Notificar integraciones (Slack / webhook) en segundo plano
     threading.Thread(target=notificar_integraciones, args=(current_user, resultado), daemon=True).start()
@@ -1531,26 +1536,29 @@ def escaneo_automatico():
 
         usuarios_pro = User.query.filter_by(plan='pro').all()
         for user in usuarios_pro:
-            if not user.scan_dias:
-                continue  # vigilancia desactivada
-            dias = [int(d) for d in user.scan_dias.split(',') if d.strip()]
-            if not dias:
-                continue
-            if user.scan_hora != hora_actual:
-                continue
-            if dia_actual not in dias:
-                continue
+            # Global schedule defaults
+            user_dias_str = user.scan_dias or ''
+            user_dias = [int(d) for d in user_dias_str.split(',') if d.strip()] if user_dias_str else []
+            user_hora = user.scan_hora
 
-            # Multi-dominio: escanear todos los dominios activos del usuario.
-            # Fallback: si no tiene dominios configurados, usar el último escaneo.
+            # Multi-dominio: escanear dominios activos, cada uno con su propio horario si lo tiene.
             dominios_user = Domain.query.filter_by(user_id=user.id, activo=True).all()
             if not dominios_user:
+                # Fallback: sin dominios configurados, usar último escaneo con horario global
+                if not user_dias or user_hora != hora_actual or dia_actual not in user_dias:
+                    continue
                 ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
                 if not ultimo:
                     continue
-                dominios_user = [type('D', (), {'dominio': ultimo.dominio})()]
+                dominios_user = [type('D', (), {'dominio': ultimo.dominio, 'scan_hora': None, 'scan_dias': None})()]
 
             for dom_obj in dominios_user:
+                # Per-domain schedule override
+                d_hora = dom_obj.scan_hora if dom_obj.scan_hora is not None else user_hora
+                d_dias_str = dom_obj.scan_dias if dom_obj.scan_dias else user_dias_str
+                d_dias = [int(d) for d in d_dias_str.split(',') if d.strip()] if d_dias_str else user_dias
+                if d_hora != hora_actual or dia_actual not in d_dias:
+                    continue
                 dominio  = dom_obj.dominio
                 objetivo = dominio
                 try:
@@ -1761,6 +1769,375 @@ def guardar_horario():
     except Exception as e:
         db.session.rollback()
         return jsonify({"ok": False, "error": str(e)}), 500
+
+# ── COMPARATIVA ENTRE ESCANEOS ──
+@app.route("/api/evolucion", methods=["GET"])
+@login_required
+def evolucion_riesgo():
+    """Devuelve la evolución de riesgo agrupada por dominio para gráficos."""
+    dominio_filter = request.args.get("dominio", "")
+    q = Scan.query.filter_by(user_id=current_user.id)
+    if dominio_filter:
+        q = q.filter_by(dominio=dominio_filter)
+    scans = q.order_by(Scan.timestamp.asc()).limit(200).all()
+    # Agrupar por dominio
+    series = {}
+    for s in scans:
+        d = s.dominio
+        if d not in series:
+            series[d] = []
+        series[d].append({
+            "fecha": s.timestamp.strftime("%d/%m/%Y %H:%M") if s.timestamp else "",
+            "riesgo": s.riesgo,
+            "label": s.label,
+        })
+    return jsonify({"series": series})
+
+# ── ALERTAS CONFIGURABLES ──
+@app.route("/api/alertas", methods=["GET"])
+@login_required
+def get_alertas():
+    return jsonify({"alerta_umbral": current_user.alerta_umbral or 0})
+
+@app.route("/api/alertas", methods=["POST"])
+@login_required
+@limiter.limit("10 per hour")
+def guardar_alertas():
+    data = request.get_json() or {}
+    umbral = int(data.get("alerta_umbral", 0))
+    if umbral not in (0, 40, 70):
+        return jsonify({"ok": False, "error": "Umbral debe ser 0 (todas), 40 (moderado+) o 70 (solo crítico)"}), 400
+    user = db.session.get(User, current_user.id)
+    user.alerta_umbral = umbral
+    db.session.commit()
+    return jsonify({"ok": True})
+
+# ── SCAN PROGRAMADO POR DOMINIO ──
+@app.route("/api/dominios/<int:dom_id>/horario", methods=["POST"])
+@login_required
+@limiter.limit("20 per hour")
+def horario_dominio(dom_id):
+    """Configura horario individual para un dominio."""
+    if current_user.plan_efectivo != 'pro':
+        return jsonify({"ok": False, "error": "Solo Pro"}), 403
+    dom = Domain.query.filter_by(id=dom_id, user_id=current_user.id).first()
+    if not dom:
+        return jsonify({"ok": False, "error": "Dominio no encontrado"}), 404
+    data = request.get_json() or {}
+    dom.scan_hora = int(data.get("hora", 3)) if data.get("hora") is not None else None
+    dom.scan_dias = ','.join(str(d) for d in data["dias"]) if data.get("dias") is not None else None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+# ── API PÚBLICA CON API KEY ──
+@app.route("/api/apikey", methods=["POST"])
+@login_required
+@limiter.limit("5 per hour")
+def generar_api_key():
+    """Genera o regenera la API key del usuario."""
+    user = db.session.get(User, current_user.id)
+    user.generate_api_key()
+    db.session.commit()
+    return jsonify({"ok": True, "api_key": user.api_key})
+
+@app.route("/api/apikey", methods=["GET"])
+@login_required
+def get_api_key():
+    return jsonify({"api_key": current_user.api_key or ""})
+
+@app.route("/api/v1/scan", methods=["POST"])
+@limiter.limit("30 per hour")
+def api_v1_scan():
+    """API pública: escanea un dominio con autenticación por API key.
+    Headers: X-API-Key: rb_xxx...
+    Body JSON: {"dominio": "ejemplo.com"}
+    """
+    api_key = request.headers.get("X-API-Key", "")
+    if not api_key:
+        return jsonify({"error": "Header X-API-Key requerido"}), 401
+    user = User.query.filter_by(api_key=api_key).first()
+    if not user:
+        return jsonify({"error": "API key inválida"}), 401
+    # Limites: free=10/mes, pro=100/mes
+    max_calls = 10 if user.plan_efectivo == 'free' else 100
+    if (user.api_calls_month or 0) >= max_calls:
+        return jsonify({"error": f"Límite mensual alcanzado ({max_calls} llamadas)"}), 429
+
+    data = request.get_json() or {}
+    import re as _re_api
+    dominio = (data.get("dominio") or "").strip().lower()
+    dominio = _re_api.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
+    if not dominio or len(dominio) < 3:
+        return jsonify({"error": "Dominio no válido"}), 400
+
+    try:
+        es_ip_flag = engine.es_ip(dominio)
+        puertos = engine.scan_critical_ports_fast(dominio)
+        dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
+        headers_sec = engine.check_security_headers(dominio)
+        ssl_info = engine.ssl_scan(dominio)
+        riesgo, desglose = calcular_riesgo(puertos, dns, [], headers_sec)
+        if ssl_info.get("caducado"):
+            riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
+        label, color = label_riesgo(riesgo)
+
+        resultado = {
+            "dominio": dominio, "es_ip": es_ip_flag,
+            "puertos": puertos, "dns": dns,
+            "headers": {k: bool(v) for k, v in headers_sec.items()},
+            "ssl": ssl_info,
+            "riesgo": riesgo, "label": label, "color": color,
+            "desglose": desglose,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+        # Guardar en BD y contar uso
+        scan = Scan(user_id=user.id, objetivo=dominio, dominio=dominio,
+                    riesgo=riesgo, label=label, resultado=resultado)
+        db.session.add(scan)
+        user.api_calls_month = (user.api_calls_month or 0) + 1
+        db.session.commit()
+        return jsonify(resultado)
+    except Exception as e:
+        logger.exception(f"[API v1] Error escaneando {dominio}: {e}")
+        return jsonify({"error": "Error durante el escaneo"}), 500
+
+# ── 2FA TOTP (Google Authenticator) ──
+@app.route("/api/2fa/setup", methods=["POST"])
+@login_required
+@limiter.limit("5 per hour")
+def totp_setup():
+    """Genera un secreto TOTP y devuelve el QR code como data URI."""
+    try:
+        import pyotp, qrcode
+    except ImportError:
+        return jsonify({"ok": False, "error": "pyotp/qrcode no instalado"}), 500
+    user = db.session.get(User, current_user.id)
+    if user.totp_enabled:
+        return jsonify({"ok": False, "error": "2FA ya está activado"}), 400
+    secret = pyotp.random_base32()
+    user.totp_secret = secret
+    db.session.commit()
+    totp = pyotp.TOTP(secret)
+    uri = totp.provisioning_uri(name=user.email, issuer_name="ReconBase")
+    # Generar QR como PNG en base64
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+    return jsonify({"ok": True, "qr": f"data:image/png;base64,{b64}", "secret": secret})
+
+@app.route("/api/2fa/enable", methods=["POST"])
+@login_required
+@limiter.limit("10 per hour")
+def totp_enable():
+    """Verifica el código TOTP y activa 2FA."""
+    try:
+        import pyotp
+    except ImportError:
+        return jsonify({"ok": False, "error": "pyotp no instalado"}), 500
+    data = request.get_json() or {}
+    code = (data.get("code") or "").strip()
+    if not current_user.totp_secret:
+        return jsonify({"ok": False, "error": "Primero llama a /api/2fa/setup"}), 400
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(code, valid_window=1):
+        return jsonify({"ok": False, "error": "Código incorrecto"}), 400
+    user = db.session.get(User, current_user.id)
+    user.totp_enabled = True
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/2fa/disable", methods=["POST"])
+@login_required
+@limiter.limit("5 per hour")
+def totp_disable():
+    """Desactiva 2FA (requiere contraseña)."""
+    data = request.get_json() or {}
+    password = data.get("password", "")
+    if not current_user.check_password(password):
+        return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 400
+    user = db.session.get(User, current_user.id)
+    user.totp_enabled = False
+    user.totp_secret = None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/2fa/verify", methods=["POST"])
+@limiter.limit("10 per minute")
+def totp_verify_login():
+    """Paso 2 del login: verificar código TOTP."""
+    try:
+        import pyotp
+    except ImportError:
+        return jsonify({"ok": False, "error": "pyotp no instalado"}), 500
+    uid = session.get("2fa_pending_user")
+    if not uid:
+        return jsonify({"ok": False, "error": "No hay login pendiente de 2FA"}), 400
+    data = request.get_json() or {}
+    code = (data.get("code") or "").strip()
+    user = db.session.get(User, uid)
+    if not user or not user.totp_secret:
+        session.pop("2fa_pending_user", None)
+        return jsonify({"ok": False, "error": "Usuario no encontrado"}), 400
+    totp = pyotp.TOTP(user.totp_secret)
+    if not totp.verify(code, valid_window=1):
+        return jsonify({"ok": False, "error": "Código 2FA incorrecto"}), 400
+    session.pop("2fa_pending_user", None)
+    login_user(user)
+    return jsonify({"ok": True})
+
+# ── BLOG / CENTRO DE RECURSOS ──
+@app.route("/blog")
+def blog_index():
+    posts = BlogPost.query.filter_by(publicado=True).order_by(BlogPost.created_at.desc()).limit(50).all()
+    return render_template("blog.html", posts=posts)
+
+@app.route("/blog/<slug>")
+def blog_post(slug):
+    post = BlogPost.query.filter_by(slug=slug, publicado=True).first()
+    if not post:
+        return render_template("404.html"), 404
+    return render_template("blog_post.html", post=post)
+
+@app.route("/api/admin/blog", methods=["POST"])
+@login_required
+def admin_crear_post():
+    if not getattr(current_user, 'is_admin', False):
+        return abort(403)
+    data = request.get_json() or {}
+    slug = (data.get("slug") or "").strip().lower().replace(" ", "-")
+    titulo = (data.get("titulo") or "").strip()
+    contenido = data.get("contenido", "")
+    if not slug or not titulo or not contenido:
+        return jsonify({"ok": False, "error": "slug, titulo y contenido son obligatorios"}), 400
+    if BlogPost.query.filter_by(slug=slug).first():
+        return jsonify({"ok": False, "error": "Slug ya existe"}), 400
+    post = BlogPost(
+        slug=slug, titulo=titulo, contenido=contenido,
+        excerpt=(data.get("excerpt") or contenido[:200]),
+        autor=data.get("autor", "ReconBase"),
+        imagen=data.get("imagen"),
+        publicado=data.get("publicado", True),
+        tags=data.get("tags", ""),
+    )
+    db.session.add(post)
+    db.session.commit()
+    return jsonify({"ok": True, "id": post.id, "slug": post.slug})
+
+@app.route("/api/admin/blog/<int:post_id>", methods=["PUT"])
+@login_required
+def admin_editar_post(post_id):
+    if not getattr(current_user, 'is_admin', False):
+        return abort(403)
+    post = db.session.get(BlogPost, post_id)
+    if not post:
+        return jsonify({"ok": False, "error": "Post no encontrado"}), 404
+    data = request.get_json() or {}
+    for field in ("titulo", "contenido", "excerpt", "autor", "imagen", "tags", "publicado"):
+        if field in data:
+            setattr(post, field, data[field])
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/blog/<int:post_id>", methods=["DELETE"])
+@login_required
+def admin_borrar_post(post_id):
+    if not getattr(current_user, 'is_admin', False):
+        return abort(403)
+    post = db.session.get(BlogPost, post_id)
+    if not post:
+        return jsonify({"ok": False, "error": "Post no encontrado"}), 404
+    db.session.delete(post)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+# ── BANNER DE COOKIES ──
+@app.route("/api/cookie-consent", methods=["POST"])
+def cookie_consent():
+    """Registra el consentimiento de cookies (para cumplir con la ley)."""
+    resp = jsonify({"ok": True})
+    resp.set_cookie("cookie_consent", "accepted", max_age=365*24*3600, httponly=True, samesite="Lax")
+    return resp
+
+# ── EMAILS HTML TRANSACCIONALES ──
+def html_email_wrapper(titulo, cuerpo_html, cta_url=None, cta_text=None):
+    """Envuelve contenido en una plantilla HTML corporativa."""
+    cta_block = ""
+    if cta_url and cta_text:
+        cta_block = f'''
+        <tr><td style="padding:24px 40px 0">
+          <a href="{cta_url}" style="display:inline-block;background:#16A34A;color:#fff;
+            padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">
+            {cta_text}
+          </a>
+        </td></tr>'''
+    return f'''<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#060D09;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#060D09;padding:32px 0">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#0A1410;border:1px solid #152B1E;border-radius:12px;overflow:hidden">
+      <tr><td style="background:#080C14;padding:24px 40px;border-bottom:1px solid #152B1E">
+        <span style="font-size:22px;font-weight:900;letter-spacing:-0.5px">
+          <span style="color:#E2EDF8">RECON</span><span style="color:#22C55E">BASE</span>
+        </span>
+      </td></tr>
+      <tr><td style="padding:32px 40px 8px">
+        <h1 style="color:#E2EDF8;font-size:20px;margin:0 0 16px">{titulo}</h1>
+        <div style="color:#94A3B8;font-size:14px;line-height:1.7">{cuerpo_html}</div>
+      </td></tr>
+      {cta_block}
+      <tr><td style="padding:32px 40px 24px;border-top:1px solid #152B1E;margin-top:24px">
+        <p style="color:#475569;font-size:12px;margin:0">
+          ReconBase — Seguridad perimetral para PYMEs<br>
+          <a href="https://reconbase-production.up.railway.app" style="color:#22C55E;text-decoration:none">reconbase-production.up.railway.app</a>
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>'''
+
+def send_html_email(to, subject, titulo, cuerpo_html, cta_url=None, cta_text=None):
+    """Envía email HTML con fallback a texto plano."""
+    html = html_email_wrapper(titulo, cuerpo_html, cta_url, cta_text)
+    # Texto plano fallback
+    import re as _re_strip
+    text_body = _re_strip.sub(r'<[^>]+>', '', cuerpo_html).strip()
+    if cta_url:
+        text_body += f"\n\n{cta_text}: {cta_url}"
+
+    if RESEND_API_KEY:
+        payload = json.dumps({
+            "from": RESEND_FROM,
+            "to": [to] if isinstance(to, str) else to,
+            "subject": subject,
+            "html": html,
+            "text": text_body,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+                "User-Agent": "ReconBase/1.0 (+https://reconbase-production.up.railway.app)",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return True
+        except Exception as e:
+            logger.error(f"[Resend HTML] Error a {to}: {e}")
+            raise
+    else:
+        msg = Message(subject=subject, recipients=[to] if isinstance(to, str) else to,
+                      body=text_body, html=html)
+        mail.send(msg)
+        return True
 
 # ── ADMIN PANEL ──
 def admin_required(f):
@@ -1979,6 +2356,14 @@ with app.app_context():
         "ALTER TABLE users ADD COLUMN slack_webhook VARCHAR(500)",
         "ALTER TABLE users ADD COLUMN custom_webhook VARCHAR(500)",
         "CREATE TABLE IF NOT EXISTS domains (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, activo BOOLEAN DEFAULT TRUE NOT NULL, added_at TIMESTAMP DEFAULT NOW(), UNIQUE(user_id, dominio))",
+        "ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN alerta_umbral INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN api_key VARCHAR(64) UNIQUE",
+        "ALTER TABLE users ADD COLUMN api_calls_month INTEGER DEFAULT 0",
+        "ALTER TABLE domains ADD COLUMN scan_hora INTEGER",
+        "ALTER TABLE domains ADD COLUMN scan_dias VARCHAR(20)",
+        "CREATE TABLE IF NOT EXISTS blog_posts (id SERIAL PRIMARY KEY, slug VARCHAR(200) UNIQUE NOT NULL, titulo VARCHAR(300) NOT NULL, excerpt VARCHAR(500), contenido TEXT NOT NULL, autor VARCHAR(100) DEFAULT 'ReconBase', imagen VARCHAR(500), publicado BOOLEAN DEFAULT FALSE NOT NULL, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), tags VARCHAR(300))",
     ]:
         try:
             db.session.execute(text(col_sql))

@@ -65,6 +65,20 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="footer-link" style="margin-top:1rem">No tienes cuenta? <a href="/register">Registrate gratis</a></div>
     <div class="footer-link" style="margin-top:.75rem"><a href="/" style="color:var(--dim)">Volver a la web</a></div>
   </div>
+
+  <!-- 2FA step (hidden by default) -->
+  <div id="totp-card" class="card" style="display:none">
+    <div class="card-title" style="font-weight:700;font-size:1.1rem;margin-bottom:.3rem">Verificación 2FA</div>
+    <p style="color:var(--dim);font-size:.82rem;margin-bottom:1rem">Introduce el código de 6 dígitos de tu app de autenticación.</p>
+    <form onsubmit="handle2FA(event)">
+      <div class="form-group">
+        <label>Código TOTP</label>
+        <input type="text" id="totp-code" placeholder="000000" maxlength="6" required style="text-align:center;font-size:1.3rem;letter-spacing:.4rem;font-family:monospace">
+      </div>
+      <button type="submit" class="btn-submit">Verificar</button>
+    </form>
+    <div id="totp-error" class="error-msg"></div>
+  </div>
 </div>
 <script>
 function handleLogin(e) {
@@ -78,11 +92,37 @@ function handleLogin(e) {
   })
   .then(function(r){ return r.json(); })
   .then(function(data) {
-    if(data.ok) {
+    if(data.ok && data.requires_2fa) {
+      // Mostrar paso 2FA
+      document.querySelector('.card').style.display = 'none';
+      document.getElementById('totp-card').style.display = 'block';
+      setTimeout(function(){ document.getElementById('totp-code').focus(); }, 100);
+    } else if(data.ok) {
       window.location.href = '/';
     } else {
       var el = document.getElementById('error-msg');
       el.textContent = data.error || 'Email o contrasena incorrectos';
+      el.classList.add('show');
+    }
+  })
+  .catch(function(){ alert('Error de conexion'); });
+}
+
+function handle2FA(e) {
+  e.preventDefault();
+  var code = document.getElementById('totp-code').value.trim();
+  fetch('/api/2fa/verify', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code: code})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if(data.ok) {
+      window.location.href = '/';
+    } else {
+      var el = document.getElementById('totp-error');
+      el.textContent = data.error || 'Código incorrecto';
       el.classList.add('show');
     }
   })

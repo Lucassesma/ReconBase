@@ -244,6 +244,66 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="msg msg-err" id="int-err"></div>
   </div>
 
+  <!-- Alertas configurables -->
+  <div class="card">
+    <div class="card-title">Alertas</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
+      Configura el nivel mínimo de riesgo para recibir alertas por email.
+    </div>
+    <select id="alerta-umbral" class="form-input" style="margin-bottom:.5rem" onchange="guardarAlertas()">
+      <option value="0">Todas las alertas (cualquier riesgo)</option>
+      <option value="40">Solo moderado o superior (40%+)</option>
+      <option value="70">Solo crítico (70%+)</option>
+    </select>
+    <div class="msg msg-ok" id="alert-ok" style="display:none">Guardado</div>
+  </div>
+
+  <!-- API Key -->
+  <div class="card">
+    <div class="card-title">API pública</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
+      Usa tu API key para integrar escaneos en tus propias herramientas o CI/CD.
+      <br>Free: 10 llamadas/mes · Pro: 100 llamadas/mes.
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
+      <input class="form-input" type="text" id="api-key-display" readonly placeholder="Sin API key" style="flex:1;font-family:'JetBrains Mono',monospace;font-size:.78rem;margin-bottom:0">
+      <button class="btn btn-green" onclick="generarApiKey()" style="white-space:nowrap;padding:.55rem .8rem;font-size:.78rem">Generar</button>
+    </div>
+    <details style="margin-top:.5rem">
+      <summary style="cursor:pointer;color:var(--green);font-size:.8rem;font-weight:600">Ver ejemplo de uso</summary>
+      <pre style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.8rem;margin-top:.5rem;font-size:.75rem;overflow-x:auto;color:var(--muted)">curl -X POST https://reconbase-production.up.railway.app/api/v1/scan \
+  -H "X-API-Key: tu_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"dominio": "ejemplo.com"}'</pre>
+    </details>
+  </div>
+
+  <!-- 2FA -->
+  <div class="card">
+    <div class="card-title">Autenticación de dos factores (2FA)</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
+      Protege tu cuenta con Google Authenticator u otra app TOTP compatible.
+    </div>
+    <div id="totp-status"></div>
+    <div id="totp-setup" style="display:none;margin-top:.75rem">
+      <div id="totp-qr" style="text-align:center;margin-bottom:.75rem"></div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Escanea el QR con tu app y escribe el código de 6 dígitos:</div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input class="form-input" type="text" id="totp-code" placeholder="000000" maxlength="6" style="flex:1;margin-bottom:0;text-align:center;font-size:1.1rem;letter-spacing:.3rem;font-family:'JetBrains Mono',monospace">
+        <button class="btn btn-green" onclick="enableTotp()" style="white-space:nowrap;padding:.55rem .8rem">Activar</button>
+      </div>
+      <div class="msg msg-err" id="totp-err" style="margin-top:.4rem"></div>
+    </div>
+    <div id="totp-disable" style="display:none;margin-top:.75rem">
+      <div class="form-group">
+        <label class="form-label">Contraseña para desactivar 2FA</label>
+        <input class="form-input" type="password" id="totp-disable-pw">
+      </div>
+      <button class="btn-outline-red" onclick="disableTotp()" style="font-size:.82rem">Desactivar 2FA</button>
+      <div class="msg msg-err" id="totp-dis-err" style="margin-top:.4rem"></div>
+    </div>
+  </div>
+
   <!-- Privacidad (RGPD) -->
   <div class="card">
     <div class="card-title">Privacidad y datos (RGPD)</div>
@@ -320,6 +380,87 @@ async function cambiarPassword() {
 function cerrarSesion() {
   fetch('/api/logout', {method:'POST'}).then(function(){ window.location.href='/'; });
 }
+
+// ── Alertas ──
+async function loadAlertas() {
+  try {
+    var r = await fetch('/api/alertas');
+    var d = await r.json();
+    document.getElementById('alerta-umbral').value = d.alerta_umbral || 0;
+  } catch(e) {}
+}
+async function guardarAlertas() {
+  var ok = document.getElementById('alert-ok');
+  var r = await fetch('/api/alertas', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({alerta_umbral:parseInt(document.getElementById('alerta-umbral').value)})});
+  var d = await r.json();
+  if (d.ok) { ok.style.display='block'; setTimeout(function(){ok.style.display='none'},2000); }
+}
+loadAlertas();
+
+// ── API Key ──
+async function loadApiKey() {
+  try {
+    var r = await fetch('/api/apikey');
+    var d = await r.json();
+    document.getElementById('api-key-display').value = d.api_key || '';
+  } catch(e) {}
+}
+async function generarApiKey() {
+  if (!confirm('¿Generar nueva API key? La anterior dejará de funcionar.')) return;
+  var r = await fetch('/api/apikey', {method:'POST',headers:{'Content-Type':'application/json'}});
+  var d = await r.json();
+  if (d.ok) { document.getElementById('api-key-display').value = d.api_key; toast('API key generada','green'); }
+}
+loadApiKey();
+
+// ── 2FA TOTP ──
+async function loadTotpStatus() {
+  var status = document.getElementById('totp-status');
+  var setupDiv = document.getElementById('totp-setup');
+  var disableDiv = document.getElementById('totp-disable');
+  // Check if 2FA is enabled by trying to get setup (which fails if already enabled)
+  var is2fa = {{ 'true' if user.totp_enabled else 'false' }};
+  if (is2fa) {
+    status.innerHTML = '<div style="display:flex;align-items:center;gap:.5rem;padding:.6rem;background:#052e16;border:1px solid #15803D;border-radius:6px;font-size:.82rem;color:#22C55E;font-weight:600"><span>2FA activado</span></div>';
+    disableDiv.style.display = 'block';
+    setupDiv.style.display = 'none';
+  } else {
+    status.innerHTML = '<button class="btn btn-green" onclick="setupTotp()" style="font-size:.82rem">Configurar 2FA</button>';
+    disableDiv.style.display = 'none';
+  }
+}
+async function setupTotp() {
+  var r = await fetch('/api/2fa/setup', {method:'POST',headers:{'Content-Type':'application/json'}});
+  var d = await r.json();
+  if (d.ok) {
+    document.getElementById('totp-qr').innerHTML = '<img src="' + d.qr + '" style="width:200px;height:200px;border-radius:8px">';
+    document.getElementById('totp-setup').style.display = 'block';
+    document.getElementById('totp-status').innerHTML = '<div style="font-size:.8rem;color:var(--muted)">Escanea con Google Authenticator:</div>';
+  } else {
+    toast(d.error || 'Error', 'red');
+  }
+}
+async function enableTotp() {
+  var code = document.getElementById('totp-code').value.trim();
+  var err = document.getElementById('totp-err');
+  err.style.display = 'none';
+  if (code.length !== 6) { err.textContent='El código debe tener 6 dígitos'; err.style.display='block'; return; }
+  var r = await fetch('/api/2fa/enable', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})});
+  var d = await r.json();
+  if (d.ok) { toast('2FA activado correctamente','green'); setTimeout(function(){location.reload();},1500); }
+  else { err.textContent=d.error||'Código incorrecto'; err.style.display='block'; }
+}
+async function disableTotp() {
+  var pw = document.getElementById('totp-disable-pw').value;
+  var err = document.getElementById('totp-dis-err');
+  err.style.display = 'none';
+  if (!pw) { err.textContent='Introduce tu contraseña'; err.style.display='block'; return; }
+  var r = await fetch('/api/2fa/disable', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  var d = await r.json();
+  if (d.ok) { toast('2FA desactivado','green'); setTimeout(function(){location.reload();},1500); }
+  else { err.textContent=d.error||'Error'; err.style.display='block'; }
+}
+loadTotpStatus();
 
 // ── Dominios ──
 async function loadDominios() {
