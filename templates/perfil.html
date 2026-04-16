@@ -265,9 +265,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
       Usa tu API key para integrar escaneos en tus propias herramientas o CI/CD.
       <br>Free: 10 llamadas/mes · Pro: 100 llamadas/mes.
     </div>
-    <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem">
-      <input class="form-input" type="text" id="api-key-display" readonly placeholder="Sin API key" style="flex:1;font-family:'JetBrains Mono',monospace;font-size:.78rem;margin-bottom:0">
-      <button class="btn btn-green" onclick="generarApiKey()" style="white-space:nowrap;padding:.55rem .8rem;font-size:.78rem">Generar</button>
+    <div style="margin-bottom:.5rem">
+      <div style="position:relative;margin-bottom:.5rem">
+        <input type="text" id="api-key-display" readonly placeholder="Pulsa «Generar» para crear tu API key"
+          style="width:100%;box-sizing:border-box;background:#080C14;border:1px solid var(--border);border-radius:6px;color:#E2E8F0;font-family:'JetBrains Mono',monospace;font-size:.78rem;padding:.65rem 2.4rem .65rem .85rem;outline:none;transition:border-color .2s">
+        <button onclick="navigator.clipboard.writeText(document.getElementById('api-key-display').value).then(function(){rbToast('Copiado','green')})" title="Copiar"
+          style="position:absolute;right:.5rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:0;font-size:.85rem">⎘</button>
+      </div>
+      <button class="btn btn-green" onclick="generarApiKey()">Generar nueva API key</button>
     </div>
     <details style="margin-top:.5rem">
       <summary style="cursor:pointer;color:var(--green);font-size:.8rem;font-weight:600">Ver ejemplo de uso</summary>

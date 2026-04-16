@@ -336,12 +336,13 @@ function scLoadComparar(scans) {
     return;
   }
   if (empty) empty.style.display = 'none';
-  selA.innerHTML = '<option value="">— Selecciona —</option>';
-  selB.innerHTML = '<option value="">— Selecciona —</option>';
+  var optStyle = 'background:#0D1117;color:#E2E8F0';
+  selA.innerHTML = '<option value="" style="' + optStyle + '">— Selecciona —</option>';
+  selB.innerHTML = '<option value="" style="' + optStyle + '">— Selecciona —</option>';
   scans.forEach(function(s, i) {
     var label = (s.objetivo || s.dominio) + ' · ' + (s.timestamp || '') + ' · ' + s.riesgo + '%';
-    selA.innerHTML += '<option value="' + i + '">' + label + '</option>';
-    selB.innerHTML += '<option value="' + i + '">' + label + '</option>';
+    selA.innerHTML += '<option value="' + i + '" style="' + optStyle + '">' + label + '</option>';
+    selB.innerHTML += '<option value="' + i + '" style="' + optStyle + '">' + label + '</option>';
   });
   selA.value = scans.length - 1;
   selB.value = 0;
