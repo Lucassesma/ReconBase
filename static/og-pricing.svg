@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#060D09"/>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#152B1E" stroke-width="0.5"/>
+    </pattern>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#16A34A" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#060D09" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <text x="600" y="200" font-family="Arial Black, sans-serif" font-weight="900" font-size="84" letter-spacing="-3" fill="#E2EDF8" text-anchor="middle">
+    <tspan fill="#E2EDF8">RECON</tspan><tspan fill="#22C55E">BASE</tspan>
+  </text>
+  <text x="600" y="280" font-family="Arial, sans-serif" font-size="32" fill="#64748B" text-anchor="middle" letter-spacing="1">Planes y precios</text>
+  <line x1="400" y1="320" x2="800" y2="320" stroke="#152B1E" stroke-width="1"/>
+  <rect x="160" y="360" width="340" height="180" rx="12" fill="#0A1410" stroke="#152B1E" stroke-width="1"/>
+  <text x="330" y="410" font-family="Arial Black, sans-serif" font-weight="900" font-size="28" fill="#E2EDF8" text-anchor="middle">GRATIS</text>
+  <text x="330" y="450" font-family="Arial, sans-serif" font-size="48" fill="#22C55E" text-anchor="middle" font-weight="900">0&#8364;</text>
+  <text x="330" y="485" font-family="Arial, sans-serif" font-size="16" fill="#64748B" text-anchor="middle">10 escaneos/mes</text>
+  <text x="330" y="510" font-family="Arial, sans-serif" font-size="16" fill="#64748B" text-anchor="middle">Analisis completo</text>
+  <rect x="700" y="360" width="340" height="180" rx="12" fill="#0A1410" stroke="#22C55E" stroke-width="2"/>
+  <text x="870" y="410" font-family="Arial Black, sans-serif" font-weight="900" font-size="28" fill="#22C55E" text-anchor="middle">PRO</text>
+  <text x="870" y="450" font-family="Arial, sans-serif" font-size="48" fill="#E2EDF8" text-anchor="middle" font-weight="900">29&#8364;</text>
+  <text x="870" y="485" font-family="Arial, sans-serif" font-size="16" fill="#64748B" text-anchor="middle">Escaneos ilimitados</text>
+  <text x="870" y="510" font-family="Arial, sans-serif" font-size="16" fill="#64748B" text-anchor="middle">Vigilancia nocturna 24/7</text>
+</svg>

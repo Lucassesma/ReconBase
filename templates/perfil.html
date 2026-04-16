@@ -213,6 +213,39 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="msg msg-err" id="msg-err"></div>
   </div>
 
+  <!-- Mis dominios -->
+  <div class="card">
+    <div class="card-title">Mis dominios</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
+      Gestiona los dominios que quieres monitorizar. Plan Free: 1 dominio · Plan Pro: hasta 10.
+    </div>
+    <div id="dom-list" style="margin-bottom:.75rem"></div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <input class="form-input" type="text" id="dom-input" placeholder="ejemplo.com" style="flex:1;margin-bottom:0">
+      <button class="btn btn-green" onclick="addDominio()" style="white-space:nowrap;padding:.55rem 1rem">Añadir</button>
+    </div>
+    <div class="msg msg-err" id="dom-err" style="margin-top:.5rem"></div>
+  </div>
+
+  <!-- Integraciones -->
+  <div class="card">
+    <div class="card-title">Integraciones</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
+      Recibe notificaciones automáticas en Slack o tu propio webhook tras cada escaneo.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Slack Webhook URL</label>
+      <input class="form-input" type="url" id="int-slack" placeholder="https://hooks.slack.com/services/T.../B.../xxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Webhook personalizado (HTTPS)</label>
+      <input class="form-input" type="url" id="int-webhook" placeholder="https://tu-servidor.com/webhook">
+    </div>
+    <button class="btn btn-green" onclick="guardarIntegraciones()">Guardar integraciones</button>
+    <div class="msg msg-ok" id="int-ok" style="display:none">Integraciones guardadas</div>
+    <div class="msg msg-err" id="int-err"></div>
+  </div>
+
   <!-- Privacidad (RGPD) -->
   <div class="card">
     <div class="card-title">Privacidad y datos (RGPD)</div>
@@ -290,6 +323,75 @@ function cerrarSesion() {
   fetch('/api/logout', {method:'POST'}).then(function(){ window.location.href='/'; });
 }
 
+// ── Dominios ──
+async function loadDominios() {
+  try {
+    var r = await fetch('/api/dominios');
+    var d = await r.json();
+    var list = document.getElementById('dom-list');
+    if (!d.dominios || d.dominios.length === 0) {
+      list.innerHTML = '<div style="font-size:.8rem;color:var(--dim);padding:.4rem 0">No tienes dominios configurados</div>';
+      return;
+    }
+    list.innerHTML = d.dominios.map(function(dom) {
+      var color = dom.activo ? 'var(--green)' : 'var(--dim)';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem .6rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.35rem">' +
+        '<span style="font-family:JetBrains Mono,monospace;font-size:.82rem;color:' + color + '">' + dom.dominio + '</span>' +
+        '<span style="display:flex;gap:.4rem">' +
+          '<button onclick="toggleDom(' + dom.id + ')" style="background:none;border:1px solid var(--border);color:var(--muted);padding:.2rem .5rem;border-radius:4px;font-size:.7rem;cursor:pointer">' + (dom.activo ? 'Pausar' : 'Activar') + '</button>' +
+          '<button onclick="delDom(' + dom.id + ')" style="background:none;border:1px solid #7F1D1D;color:#F87171;padding:.2rem .5rem;border-radius:4px;font-size:.7rem;cursor:pointer">✕</button>' +
+        '</span></div>';
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+async function addDominio() {
+  var inp = document.getElementById('dom-input');
+  var err = document.getElementById('dom-err');
+  err.style.display = 'none';
+  if (!inp.value.trim()) { err.textContent='Introduce un dominio'; err.style.display='block'; return; }
+  var r = await fetch('/api/dominios', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dominio:inp.value.trim()})});
+  var d = await r.json();
+  if (d.ok) { inp.value=''; loadDominios(); }
+  else { err.textContent=d.error||'Error'; err.style.display='block'; }
+}
+async function delDom(id) {
+  if (!confirm('¿Eliminar este dominio?')) return;
+  await fetch('/api/dominios/'+id, {method:'DELETE'});
+  loadDominios();
+}
+async function toggleDom(id) {
+  await fetch('/api/dominios/'+id+'/toggle', {method:'POST'});
+  loadDominios();
+}
+loadDominios();
+
+// ── Integraciones ──
+async function loadIntegraciones() {
+  try {
+    var r = await fetch('/api/integraciones');
+    var d = await r.json();
+    document.getElementById('int-slack').value = d.slack_webhook || '';
+    document.getElementById('int-webhook').value = d.custom_webhook || '';
+  } catch(e) { console.error(e); }
+}
+async function guardarIntegraciones() {
+  var ok  = document.getElementById('int-ok');
+  var err = document.getElementById('int-err');
+  ok.style.display='none'; err.style.display='none';
+  var r = await fetch('/api/integraciones', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      slack_webhook: document.getElementById('int-slack').value,
+      custom_webhook: document.getElementById('int-webhook').value
+    })
+  });
+  var d = await r.json();
+  if (d.ok) { ok.style.display='block'; setTimeout(function(){ok.style.display='none';},3000); }
+  else { err.textContent=d.error||'Error'; err.style.display='block'; }
+}
+loadIntegraciones();
+
+// ── Eliminar cuenta ──
 async function eliminarCuenta() {
   var pass    = document.getElementById('del-pass').value;
   var confirm = document.getElementById('del-confirm').value.trim();

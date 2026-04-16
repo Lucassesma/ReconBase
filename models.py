@@ -22,7 +22,11 @@ class User(UserMixin, db.Model):
     reset_token         = db.Column(db.String(64), nullable=True)
     reset_token_expiry  = db.Column(db.DateTime, nullable=True)
     share_token         = db.Column(db.String(32), nullable=True)
+    is_admin            = db.Column(db.Boolean, default=False, nullable=False)
+    slack_webhook       = db.Column(db.String(500), nullable=True)
+    custom_webhook      = db.Column(db.String(500), nullable=True)
     scans               = db.relationship('Scan', backref='user', lazy=True)
+    domains             = db.relationship('Domain', backref='user', lazy=True, cascade='all, delete-orphan')
 
     @property
     def plan_efectivo(self):
@@ -56,3 +60,13 @@ class Scan(db.Model):
     pdf_unlocked  = db.Column(db.Boolean, default=False)
     share_token   = db.Column(db.String(32), nullable=True)
     timestamp     = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Domain(db.Model):
+    __tablename__ = 'domains'
+    id         = db.Column(db.Integer, primary_key=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dominio    = db.Column(db.String(255), nullable=False)
+    activo     = db.Column(db.Boolean, default=True, nullable=False)
+    added_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'dominio', name='uq_user_domain'),)

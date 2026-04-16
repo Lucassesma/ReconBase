@@ -5,7 +5,7 @@ from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from models import db, User, Scan
+from models import db, User, Scan, Domain
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error
 from datetime import datetime, timedelta
@@ -46,6 +46,10 @@ app.config['MAIL_USE_TLS']  = True
 app.config['MAIL_USERNAME'] = os.getenv("MAIL_USER", "")
 app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASS", "")
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_USER", "")
+
+# ─── Analytics (opcionales) ───
+app.config['PLAUSIBLE_DOMAIN'] = os.getenv("PLAUSIBLE_DOMAIN", "")  # ej: reconbase-production.up.railway.app
+app.config['GA_ID'] = os.getenv("GA_ID", "")  # ej: G-XXXXXXXXXX
 
 db.init_app(app)
 mail = Mail(app)
@@ -143,11 +147,11 @@ def set_security_headers(resp):
     resp.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://plausible.io https://www.googletagmanager.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https://api.stripe.com; "
+        "connect-src 'self' https://api.stripe.com https://plausible.io https://www.google-analytics.com; "
         "frame-src https://js.stripe.com https://checkout.stripe.com; "
         "form-action 'self' https://checkout.stripe.com; "
         "base-uri 'self'; "
@@ -1281,6 +1285,9 @@ def scan():
     elif riesgo > riesgo_anterior:
         enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
 
+    # Notificar integraciones (Slack / webhook) en segundo plano
+    threading.Thread(target=notificar_integraciones, args=(current_user, resultado), daemon=True).start()
+
     return jsonify(resultado)
 
 @app.route("/api/historial", methods=["GET"])
@@ -1432,36 +1439,45 @@ def escaneo_automatico():
                 continue
             if dia_actual not in dias:
                 continue
-            ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
-            if not ultimo:
-                continue
-            dominio  = ultimo.dominio
-            objetivo = dominio
-            try:
-                puertos = engine.scan_critical_ports_fast(dominio)
-                dns     = engine.check_email_spoofing(dominio)
-                headers = engine.check_security_headers(dominio)
-                subs    = engine.scan_subdomains(dominio)
-                riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
-                label, color     = label_riesgo(riesgo)
-                resultado = {
-                    "objetivo": objetivo, "dominio": dominio,
-                    "puertos": puertos, "dns": dns,
-                    "headers": {k: bool(v) for k, v in headers.items()},
-                    "subs": subs, "leaks": 0, "leaks_raw": [],
-                    "riesgo": riesgo, "label": label, "color": color,
-                    "desglose": desglose,
-                    "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
-                    "automatico": True
-                }
-                scan = Scan(user_id=user.id, objetivo=objetivo, dominio=dominio,
-                            riesgo=riesgo, label=label, resultado=resultado)
-                db.session.add(scan)
-                db.session.commit()
-                enviar_informe_automatico(user.email, dominio, riesgo, label, desglose, puertos, len(subs))
-                print(f"[Cron] Escaneado {dominio} para {user.email}")
-            except Exception as e:
-                print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
+
+            # Multi-dominio: escanear todos los dominios activos del usuario.
+            # Fallback: si no tiene dominios configurados, usar el último escaneo.
+            dominios_user = Domain.query.filter_by(user_id=user.id, activo=True).all()
+            if not dominios_user:
+                ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
+                if not ultimo:
+                    continue
+                dominios_user = [type('D', (), {'dominio': ultimo.dominio})()]
+
+            for dom_obj in dominios_user:
+                dominio  = dom_obj.dominio
+                objetivo = dominio
+                try:
+                    puertos = engine.scan_critical_ports_fast(dominio)
+                    dns     = engine.check_email_spoofing(dominio)
+                    headers = engine.check_security_headers(dominio)
+                    subs    = engine.scan_subdomains(dominio)
+                    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+                    label, color     = label_riesgo(riesgo)
+                    resultado = {
+                        "objetivo": objetivo, "dominio": dominio,
+                        "puertos": puertos, "dns": dns,
+                        "headers": {k: bool(v) for k, v in headers.items()},
+                        "subs": subs, "leaks": 0, "leaks_raw": [],
+                        "riesgo": riesgo, "label": label, "color": color,
+                        "desglose": desglose,
+                        "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+                        "automatico": True
+                    }
+                    scan = Scan(user_id=user.id, objetivo=objetivo, dominio=dominio,
+                                riesgo=riesgo, label=label, resultado=resultado)
+                    db.session.add(scan)
+                    db.session.commit()
+                    enviar_informe_automatico(user.email, dominio, riesgo, label, desglose, puertos, len(subs))
+                    notificar_integraciones(user, resultado)
+                    print(f"[Cron] Escaneado {dominio} para {user.email}")
+                except Exception as e:
+                    print(f"[Cron] Error escaneando {dominio} ({user.email}): {e}")
 
 def enviar_alerta_ssl(destinatario, dominio, dias_restantes):
     def _send():
@@ -1645,6 +1661,204 @@ def guardar_horario():
         db.session.rollback()
         return jsonify({"ok": False, "error": str(e)}), 500
 
+# ── ADMIN PANEL ──
+def admin_required(f):
+    """Decorador: solo usuarios con is_admin=True."""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+            return abort(403)
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route("/admin")
+@login_required
+@admin_required
+def admin_panel():
+    from sqlalchemy import func, extract
+    now = datetime.utcnow()
+    total_users     = User.query.count()
+    total_scans     = Scan.query.count()
+    users_pro       = User.query.filter_by(plan='pro').count()
+    users_trial     = User.query.filter(User.trial_end.isnot(None), User.trial_end > now, User.plan == 'free').count()
+    scans_hoy       = Scan.query.filter(func.date(Scan.timestamp) == now.date()).count()
+    scans_mes       = Scan.query.filter(extract('month', Scan.timestamp) == now.month, extract('year', Scan.timestamp) == now.year).count()
+    users_verified  = User.query.filter_by(email_verified=True).count()
+    recent_users    = User.query.order_by(User.created_at.desc()).limit(50).all()
+    recent_scans    = Scan.query.order_by(Scan.timestamp.desc()).limit(20).all()
+    return render_template("admin.html",
+        total_users=total_users, total_scans=total_scans,
+        users_pro=users_pro, users_trial=users_trial,
+        scans_hoy=scans_hoy, scans_mes=scans_mes,
+        users_verified=users_verified,
+        recent_users=recent_users, recent_scans=recent_scans,
+        now=now)
+
+@app.route("/api/admin/user/<int:uid>/plan", methods=["POST"])
+@login_required
+@admin_required
+def admin_cambiar_plan(uid):
+    data = request.get_json() or {}
+    plan = data.get("plan", "free")
+    if plan not in ("free", "pro"):
+        return jsonify({"ok": False, "error": "Plan inválido"}), 400
+    user = db.session.get(User, uid)
+    if not user:
+        return jsonify({"ok": False, "error": "Usuario no encontrado"}), 404
+    user.plan = plan
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/admin/user/<int:uid>/delete", methods=["POST"])
+@login_required
+@admin_required
+def admin_borrar_usuario(uid):
+    user = db.session.get(User, uid)
+    if not user:
+        return jsonify({"ok": False, "error": "Usuario no encontrado"}), 404
+    Scan.query.filter_by(user_id=uid).delete(synchronize_session=False)
+    Domain.query.filter_by(user_id=uid).delete(synchronize_session=False)
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+# ── MULTI-DOMINIO ──
+@app.route("/api/dominios", methods=["GET"])
+@login_required
+def listar_dominios():
+    doms = Domain.query.filter_by(user_id=current_user.id).order_by(Domain.added_at.desc()).all()
+    return jsonify({"dominios": [
+        {"id": d.id, "dominio": d.dominio, "activo": d.activo,
+         "added_at": d.added_at.strftime("%d/%m/%Y") if d.added_at else None}
+        for d in doms
+    ]})
+
+@app.route("/api/dominios", methods=["POST"])
+@login_required
+@limiter.limit("20 per hour")
+def anadir_dominio():
+    data = request.get_json() or {}
+    import re as _re3
+    dominio = (data.get("dominio") or "").strip().lower()
+    dominio = _re3.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
+    if not dominio or len(dominio) < 3:
+        return jsonify({"ok": False, "error": "Dominio no válido"}), 400
+    # Limites: free=1, pro=10
+    max_doms = 1 if current_user.plan_efectivo == 'free' else 10
+    count = Domain.query.filter_by(user_id=current_user.id).count()
+    if count >= max_doms:
+        plan_txt = "1 dominio en plan Gratis" if max_doms == 1 else f"{max_doms} dominios en plan Pro"
+        return jsonify({"ok": False, "error": f"Máximo {plan_txt}. Elimina uno antes de añadir otro."}), 400
+    existing = Domain.query.filter_by(user_id=current_user.id, dominio=dominio).first()
+    if existing:
+        return jsonify({"ok": False, "error": "Este dominio ya está añadido"}), 400
+    dom = Domain(user_id=current_user.id, dominio=dominio)
+    db.session.add(dom)
+    db.session.commit()
+    return jsonify({"ok": True, "id": dom.id, "dominio": dom.dominio})
+
+@app.route("/api/dominios/<int:dom_id>", methods=["DELETE"])
+@login_required
+def eliminar_dominio(dom_id):
+    dom = Domain.query.filter_by(id=dom_id, user_id=current_user.id).first()
+    if not dom:
+        return jsonify({"ok": False, "error": "Dominio no encontrado"}), 404
+    db.session.delete(dom)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/dominios/<int:dom_id>/toggle", methods=["POST"])
+@login_required
+def toggle_dominio(dom_id):
+    dom = Domain.query.filter_by(id=dom_id, user_id=current_user.id).first()
+    if not dom:
+        return jsonify({"ok": False, "error": "Dominio no encontrado"}), 404
+    dom.activo = not dom.activo
+    db.session.commit()
+    return jsonify({"ok": True, "activo": dom.activo})
+
+# ── INTEGRACIONES (Slack / Webhook) ──
+@app.route("/api/integraciones", methods=["GET"])
+@login_required
+def get_integraciones():
+    return jsonify({
+        "slack_webhook": current_user.slack_webhook or "",
+        "custom_webhook": current_user.custom_webhook or "",
+    })
+
+@app.route("/api/integraciones", methods=["POST"])
+@login_required
+@limiter.limit("10 per hour")
+def guardar_integraciones():
+    data = request.get_json() or {}
+    user = db.session.get(User, current_user.id)
+    slack = (data.get("slack_webhook") or "").strip()
+    custom = (data.get("custom_webhook") or "").strip()
+    # Validar URLs
+    if slack and not slack.startswith("https://hooks.slack.com/"):
+        return jsonify({"ok": False, "error": "La URL de Slack debe empezar por https://hooks.slack.com/"}), 400
+    if custom and not custom.startswith("https://"):
+        return jsonify({"ok": False, "error": "El webhook debe usar HTTPS"}), 400
+    user.slack_webhook = slack or None
+    user.custom_webhook = custom or None
+    db.session.commit()
+    return jsonify({"ok": True})
+
+def notificar_integraciones(user, resultado):
+    """Envía notificación de resultado de escaneo a Slack y/o webhook custom del usuario."""
+    dominio = resultado.get("dominio", "")
+    riesgo  = resultado.get("riesgo", 0)
+    label   = resultado.get("label", "")
+    puertos = resultado.get("puertos", [])
+    base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+
+    # Slack
+    if user.slack_webhook:
+        try:
+            emoji = ":red_circle:" if riesgo >= 70 else ":large_orange_circle:" if riesgo >= 40 else ":large_green_circle:"
+            slack_msg = {
+                "text": f"{emoji} *ReconBase — Escaneo completado*",
+                "blocks": [
+                    {"type": "header", "text": {"type": "plain_text", "text": f"ReconBase — Escaneo de {dominio}"}},
+                    {"type": "section", "fields": [
+                        {"type": "mrkdwn", "text": f"*Riesgo:* {riesgo}% ({label})"},
+                        {"type": "mrkdwn", "text": f"*Puertos expuestos:* {len(puertos)}"},
+                    ]},
+                    {"type": "actions", "elements": [
+                        {"type": "button", "text": {"type": "plain_text", "text": "Ver en ReconBase"}, "url": base_url}
+                    ]}
+                ]
+            }
+            payload = json.dumps(slack_msg).encode("utf-8")
+            req = urllib.request.Request(user.slack_webhook, data=payload,
+                                        headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
+                                        method="POST")
+            urllib.request.urlopen(req, timeout=10)
+            logger.info(f"[Slack] Notificación enviada a {user.email}")
+        except Exception as e:
+            logger.error(f"[Slack] Error para {user.email}: {e}")
+
+    # Custom webhook
+    if user.custom_webhook:
+        try:
+            webhook_payload = json.dumps({
+                "event": "scan_completed",
+                "dominio": dominio,
+                "riesgo": riesgo,
+                "label": label,
+                "puertos": len(puertos),
+                "timestamp": resultado.get("timestamp", ""),
+                "url": base_url,
+            }).encode("utf-8")
+            req = urllib.request.Request(user.custom_webhook, data=webhook_payload,
+                                        headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
+                                        method="POST")
+            urllib.request.urlopen(req, timeout=10)
+            logger.info(f"[Webhook] Notificación enviada a {user.email}")
+        except Exception as e:
+            logger.error(f"[Webhook] Error para {user.email}: {e}")
+
 with app.app_context():
     db.create_all()
     from sqlalchemy import text
@@ -1660,6 +1874,10 @@ with app.app_context():
         "ALTER TABLE users ADD COLUMN reset_token_expiry TIMESTAMP",
         "ALTER TABLE users ADD COLUMN share_token VARCHAR(32)",
         "ALTER TABLE scans ADD COLUMN share_token VARCHAR(32)",
+        "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN slack_webhook VARCHAR(500)",
+        "ALTER TABLE users ADD COLUMN custom_webhook VARCHAR(500)",
+        "CREATE TABLE IF NOT EXISTS domains (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, activo BOOLEAN DEFAULT TRUE NOT NULL, added_at TIMESTAMP DEFAULT NOW(), UNIQUE(user_id, dominio))",
     ]:
         try:
             db.session.execute(text(col_sql))

@@ -29,6 +29,15 @@
 <meta name="twitter:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
 <meta name="twitter:image" content="https://reconbase-production.up.railway.app/static/og-image.svg">
 
+<!-- Analytics (Plausible o GA, configurable por env) -->
+{% if config.PLAUSIBLE_DOMAIN %}
+<script defer data-domain="{{ config.PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>
+{% endif %}
+{% if config.GA_ID %}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>
+{% endif %}
+
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
 {

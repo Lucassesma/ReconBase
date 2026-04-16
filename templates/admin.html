@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — ReconBase</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--dim:#475569;--green:#22C55E;--green-dk:#15803D;--red:#EF4444;--amber:#F59E0B;--blue:#3B82F6}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 5%;border-bottom:1px solid var(--border)}
+.logo-text{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.container{max-width:1100px;margin:0 auto;padding:2rem 5%}
+h1{font-size:1.5rem;font-weight:800;margin-bottom:1.5rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:2rem}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.2rem;text-align:center}
+.stat-val{font-size:1.8rem;font-weight:800;color:var(--green)}
+.stat-label{font-size:.75rem;color:var(--muted);margin-top:.3rem}
+.stat-val.red{color:var(--red)}.stat-val.amber{color:var(--amber)}.stat-val.blue{color:var(--blue)}
+table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.82rem}
+th{text-align:left;padding:.6rem .5rem;border-bottom:2px solid var(--border);color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}
+td{padding:.55rem .5rem;border-bottom:1px solid var(--border)}
+tr:hover{background:rgba(34,197,94,.04)}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.7rem;font-weight:700;text-transform:uppercase}
+.badge-pro{background:#052e16;color:#22C55E;border:1px solid #15803D}
+.badge-free{background:#1a1a2e;color:#64748B;border:1px solid #334155}
+.badge-admin{background:#1e1b4b;color:#818cf8;border:1px solid #4338ca}
+.badge-trial{background:#451a03;color:#F59E0B;border:1px solid #92400e}
+.btn-sm{padding:.3rem .6rem;border-radius:5px;font-size:.72rem;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.btn-sm:hover{border-color:var(--green);color:var(--green)}
+.btn-sm.red:hover{border-color:var(--red);color:var(--red)}
+.section-title{font-size:1rem;font-weight:700;margin:2rem 0 .5rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.78rem}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo-text"><span style="color:var(--text)">RECON</span><span style="color:var(--green)">BASE</span></a>
+  <div style="display:flex;gap:1rem;align-items:center">
+    <span class="badge badge-admin">ADMIN</span>
+    <a href="/perfil" style="font-size:.82rem;color:var(--muted)">Perfil</a>
+    <a href="/" style="font-size:.82rem;color:var(--muted)">Inicio</a>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>Panel de Administración</h1>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val">{{ total_users }}</div><div class="stat-label">Usuarios totales</div></div>
+    <div class="stat"><div class="stat-val blue">{{ users_pro }}</div><div class="stat-label">Usuarios Pro</div></div>
+    <div class="stat"><div class="stat-val amber">{{ users_trial }}</div><div class="stat-label">En trial</div></div>
+    <div class="stat"><div class="stat-val">{{ users_verified }}</div><div class="stat-label">Email verificado</div></div>
+    <div class="stat"><div class="stat-val">{{ total_scans }}</div><div class="stat-label">Escaneos totales</div></div>
+    <div class="stat"><div class="stat-val">{{ scans_hoy }}</div><div class="stat-label">Escaneos hoy</div></div>
+    <div class="stat"><div class="stat-val">{{ scans_mes }}</div><div class="stat-label">Escaneos este mes</div></div>
+  </div>
+
+  <div class="section-title">Usuarios (últimos 50)</div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Email</th><th>Empresa</th><th>Plan</th><th>Verificado</th><th>Registro</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+    {% for u in recent_users %}
+      <tr id="row-{{ u.id }}">
+        <td class="mono">{{ u.id }}</td>
+        <td class="mono">{{ u.email }}</td>
+        <td>{{ u.empresa }}</td>
+        <td>
+          {% if u.is_admin %}<span class="badge badge-admin">admin</span>{% endif %}
+          {% if u.plan == 'pro' %}<span class="badge badge-pro">PRO</span>
+          {% elif u.trial_end and u.trial_end > now %}
+            <span class="badge badge-trial">TRIAL</span>
+          {% else %}
+            <span class="badge badge-free">FREE</span>
+          {% endif %}
+        </td>
+        <td>{{ '✓' if u.email_verified else '✗' }}</td>
+        <td class="mono">{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '—' }}</td>
+        <td style="white-space:nowrap">
+          {% if u.plan == 'free' %}
+          <button class="btn-sm" onclick="cambiarPlan({{ u.id }},'pro')">→ Pro</button>
+          {% else %}
+          <button class="btn-sm" onclick="cambiarPlan({{ u.id }},'free')">→ Free</button>
+          {% endif %}
+          <button class="btn-sm red" onclick="borrarUser({{ u.id }},'{{ u.email }}')">Borrar</button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <div class="section-title">Últimos escaneos (20)</div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Usuario</th><th>Dominio</th><th>Riesgo</th><th>Fecha</th></tr>
+    </thead>
+    <tbody>
+    {% for s in recent_scans %}
+      <tr>
+        <td class="mono">{{ s.id }}</td>
+        <td class="mono">{{ s.user.email if s.user else '—' }}</td>
+        <td class="mono">{{ s.dominio }}</td>
+        <td>
+          <span style="color:{{ '#EF4444' if s.riesgo >= 70 else '#F59E0B' if s.riesgo >= 40 else '#22C55E' }};font-weight:700">{{ s.riesgo }}%</span>
+          <span style="color:var(--muted);font-size:.72rem">{{ s.label }}</span>
+        </td>
+        <td class="mono">{{ s.timestamp.strftime('%d/%m %H:%M') if s.timestamp else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+async function cambiarPlan(uid, plan) {
+  if (!confirm('¿Cambiar a ' + plan + '?')) return;
+  var r = await fetch('/api/admin/user/' + uid + '/plan', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({plan: plan})
+  });
+  var d = await r.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Error');
+}
+
+async function borrarUser(uid, email) {
+  if (!confirm('¿ELIMINAR usuario ' + email + '? Esto borra todos sus escaneos.')) return;
+  if (!confirm('¿SEGURO? Acción irreversible.')) return;
+  var r = await fetch('/api/admin/user/' + uid + '/delete', {
+    method: 'POST', headers: {'Content-Type':'application/json'}
+  });
+  var d = await r.json();
+  if (d.ok) { document.getElementById('row-' + uid).remove(); }
+  else alert(d.error || 'Error');
+}
+</script>
+</body>
+</html>
