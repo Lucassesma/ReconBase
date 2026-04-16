@@ -207,6 +207,107 @@ def robots():
 def google_verify():
     return "google-site-verification: google9b381a283a68cc0a.html"
 
+# ── OG Image (PNG dinámico para redes sociales) ──
+_og_cache = {}
+
+@app.route("/og/<page>.png")
+def og_image(page):
+    """Genera OG image 1200x630 PNG con Pillow. Cache en memoria."""
+    if page in _og_cache:
+        buf = io.BytesIO(_og_cache[page])
+        return send_file(buf, mimetype="image/png", max_age=86400)
+
+    from PIL import Image, ImageDraw, ImageFont
+    W, H = 1200, 630
+    img = Image.new("RGB", (W, H), "#060D09")
+    draw = ImageDraw.Draw(img)
+
+    # Grid sutil
+    for x in range(0, W, 40):
+        draw.line([(x, 0), (x, H)], fill="#0f1f16", width=1)
+    for y in range(0, H, 40):
+        draw.line([(0, y), (W, y)], fill="#0f1f16", width=1)
+
+    # Usar fuente por defecto (disponible en cualquier servidor)
+    try:
+        font_big   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
+        font_med   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22)
+    except Exception:
+        font_big   = ImageFont.load_default()
+        font_med   = font_big
+        font_small = font_big
+
+    pages_info = {
+        "home": {
+            "title": "RECONBASE",
+            "sub": "Analiza la seguridad de tu empresa gratis",
+            "features": ["Puertos expuestos", "Filtraciones de datos", "Vulnerabilidades DNS"],
+        },
+        "pricing": {
+            "title": "RECONBASE",
+            "sub": "Planes desde 0\u20ac \u2014 Ciberseguridad para PYMEs",
+            "features": ["Plan Gratis: 10 escaneos/mes", "Plan Pro: 29\u20ac/mes ilimitado", "Sin permanencia"],
+        },
+        "terms": {
+            "title": "RECONBASE",
+            "sub": "T\u00e9rminos de Servicio",
+            "features": [],
+        },
+        "privacy": {
+            "title": "RECONBASE",
+            "sub": "Pol\u00edtica de Privacidad",
+            "features": [],
+        },
+    }
+    info = pages_info.get(page, pages_info["home"])
+
+    # Logo
+    logo_text = info["title"]
+    bbox = draw.textbbox((0, 0), logo_text, font=font_big)
+    tw = bbox[2] - bbox[0]
+    x_logo = (W - tw) // 2
+    # Dibujar "RECON" en blanco y "BASE" en verde
+    recon_bbox = draw.textbbox((0, 0), "RECON", font=font_big)
+    recon_w = recon_bbox[2] - recon_bbox[0]
+    base_bbox = draw.textbbox((0, 0), "BASE", font=font_big)
+    base_w = base_bbox[2] - base_bbox[0]
+    total_w = recon_w + base_w
+    x_start = (W - total_w) // 2
+    draw.text((x_start, 180), "RECON", fill="#E2EDF8", font=font_big)
+    draw.text((x_start + recon_w, 180), "BASE", fill="#22C55E", font=font_big)
+
+    # Subtitulo
+    sub = info["sub"]
+    sub_bbox = draw.textbbox((0, 0), sub, font=font_med)
+    sub_w = sub_bbox[2] - sub_bbox[0]
+    draw.text(((W - sub_w) // 2, 280), sub, fill="#64748B", font=font_med)
+
+    # Linea
+    draw.line([(400, 340), (800, 340)], fill="#152B1E", width=2)
+
+    # Features
+    features = info["features"]
+    if features:
+        y_feat = 380
+        for i, f in enumerate(features):
+            f_bbox = draw.textbbox((0, 0), f, font=font_small)
+            f_w = f_bbox[2] - f_bbox[0]
+            draw.text(((W - f_w) // 2, y_feat), f, fill="#22C55E", font=font_small)
+            y_feat += 40
+
+    # CTA
+    cta = "reconbase-production.up.railway.app"
+    cta_bbox = draw.textbbox((0, 0), cta, font=font_small)
+    cta_w = cta_bbox[2] - cta_bbox[0]
+    draw.text(((W - cta_w) // 2, 550), cta, fill="#475569", font=font_small)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    _og_cache[page] = buf.getvalue()
+    buf.seek(0)
+    return send_file(buf, mimetype="image/png", max_age=86400)
+
 @app.route("/")
 def index():
     plan        = "guest"
