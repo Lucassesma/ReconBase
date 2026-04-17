@@ -169,6 +169,17 @@ def set_security_headers(resp):
     )
     return resp
 
+# ─── Bloquear acceso a ficheros sensibles ─────────────────────────────────────
+_BLOCKED_EXT   = ('.log', '.env', '.cfg', '.ini', '.conf', '.bak', '.sql', '.db', '.sqlite', '.py')
+_BLOCKED_NAMES = {'debug.log', '.env', 'config.py', 'server.py', 'models.py', 'requirements.txt'}
+
+@app.before_request
+def block_sensitive_files():
+    path = request.path.lstrip('/')
+    lpath = path.lower()
+    if any(lpath.endswith(ext) for ext in _BLOCKED_EXT) or path in _BLOCKED_NAMES:
+        abort(404)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
@@ -641,15 +652,6 @@ def reenviar_verificacion():
         else:
             msg = err_str[:600]
         return jsonify({"ok": False, "error": msg}), 500
-
-@app.route("/api/activar-trial", methods=["POST"])
-@login_required
-def activar_trial():
-    if current_user.trial_end is not None or current_user.plan == 'pro':
-        return jsonify({"ok": False, "error": "Ya usaste el periodo de prueba o tienes plan Pro"}), 400
-    current_user.trial_end = datetime.utcnow() + timedelta(days=7)
-    db.session.commit()
-    return jsonify({"ok": True, "trial_end": current_user.trial_end.strftime("%d/%m/%Y")})
 
 @app.route("/verify-email/<token>")
 def verify_email(token):
