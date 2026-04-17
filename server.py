@@ -5,9 +5,12 @@ from flask_mail import Mail, Message
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from models import db, User, Scan, Domain, BlogPost
+from models import (db, User, Scan, Domain, BlogPost,
+                    SSLCheck, UptimeCheck, Notification, DNSRecord,
+                    TechDetection, IPReputation, AuditLog, Invoice)
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
+import ssl as _ssl_mod, socket, time, re
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -464,6 +467,7 @@ def api_login():
         session["2fa_pending_user"] = user.id
         return jsonify({"ok": True, "requires_2fa": True})
     login_user(user)
+    _registrar_audit(user.id, 'login', f"Login exitoso desde {request.remote_addr}")
     return jsonify({"ok": True})
 
 def enviar_email_verificacion(user):
@@ -843,6 +847,29 @@ def stripe_webhook():
                         db.session.commit()
                         enviar_email_pro_activado(user)
                         print(f"[Webhook] Plan actualizado a pro para {email}")
+                        # Crear factura automática
+                        try:
+                            desde = datetime.utcnow()
+                            hasta = desde + timedelta(days=30)
+                            inv = Invoice(
+                                user_id=user.id,
+                                numero=_generar_numero_factura(),
+                                concepto="Plan Pro ReconBase — Suscripción mensual",
+                                importe=29.00,
+                                moneda='EUR',
+                                estado='pagada',
+                                periodo_desde=desde,
+                                periodo_hasta=hasta,
+                            )
+                            db.session.add(inv)
+                            db.session.commit()
+                            _crear_notificacion(user.id, 'sistema',
+                                '✅ Plan Pro activado',
+                                'Tu suscripción Pro está activa. Ahora tienes acceso a todas las funciones premium.',
+                                '/perfil')
+                        except Exception as _ie:
+                            logger.error(f"[Invoice] {_ie}")
+                            db.session.rollback()
                     else:
                         print(f"[Webhook] Usuario no encontrado: {email}")
 
@@ -882,9 +909,14 @@ def perfil():
     total_scans = Scan.query.filter_by(user_id=current_user.id).count()
     scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
     scan_dias = (current_user.scan_dias or '').split(',') if current_user.scan_dias else []
+    facturas = Invoice.query.filter_by(user_id=current_user.id)\
+        .order_by(Invoice.created_at.desc()).limit(10).all()
+    no_leidas = Notification.query.filter_by(
+        user_id=current_user.id, leida=False).count()
     return render_template("perfil.html", user=current_user,
                            scans_mes=scans_mes, total_scans=total_scans,
-                           scan_hora=scan_hora, scan_dias=scan_dias)
+                           scan_hora=scan_hora, scan_dias=scan_dias,
+                           facturas=facturas, no_leidas=no_leidas)
 
 @app.route("/api/cambiar-password", methods=["POST"])
 @login_required
@@ -899,6 +931,7 @@ def cambiar_password():
         return jsonify({"ok": False, "error": "La nueva contraseña debe tener al menos 8 caracteres"}), 400
     current_user.set_password(nueva)
     db.session.commit()
+    _registrar_audit(current_user.id, 'cambio_password', 'Contraseña cambiada correctamente')
     return jsonify({"ok": True})
 
 # ── GDPR: exportar datos personales ──
@@ -2337,6 +2370,965 @@ def notificar_integraciones(user, resultado):
         except Exception as e:
             logger.error(f"[Webhook] Error para {user.email}: {e}")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── HELPERS: SSL, Uptime, Tech, DNS, IP Rep, Audit, Notificaciones ────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _crear_notificacion(user_id, tipo, titulo, mensaje=None, url=None):
+    """Crea una notificación in-app para el usuario."""
+    try:
+        n = Notification(user_id=user_id, tipo=tipo, titulo=titulo,
+                         mensaje=mensaje, url=url)
+        db.session.add(n)
+        db.session.commit()
+    except Exception as _e:
+        logger.error(f"[Notif] {_e}")
+        db.session.rollback()
+
+
+def _registrar_audit(user_id, evento, detalles=None, req=None):
+    """Registra un evento de auditoría."""
+    try:
+        ip = (req or request).remote_addr if (req or request) else None
+        ua = (req or request).headers.get('User-Agent', '')[:500] if (req or request) else None
+        log = AuditLog(user_id=user_id, evento=evento, ip=ip,
+                       user_agent=ua, detalles=detalles)
+        db.session.add(log)
+        db.session.commit()
+    except Exception as _e:
+        logger.error(f"[Audit] {_e}")
+        db.session.rollback()
+
+
+def _check_ssl(dominio):
+    """Comprueba el certificado SSL de un dominio. Devuelve dict con resultado."""
+    try:
+        ctx = _ssl_mod.create_default_context()
+        with socket.create_connection((dominio, 443), timeout=10) as sock:
+            with ctx.wrap_socket(sock, server_hostname=dominio) as ssock:
+                cert = ssock.getpeercert()
+        expiry_str = cert.get('notAfter', '')
+        expiry = datetime.strptime(expiry_str, '%b %d %H:%M:%S %Y %Z')
+        dias = (expiry - datetime.utcnow()).days
+        issuer  = dict(x[0] for x in cert.get('issuer', []))
+        subject = dict(x[0] for x in cert.get('subject', []))
+        return {
+            'valido': True,
+            'expira': expiry,
+            'dias_restantes': dias,
+            'emitido_por': issuer.get('organizationName', ''),
+            'sujeto': subject.get('commonName', dominio),
+            'error': None,
+        }
+    except _ssl_mod.SSLError as e:
+        return {'valido': False, 'expira': None, 'dias_restantes': -1,
+                'emitido_por': '', 'sujeto': dominio, 'error': str(e)[:400]}
+    except Exception as e:
+        return {'valido': None, 'expira': None, 'dias_restantes': -1,
+                'emitido_por': '', 'sujeto': dominio, 'error': str(e)[:400]}
+
+
+def _check_uptime(dominio):
+    """Comprueba si un dominio responde. Devuelve dict {up, status_code, response_ms}."""
+    import requests as _req
+    for scheme in ('https', 'http'):
+        try:
+            t0 = time.time()
+            r = _req.get(f"{scheme}://{dominio}", timeout=10, allow_redirects=True,
+                         headers={'User-Agent': 'ReconBase-Uptime/1.0'})
+            ms = int((time.time() - t0) * 1000)
+            return {'up': True, 'status_code': r.status_code, 'response_ms': ms}
+        except Exception:
+            continue
+    return {'up': False, 'status_code': None, 'response_ms': None}
+
+
+def _detect_technologies(dominio):
+    """Detecta tecnologías usadas en un dominio vía headers + HTML."""
+    import requests as _req
+    techs = []
+    try:
+        for scheme in ('https', 'http'):
+            try:
+                r = _req.get(f"{scheme}://{dominio}", timeout=12, allow_redirects=True,
+                             headers={'User-Agent': 'Mozilla/5.0 (compatible; ReconBase/1.0)'})
+                break
+            except Exception:
+                continue
+        else:
+            return techs
+
+        hdrs = {k.lower(): v for k, v in r.headers.items()}
+        html = r.text[:80000]
+
+        # ── Server ──
+        srv = hdrs.get('server', '')
+        if srv:
+            if 'nginx' in srv.lower():
+                techs.append({'nombre': 'Nginx', 'categoria': 'Servidor web',
+                               'version': srv.split('/')[-1] if '/' in srv else ''})
+            elif 'apache' in srv.lower():
+                techs.append({'nombre': 'Apache', 'categoria': 'Servidor web', 'version': ''})
+            elif 'iis' in srv.lower():
+                techs.append({'nombre': 'Microsoft IIS', 'categoria': 'Servidor web', 'version': ''})
+            elif 'litespeed' in srv.lower():
+                techs.append({'nombre': 'LiteSpeed', 'categoria': 'Servidor web', 'version': ''})
+            elif 'cloudflare' in srv.lower():
+                techs.append({'nombre': 'Cloudflare', 'categoria': 'CDN / Proxy', 'version': ''})
+
+        # ── X-Powered-By ──
+        pb = hdrs.get('x-powered-by', '')
+        if 'php' in pb.lower():
+            vm = re.search(r'PHP/([\d.]+)', pb, re.I)
+            techs.append({'nombre': 'PHP', 'categoria': 'Lenguaje backend',
+                           'version': vm.group(1) if vm else ''})
+        if 'asp.net' in pb.lower():
+            techs.append({'nombre': 'ASP.NET', 'categoria': 'Framework', 'version': ''})
+
+        # ── CDN / headers ──
+        if 'cf-ray' in hdrs and not any(t['nombre'] == 'Cloudflare' for t in techs):
+            techs.append({'nombre': 'Cloudflare', 'categoria': 'CDN / Proxy', 'version': ''})
+
+        # ── CMS ──
+        cms_patterns = [
+            (r'wp-content|wp-includes|wordpress',            'WordPress',   'CMS'),
+            (r'/sites/default/files|Drupal\.settings',       'Drupal',      'CMS'),
+            (r'/components/com_|Joomla',                     'Joomla',      'CMS'),
+            (r'cdn\.shopify\.com|shopify',                   'Shopify',     'E-commerce'),
+            (r'woocommerce',                                 'WooCommerce', 'E-commerce'),
+            (r'squarespace',                                 'Squarespace', 'CMS'),
+            (r'wix\.com',                                    'Wix',         'CMS'),
+            (r'webflow\.com',                                'Webflow',     'CMS'),
+            (r'ghost\.org|content-api\.ghost\.io',           'Ghost',       'CMS'),
+            (r'prestashop',                                  'PrestaShop',  'E-commerce'),
+            (r'magento',                                     'Magento',     'E-commerce'),
+        ]
+        for pat, nombre, cat in cms_patterns:
+            if re.search(pat, html, re.I):
+                if not any(t['nombre'] == nombre for t in techs):
+                    vm = None
+                    if nombre == 'WordPress':
+                        vm = re.search(r'ver=([\d.]+)', html)
+                    techs.append({'nombre': nombre, 'categoria': cat,
+                                   'version': vm.group(1) if vm else ''})
+
+        # ── JS Frameworks ──
+        js_patterns = [
+            (r'data-reactroot|__REACT|react\.production\.min',        'React',   'Framework JS'),
+            (r'__vue|data-v-[a-f0-9]{8}|vue\.min\.js',               'Vue.js',  'Framework JS'),
+            (r'ng-version="([\d.]+)"',                                'Angular', 'Framework JS'),
+            (r'svelte',                                               'Svelte',  'Framework JS'),
+            (r'nuxt|__nuxt',                                          'Nuxt.js', 'Framework JS'),
+            (r'__next|_next/static',                                  'Next.js', 'Framework JS'),
+        ]
+        for pat, nombre, cat in js_patterns:
+            m = re.search(pat, html, re.I)
+            if m:
+                version = m.group(1) if m.lastindex and m.lastindex >= 1 else ''
+                techs.append({'nombre': nombre, 'categoria': cat, 'version': version})
+
+        # ── Analytics ──
+        if re.search(r'google-analytics\.com|gtag\(', html, re.I):
+            techs.append({'nombre': 'Google Analytics', 'categoria': 'Analytics', 'version': ''})
+        if 'googletagmanager.com' in html:
+            techs.append({'nombre': 'Google Tag Manager', 'categoria': 'Analytics', 'version': ''})
+        if re.search(r'plausible\.io', html, re.I):
+            techs.append({'nombre': 'Plausible', 'categoria': 'Analytics', 'version': ''})
+        if re.search(r'hotjar', html, re.I):
+            techs.append({'nombre': 'Hotjar', 'categoria': 'Analytics', 'version': ''})
+
+        # ── CSS Frameworks ──
+        if re.search(r'bootstrap', html, re.I):
+            bm = re.search(r'bootstrap(?:\.min)?\.css\?v=([\d.]+)', html, re.I)
+            techs.append({'nombre': 'Bootstrap', 'categoria': 'CSS Framework',
+                           'version': bm.group(1) if bm else ''})
+        if re.search(r'tailwindcss|tailwind', html, re.I):
+            techs.append({'nombre': 'Tailwind CSS', 'categoria': 'CSS Framework', 'version': ''})
+
+        # ── JS Libs ──
+        if re.search(r'jquery', html, re.I):
+            jm = re.search(r'jquery-([\d.]+)', html, re.I)
+            techs.append({'nombre': 'jQuery', 'categoria': 'Librería JS',
+                           'version': jm.group(1) if jm else ''})
+
+        # ── Seguridad (headers presentes) ──
+        if 'x-frame-options' in hdrs:
+            techs.append({'nombre': 'X-Frame-Options', 'categoria': 'Seguridad',
+                           'version': hdrs['x-frame-options']})
+        if 'content-security-policy' in hdrs:
+            techs.append({'nombre': 'Content-Security-Policy', 'categoria': 'Seguridad', 'version': '✓'})
+        if 'strict-transport-security' in hdrs:
+            techs.append({'nombre': 'HSTS', 'categoria': 'Seguridad', 'version': '✓'})
+
+    except Exception as e:
+        logger.error(f"[Tech] {dominio}: {e}")
+    return techs
+
+
+def _check_dns_cambios(user_id, dominio):
+    """Detecta cambios en registros DNS respecto al snapshot anterior."""
+    try:
+        import dns.resolver as _resolver
+    except ImportError:
+        return []
+
+    cambios = []
+    tipos = ['A', 'MX', 'TXT', 'NS']
+    for tipo in tipos:
+        try:
+            answers = _resolver.resolve(dominio, tipo, raise_on_no_answer=False, lifetime=5)
+            nuevos = set()
+            for rd in answers:
+                if tipo == 'A':
+                    nuevos.add(str(rd))
+                elif tipo == 'MX':
+                    nuevos.add(f"{rd.preference} {rd.exchange}")
+                elif tipo == 'TXT':
+                    nuevos.add(b''.join(rd.strings).decode('utf-8', errors='ignore'))
+                elif tipo == 'NS':
+                    nuevos.add(str(rd))
+
+            existentes = DNSRecord.query.filter_by(
+                user_id=user_id, dominio=dominio, tipo=tipo, activo=True).all()
+            existentes_vals = {r.valor for r in existentes}
+
+            # Añadidos
+            for val in nuevos - existentes_vals:
+                try:
+                    rec = DNSRecord(user_id=user_id, dominio=dominio,
+                                    tipo=tipo, valor=val, activo=True)
+                    db.session.add(rec)
+                    if existentes:   # Solo alerta si ya teníamos datos previos
+                        cambios.append({'tipo': tipo, 'valor': val, 'cambio': 'añadido'})
+                except Exception:
+                    db.session.rollback()
+
+            # Eliminados
+            for rec in existentes:
+                if rec.valor not in nuevos:
+                    rec.activo = False
+                    cambios.append({'tipo': tipo, 'valor': rec.valor, 'cambio': 'eliminado'})
+                else:
+                    rec.ultima_vez = datetime.utcnow()
+
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    return cambios
+
+
+def _check_ip_reputacion(ip):
+    """Comprueba la IP contra listas negras DNS (DNSBL)."""
+    try:
+        import dns.resolver as _resolver
+    except ImportError:
+        return {'limpio': True, 'listas_negras': []}
+
+    DNSBL = [
+        'zen.spamhaus.org', 'bl.spamcop.net', 'dnsbl.sorbs.net',
+        'cbl.abuseat.org',  'b.barracudacentral.org', 'dnsbl-1.uceprotect.net',
+    ]
+    reversed_ip = '.'.join(reversed(ip.split('.')))
+    listas = []
+    for bl in DNSBL:
+        try:
+            _resolver.resolve(f"{reversed_ip}.{bl}", 'A', lifetime=3)
+            listas.append(bl)
+        except Exception:
+            pass
+    return {'limpio': len(listas) == 0, 'listas_negras': listas}
+
+
+def _generar_numero_factura():
+    year = datetime.utcnow().year
+    count = Invoice.query.filter(
+        Invoice.created_at >= datetime(year, 1, 1)).count() + 1
+    return f"RB-{year}-{count:04d}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── CRON: SSL, Uptime, DNS, IP Rep, PDF Reports ──────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+def cron_ssl_monitoring():
+    """Comprueba SSL para todos los dominios activos. Alerta si <30 días."""
+    with app.app_context():
+        dominios_vistos = set()
+        users = User.query.filter(User.email_verified == True).all()
+        for user in users:
+            doms = Domain.query.filter_by(user_id=user.id, activo=True).all()
+            for dom in doms:
+                d = dom.dominio
+                if d in dominios_vistos:
+                    continue
+                dominios_vistos.add(d)
+                try:
+                    res = _check_ssl(d)
+                    # Upsert: borrar el check anterior del mismo dominio/usuario
+                    SSLCheck.query.filter_by(user_id=user.id, dominio=d).delete()
+                    sc = SSLCheck(
+                        user_id=user.id, dominio=d,
+                        valido=res['valido'], expira=res['expira'],
+                        dias_restantes=res.get('dias_restantes', 0),
+                        emitido_por=res.get('emitido_por', ''),
+                        sujeto=res.get('sujeto', d),
+                        error=res.get('error'),
+                    )
+                    db.session.add(sc)
+                    db.session.commit()
+                    dias = res.get('dias_restantes', 999)
+                    if res['valido'] is False:
+                        _crear_notificacion(user.id, 'ssl',
+                            f"⚠️ SSL inválido en {d}",
+                            f"El certificado SSL de {d} no es válido: {res.get('error','')}")
+                    elif dias is not None and dias <= 30:
+                        nivel = '🔴' if dias <= 7 else '🟠' if dias <= 15 else '🟡'
+                        _crear_notificacion(user.id, 'ssl',
+                            f"{nivel} SSL de {d} expira en {dias} días",
+                            f"Renueva el certificado SSL de {d} antes de que expire.")
+                except Exception as e:
+                    logger.error(f"[Cron SSL] {d}: {e}")
+                    db.session.rollback()
+
+
+def cron_uptime_monitoring():
+    """Comprueba uptime de todos los dominios activos cada 15 min."""
+    with app.app_context():
+        dominios_vistos = {}
+        users = User.query.filter(User.email_verified == True).all()
+        for user in users:
+            doms = Domain.query.filter_by(user_id=user.id, activo=True).all()
+            for dom in doms:
+                d = dom.dominio
+                if d in dominios_vistos:
+                    res = dominios_vistos[d]
+                else:
+                    res = _check_uptime(d)
+                    dominios_vistos[d] = res
+                try:
+                    uc = UptimeCheck(
+                        user_id=user.id, dominio=d,
+                        up=res['up'], status_code=res.get('status_code'),
+                        response_ms=res.get('response_ms'),
+                    )
+                    db.session.add(uc)
+                    db.session.commit()
+                    if not res['up']:
+                        # Solo notificar si los 2 últimos checks fueron down
+                        recientes = UptimeCheck.query.filter_by(
+                            user_id=user.id, dominio=d
+                        ).order_by(UptimeCheck.checked_at.desc()).limit(2).all()
+                        if len(recientes) >= 2 and all(not r.up for r in recientes):
+                            _crear_notificacion(user.id, 'uptime',
+                                f"🔴 {d} no responde",
+                                f"El dominio {d} lleva más de 15 minutos sin responder.")
+                except Exception as e:
+                    logger.error(f"[Cron Uptime] {d}: {e}")
+                    db.session.rollback()
+        # Limpiar historial >7 días para no crecer indefinidamente
+        try:
+            cutoff = datetime.utcnow() - timedelta(days=7)
+            UptimeCheck.query.filter(UptimeCheck.checked_at < cutoff).delete()
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
+def cron_dns_monitoring():
+    """Detecta cambios en DNS para todos los dominios activos."""
+    with app.app_context():
+        users = User.query.filter(User.email_verified == True).all()
+        for user in users:
+            doms = Domain.query.filter_by(user_id=user.id, activo=True).all()
+            for dom in doms:
+                try:
+                    cambios = _check_dns_cambios(user.id, dom.dominio)
+                    if cambios:
+                        detalle = ', '.join(
+                            f"{c['tipo']} {c['cambio']}: {c['valor'][:40]}"
+                            for c in cambios[:5])
+                        _crear_notificacion(user.id, 'dns',
+                            f"⚡ Cambio DNS en {dom.dominio}",
+                            f"Se detectaron {len(cambios)} cambios: {detalle}")
+                except Exception as e:
+                    logger.error(f"[Cron DNS] {dom.dominio}: {e}")
+
+
+def cron_ip_reputation():
+    """Comprueba reputación IP de todos los dominios activos (diario)."""
+    with app.app_context():
+        dominios_vistos = {}
+        users = User.query.filter(User.email_verified == True).all()
+        for user in users:
+            doms = Domain.query.filter_by(user_id=user.id, activo=True).all()
+            for dom in doms:
+                d = dom.dominio
+                try:
+                    # Resolver IP del dominio
+                    import dns.resolver as _res
+                    ips = [str(r) for r in _res.resolve(d, 'A', lifetime=5)]
+                    ip = ips[0] if ips else None
+                    if not ip:
+                        continue
+                    if ip in dominios_vistos:
+                        rep = dominios_vistos[ip]
+                    else:
+                        rep = _check_ip_reputacion(ip)
+                        dominios_vistos[ip] = rep
+
+                    IPReputation.query.filter_by(user_id=user.id, dominio=d).delete()
+                    ir = IPReputation(
+                        user_id=user.id, dominio=d, ip=ip,
+                        limpio=rep['limpio'],
+                        listas_negras=json.dumps(rep['listas_negras']),
+                    )
+                    db.session.add(ir)
+                    db.session.commit()
+                    if not rep['limpio']:
+                        listas = ', '.join(rep['listas_negras'][:3])
+                        _crear_notificacion(user.id, 'ip_rep',
+                            f"🚨 IP de {d} en lista negra",
+                            f"La IP {ip} aparece en: {listas}")
+                except Exception as e:
+                    logger.error(f"[Cron IP Rep] {d}: {e}")
+                    db.session.rollback()
+
+
+def cron_pdf_reports():
+    """Genera y envía informes PDF automáticos según la configuración de cada usuario."""
+    with app.app_context():
+        hoy = datetime.utcnow()
+        users = User.query.filter_by(informe_pdf_activo=True, email_verified=True).all()
+        for user in users:
+            try:
+                frecuencia = user.informe_pdf_frecuencia or 'semanal'
+                dia = user.informe_pdf_dia or 1
+                # Semanal: día de la semana 0-6 (0=lunes)
+                if frecuencia == 'semanal' and hoy.weekday() != dia:
+                    continue
+                # Mensual: día del mes
+                if frecuencia == 'mensual' and hoy.day != dia:
+                    continue
+
+                # Generar informe
+                desde = hoy - timedelta(days=7 if frecuencia == 'semanal' else 30)
+                scans = Scan.query.filter(
+                    Scan.user_id == user.id,
+                    Scan.timestamp >= desde
+                ).order_by(Scan.timestamp.desc()).all()
+
+                if not scans:
+                    continue
+
+                riesgo_avg = round(sum(s.riesgo for s in scans) / len(scans))
+                # Generar PDF si está disponible
+                pdf_bytes = None
+                if PDF_OK:
+                    try:
+                        pdf = FPDF()
+                        pdf.set_auto_page_break(auto=True, margin=15)
+                        pdf.add_page()
+                        pdf.set_font('Helvetica', 'B', 20)
+                        pdf.set_text_color(22, 163, 74)
+                        pdf.cell(0, 12, 'ReconBase — Informe de Seguridad', ln=True, align='C')
+                        pdf.set_font('Helvetica', '', 11)
+                        pdf.set_text_color(100, 116, 139)
+                        pdf.cell(0, 8, f"Empresa: {user.empresa}  |  Periodo: {desde.strftime('%d/%m/%Y')} — {hoy.strftime('%d/%m/%Y')}", ln=True, align='C')
+                        pdf.ln(6)
+                        pdf.set_fill_color(240, 253, 244)
+                        pdf.set_font('Helvetica', 'B', 13)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.cell(0, 10, 'Resumen ejecutivo', ln=True, fill=True)
+                        pdf.set_font('Helvetica', '', 11)
+                        pdf.cell(90, 9, f"Escaneos realizados: {len(scans)}", ln=False)
+                        pdf.cell(0, 9, f"Riesgo promedio: {riesgo_avg}%", ln=True)
+                        pdf.ln(4)
+                        pdf.set_font('Helvetica', 'B', 13)
+                        pdf.cell(0, 10, 'Detalle de escaneos', ln=True, fill=True)
+                        pdf.set_font('Helvetica', 'B', 9)
+                        for col, w in [('Dominio', 70), ('Riesgo', 25), ('Nivel', 35), ('Fecha', 55)]:
+                            pdf.cell(w, 8, col, border=1)
+                        pdf.ln()
+                        pdf.set_font('Helvetica', '', 9)
+                        for s in scans[:30]:
+                            pdf.cell(70, 7, s.objetivo[:35], border=1)
+                            pdf.cell(25, 7, f"{s.riesgo}%", border=1, align='C')
+                            pdf.cell(35, 7, s.label or '', border=1, align='C')
+                            pdf.cell(55, 7, s.timestamp.strftime('%d/%m/%Y %H:%M'), border=1)
+                            pdf.ln()
+                        pdf_bytes = bytes(pdf.output())
+                    except Exception as _pe:
+                        logger.error(f"[PDF Report] PDF error para {user.email}: {_pe}")
+
+                periodo = f"{desde.strftime('%d/%m/%Y')} — {hoy.strftime('%d/%m/%Y')}"
+                cuerpo = f"""
+<p>Hola {user.empresa},</p>
+<p>Aquí tienes tu informe de seguridad automático correspondiente al periodo <strong>{periodo}</strong>.</p>
+<table style="width:100%;border-collapse:collapse;margin:1rem 0">
+  <tr><td style="padding:.5rem;background:#0A1410;color:#94A3B8;font-size:.8rem">Escaneos realizados</td>
+      <td style="padding:.5rem;font-weight:700;font-size:1.1rem">{len(scans)}</td></tr>
+  <tr><td style="padding:.5rem;background:#0A1410;color:#94A3B8;font-size:.8rem">Riesgo promedio</td>
+      <td style="padding:.5rem;font-weight:700;font-size:1.1rem;color:{'#DC2626' if riesgo_avg>=70 else '#D97706' if riesgo_avg>=40 else '#16A34A'}">{riesgo_avg}%</td></tr>
+</table>
+<p style="color:#94A3B8;font-size:.85rem">{"El informe PDF detallado se adjunta a este email." if pdf_bytes else ""}</p>
+"""
+                send_html_email(user.email,
+                    f"Informe de seguridad — {periodo}",
+                    "Tu informe de seguridad ReconBase", cuerpo,
+                    "https://reconbase-production.up.railway.app/",
+                    "Ver plataforma")
+            except Exception as e:
+                logger.error(f"[Cron PDF] {user.email}: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTAS: Notificaciones ─────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/notificaciones")
+@login_required
+def get_notificaciones():
+    notifs = Notification.query.filter_by(user_id=current_user.id)\
+        .order_by(Notification.created_at.desc()).limit(50).all()
+    no_leidas = sum(1 for n in notifs if not n.leida)
+    return jsonify({
+        "notificaciones": [{
+            "id": n.id, "tipo": n.tipo, "titulo": n.titulo,
+            "mensaje": n.mensaje, "leida": n.leida,
+            "url": n.url,
+            "created_at": n.created_at.strftime('%d/%m/%Y %H:%M'),
+        } for n in notifs],
+        "no_leidas": no_leidas,
+    })
+
+
+@app.route("/api/notificaciones/<int:nid>/leer", methods=["POST"])
+@login_required
+def marcar_notif_leida(nid):
+    n = Notification.query.filter_by(id=nid, user_id=current_user.id).first_or_404()
+    n.leida = True
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/notificaciones/leer-todas", methods=["POST"])
+@login_required
+def marcar_todas_leidas():
+    Notification.query.filter_by(user_id=current_user.id, leida=False)\
+        .update({'leida': True})
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTAS: SSL / Uptime / Tech / DNS / IP Rep ────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/ssl")
+@login_required
+def get_ssl():
+    checks = SSLCheck.query.filter_by(user_id=current_user.id)\
+        .order_by(SSLCheck.checked_at.desc()).all()
+    # Si no hay checks, lanzar uno en background
+    if not checks:
+        def _bg():
+            with app.app_context():
+                doms = Domain.query.filter_by(user_id=current_user.id, activo=True).all()
+                for dom in doms:
+                    res = _check_ssl(dom.dominio)
+                    SSLCheck.query.filter_by(user_id=current_user.id, dominio=dom.dominio).delete()
+                    sc = SSLCheck(user_id=current_user.id, dominio=dom.dominio,
+                                  valido=res['valido'], expira=res['expira'],
+                                  dias_restantes=res.get('dias_restantes', 0),
+                                  emitido_por=res.get('emitido_por',''),
+                                  sujeto=res.get('sujeto', dom.dominio),
+                                  error=res.get('error'))
+                    db.session.add(sc)
+                    db.session.commit()
+        threading.Thread(target=_bg, daemon=True).start()
+
+    return jsonify({"ssl": [{
+        "dominio": c.dominio,
+        "valido": c.valido,
+        "dias_restantes": c.dias_restantes,
+        "expira": c.expira.strftime('%d/%m/%Y') if c.expira else None,
+        "emitido_por": c.emitido_por,
+        "sujeto": c.sujeto,
+        "error": c.error,
+        "checked_at": c.checked_at.strftime('%d/%m/%Y %H:%M'),
+    } for c in checks]})
+
+
+@app.route("/api/ssl/refresh", methods=["POST"])
+@login_required
+@limiter.limit("6 per hour")
+def refresh_ssl():
+    """Fuerza un nuevo check SSL en background."""
+    def _bg(uid):
+        with app.app_context():
+            doms = Domain.query.filter_by(user_id=uid, activo=True).all()
+            for dom in doms:
+                res = _check_ssl(dom.dominio)
+                SSLCheck.query.filter_by(user_id=uid, dominio=dom.dominio).delete()
+                sc = SSLCheck(user_id=uid, dominio=dom.dominio,
+                              valido=res['valido'], expira=res['expira'],
+                              dias_restantes=res.get('dias_restantes', 0),
+                              emitido_por=res.get('emitido_por',''),
+                              sujeto=res.get('sujeto', dom.dominio),
+                              error=res.get('error'))
+                db.session.add(sc)
+                db.session.commit()
+    threading.Thread(target=_bg, args=(current_user.id,), daemon=True).start()
+    return jsonify({"ok": True, "msg": "Check SSL lanzado en background"})
+
+
+@app.route("/api/uptime")
+@login_required
+def get_uptime():
+    # Último check por dominio
+    from sqlalchemy import func
+    subq = db.session.query(
+        UptimeCheck.dominio,
+        func.max(UptimeCheck.checked_at).label('last_check')
+    ).filter_by(user_id=current_user.id).group_by(UptimeCheck.dominio).subquery()
+
+    checks = db.session.query(UptimeCheck).join(
+        subq, (UptimeCheck.dominio == subq.c.dominio) &
+               (UptimeCheck.checked_at == subq.c.last_check)
+    ).filter(UptimeCheck.user_id == current_user.id).all()
+
+    # Historial últimas 24h por dominio
+    since = datetime.utcnow() - timedelta(hours=24)
+    history_raw = UptimeCheck.query.filter(
+        UptimeCheck.user_id == current_user.id,
+        UptimeCheck.checked_at >= since
+    ).order_by(UptimeCheck.checked_at.asc()).all()
+
+    history = {}
+    for c in history_raw:
+        history.setdefault(c.dominio, []).append({
+            'up': c.up, 'ms': c.response_ms,
+            'ts': c.checked_at.strftime('%H:%M'),
+        })
+
+    return jsonify({"uptime": [{
+        "dominio": c.dominio,
+        "up": c.up,
+        "status_code": c.status_code,
+        "response_ms": c.response_ms,
+        "checked_at": c.checked_at.strftime('%d/%m/%Y %H:%M'),
+        "history": history.get(c.dominio, []),
+    } for c in checks]})
+
+
+@app.route("/api/tecnologias")
+@login_required
+@limiter.limit("10 per hour")
+def get_tecnologias():
+    detecciones = TechDetection.query.filter_by(user_id=current_user.id)\
+        .order_by(TechDetection.detected_at.desc()).all()
+    return jsonify({"tecnologias": [{
+        "dominio": t.dominio,
+        "tecnologias": json.loads(t.tecnologias) if t.tecnologias else [],
+        "detected_at": t.detected_at.strftime('%d/%m/%Y %H:%M'),
+    } for t in detecciones]})
+
+
+@app.route("/api/tecnologias/refresh", methods=["POST"])
+@login_required
+@limiter.limit("4 per hour")
+def refresh_tecnologias():
+    def _bg(uid):
+        with app.app_context():
+            doms = Domain.query.filter_by(user_id=uid, activo=True).all()
+            for dom in doms:
+                techs = _detect_technologies(dom.dominio)
+                TechDetection.query.filter_by(user_id=uid, dominio=dom.dominio).delete()
+                td = TechDetection(user_id=uid, dominio=dom.dominio,
+                                   tecnologias=json.dumps(techs))
+                db.session.add(td)
+                db.session.commit()
+    threading.Thread(target=_bg, args=(current_user.id,), daemon=True).start()
+    return jsonify({"ok": True, "msg": "Detección lanzada"})
+
+
+@app.route("/api/dns-cambios")
+@login_required
+def get_dns_cambios():
+    # Todos los registros del usuario, separados en activos e históricos
+    registros = DNSRecord.query.filter_by(user_id=current_user.id)\
+        .order_by(DNSRecord.dominio, DNSRecord.tipo, DNSRecord.primera_vez.desc()).all()
+
+    por_dominio = {}
+    for r in registros:
+        por_dominio.setdefault(r.dominio, []).append({
+            'tipo': r.tipo, 'valor': r.valor,
+            'activo': r.activo,
+            'desde': r.primera_vez.strftime('%d/%m/%Y'),
+            'hasta': None if r.activo else r.ultima_vez.strftime('%d/%m/%Y'),
+        })
+    return jsonify({"dns": [{"dominio": d, "registros": v}
+                             for d, v in por_dominio.items()]})
+
+
+@app.route("/api/dns-cambios/refresh", methods=["POST"])
+@login_required
+@limiter.limit("6 per hour")
+def refresh_dns():
+    def _bg(uid):
+        with app.app_context():
+            doms = Domain.query.filter_by(user_id=uid, activo=True).all()
+            for dom in doms:
+                cambios = _check_dns_cambios(uid, dom.dominio)
+                if cambios:
+                    _crear_notificacion(uid, 'dns',
+                        f"⚡ Cambio DNS en {dom.dominio}",
+                        f"Detectados {len(cambios)} cambios en registros DNS.")
+    threading.Thread(target=_bg, args=(current_user.id,), daemon=True).start()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/ip-reputacion")
+@login_required
+def get_ip_reputacion():
+    checks = IPReputation.query.filter_by(user_id=current_user.id)\
+        .order_by(IPReputation.checked_at.desc()).all()
+    return jsonify({"reputacion": [{
+        "dominio": c.dominio,
+        "ip": c.ip,
+        "limpio": c.limpio,
+        "listas_negras": json.loads(c.listas_negras) if c.listas_negras else [],
+        "checked_at": c.checked_at.strftime('%d/%m/%Y %H:%M'),
+    } for c in checks]})
+
+
+@app.route("/api/ip-reputacion/refresh", methods=["POST"])
+@login_required
+@limiter.limit("4 per hour")
+def refresh_ip_reputacion():
+    def _bg(uid):
+        with app.app_context():
+            doms = Domain.query.filter_by(user_id=uid, activo=True).all()
+            for dom in doms:
+                try:
+                    import dns.resolver as _res
+                    ips = [str(r) for r in _res.resolve(dom.dominio, 'A', lifetime=5)]
+                    ip = ips[0] if ips else None
+                    if not ip:
+                        continue
+                    rep = _check_ip_reputacion(ip)
+                    IPReputation.query.filter_by(user_id=uid, dominio=dom.dominio).delete()
+                    ir = IPReputation(user_id=uid, dominio=dom.dominio, ip=ip,
+                                     limpio=rep['limpio'],
+                                     listas_negras=json.dumps(rep['listas_negras']))
+                    db.session.add(ir)
+                    db.session.commit()
+                    if not rep['limpio']:
+                        listas = ', '.join(rep['listas_negras'][:3])
+                        _crear_notificacion(uid, 'ip_rep',
+                            f"🚨 IP de {dom.dominio} en lista negra",
+                            f"La IP {ip} aparece en: {listas}")
+                except Exception as e:
+                    logger.error(f"[IP Rep refresh] {dom.dominio}: {e}")
+                    db.session.rollback()
+    threading.Thread(target=_bg, args=(current_user.id,), daemon=True).start()
+    return jsonify({"ok": True})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTAS: Audit Log ──────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/audit-log")
+@login_required
+def get_audit_log():
+    logs = AuditLog.query.filter_by(user_id=current_user.id)\
+        .order_by(AuditLog.created_at.desc()).limit(50).all()
+    return jsonify({"logs": [{
+        "id": l.id,
+        "evento": l.evento,
+        "ip": l.ip,
+        "detalles": l.detalles,
+        "created_at": l.created_at.strftime('%d/%m/%Y %H:%M'),
+    } for l in logs]})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTAS: Trial 14 días gratis ──────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/trial/activar", methods=["POST"])
+@app.route("/api/activar-trial", methods=["POST"])
+@login_required
+@limiter.limit("3 per day")
+def activar_trial():
+    user = db.session.get(User, current_user.id)
+    if user.trial_used:
+        return jsonify({"ok": False, "error": "Ya usaste tu período de prueba gratuito"}), 400
+    if user.plan == 'pro':
+        return jsonify({"ok": False, "error": "Ya tienes el plan Pro"}), 400
+    user.trial_end = datetime.utcnow() + timedelta(days=14)
+    user.trial_used = True
+    db.session.commit()
+    _registrar_audit(user.id, 'trial_activado', f"Trial Pro 14 días activado")
+    _crear_notificacion(user.id, 'trial',
+        "🎉 Trial Pro activo — 14 días",
+        "Tienes acceso completo a todas las funciones Pro durante 14 días. ¡Aprovéchalo!")
+    try:
+        send_html_email(user.email,
+            "¡Tu Trial Pro de ReconBase ha comenzado!",
+            "Trial Pro activo — 14 días de acceso completo",
+            f"""<p>Hola {user.empresa},</p>
+<p>Tu período de prueba <strong>Pro de 14 días</strong> está ahora activo.
+Tienes acceso completo a todas las funciones:</p>
+<ul style="color:#94A3B8;margin:.5rem 0 1rem 1.5rem">
+<li>Dominios ilimitados</li><li>Escaneos ilimitados</li>
+<li>Monitorización SSL/Uptime/DNS en tiempo real</li>
+<li>API pública</li><li>Alertas avanzadas</li>
+</ul>
+<p>Tu trial expira el <strong>{user.trial_end.strftime('%d/%m/%Y')}</strong>.</p>""",
+            "https://reconbase-production.up.railway.app/",
+            "Ir a ReconBase")
+    except Exception:
+        pass
+    return jsonify({"ok": True, "trial_end": user.trial_end.strftime('%d/%m/%Y')})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTAS: Facturas ──────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/facturas")
+@login_required
+def get_facturas():
+    facturas = Invoice.query.filter_by(user_id=current_user.id)\
+        .order_by(Invoice.created_at.desc()).all()
+    return jsonify({"facturas": [{
+        "id": f.id,
+        "numero": f.numero,
+        "concepto": f.concepto,
+        "importe": f.importe,
+        "moneda": f.moneda,
+        "estado": f.estado,
+        "created_at": f.created_at.strftime('%d/%m/%Y'),
+        "periodo": (f"{f.periodo_desde.strftime('%d/%m/%Y')} — {f.periodo_hasta.strftime('%d/%m/%Y')}"
+                    if f.periodo_desde and f.periodo_hasta else None),
+    } for f in facturas]})
+
+
+@app.route("/api/facturas/<int:fid>/pdf")
+@login_required
+def descargar_factura_pdf(fid):
+    factura = Invoice.query.filter_by(id=fid, user_id=current_user.id).first_or_404()
+    user    = db.session.get(User, current_user.id)
+    if not PDF_OK:
+        return jsonify({"ok": False, "error": "PDF no disponible"}), 500
+    try:
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        # Cabecera
+        pdf.set_font('Helvetica', 'B', 22)
+        pdf.set_text_color(22, 163, 74)
+        pdf.cell(0, 14, 'RECONBASE', ln=True, align='L')
+        pdf.set_font('Helvetica', '', 10)
+        pdf.set_text_color(100, 116, 139)
+        pdf.cell(0, 6, 'reconbase-production.up.railway.app', ln=True)
+        pdf.cell(0, 6, 'hola@reconbase.io', ln=True)
+        pdf.ln(8)
+        pdf.set_font('Helvetica', 'B', 28)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(0, 14, 'FACTURA', ln=True, align='R')
+        pdf.set_font('Helvetica', '', 11)
+        pdf.set_text_color(100, 116, 139)
+        pdf.cell(0, 6, f"Nº: {factura.numero}", ln=True, align='R')
+        pdf.cell(0, 6, f"Fecha: {factura.created_at.strftime('%d/%m/%Y')}", ln=True, align='R')
+        pdf.ln(8)
+        # Cliente
+        pdf.set_fill_color(240, 253, 244)
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(0, 9, 'Datos del cliente', ln=True, fill=True)
+        pdf.set_font('Helvetica', '', 11)
+        pdf.cell(0, 7, f"Empresa: {user.empresa}", ln=True)
+        pdf.cell(0, 7, f"Email: {user.email}", ln=True)
+        pdf.ln(8)
+        # Concepto
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.cell(0, 9, 'Concepto', ln=True, fill=True)
+        pdf.set_font('Helvetica', 'B', 10)
+        for col, w in [('Descripción', 110), ('Importe', 40)]:
+            pdf.cell(w, 8, col, border=1, fill=True)
+        pdf.ln()
+        pdf.set_font('Helvetica', '', 10)
+        periodo = (f" ({factura.periodo_desde.strftime('%d/%m/%Y')} — {factura.periodo_hasta.strftime('%d/%m/%Y')})"
+                   if factura.periodo_desde and factura.periodo_hasta else "")
+        pdf.cell(110, 8, factura.concepto + periodo, border=1)
+        pdf.cell(40, 8, f"{factura.importe:.2f} {factura.moneda}", border=1, align='R')
+        pdf.ln(10)
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.cell(110, 9, 'TOTAL')
+        pdf.cell(40, 9, f"{factura.importe:.2f} {factura.moneda}", align='R')
+        pdf.ln(16)
+        pdf.set_font('Helvetica', '', 9)
+        pdf.set_text_color(150, 150, 150)
+        pdf.cell(0, 6, f"Estado: {factura.estado.upper()}  |  Factura {factura.numero}", ln=True, align='C')
+
+        buf = io.BytesIO(bytes(pdf.output()))
+        return send_file(buf, mimetype='application/pdf',
+                         download_name=f"factura-{factura.numero}.pdf",
+                         as_attachment=True)
+    except Exception as e:
+        logger.error(f"[Factura PDF] {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTAS: Informe PDF automático ────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/informe-pdf", methods=["GET", "POST"])
+@login_required
+def informe_pdf_config():
+    user = db.session.get(User, current_user.id)
+    if request.method == 'GET':
+        return jsonify({
+            "activo": user.informe_pdf_activo,
+            "frecuencia": user.informe_pdf_frecuencia or 'semanal',
+            "dia": user.informe_pdf_dia or 1,
+        })
+    data = request.get_json()
+    user.informe_pdf_activo    = bool(data.get('activo', False))
+    user.informe_pdf_frecuencia = data.get('frecuencia', 'semanal')
+    user.informe_pdf_dia       = int(data.get('dia', 1))
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ─── RUTA: Onboarding ──────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+
+@app.route("/api/onboarding/completar", methods=["POST"])
+@login_required
+def completar_onboarding():
+    user = db.session.get(User, current_user.id)
+    user.onboarding_done = True
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ─── Registrar cron jobs batch 2 (APScheduler soporta add tras start) ────────
+try:
+    scheduler.add_job(cron_ssl_monitoring,   'cron', hour=6,   minute=0,   id='ssl_mon',    replace_existing=True)
+    scheduler.add_job(cron_uptime_monitoring, 'cron', minute='*/15',        id='uptime_mon', replace_existing=True)
+    scheduler.add_job(cron_dns_monitoring,   'cron', minute=30,             id='dns_mon',    replace_existing=True)
+    scheduler.add_job(cron_ip_reputation,    'cron', hour=5,   minute=0,   id='ip_rep',     replace_existing=True)
+    scheduler.add_job(cron_pdf_reports,      'cron', hour=7,   minute=30,  id='pdf_rep',    replace_existing=True)
+except Exception as _sched_e:
+    logger.warning(f"[Scheduler] Batch 2 jobs: {_sched_e}")
+
+
 with app.app_context():
     db.create_all()
     from sqlalchemy import text
@@ -2364,6 +3356,20 @@ with app.app_context():
         "ALTER TABLE domains ADD COLUMN scan_hora INTEGER",
         "ALTER TABLE domains ADD COLUMN scan_dias VARCHAR(20)",
         "CREATE TABLE IF NOT EXISTS blog_posts (id SERIAL PRIMARY KEY, slug VARCHAR(200) UNIQUE NOT NULL, titulo VARCHAR(300) NOT NULL, excerpt VARCHAR(500), contenido TEXT NOT NULL, autor VARCHAR(100) DEFAULT 'ReconBase', imagen VARCHAR(500), publicado BOOLEAN DEFAULT FALSE NOT NULL, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), tags VARCHAR(300))",
+        # ── Batch 2 ──
+        "ALTER TABLE users ADD COLUMN trial_used BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN onboarding_done BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN informe_pdf_activo BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN informe_pdf_frecuencia VARCHAR(20) DEFAULT 'semanal'",
+        "ALTER TABLE users ADD COLUMN informe_pdf_dia INTEGER DEFAULT 1",
+        "CREATE TABLE IF NOT EXISTS ssl_checks (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, valido BOOLEAN, expira TIMESTAMP, dias_restantes INTEGER DEFAULT 0, emitido_por VARCHAR(300), sujeto VARCHAR(300), error VARCHAR(500), checked_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS uptime_checks (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, up BOOLEAN NOT NULL DEFAULT TRUE, status_code INTEGER, response_ms INTEGER, checked_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), tipo VARCHAR(50) NOT NULL, titulo VARCHAR(300) NOT NULL, mensaje TEXT, leida BOOLEAN NOT NULL DEFAULT FALSE, url VARCHAR(500), created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS dns_records (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, tipo VARCHAR(10) NOT NULL, valor TEXT NOT NULL, primera_vez TIMESTAMP DEFAULT NOW(), ultima_vez TIMESTAMP DEFAULT NOW(), activo BOOLEAN NOT NULL DEFAULT TRUE)",
+        "CREATE TABLE IF NOT EXISTS tech_detections (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, tecnologias TEXT, headers_raw TEXT, detected_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS ip_reputations (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, ip VARCHAR(45) NOT NULL, limpio BOOLEAN NOT NULL DEFAULT TRUE, listas_negras TEXT, checked_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), evento VARCHAR(100) NOT NULL, ip VARCHAR(45), user_agent VARCHAR(500), detalles TEXT, created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS invoices (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), stripe_invoice_id VARCHAR(100), numero VARCHAR(50) NOT NULL, concepto VARCHAR(255) NOT NULL, importe FLOAT NOT NULL, moneda VARCHAR(10) DEFAULT 'EUR', estado VARCHAR(20) DEFAULT 'pagada', periodo_desde TIMESTAMP, periodo_hasta TIMESTAMP, created_at TIMESTAMP DEFAULT NOW())",
     ]:
         try:
             db.session.execute(text(col_sql))

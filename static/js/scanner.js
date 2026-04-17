@@ -14,10 +14,15 @@ function scSwitch(tab, el) {
   document.querySelectorAll('.sc-panel').forEach(function(p){p.classList.remove('active');});
   el.classList.add('active');
   document.getElementById('sc-' + tab).classList.add('active');
-  if (tab === 'historial') scLoadHistorial();
-  if (tab === 'tendencia') scRenderTendencia();
+  if (tab === 'historial')   scLoadHistorial();
+  if (tab === 'tendencia')   scRenderTendencia();
   if (tab === 'dashboard' && scCurrentData) scRenderDashboard(scCurrentData);
-  if (tab === 'exportar' && scCurrentData) scRenderExport(scCurrentData);
+  if (tab === 'exportar'  && scCurrentData) scRenderExport(scCurrentData);
+  if (tab === 'ssl')         scLoadSSL();
+  if (tab === 'uptime')      scLoadUptime();
+  if (tab === 'dns')         scLoadDNS();
+  if (tab === 'tecnologias') scLoadTecnologias();
+  if (tab === 'iprep')       scLoadIPRep();
 }
 
 function scLanzar() {

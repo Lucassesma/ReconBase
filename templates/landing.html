@@ -497,8 +497,22 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <a href="#precios" class="nav-link" onclick="navSwitch('landing')">Precios</a>
     <a href="#faq" class="nav-link" onclick="navSwitch('landing')">FAQ</a>
   </div>
-  <div class="nav-right">
+  <div class="nav-right" style="display:flex;align-items:center;gap:.75rem">
     {% if user and user.is_authenticated %}
+    <!-- Campana de notificaciones -->
+    <div id="rb-notif-bell" style="position:relative;cursor:pointer" onclick="rbToggleNotif()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);display:block">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span id="rb-notif-count" style="display:none;position:absolute;top:-5px;right:-5px;background:#DC2626;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace"></span>
+    </div>
+    <div id="rb-notif-panel" style="display:none;position:fixed;top:60px;right:1.5rem;width:340px;max-height:480px;overflow-y:auto;background:#0A1410;border:1px solid #152B1E;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9000;padding:.75rem 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 1rem .75rem;border-bottom:1px solid #152B1E;margin-bottom:.25rem">
+        <span style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:#22C55E;text-transform:uppercase;letter-spacing:.12em;font-weight:700">Notificaciones</span>
+        <button onclick="rbMarcarTodasLeidas()" style="background:none;border:none;color:#64748B;font-size:.72rem;cursor:pointer;font-family:'Inter',sans-serif">Marcar todas leídas</button>
+      </div>
+      <div id="rb-notif-list"><div style="text-align:center;color:#475569;padding:1.5rem;font-size:.82rem">Cargando...</div></div>
+    </div>
     <a href="/perfil" class="btn-login">Mi perfil</a>
     {% if user.plan == 'free' %}
     <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 29€/mes</button>
@@ -565,6 +579,11 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="sc-tab" onclick="scSwitch('tendencia',this)">Tendencia</div>
   <div class="sc-tab" onclick="scSwitch('comparar',this)">Comparar</div>
   <div class="sc-tab" onclick="scSwitch('vigilancia',this)">Vigilancia{% if plan=='free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}</div>
+  <div class="sc-tab" onclick="scSwitch('ssl',this)">SSL</div>
+  <div class="sc-tab" onclick="scSwitch('uptime',this)">Uptime</div>
+  <div class="sc-tab" onclick="scSwitch('dns',this)">DNS</div>
+  <div class="sc-tab" onclick="scSwitch('tecnologias',this)">Tecnologías</div>
+  <div class="sc-tab" onclick="scSwitch('iprep',this)">Reputación IP</div>
 </div>
 
 <div class="sc-content">
@@ -776,6 +795,50 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div id="sc-vig-save-off" style="margin-top:1rem;{% if scan_dias %}display:none{% endif %}"><button onclick="scGuardarHorario()" style="background:#E2E8F0;color:var(--muted);border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button></div>
     </div>
     {% endif %}
+  </div>
+
+  <!-- SSL -->
+  <div class="sc-panel" id="sc-ssl">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Monitorización SSL/TLS</h3><p style="font-size:.8rem;color:var(--muted)">Estado de los certificados SSL de tus dominios activos.</p></div>
+      <button onclick="rbRefreshSSL()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Actualizar</button>
+    </div>
+    <div id="sc-ssl-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando datos SSL...</div></div>
+  </div>
+
+  <!-- UPTIME -->
+  <div class="sc-panel" id="sc-uptime">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Monitorización Uptime</h3><p style="font-size:.8rem;color:var(--muted)">Disponibilidad y tiempo de respuesta de tus dominios (últimas 24h).</p></div>
+    </div>
+    <div id="sc-uptime-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando datos de uptime...</div></div>
+  </div>
+
+  <!-- DNS -->
+  <div class="sc-panel" id="sc-dns">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Cambios DNS</h3><p style="font-size:.8rem;color:var(--muted)">Detecta nuevos registros A, MX, TXT y NS o registros eliminados.</p></div>
+      <button onclick="rbRefreshDNS()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Escanear DNS</button>
+    </div>
+    <div id="sc-dns-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando registros DNS...</div></div>
+  </div>
+
+  <!-- TECNOLOGÍAS -->
+  <div class="sc-panel" id="sc-tecnologias">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Detección de tecnologías</h3><p style="font-size:.8rem;color:var(--muted)">CMS, frameworks, servidores y librerías detectadas en tus dominios.</p></div>
+      <button onclick="rbRefreshTech()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Detectar</button>
+    </div>
+    <div id="sc-tech-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando tecnologías...</div></div>
+  </div>
+
+  <!-- REPUTACIÓN IP -->
+  <div class="sc-panel" id="sc-iprep">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Reputación IP</h3><p style="font-size:.8rem;color:var(--muted)">Comprueba si las IPs de tus dominios aparecen en listas negras de spam o malware.</p></div>
+      <button onclick="rbRefreshIPRep()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Comprobar</button>
+    </div>
+    <div id="sc-iprep-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando reputación IP...</div></div>
   </div>
 
 </div><!-- /sc-content -->
@@ -1415,75 +1478,103 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <span id="lbl-anual" style="font-size:.85rem;color:#64748B">Anual <span style="font-size:.7rem;background:#DCFCE7;color:#15803D;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.25rem">2 meses gratis</span></span>
     </div>
 
-    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));max-width:800px;margin:0 auto">
+    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));max-width:1100px;margin:0 auto">
 
+      <!-- FREE -->
       <div class="plan">
         <div class="plan-name">Gratuito</div>
         <div class="plan-price">0 <span>/ mes</span></div>
-        <div class="plan-desc">Para cualquier empresa que quiera conocer su estado de seguridad sin coste.</div>
+        <div class="plan-desc">Para ver si tienes problemas. No para ignorarlos.</div>
         <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>10 análisis al mes</div>
-        <div class="pf"><span class="ck">v</span>Escáner de puertos expuestos</div>
-        <div class="pf"><span class="ck">v</span>Verificación DNS / SPF / DMARC</div>
-        <div class="pf"><span class="ck">v</span>Cabeceras de seguridad HTTP</div>
-        <div class="pf"><span class="ck">v</span>Enumeración de subdominios</div>
-        <div class="pf"><span class="ck">v</span>Informe PDF básico</div>
+        <div class="pf"><span class="ck">v</span>3 análisis gratuitos (para siempre)</div>
+        <div class="pf"><span class="ck">v</span>Puertos expuestos a internet</div>
+        <div class="pf"><span class="ck">v</span>Protección contra suplantación de email</div>
+        <div class="pf"><span class="ck">v</span>Cabeceras de seguridad web</div>
+        <div class="pf"><span class="ck">v</span>Subdominios accesibles</div>
         <div class="plan-div" style="margin-top:1.2rem"></div>
-        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
-          Cada análisis gratuito te muestra qué servicios de tu empresa son visibles desde internet, si tu dominio de correo puede ser suplantado y si tu web tiene configuraciones de seguridad incorrectas. Obtienes un informe descargable con los resultados.
-        </div>
-        <div class="pf off"><span class="cx">x</span>Filtraciones Deep Web</div>
+        <div class="pf off"><span class="cx">x</span>Filtraciones en la Deep Web</div>
         <div class="pf off"><span class="cx">x</span>Alertas automáticas por email</div>
         <div class="pf off"><span class="cx">x</span>Vigilancia nocturna 24/7</div>
+        <div class="pf off"><span class="cx">x</span>Monitorización SSL/Uptime/DNS</div>
         <a href="/register" class="btn-plan ol" style="margin-top:1.75rem;display:block;text-align:center">Empezar gratis</a>
       </div>
 
+      <!-- PRO (señuelo hace que este parezca ganga) -->
       <div class="plan hot">
-        <div class="plan-badge">RECOMENDADO</div>
+        <div class="plan-badge">MÁS POPULAR</div>
         <div class="plan-name">Pro</div>
         <div class="plan-price"><span id="pro-price">29</span> <span>/ mes</span></div>
         <div id="pro-anual-note" style="display:none;font-size:.72rem;color:#22C55E;margin-top:-.5rem;margin-bottom:.25rem">290€/año · ahorras 58€</div>
-        <div class="plan-desc">Para empresas que necesitan proteccion continua, no solo analisis puntuales.</div>
+        <div style="font-size:.72rem;background:rgba(34,197,94,.12);color:#22C55E;border:1px solid #14532D;border-radius:20px;padding:.2rem .75rem;display:inline-block;margin-bottom:.6rem;font-family:'JetBrains Mono',monospace;font-weight:700">La multa media por brecha RGPD: 20.000€</div>
+        <div class="plan-desc">Protección continua por menos de 1€ al día. Sin permanencia.</div>
         <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>Todo lo del plan gratuito</div>
-        <div class="pf"><span class="ck">v</span>Filtraciones Deep Web</div>
-        <div class="pf"><span class="ck">v</span>Alertas por email automaticas</div>
+        <div class="pf"><span class="ck">v</span>Escaneos ilimitados</div>
+        <div class="pf"><span class="ck">v</span><strong>Filtraciones Deep Web</strong> — ¿hay contraseñas de tu empresa filtradas?</div>
+        <div class="pf"><span class="ck">v</span>Alertas automáticas por email</div>
         <div class="pf"><span class="ck">v</span>Vigilancia nocturna 24/7</div>
-        <div class="pf"><span class="ck">v</span>Informe PDF ejecutivo avanzado</div>
+        <div class="pf"><span class="ck">v</span>SSL · Uptime · DNS en tiempo real</div>
+        <div class="pf"><span class="ck">v</span>Informe PDF ejecutivo incluido</div>
+        <div class="pf"><span class="ck">v</span>API pública para integrar en CI/CD</div>
         <div class="pf"><span class="ck">v</span>Soporte prioritario</div>
         <div class="plan-div" style="margin-top:1.2rem"></div>
-        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:1.25rem">
-          Ademas del analisis completo, ReconBase busca si los emails de tu empresa han aparecido en filtraciones de datos conocidas. Cada noche revisamos tu dominio automaticamente y te avisamos por email si detectamos algo nuevo, sin que tengas que hacer nada.
-        </div>
-        <button class="btn-plan sl" id="btn-pro-subscribe" onclick="pagarPlanActual()">Suscribirse — 29€/mes</button>
+        <button class="btn-plan sl" id="btn-pro-subscribe" onclick="pagarPlanActual()">Proteger mi empresa — 29€/mes</button>
+        <div style="text-align:center;font-size:.7rem;color:var(--muted);margin-top:.6rem">Sin permanencia · Cancela cuando quieras</div>
+      </div>
+
+      <!-- ENTERPRISE — señuelo para hacer Pro parecer ganga -->
+      <div class="plan" style="opacity:.85">
+        <div class="plan-name" style="color:var(--muted)">Enterprise</div>
+        <div class="plan-price" style="font-size:1.6rem">149 <span>/ mes</span></div>
+        <div class="plan-desc">Para empresas que necesitan auditoría manual y SLA garantizado.</div>
+        <div class="plan-div"></div>
+        <div class="pf"><span class="ck">v</span>Todo lo del plan Pro</div>
+        <div class="pf"><span class="ck">v</span>Auditoría manual mensual por experto</div>
+        <div class="pf"><span class="ck">v</span>Informe técnico + ejecutivo firmado</div>
+        <div class="pf"><span class="ck">v</span>SLA 99.9% · Soporte 24/7</div>
+        <div class="pf"><span class="ck">v</span>Marca blanca (white-label PDF)</div>
+        <div class="pf"><span class="ck">v</span>Hasta 50 dominios monitorizados</div>
+        <div class="pf"><span class="ck">v</span>Onboarding dedicado</div>
+        <div class="plan-div" style="margin-top:1.2rem"></div>
+        <a href="mailto:enterprise@reconbase.io?subject=Consulta%20Enterprise" class="btn-plan ol" style="display:block;text-align:center;border-color:var(--muted);color:var(--muted)">Contactar con ventas →</a>
       </div>
 
     </div>
 
-    <!-- Tabla comparativa -->
-    <div style="max-width:700px;margin:2.5rem auto 0;overflow-x:auto">
+    <!-- Tabla comparativa actualizada -->
+    <div style="max-width:780px;margin:2.5rem auto 0;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:.82rem">
         <thead>
           <tr>
             <th style="text-align:left;padding:.7rem 1rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Característica</th>
             <th style="text-align:center;padding:.7rem 1rem;color:var(--text);font-weight:700;border-bottom:1px solid var(--border)">Gratuito</th>
             <th style="text-align:center;padding:.7rem 1rem;color:#22C55E;font-weight:700;border-bottom:1px solid var(--border)">Pro</th>
+            <th style="text-align:center;padding:.7rem 1rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)">Enterprise</th>
           </tr>
         </thead>
         <tbody>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Escaneos al mes</td><td style="text-align:center;color:var(--text)">10</td><td style="text-align:center;color:#22C55E;font-weight:700">Ilimitados</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Puertos expuestos</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">DNS / SPF / DMARC</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Cabeceras HTTP</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Subdominios</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Filtraciones Deep Web</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Vigilancia nocturna 24/7</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Alertas por email automáticas</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Historial de escaneos</td><td style="text-align:center;color:var(--muted)">Últimos 10</td><td style="text-align:center;color:#22C55E">Ilimitado</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Informe PDF ejecutivo</td><td style="text-align:center;color:var(--muted)">9€/informe</td><td style="text-align:center;color:#22C55E">Incluido</td></tr>
-          <tr><td style="padding:.65rem 1rem;color:var(--muted)">Soporte prioritario</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Análisis al mes</td><td style="text-align:center;color:var(--text)">3</td><td style="text-align:center;color:#22C55E;font-weight:700">Ilimitados</td><td style="text-align:center;color:var(--muted)">Ilimitados</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Puertos · DNS · SPF · DMARC</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Filtraciones Deep Web</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">SSL · Uptime · DNS en tiempo real</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Vigilancia nocturna 24/7</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Reputación IP · Tech Detection</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Informe PDF ejecutivo</td><td style="text-align:center;color:var(--muted)">9€/informe</td><td style="text-align:center;color:#22C55E">Incluido</td><td style="text-align:center;color:var(--muted)">Incluido</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Auditoría manual por experto</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:var(--muted)">✓ mensual</td></tr>
+          <tr><td style="padding:.65rem 1rem;color:var(--muted)">Precio mensual</td><td style="text-align:center;color:var(--text)">0€</td><td style="text-align:center;color:#22C55E;font-weight:700">29€</td><td style="text-align:center;color:var(--muted)">149€</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Trust badges -->
+    <div style="margin-top:3rem;text-align:center">
+      <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Cumplimiento y seguridad</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:1rem">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">🇪🇺</span> RGPD / GDPR Compliant</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">🔒</span> HTTPS · HSTS · CSP</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">🛡️</span> ISO 27001 alineado</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">📊</span> ENS (Esquema Nacional)</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">⚡</span> 99.9% Uptime SLA</div>
+      </div>
     </div>
 
   </div>
@@ -1834,6 +1925,265 @@ function aceptarCookies() {
 function rechazarCookies() {
   localStorage.setItem('rb_cookie_consent', 'essential');
   document.getElementById('cookie-banner').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// NOTIFICACIONES IN-APP
+// ═══════════════════════════════════════════════════════
+var _rbNotifOpen = false;
+function rbToggleNotif() {
+  _rbNotifOpen = !_rbNotifOpen;
+  var panel = document.getElementById('rb-notif-panel');
+  if (!panel) return;
+  panel.style.display = _rbNotifOpen ? 'block' : 'none';
+  if (_rbNotifOpen) rbLoadNotifs();
+}
+document.addEventListener('click', function(e) {
+  var bell = document.getElementById('rb-notif-bell');
+  var panel = document.getElementById('rb-notif-panel');
+  if (bell && panel && !bell.contains(e.target) && !panel.contains(e.target)) {
+    panel.style.display = 'none'; _rbNotifOpen = false;
+  }
+});
+function rbLoadNotifs() {
+  fetch('/api/notificaciones').then(function(r){return r.json();}).then(function(d){
+    var list = document.getElementById('rb-notif-list');
+    var count = document.getElementById('rb-notif-count');
+    if (!list) return;
+    if (d.no_leidas > 0 && count) {
+      count.textContent = d.no_leidas > 9 ? '9+' : d.no_leidas;
+      count.style.display = 'flex';
+    } else if (count) { count.style.display = 'none'; }
+    if (!d.notificaciones || d.notificaciones.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#475569;padding:1.5rem;font-size:.82rem">Sin notificaciones</div>'; return;
+    }
+    var iconos = {ssl:'🔒',uptime:'🔴',dns:'⚡',scan:'🔍',ip_rep:'🚨',sistema:'✅',trial:'⚡',default:'📋'};
+    list.innerHTML = d.notificaciones.map(function(n){
+      var ico = iconos[n.tipo] || iconos.default;
+      var bg = n.leida ? '' : 'background:rgba(34,197,94,.04);';
+      return '<div onclick="rbMarcarLeida('+n.id+',this)" style="'+bg+'padding:.75rem 1rem;border-bottom:1px solid #152B1E;cursor:pointer;transition:background .2s" onmouseover="this.style.background=\'rgba(255,255,255,.03)\'" onmouseout="this.style.background=\''+(n.leida?'':'rgba(34,197,94,.04)')+'\'">'+
+        '<div style="display:flex;align-items:flex-start;gap:.5rem">'+
+          '<span style="font-size:.9rem;flex-shrink:0;margin-top:.1rem">'+ico+'</span>'+
+          '<div style="min-width:0">'+
+            '<div style="font-size:.8rem;font-weight:'+(n.leida?'400':'700')+';color:#E2EDF8;margin-bottom:.15rem;line-height:1.3">'+n.titulo+'</div>'+
+            (n.mensaje ? '<div style="font-size:.74rem;color:#64748B;line-height:1.4;margin-bottom:.2rem">'+n.mensaje.substring(0,80)+(n.mensaje.length>80?'...':'')+'</div>' : '')+
+            '<div style="font-size:.68rem;color:#475569;font-family:JetBrains Mono,monospace">'+n.created_at+'</div>'+
+          '</div>'+
+          (!n.leida ? '<span style="width:7px;height:7px;border-radius:50%;background:#22C55E;flex-shrink:0;margin-top:.3rem"></span>' : '')+
+        '</div></div>';
+    }).join('');
+  }).catch(function(){});
+}
+function rbMarcarLeida(id, el) {
+  fetch('/api/notificaciones/'+id+'/leer', {method:'POST'}).then(function(){
+    if (el) el.style.background = '';
+    rbLoadNotifs();
+  });
+}
+function rbMarcarTodasLeidas() {
+  fetch('/api/notificaciones/leer-todas', {method:'POST'}).then(function(){
+    rbLoadNotifs();
+  });
+}
+// Cargar conteo inicial si está logado
+(function(){
+  try {
+    fetch('/api/notificaciones').then(function(r){return r.json();}).then(function(d){
+      var count = document.getElementById('rb-notif-count');
+      if (count && d.no_leidas > 0) {
+        count.textContent = d.no_leidas > 9 ? '9+' : d.no_leidas;
+        count.style.display = 'flex';
+      }
+    }).catch(function(){});
+  } catch(e) {}
+})();
+
+// ═══════════════════════════════════════════════════════
+// SSL PANEL
+// ═══════════════════════════════════════════════════════
+function scLoadSSL() {
+  fetch('/api/ssl').then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('sc-ssl-content');
+    if (!el) return;
+    if (!d.ssl || d.ssl.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Añade dominios en tu perfil para ver el estado SSL aquí.</div>'; return;
+    }
+    el.innerHTML = d.ssl.map(function(c){
+      var color = c.valido === false ? '#DC2626' : c.dias_restantes <= 7 ? '#DC2626' : c.dias_restantes <= 30 ? '#D97706' : '#22C55E';
+      var icono = c.valido === false ? '⚠️' : c.dias_restantes <= 7 ? '🔴' : c.dias_restantes <= 30 ? '🟠' : '🟢';
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">'+
+        '<div style="display:flex;align-items:center;gap:.75rem">'+
+          '<span style="font-size:1.3rem">'+icono+'</span>'+
+          '<div><div style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+c.dominio+'</div>'+
+          '<div style="font-size:.75rem;color:var(--muted);margin-top:.15rem">'+
+            (c.valido === false ? 'Certificado inválido: '+c.error : 'Emitido por: '+(c.emitido_por||'—'))+
+          '</div></div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-weight:800;font-size:1.1rem;color:'+color+'">'+
+            (c.valido === false ? 'INVÁLIDO' : c.dias_restantes+'d restantes')+
+          '</div>'+
+          '<div style="font-size:.72rem;color:var(--muted)">Expira: '+(c.expira||'—')+'</div>'+
+        '</div></div>';
+    }).join('');
+  }).catch(function(){ document.getElementById('sc-ssl-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar datos SSL</div>'; });
+}
+function rbRefreshSSL() {
+  document.getElementById('sc-ssl-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Actualizando...</div>';
+  fetch('/api/ssl/refresh', {method:'POST'}).then(function(){
+    setTimeout(scLoadSSL, 2000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// UPTIME PANEL
+// ═══════════════════════════════════════════════════════
+function scLoadUptime() {
+  fetch('/api/uptime').then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('sc-uptime-content');
+    if (!el) return;
+    if (!d.uptime || d.uptime.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Añade dominios en tu perfil para ver el uptime aquí. El sistema los comprueba cada 15 minutos.</div>'; return;
+    }
+    el.innerHTML = d.uptime.map(function(c){
+      var color = c.up ? '#22C55E' : '#DC2626';
+      var dots = (c.history||[]).slice(-24).map(function(h){
+        return '<span title="'+h.ts+(h.ms?' · '+h.ms+'ms':'')+'" style="display:inline-block;width:10px;height:28px;border-radius:3px;background:'+(h.up?'#22C55E':'#DC2626')+';margin:0 1px"></span>';
+      }).join('');
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:.75rem">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem">'+
+          '<div style="display:flex;align-items:center;gap:.6rem">'+
+            '<span style="width:10px;height:10px;border-radius:50%;background:'+color+';display:inline-block"></span>'+
+            '<span style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+c.dominio+'</span>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<span style="font-size:.78rem;font-weight:700;color:'+color+'">'+(c.up ? 'Online' : 'Offline')+'</span>'+
+            (c.response_ms ? ' <span style="font-size:.72rem;color:var(--muted)">· '+c.response_ms+'ms</span>' : '')+
+            (c.status_code ? ' <span style="font-size:.72rem;color:var(--muted)">HTTP '+c.status_code+'</span>' : '')+
+          '</div>'+
+        '</div>'+
+        (dots ? '<div style="display:flex;align-items:flex-end;height:30px;overflow:hidden">'+dots+'</div><div style="font-size:.65rem;color:var(--muted);margin-top:.3rem">Últimas 24h</div>' : '')+
+      '</div>';
+    }).join('');
+  }).catch(function(){ document.getElementById('sc-uptime-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar datos de uptime</div>'; });
+}
+
+// ═══════════════════════════════════════════════════════
+// DNS PANEL
+// ═══════════════════════════════════════════════════════
+function scLoadDNS() {
+  fetch('/api/dns-cambios').then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('sc-dns-content');
+    if (!el) return;
+    if (!d.dns || d.dns.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Sin registros DNS todavía. Pulsa «Escanear DNS» para tomar el primer snapshot.</div>'; return;
+    }
+    var html = d.dns.map(function(dom){
+      var rows = dom.registros.map(function(r){
+        var badge = r.activo
+          ? '<span style="font-size:.65rem;background:rgba(34,197,94,.1);color:#4ADE80;border:1px solid #14532D;border-radius:20px;padding:.1rem .45rem;font-family:JetBrains Mono,monospace">Activo</span>'
+          : '<span style="font-size:.65rem;background:rgba(239,68,68,.1);color:#F87171;border:1px solid #7F1D1D;border-radius:20px;padding:.1rem .45rem;font-family:JetBrains Mono,monospace">Eliminado</span>';
+        return '<tr><td style="padding:.4rem .6rem;color:var(--muted);font-family:JetBrains Mono,monospace;font-size:.75rem;white-space:nowrap">'+r.tipo+'</td><td style="padding:.4rem .6rem;color:var(--text);font-size:.78rem;word-break:break-all">'+r.valor+'</td><td style="padding:.4rem .6rem">'+badge+'</td><td style="padding:.4rem .6rem;font-size:.72rem;color:var(--muted)">'+r.desde+'</td></tr>';
+      }).join('');
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem">'+
+        '<div style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem;margin-bottom:.75rem">'+dom.dominio+'</div>'+
+        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>'+
+        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Tipo</th>'+
+        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Valor</th>'+
+        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Estado</th>'+
+        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Desde</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    }).join('');
+    el.innerHTML = html;
+  }).catch(function(){ document.getElementById('sc-dns-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar registros DNS</div>'; });
+}
+function rbRefreshDNS() {
+  document.getElementById('sc-dns-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Escaneando DNS...</div>';
+  fetch('/api/dns-cambios/refresh', {method:'POST'}).then(function(){
+    setTimeout(scLoadDNS, 3000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// TECNOLOGÍAS PANEL
+// ═══════════════════════════════════════════════════════
+var _catColor = {
+  'Servidor web':'#2563EB','Lenguaje backend':'#7C3AED','Framework':'#059669','CMS':'#D97706',
+  'E-commerce':'#DB2777','Framework JS':'#EA580C','CSS Framework':'#0891B2','Librería JS':'#65A30D',
+  'Analytics':'#64748B','CDN / Proxy':'#475569','Seguridad':'#22C55E'
+};
+function scLoadTecnologias() {
+  fetch('/api/tecnologias').then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('sc-tech-content');
+    if (!el) return;
+    if (!d.tecnologias || d.tecnologias.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Pulsa «Detectar» para analizar las tecnologías de tus dominios.</div>'; return;
+    }
+    el.innerHTML = d.tecnologias.map(function(dom){
+      var techs = (dom.tecnologias||[]);
+      if (techs.length === 0) return '';
+      var chips = techs.map(function(t){
+        var c = _catColor[t.categoria] || '#64748B';
+        return '<div style="display:inline-flex;align-items:center;gap:.4rem;background:'+c+'18;border:1px solid '+c+'44;border-radius:20px;padding:.25rem .75rem;margin:.2rem">'+
+          '<span style="font-size:.75rem;font-weight:700;color:'+c+'">'+t.nombre+'</span>'+
+          (t.version ? '<span style="font-size:.65rem;color:var(--muted)">'+t.version+'</span>' : '')+
+          '<span style="font-size:.6rem;color:'+c+';opacity:.7;background:'+c+'22;padding:.05rem .35rem;border-radius:10px">'+t.categoria+'</span>'+
+        '</div>';
+      }).join('');
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem">'+
+          '<span style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+dom.dominio+'</span>'+
+          '<span style="font-size:.7rem;color:var(--muted)">Detectado: '+dom.detected_at+'</span>'+
+        '</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:.15rem">'+chips+'</div>'+
+      '</div>';
+    }).join('') || '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Sin datos. Pulsa «Detectar».</div>';
+  }).catch(function(){ document.getElementById('sc-tech-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar tecnologías</div>'; });
+}
+function rbRefreshTech() {
+  document.getElementById('sc-tech-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Analizando tecnologías...</div>';
+  fetch('/api/tecnologias/refresh', {method:'POST'}).then(function(){
+    setTimeout(scLoadTecnologias, 4000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// IP REPUTACIÓN PANEL
+// ═══════════════════════════════════════════════════════
+function scLoadIPRep() {
+  fetch('/api/ip-reputacion').then(function(r){return r.json();}).then(function(d){
+    var el = document.getElementById('sc-iprep-content');
+    if (!el) return;
+    if (!d.reputacion || d.reputacion.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Pulsa «Comprobar» para analizar la reputación IP de tus dominios.</div>'; return;
+    }
+    el.innerHTML = d.reputacion.map(function(c){
+      var ok = c.limpio;
+      var color = ok ? '#22C55E' : '#DC2626';
+      var icono = ok ? '✅' : '🚨';
+      var listas = c.listas_negras && c.listas_negras.length > 0
+        ? '<div style="margin-top:.5rem"><span style="font-size:.72rem;color:#F87171;font-weight:600">Listas: </span>'+c.listas_negras.map(function(l){ return '<span style="font-size:.7rem;color:var(--muted)">'+l+'</span>'; }).join(' · ')+'</div>' : '';
+      return '<div style="background:var(--surface);border:1px solid '+(ok?'var(--border)':'#7F1D1D')+';border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem">'+
+        '<div>'+
+          '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem">'+
+            '<span style="font-size:1.2rem">'+icono+'</span>'+
+            '<span style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+c.dominio+'</span>'+
+          '</div>'+
+          '<div style="font-size:.78rem;color:var(--muted)">IP: <span style="font-family:JetBrains Mono,monospace">'+c.ip+'</span></div>'+
+          listas+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-weight:800;font-size:1rem;color:'+color+'">'+(ok?'Limpia':'En lista negra')+'</div>'+
+          '<div style="font-size:.7rem;color:var(--muted)">Verificado: '+c.checked_at+'</div>'+
+        '</div></div>';
+    }).join('');
+  }).catch(function(){ document.getElementById('sc-iprep-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar reputación IP</div>'; });
+}
+function rbRefreshIPRep() {
+  document.getElementById('sc-iprep-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Comprobando listas negras...</div>';
+  fetch('/api/ip-reputacion/refresh', {method:'POST'}).then(function(){
+    setTimeout(scLoadIPRep, 5000);
+  });
 }
 </script>
 </body>

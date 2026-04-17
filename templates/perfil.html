@@ -49,6 +49,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .stat-box{background:#080C14;border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center}
 .stat-num{font-size:1.6rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:.25rem}
 .stat-lbl{font-size:.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.tbl th{text-align:left;padding:.5rem .75rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+.tbl td{padding:.55rem .75rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.pill{display:inline-block;padding:.15rem .55rem;border-radius:20px;font-size:.68rem;font-family:'JetBrains Mono',monospace;font-weight:700}
+.pill-green{background:rgba(34,197,94,.1);color:#4ADE80;border:1px solid #14532D}
+.pill-red{background:rgba(239,68,68,.1);color:#F87171;border:1px solid #7F1D1D}
+.pill-amber{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid #78350F}
+.pill-gray{background:rgba(100,116,139,.1);color:#94A3B8;border:1px solid #334155}
+select.form-input{cursor:pointer}
 </style>
 </head>
 <body>
@@ -193,6 +203,31 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     {% endif %}
   </div>
 
+  <!-- Trial Pro 14 días -->
+  {% if not user.trial_used and user.plan == 'free' %}
+  <div class="card" style="border-color:#166534;background:linear-gradient(135deg,#0A1F12,#0A1410)">
+    <div class="card-title" style="color:#22C55E">Prueba Pro gratis — 14 días</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">
+      Acceso completo a todas las funciones Pro durante <strong style="color:#E2EDF8">14 días</strong>, sin tarjeta de crédito.<br>
+      Monitorización SSL/Uptime/DNS en tiempo real · API pública · Alertas avanzadas · Dominios ilimitados.
+    </div>
+    <button class="btn btn-green" onclick="activarTrialPerfil()" id="btn-trial-perfil">
+      ⚡ Activar 14 días gratis
+    </button>
+  </div>
+  {% elif user.trial_activo %}
+  <div class="card" style="border-color:#78350F;background:linear-gradient(135deg,#1a0f00,#0A1410)">
+    <div class="card-title" style="color:#FCD34D">Trial Pro activo</div>
+    <div class="info-row">
+      <span class="info-label">Expira el</span>
+      <span class="info-val" style="color:var(--amber)">{{ user.trial_end.strftime('%d %b %Y') }} ({{ user.trial_dias_restantes }} días restantes)</span>
+    </div>
+    <a href="/#precios" style="display:block;margin-top:1rem">
+      <button class="btn btn-green">Suscribirse antes de que expire — 29€/mes</button>
+    </a>
+  </div>
+  {% endif %}
+
   <!-- Cambiar contraseña -->
   <div class="card">
     <div class="card-title">Cambiar contraseña</div>
@@ -258,6 +293,44 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="msg msg-ok" id="alert-ok" style="display:none">Guardado</div>
   </div>
 
+  <!-- Informe PDF automático -->
+  <div class="card">
+    <div class="card-title">Informe PDF automático</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.4">
+      Recibe un informe PDF de seguridad en tu email de forma automática. Elige frecuencia y día de envío.
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem">
+        <input type="checkbox" id="pdf-activo" onchange="guardarInformePDF()" style="width:16px;height:16px;accent-color:var(--green)">
+        Activar informe automático
+      </label>
+    </div>
+    <div id="pdf-config" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+        <div>
+          <label class="form-label">Frecuencia</label>
+          <select id="pdf-frecuencia" class="form-input" onchange="guardarInformePDF()">
+            <option value="semanal">Semanal</option>
+            <option value="mensual">Mensual</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" id="pdf-dia-label">Día de la semana</label>
+          <select id="pdf-dia" class="form-input" onchange="guardarInformePDF()">
+            <option value="0">Lunes</option>
+            <option value="1">Martes</option>
+            <option value="2">Miércoles</option>
+            <option value="3">Jueves</option>
+            <option value="4">Viernes</option>
+            <option value="5">Sábado</option>
+            <option value="6">Domingo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="msg msg-ok" id="pdf-ok" style="display:none">Guardado</div>
+  </div>
+
   <!-- API Key -->
   <div class="card">
     <div class="card-title">API pública</div>
@@ -307,6 +380,37 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
       <button class="btn-outline-red" onclick="disableTotp()" style="font-size:.82rem">Desactivar 2FA</button>
       <div class="msg msg-err" id="totp-dis-err" style="margin-top:.4rem"></div>
     </div>
+  </div>
+
+  <!-- Facturas -->
+  <div class="card">
+    <div class="card-title">Mis facturas</div>
+    {% if facturas %}
+    <table class="tbl">
+      <thead><tr><th>Nº</th><th>Concepto</th><th>Importe</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>
+      {% for f in facturas %}
+      <tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted)">{{ f.numero }}</td>
+        <td style="color:var(--text)">{{ f.concepto }}</td>
+        <td style="font-weight:700;color:var(--green)">{{ '%.2f'|format(f.importe) }} {{ f.moneda }}</td>
+        <td><span class="pill {% if f.estado=='pagada' %}pill-green{% elif f.estado=='pendiente' %}pill-amber{% else %}pill-gray{% endif %}">{{ f.estado }}</span></td>
+        <td style="color:var(--muted);font-size:.78rem">{{ f.created_at.strftime('%d/%m/%Y') }}</td>
+        <td><a href="/api/facturas/{{ f.id }}/pdf" style="color:var(--green);font-size:.75rem;font-weight:600">⬇ PDF</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:1rem 0">No hay facturas todavía. Aparecerán aquí cuando actives el plan Pro.</div>
+    {% endif %}
+  </div>
+
+  <!-- Audit Log de seguridad -->
+  <div class="card">
+    <div class="card-title">Historial de accesos</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem">Últimas 50 acciones de seguridad en tu cuenta.</div>
+    <div id="audit-list"><div style="text-align:center;color:var(--dim);font-size:.82rem;padding:1rem">Cargando...</div></div>
   </div>
 
   <!-- Privacidad (RGPD) -->
@@ -579,6 +683,71 @@ function activarTrialPerfil() {
   })
   .catch(function(){ toast('Error de conexión', 'red'); if (btn) { btn.disabled=false; } });
 }
+
+// ── Informe PDF automático ──
+async function loadInformePDF() {
+  try {
+    var r = await fetch('/api/informe-pdf');
+    var d = await r.json();
+    document.getElementById('pdf-activo').checked = d.activo;
+    document.getElementById('pdf-frecuencia').value = d.frecuencia || 'semanal';
+    document.getElementById('pdf-dia').value = d.dia || 1;
+    document.getElementById('pdf-config').style.display = d.activo ? 'block' : 'none';
+    actualizarLabelDia();
+  } catch(e) {}
+}
+function actualizarLabelDia() {
+  var frec = document.getElementById('pdf-frecuencia');
+  var label = document.getElementById('pdf-dia-label');
+  var sel = document.getElementById('pdf-dia');
+  if (!frec || !label || !sel) return;
+  if (frec.value === 'mensual') {
+    label.textContent = 'Día del mes';
+    sel.innerHTML = Array.from({length:28},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('');
+  } else {
+    label.textContent = 'Día de la semana';
+    sel.innerHTML = '<option value="0">Lunes</option><option value="1">Martes</option><option value="2">Miércoles</option><option value="3">Jueves</option><option value="4">Viernes</option><option value="5">Sábado</option><option value="6">Domingo</option>';
+  }
+}
+async function guardarInformePDF() {
+  var activo = document.getElementById('pdf-activo').checked;
+  document.getElementById('pdf-config').style.display = activo ? 'block' : 'none';
+  actualizarLabelDia();
+  var ok = document.getElementById('pdf-ok');
+  try {
+    var r = await fetch('/api/informe-pdf', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        activo: activo,
+        frecuencia: document.getElementById('pdf-frecuencia').value,
+        dia: parseInt(document.getElementById('pdf-dia').value)
+      })
+    });
+    var d = await r.json();
+    if (d.ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',2000); }
+  } catch(e) {}
+}
+loadInformePDF();
+
+// ── Audit Log ──
+async function loadAuditLog() {
+  try {
+    var r = await fetch('/api/audit-log');
+    var d = await r.json();
+    var list = document.getElementById('audit-list');
+    if (!d.logs || d.logs.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:var(--dim);font-size:.82rem;padding:1rem">Sin registros todavía.</div>';
+      return;
+    }
+    var iconos = {login:'🔐',logout:'👋',cambio_password:'🔑',api_key:'🗝️',totp_activado:'🛡️',totp_desactivado:'⚠️',trial_activado:'⚡',plan_pro:'💳',default:'📋'};
+    list.innerHTML = '<table class="tbl"><thead><tr><th>Evento</th><th>IP</th><th>Fecha</th></tr></thead><tbody>' +
+      d.logs.map(function(l){
+        var ico = iconos[l.evento] || iconos.default;
+        return '<tr><td style="color:var(--text)">' + ico + ' ' + (l.evento||'').replace(/_/g,' ') + (l.detalles ? '<br><span style="font-size:.72rem;color:var(--muted)">' + l.detalles + '</span>' : '') + '</td><td style="font-family:JetBrains Mono,monospace;font-size:.75rem;color:var(--muted)">' + (l.ip||'—') + '</td><td style="font-size:.78rem;color:var(--muted);white-space:nowrap">' + l.created_at + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  } catch(e) {}
+}
+loadAuditLog();
 
 function abrirPortalStripe() {
   toast('Conectando con Stripe...', 'green');
