@@ -1,0 +1,444 @@
+# 🔍 Auditoría de ReconBase — Pre-lanzamiento
+
+Revisión completa del código, arquitectura, seguridad, monetización y UX antes de salir a mercado.
+
+---
+
+## 🔴 CRÍTICO — Resolver ANTES de lanzar
+
+### 1. Credenciales expuestas en `.env` y en el repositorio
+
+El archivo `.env` contiene **en texto plano**:
+- Clave secreta de Stripe (`sk_test_...`)
+- API key de HIBP
+- Contraseña de app de Gmail
+- `SECRET_KEY` de Flask
+- Credenciales de PostgreSQL
+
+> [!CAUTION]
+> Si este repositorio es público (o lo será), **todas estas claves están comprometidas**. Cualquier persona puede hacer cargos con tu cuenta de Stripe, acceder a tu base de datos, o suplantar sesiones.
+
+**Acción:**
+- [ ] Rotar **todas** las claves inmediatamente (Stripe, Gmail, SECRET_KEY, DB password)
+- [ ] Asegurarse de que `.env` está en `.gitignore` (lo está ✓, pero verifica que nunca se commiteó al historial)
+- [ ] Ejecutar `git log --all --full-history -- .env` — si aparece, necesitas limpiar el historial con `git filter-branch` o BFG Repo Cleaner
+- [ ] Las claves de Stripe son de **test** (`sk_test_`). Antes de lanzar necesitas las de **producción** (`sk_live_`)
+
+---
+
+### 2. Stripe en modo TEST — no se puede cobrar dinero real
+
+```python
+# server.py línea 187
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")  # sk_test_...
+```
+
+Y en `register.html` línea 119:
+```javascript
+var STRIPE_LINKS = {
+    pro:        'https://buy.stripe.com/TU_LINK_PRO',        // ← Placeholder!
+    enterprise: 'https://buy.stripe.com/TU_LINK_ENTERPRISE'  // ← Placeholder!
+};
+```
+
+**Acción:**
+- [ ] Pasar Stripe a modo **live** con claves de producción
+- [ ] Configurar el webhook de Stripe en producción (`STRIPE_WEBHOOK_SECRET`)
+- [ ] Reemplazar los placeholders de Payment Links en `register.html`
+- [ ] Probar el flujo completo de pago end-to-end en producción
+
+---
+
+### 3. El `SECRET_KEY` de Flask es débil y predecible
+
+```python
+app.secret_key = os.getenv("SECRET_KEY", "cambiame_por_algo_seguro")
+```
+
+El valor actual `S8MRl3GeSk28IZhjrZikjgkJX` es corto. Si la env var no se configura en Railway, el fallback literal **"cambiame_por_algo_seguro"** permite a cualquiera forjar cookies de sesión.
+
+**Acción:**
+- [ ] Generar un secret de 64+ caracteres: `python -c "import secrets; print(secrets.token_hex(32))"`
+- [ ] Configurarlo como variable de entorno en Railway (nunca en código)
+
+---
+
+### 4. `server.py` es un archivo monolítico de 3.362 líneas
+
+Un solo archivo con **toda** la lógica: rutas, emails, webhooks, PDF, escáner, crons, migraciones SQL inline...
+
+> [!WARNING]
+> Esto es una bomba de tiempo para mantenimiento. Cualquier cambio puede romper algo inesperado. No hay separación de responsabilidades.
+
+**Acción (refactor progresivo):**
+- [ ] Separar en blueprints: `auth.py`, `scan.py`, `billing.py`, `admin.py`, `api_v1.py`, `cron.py`
+- [ ] Mover funciones de email a `emails.py`
+- [ ] Mover generación de PDF a `pdf_generator.py`
+- [ ] Extraer migraciones a Flask-Migrate (Alembic) en vez de `ALTER TABLE` inline
+
+---
+
+### 5. Migraciones SQL con `try/except pass` — silencia errores reales
+
+```python
+# server.py líneas 3290-3336
+for col_sql in [...30+ ALTER TABLE statements...]:
+    try:
+        db.session.execute(text(col_sql))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()  # Silencia TODO
+```
+
+Esto funciona para desarrollo, pero en producción puede enmascarar problemas graves de schema.
+
+**Acción:**
+- [ ] Migrar a **Flask-Migrate/Alembic** para migraciones versionadas
+- [ ] Cada cambio de schema queda en un archivo de migración con rollback
+
+---
+
+### 6. `stats_vulns` es un dato falso calculado
+
+```python
+# server.py línea 351
+stats_vulns = max(int(stats_scans * 2.3), 12)
+```
+
+El contador de "riesgos analizados" en la landing es `escaneos × 2.3`. Esto es **publicidad engañosa** en territorio de la Ley de Competencia Desleal.
+
+> [!CAUTION]
+> Ya lo identificaste en tu diario (12 de abril). Pero sigue en el código. Si un usuario o competidor lo descubre, puede ser un problema legal serio en España/UE.
+
+**Acción:**
+- [ ] Calcular `stats_vulns` de verdad: `SELECT SUM(json_array_length(resultado->'puertos')) FROM scans` o similar
+- [ ] Si no tienes datos reales suficientes, **no muestres el contador** hasta que sean reales
+
+---
+
+## 🟡 IMPORTANTE — Resolver en las primeras semanas
+
+### 7. No hay rate-limiting efectivo en el escaneo principal
+
+```python
+@app.route("/api/scan", methods=["POST"])
+@login_required
+def api_scan():
+    # No hay @limiter.limit()
+```
+
+El endpoint `/api/scan-demo` tiene `5 per hour`, pero el principal `/api/scan` (usuarios logueados) **no tiene límite**. Un usuario free puede reventarte los recursos del servidor.
+
+**Acción:**
+- [ ] Añadir `@limiter.limit("30 per hour")` al scan principal
+- [ ] Los free ya tienen el límite de 10/mes en lógica, pero el rate-limit protege de abuso por ráfagas
+
+---
+
+### 8. Dominio propio — imprescindible para credibilidad
+
+La URL actual es `reconbase-production.up.railway.app`. Esto:
+- Resta credibilidad profesional
+- Impide configurar Stripe en producción (requiere dominio propio)
+- Afecta negativamente al SEO
+- Genera desconfianza: nadie paga 29€/mes a una app en un subdominio de Railway
+
+**Acción:**
+- [ ] Comprar `reconbase.io` o `reconbase.es` (mencionas que está pendiente con tu padre)
+- [ ] Configurar DNS en Railway → Custom Domain
+- [ ] Actualizar todas las URLs hardcodeadas en el código (hay muchas `reconbase-production.up.railway.app`)
+- [ ] Redirigir el subdominio de Railway al dominio propio
+
+---
+
+### 9. URLs hardcodeadas por todo el código
+
+```python
+# Aparece en MUCHOS sitios:
+"https://reconbase-production.up.railway.app"
+```
+
+Conté al menos 15+ ocurrencias hardcodeadas entre `server.py`, `landing.html`, emails, sitemap, OG tags...
+
+**Acción:**
+- [ ] Ya tienes `BASE_URL` como env var en algunos sitios. Úsala **en todos**
+- [ ] En templates Jinja: `{{ request.host_url }}` o pasar `base_url` como variable de contexto
+- [ ] Un solo cambio de dominio no debería requerir editar 15 archivos
+
+---
+
+### 10. Email: dependencia frágil de Gmail SMTP
+
+Usas una cuenta de Gmail con App Password. Gmail tiene límites:
+- **500 emails/día** para cuentas normales
+- Se bloquea frecuentemente por "actividad sospechosa"
+- El dominio remitente (`@gmail.com`) resta credibilidad
+
+Ya tienes Resend configurado como fallback, lo cual es bueno.
+
+**Acción:**
+- [ ] Usar Resend como proveedor **principal** (no como fallback)
+- [ ] Configurar dominio propio en Resend (SPF/DKIM/DMARC)
+- [ ] Email remitente: `hola@reconbase.io` en vez de `ReconBase.alertas@gmail.com`
+
+---
+
+### 11. Los testimonios son inventados
+
+```
+"Ana R., freelance · Barcelona"
+"Carlos M., gestoría fiscal · Valencia"  
+"Miguel S., ..."
+```
+
+> [!WARNING]
+> Testimonios falsos son ilegales bajo la Directiva Omnibus de la UE (aplicable en España desde mayo 2022). Las sanciones van de 3.000€ a 100.000€.
+
+**Acción:**
+- [ ] Eliminar los testimonios falsos **ahora**
+- [ ] Cuando tengas usuarios reales, pídeles permiso y usa testimonios auténticos
+- [ ] Alternativa: mostrar un logo wall de "empresas que han probado ReconBase" (solo si son reales)
+
+---
+
+### 12. La landing es demasiado larga (1.840 líneas HTML)
+
+154KB de HTML inline con estilos CSS y JS todo embebido. Problemas:
+- Tiempo de carga elevado (todo en un solo request)
+- Imposible mantener
+- El CSS está duplicado entre landing, login, register, pricing...
+
+**Acción:**
+- [ ] Extraer CSS a `static/css/main.css` (compartido) + `landing.css` (específico)
+- [ ] Extraer JS del scanner a `static/js/landing-scanner.js`
+- [ ] Considerar lazy-loading de secciones below the fold
+
+---
+
+### 13. Sin política de cookies / banner RGPD
+
+Tienes un endpoint `/api/cookie-consent` pero no vi ningún banner de cookies visible en la landing. En España/UE es obligatorio si usas:
+- Google Analytics (tienes `GA_ID` configurado)
+- Cookies de sesión (Flask-Login)
+- Plausible (aunque éste es privacy-first y no necesita consentimiento)
+
+**Acción:**
+- [ ] Si usas GA: implementar banner de cookies obligatorio
+- [ ] Si solo usas Plausible: documéntalo en la política de privacidad y no necesitas banner
+- [ ] Revisar `privacy.html` para que sea completa y conforme a RGPD
+
+---
+
+## 🟡 MONETIZACIÓN — Cómo ganar más dinero
+
+### 14. El plan Free es demasiado generoso
+
+| Plan Free (actual) | Lo que te sugiero |
+|---|---|
+| 10 escaneos/mes | 3 escaneos/mes |
+| Puertos + DNS + Headers + SSL + subdominios | Solo puertos + DNS básico |
+| Historial de 10 escaneos | Sin historial |
+
+El usuario Free ya obtiene el **80% del valor** sin pagar. No hay suficiente incentivo para pasar a Pro.
+
+**Acción:**
+- [ ] Reducir Free a 3 escaneos/mes
+- [ ] Bloquear subdominios y cabeceras HTTP detrás de Pro
+- [ ] Sin historial en Free → cada escaneo es "efímero"
+- [ ] El PDF de 9€ es buena monetización, mantenlo
+
+---
+
+### 15. Falta un plan intermedio
+
+El salto de 0€ a 29€/mes es muy grande para PYMEs españolas. Muchas no pagarán 29€ pero sí 9-14€.
+
+**Acción:**
+- [ ] Añadir un plan **Starter** a 9€/mes:
+  - 30 escaneos/mes
+  - Historial completo
+  - 1 dominio vigilado
+  - Sin filtraciones Deep Web
+  - 1 informe PDF/mes incluido
+- [ ] El Pro a 29€ pasa a ser para usuarios que necesitan monitorización continua + HIBP + multi-dominio
+
+---
+
+### 16. No hay onboarding post-registro que lleve a la conversión
+
+El usuario se registra → ve el dashboard vacío → no sabe qué hacer → se va.
+
+**Acción:**
+- [ ] Wizard de 3 pasos post-registro:
+  1. "Introduce tu dominio principal" → auto-escaneo
+  2. "Mira tus resultados" → mostrar riesgos con urgencia
+  3. "Activa la vigilancia" → CTA a Pro
+- [ ] Email drip campaign: Día 1, 3, 7 con contenido de valor + CTA
+
+---
+
+### 17. Falta un trial con tarjeta (trial sin tarjeta no convierte)
+
+Tu trial actual es de 7-14 días sin tarjeta. El problema: la mayoría prueba, se va, y nunca vuelve.
+
+**Acción:**
+- [ ] Trial de 14 días **con tarjeta** → se cobra automáticamente si no cancela
+- [ ] Esto es el estándar de la industria SaaS y convierte 3-5x más que trial sin tarjeta
+- [ ] Necesitas Stripe en producción para esto
+
+---
+
+## 🟡 UX / CONVERSIÓN
+
+### 18. No hay indicadores de confianza (trust signals)
+
+Un usuario llega, ve una web bonita... pero ¿por qué debería confiar?
+
+**Acción:**
+- [ ] Badge "Powered by Stripe" en la página de precios
+- [ ] "Conforme con RGPD" con enlace a tu política de privacidad
+- [ ] "Verificado por Google" (ya tienes Search Console)
+- [ ] Número de empresas que han usado ReconBase (dato real, no inflado)
+- [ ] Logo de las tecnologías: "Integramos con Stripe, Have I Been Pwned, Let's Encrypt..."
+
+---
+
+### 19. Faltan tildes en login.html y register.html
+
+```html
+<!-- login.html -->
+"Inicia sesion"       → "Inicia sesión"
+"contrasena"          → "contraseña"  
+"No tienes cuenta?"   → "¿No tienes cuenta?"
+"Registrate gratis"   → "Regístrate gratis"
+
+<!-- register.html -->
+"Contrasena"          → "Contraseña"
+"Minimo 8 caracteres" → "Mínimo 8 caracteres"
+"Terminos de Servicio" → "Términos de Servicio"
+"Politica de Privacidad" → "Política de Privacidad"
+"Ya tienes cuenta?"    → "¿Ya tienes cuenta?"
+"Inicia sesion"        → "Inicia sesión"
+```
+
+> [!IMPORTANT]
+> Esto da una imagen de descuido profesional. Un usuario que va a pagar 29€/mes nota estas cosas.
+
+---
+
+### 20. El scan demo de la landing da demasiado a usuarios no logueados
+
+Para usuarios sin cuenta, el scan demo **solo muestra puertos** (correcto), pero el riesgo calculado solo con puertos puede dar `0%` para muchos dominios → el usuario piensa "estoy bien" y se va.
+
+**Acción:**
+- [ ] Cuando el riesgo es 0% o bajo, mostrar: "Hemos analizado X pero para un análisis completo (DNS, filtraciones, SSL) necesitas crear una cuenta gratuita"
+- [ ] Añadir un "teaser" de resultados bloqueados: "⚠️ 3 análisis adicionales bloqueados → Regístrate gratis para verlos"
+
+---
+
+### 21. El botón de pago en el registro lleva a un enlace roto
+
+```javascript
+'https://buy.stripe.com/TU_LINK_PRO'  // → Placeholder que no funciona
+```
+
+Si un usuario selecciona "Pro" en el registro y hace clic, ve un `alert()` diciendo "Configura tus Payment Links".
+
+**Acción:**
+- [ ] Conectar con el endpoint `/api/checkout` que ya tienes (que sí funciona con Stripe)
+- [ ] O eliminar la selección de plan en el registro y dejar solo registro free → upgrade desde dentro
+
+---
+
+## 🟢 MEJORAS — Para crecer después del lanzamiento
+
+### 22. Falta un blog real con contenido SEO
+
+Tienes la infraestructura de blog (`BlogPost` model, `/blog` route), pero probablemente sin contenido.
+
+**Acción:**
+- [ ] Escribir 5-10 artículos SEO:
+  - "Cómo saber si tu empresa ha sido hackeada"
+  - "Qué es SPF y DMARC y por qué tu PYME lo necesita"
+  - "Los 5 puertos más peligrosos que una PYME puede tener abiertos"
+  - "RGPD y filtraciones de datos: qué hacer si te afecta"
+- [ ] Los artículos atraen tráfico orgánico → leads gratuitos
+
+---
+
+### 23. Sin tracking de conversión
+
+Tienes Plausible/GA configurables, pero no hay eventos de conversión trackeados:
+- ¿Cuántos usuarios hacen el scan demo?
+- ¿Cuántos se registran después del scan?
+- ¿Cuántos pasan de Free a Pro?
+- ¿En qué paso abandonan?
+
+**Acción:**
+- [ ] Añadir eventos JS: `plausible('scan_demo')`, `plausible('register')`, `plausible('checkout_click')`
+- [ ] Implementar un funnel: visita → scan demo → registro → primer scan → upgrade
+
+---
+
+### 24. Sistema de referral / viral loop
+
+Falta un mecanismo para que los usuarios actuales traigan nuevos usuarios.
+
+**Acción:**
+- [ ] "Invita a una empresa → ambos recibís 1 mes de Pro gratis"
+- [ ] Compartir resultados del scan ("Mira mi score de seguridad") con branding de ReconBase
+- [ ] Ya tienes `/report/<token>` para compartir — añade un CTA visible: "¿Tu empresa es segura? Descúbrelo con ReconBase"
+
+---
+
+### 25. Mejoras técnicas menores
+
+| Problema | Qué hacer |
+|---|---|
+| `datetime.utcnow()` está deprecado en Python 3.12+ | Usar `datetime.now(timezone.utc)` |
+| `import schedule` en `reconbase_engine.py` no se usa | Eliminar (ya usas APScheduler en server.py) |
+| No hay health check endpoint | Añadir `/health` que devuelva `{"status": "ok", "db": true}` |
+| OG images son SVG → no funcionan en todas las redes | Generar PNG con Pillow (ya lo haces en `/og/<page>.png` ✓) |
+| No hay favicon real | Crear un `.ico` o `.png` real en vez del SVG inline |
+| `Procfile` dice `web: python server.py` | Cambiar a `web: gunicorn server:app` para producción |
+
+---
+
+### 26. Falta página de "Contacto" / soporte
+
+El email de contacto es `ReconBase.alertas@gmail.com`. Para un SaaS de pago necesitas:
+- Formulario de contacto en la web
+- Widget de chat (Crisp, Intercom, o al menos un Telegram/WhatsApp)
+- SLA de respuesta para usuarios Pro
+
+---
+
+## 📋 Resumen de prioridades
+
+### Antes de lanzar (bloqueantes)
+1. 🔴 Rotar credenciales expuestas
+2. 🔴 Stripe en modo producción
+3. 🔴 Dominio propio
+4. 🔴 Eliminar testimonios falsos
+5. 🔴 Corregir `stats_vulns` falso
+6. 🔴 Corregir tildes en login/register
+
+### Primera semana post-lanzamiento
+7. 🟡 Rate-limit en scan principal
+8. 🟡 URLs desacopladas del subdominio Railway
+9. 🟡 Email con dominio propio (Resend)
+10. 🟡 Banner de cookies si usas GA
+11. 🟡 Fix del flujo de pago en registro
+
+### Primer mes — crecimiento
+12. 🟢 Reducir Free, añadir plan Starter
+13. 🟢 Onboarding wizard post-registro
+14. 🟢 Blog con contenido SEO
+15. 🟢 Tracking de conversión
+16. 🟢 Sistema de referral
+17. 🟢 Refactorizar server.py en blueprints
+
+---
+
+> [!TIP]
+> **Mi consejo principal**: Antes de invertir más tiempo en features, enfócate en las 6 tareas bloqueantes. Con el dominio propio, Stripe en producción, y las correcciones legales, ya puedes empezar a vender. Todo lo demás es optimización que puedes hacer mientras ya tienes usuarios pagando.

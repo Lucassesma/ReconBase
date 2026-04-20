@@ -121,10 +121,11 @@ class TestProtectedEndpoints:
     """Tests para endpoints que requieren autenticación."""
 
     def _login(self, client):
-        client.post("/api/login", json={
+        r = client.post("/api/login", json={
             "email": "test@reconbase.io",
             "password": "TestPass123"
         })
+        assert r.status_code == 200, f"El login falló silenciosamente. Respuesta: {r.get_data(as_text=True)}"
 
     def test_perfil_requires_login(self, client):
         r = client.get("/perfil")

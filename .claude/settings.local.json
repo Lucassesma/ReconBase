@@ -18,7 +18,17 @@
       "Read(//c/Users/lucas/miniconda3/bin/**)",
       "Bash(/c/Users/lucas/AppData/Local/Programs/Python/Python312/python.exe -c \"import flask; print\\(flask.__version__\\)\")",
       "Bash(/c/Users/lucas/AppData/Local/Python/bin/python.exe -c \"import flask; print\\(flask.__version__\\)\")",
-      "Bash(wc -l /c/Users/lucas/Desktop/ReconBase/templates/*.html)"
+      "Bash(wc -l /c/Users/lucas/Desktop/ReconBase/templates/*.html)",
+      "Bash(ls -la /c/Users/lucas/Desktop/ReconBase/*.py)",
+      "Bash(ls -la /c/Users/lucas/Desktop/ReconBase/static/favicon*)",
+      "Bash(grep -n \"schema\\\\|@context\\\\|application/ld+json\" /c/Users/lucas/Desktop/ReconBase/templates/*.html)",
+      "Bash(python -m py_compile server.py)",
+      "Bash(python -c \"import server; print\\('server importa OK'\\)\")",
+      "Bash(python -m py_compile models.py)",
+      "Bash(python -c ':*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(dir \"C:\\\\Users\\\\lucas\\\\Desktop\\\\ReconBase\\\\static\")",
+      "Bash(wc -l C:/Users/lucas/Desktop/ReconBase/templates/*.html)"
     ]
   }
 }

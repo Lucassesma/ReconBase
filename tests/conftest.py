@@ -9,7 +9,7 @@ os.environ["RECONBASE_API_KEY"] = ""
 os.environ["STRIPE_SECRET_KEY"] = ""
 os.environ["RESEND_API_KEY"] = ""
 
-from server import app as flask_app
+from server import app as flask_app, db as _db, limiter
 from models import db as _db, User
 
 
@@ -18,11 +18,14 @@ def app():
     flask_app.config["TESTING"] = True
     flask_app.config["WTF_CSRF_ENABLED"] = False
     flask_app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    flask_app.config["RATELIMIT_ENABLED"] = False
+
+    limiter.enabled = False
+
     with flask_app.app_context():
         _db.create_all()
         yield flask_app
         _db.drop_all()
-
 
 @pytest.fixture()
 def client(app):
