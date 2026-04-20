@@ -697,7 +697,7 @@ def scan_demo():
     if not current_user.is_authenticated:
         # Riesgo aproximado basado solo en puertos para mostrar algo orientativo
         critical_set = {3389, 22, 3306, 5432, 27017, 6379, 5900, 23, 21, 1433}
-        crit_count = len([p for p in puertos if p in critical_set])
+        crit_count = len([p for p in puertos if p.get('puerto') in critical_set])
         riesgo_aprox = min(100, crit_count * 25)
         label_aprox, color_aprox = label_riesgo(riesgo_aprox)
         return jsonify({

@@ -15,7 +15,7 @@ class User(UserMixin, db.Model):
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
     plan           = db.Column(db.String(20), default='free', nullable=False)
     scan_hora      = db.Column(db.Integer, default=3)
-    scan_dias      = db.Column(db.String(20), default='0,1,2,3,4,5,6')
+    scan_dias      = db.Column(db.String(20), default='')
     email_verified      = db.Column(db.Boolean, default=False, nullable=False)
     verify_token        = db.Column(db.String(64), nullable=True)
     trial_end           = db.Column(db.DateTime, nullable=True)
