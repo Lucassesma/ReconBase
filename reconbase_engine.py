@@ -259,7 +259,7 @@ def detect_cms(domain, timeout=7):
                                 if wp.status_code == 200:
                                     import json
                                     wp_data = wp.json()
-                                    version = wp_data.get("version") or wp_data.get("gmt_offset") and None
+                                    version = wp_data.get("version")
                                     if version:
                                         result["version"] = str(version)
                             except Exception:

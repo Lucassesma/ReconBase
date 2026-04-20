@@ -87,7 +87,7 @@ select.form-input{cursor:pointer}
       <div class="stat-lbl">Este mes{% if user.plan == 'free' %} / 10{% endif %}</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num" style="color:var(--text)">{{ user.created_at.strftime('%b %Y') }}</div>
+      <div class="stat-num" style="color:var(--text)">{{ user.created_at.strftime('%b %Y') if user.created_at else '—' }}</div>
       <div class="stat-lbl">Miembro desde</div>
     </div>
   </div>
@@ -112,7 +112,7 @@ select.form-input{cursor:pointer}
     </div>
     <div class="info-row">
       <span class="info-label">Cuenta creada</span>
-      <span class="info-val">{{ user.created_at.strftime('%d %b %Y') }}</span>
+      <span class="info-val">{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</span>
     </div>
     {% if not user.email_verified %}
     <div style="margin-top:1rem;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">

@@ -314,7 +314,7 @@ function scComprarInforme9(scanId) {
 
 function scDescargarPDF() {
   if (!scCurrentData) return;
-  fetch('/api/informe-pdf', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(scCurrentData) })
+  fetch('/api/pdf', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(scCurrentData) })
   .then(function(r){ return r.blob(); })
   .then(function(b) {
     var url = URL.createObjectURL(b);
@@ -703,8 +703,7 @@ function toggleBilling() {
   }
 }
 function pagarPlanActual() {
-  var plan = billingAnual ? 'pro_anual' : 'pro';
-  pagarPlanLanding(plan);
+  pagarPlanLanding('pro');
 }
 
 function pagarPlanLanding(plan) {

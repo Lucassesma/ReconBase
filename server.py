@@ -482,33 +482,22 @@ def api_login():
     return jsonify({"ok": True})
 
 def enviar_email_verificacion(user):
-    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
-        logger.error(f"[Verify] MAIL_USER/MAIL_PASS no configurados — no se envía email a {user.email}")
-        return False
-    email_destino = user.email
-    token = user.verify_token
-    empresa = user.empresa
+    base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+    link = f"{base_url}/verify-email/{user.verify_token}"
     def _send():
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
-            link = f"{base_url}/verify-email/{token}"
-            cuerpo = (
-                f"Hola {empresa},\n\n"
-                f"Gracias por registrarte en ReconBase.\n\n"
-                f"Confirma tu direccion de email haciendo clic en el siguiente enlace:\n"
-                f"{link}\n\n"
-                f"Si no has creado esta cuenta, ignora este mensaje.\n\n"
-                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+            send_html_email(
+                user.email,
+                "Confirma tu email — ReconBase",
+                "Verifica tu dirección de email",
+                f"""<p>Hola {user.empresa},</p>
+<p>Gracias por registrarte en ReconBase. Confirma tu dirección de email haciendo clic en el botón:</p>
+<p>Si no has creado esta cuenta, ignora este mensaje.</p>""",
+                link, "Confirmar email"
             )
-            with app.app_context():
-                mail.send(Message(
-                    subject="Confirma tu email — ReconBase",
-                    recipients=[email_destino],
-                    body=cuerpo
-                ))
-                logger.info(f"[Verify] Email enviado a {email_destino}")
+            logger.info(f"[Verify] Email enviado a {user.email}")
         except Exception as e:
-            logger.exception(f"[Verify] Error enviando a {email_destino}: {e}")
+            logger.exception(f"[Verify] Error enviando a {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
     return True
 
@@ -549,7 +538,7 @@ def stripe_portal():
             return jsonify({"ok": False, "error": "No se encontró un cliente con tu email en Stripe. ¿Has realizado algún pago?"}), 404
         base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
         try:
-            session = stripe.billing_portal.Session.create(
+            portal_session = stripe.billing_portal.Session.create(
                 customer=customer_id,
                 return_url=f"{base_url}/perfil"
             )
@@ -560,7 +549,7 @@ def stripe_portal():
             if "configuration" in msg.lower() or "no configuration" in msg.lower():
                 return jsonify({"ok": False, "error": "El portal de facturación no está activado en Stripe. Escríbenos a soporte@reconbase.io y cancelamos tu suscripción manualmente."}), 500
             return jsonify({"ok": False, "error": f"Stripe: {msg}"}), 500
-        return jsonify({"ok": True, "url": session.url})
+        return jsonify({"ok": True, "url": portal_session.url})
     except stripe.error.AuthenticationError:
         return jsonify({"ok": False, "error": "Credenciales de Stripe inválidas"}), 500
     except Exception as e:
@@ -704,7 +693,7 @@ def scan_demo():
             "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
             "puertos": puertos,
             "riesgo": riesgo_aprox, "label": label_aprox, "color": color_aprox,
-            "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
             "demo": True, "locked": True
         })
 
@@ -745,14 +734,14 @@ def crear_checkout():
     if plan != "pro" or not STRIPE_PRICE_PRO:
         return jsonify({"error": f"Plan no valido o precio no configurado. PRICE_PRO={STRIPE_PRICE_PRO}"}), 400
     try:
-        session = stripe.checkout.Session.create(
+        checkout_session = stripe.checkout.Session.create(
             mode="subscription",
             customer_email=current_user.email if current_user.is_authenticated else None,
             line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
             success_url=request.host_url + "pago-exito",
             cancel_url=request.host_url + "#precios",
         )
-        return jsonify({"url": session.url})
+        return jsonify({"url": checkout_session.url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -767,7 +756,7 @@ def checkout_informe():
     if not scan_obj or scan_obj.user_id != current_user.id:
         return jsonify({"error": "Escaneo no encontrado"}), 404
     try:
-        session = stripe.checkout.Session.create(
+        informe_session = stripe.checkout.Session.create(
             mode="payment",
             customer_email=current_user.email,
             line_items=[{
@@ -782,7 +771,7 @@ def checkout_informe():
             cancel_url=request.host_url + "app",
             metadata={"scan_id": str(scan_id), "user_id": str(current_user.id)},
         )
-        return jsonify({"url": session.url})
+        return jsonify({"url": informe_session.url})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1661,10 +1650,8 @@ def cron_ssl_alerts():
                 continue
             ssl_info = ultimo.resultado.get('ssl', {})
             dias = ssl_info.get('dias_restantes')
-            if dias is not None and 0 < dias <= 30:
-                # Solo avisar una vez por umbral (7 días y 30 días)
-                if dias <= 7 or (dias <= 30 and dias > 7):
-                    enviar_alerta_ssl(user.email, ultimo.dominio, dias)
+            if dias is not None and dias in (1, 3, 7, 14, 30):
+                enviar_alerta_ssl(user.email, ultimo.dominio, dias)
 
 def enviar_resumen_mensual(destinatario, empresa, scans_mes, riesgo_promedio, dominios):
     def _send():
