@@ -2152,6 +2152,10 @@ def send_html_email(to, subject, titulo, cuerpo_html, cta_url=None, cta_text=Non
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
                 return True
+        except urllib.error.HTTPError as he:
+            err_body = he.read().decode('utf-8', errors='ignore')
+            logger.error(f"[Resend HTML] HTTPError {he.code} a {to}: {err_body[:300]}")
+            raise RuntimeError(f"Resend {he.code}: {err_body[:200]}")
         except Exception as e:
             logger.error(f"[Resend HTML] Error a {to}: {e}")
             raise
@@ -2916,17 +2920,18 @@ def marcar_todas_leidas():
 @app.route("/api/ssl")
 @login_required
 def get_ssl():
-    checks = SSLCheck.query.filter_by(user_id=current_user.id)\
+    uid = current_user.id
+    checks = SSLCheck.query.filter_by(user_id=uid)\
         .order_by(SSLCheck.checked_at.desc()).all()
     # Si no hay checks, lanzar uno en background
     if not checks:
-        def _bg():
+        def _bg(user_id=uid):
             with app.app_context():
-                doms = Domain.query.filter_by(user_id=current_user.id, activo=True).all()
+                doms = Domain.query.filter_by(user_id=user_id, activo=True).all()
                 for dom in doms:
                     res = _check_ssl(dom.dominio)
-                    SSLCheck.query.filter_by(user_id=current_user.id, dominio=dom.dominio).delete()
-                    sc = SSLCheck(user_id=current_user.id, dominio=dom.dominio,
+                    SSLCheck.query.filter_by(user_id=user_id, dominio=dom.dominio).delete()
+                    sc = SSLCheck(user_id=user_id, dominio=dom.dominio,
                                   valido=res['valido'], expira=res['expira'],
                                   dias_restantes=res.get('dias_restantes', 0),
                                   emitido_por=res.get('emitido_por',''),
