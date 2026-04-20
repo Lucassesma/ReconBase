@@ -1130,14 +1130,19 @@ def enviar_email_post_escaneo(destinatario, empresa, objetivo, riesgo, label, de
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_bienvenida(user):
-    def _send():
+    # 1. Extraemos los textos MIENTRAS la base de datos está conectada
+    email_destino = user.email
+    nombre_empresa = user.empresa
+
+    # 2. Le decimos a la función que espere esos dos textos
+    def _send(email, empresa):
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
             with app.app_context():
                 send_html_email(
-                    user.email,
-                    f"Bienvenido a ReconBase, {user.empresa}",
-                    f"Bienvenido, {user.empresa} 👋",
+                    email, # Cambiado
+                    f"Bienvenido a ReconBase, {empresa}", # Cambiado
+                    f"Bienvenido, {empresa} 👋", # Cambiado
                     f"Tu cuenta está lista. Esto es lo que puedes hacer ahora:<br><br>"
                     f"<strong>1. Escanear tu dominio</strong> — Conoce tu nivel de riesgo actual en 2 minutos<br>"
                     f"<strong>2. Detectar filtraciones</strong> — Comprueba si tu empresa aparece en brechas conocidas<br>"
@@ -1146,21 +1151,28 @@ def enviar_email_bienvenida(user):
                     cta_url=base_url,
                     cta_text="Hacer mi primer escaneo"
                 )
-                logger.info(f"[Welcome] Email HTML enviado a {user.email}")
+                logger.info(f"[Welcome] Email HTML enviado a {email}") # Cambiado
         except Exception as e:
-            logger.error(f"[Welcome] Error a {user.email}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+            logger.error(f"[Welcome] Error a {email}: {e}") # Cambiado
+
+    # 3. Lanzamos el hilo pasándole nuestros textos seguros
+    threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
 
 def enviar_email_pro_activado(user):
-    def _send():
+    # 1. Sacamos los textos MIENTRAS la base de datos está activa
+    email_destino = user.email
+    nombre_empresa = user.empresa
+
+    # 2. La función ahora recibe esos textos
+    def _send(email, empresa):
         try:
             base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
             with app.app_context():
                 send_html_email(
-                    user.email,
+                    email, # Usamos la variable 'email'
                     "Tu plan Pro está activo — ReconBase",
                     "🎉 Plan Pro activado",
-                    f"Hola <strong>{user.empresa}</strong>,<br><br>"
+                    f"Hola <strong>{empresa}</strong>,<br><br>" # Usamos la variable 'empresa'
                     f"Tu suscripción Pro ya está activa. Ahora tienes acceso completo a:<br><br>"
                     f"✅ <strong>Escaneos ilimitados</strong><br>"
                     f"✅ <strong>Vigilancia nocturna automática</strong> de todos tus dominios<br>"
@@ -1173,10 +1185,12 @@ def enviar_email_pro_activado(user):
                     cta_url=base_url,
                     cta_text="Ir al dashboard"
                 )
-                logger.info(f"[Pro] Email HTML enviado a {user.email}")
+                logger.info(f"[Pro] Email HTML enviado a {email}")
         except Exception as e:
-            logger.error(f"[Pro] Error a {user.email}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+            logger.error(f"[Pro] Error a {email}: {e}")
+            
+    # 3. Arrancamos el hilo pasándole LAS DOS variables seguras
+    threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
 
 def enviar_email_trial_expirando(user, dias_restantes):
     def _send():

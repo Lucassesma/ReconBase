@@ -69,8 +69,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
         <input type="email" id="email" placeholder="admin@miempresa.com" required>
       </div>
       <div class="field">
-        <label>Contrasena</label>
-        <input type="password" id="password" placeholder="Minimo 8 caracteres" minlength="8" required>
+        <label>Contraseña</label>
+        <input type="password" id="password" placeholder="Mínimo 8 caracteres" minlength="8" required>
       </div>
       <div class="field">
         <label>Plan</label>
@@ -87,9 +87,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
       </div>
       <input type="hidden" id="plan-selected" value="starter">
       <button type="submit" class="btn-submit">Crear cuenta gratis</button>
-      <div class="terms">Al registrarte aceptas nuestros <a href="/terms">Terminos de Servicio</a> y <a href="/privacy">Politica de Privacidad</a>.</div>
+      <div class="terms">Al registrarte aceptas nuestros <a href="/terms">Términos de Servicio</a> y <a href="/privacy">Política de Privacidad</a>.</div>
     </form>
-    <div class="footer-link">Ya tienes cuenta? <a href="/login">Inicia sesion</a></div>
+    <div class="footer-link">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></div>
     <div class="footer-link" style="margin-top:.75rem"><a href="/" style="color:var(--dim)">Volver a la web</a></div>
   </div>
 </div>
@@ -114,18 +114,8 @@ function handleRegister(e) {
     password: document.getElementById('password').value,
     plan: plan
   };
-  // Si el plan es de pago, primero registrar y luego abrir Stripe en nueva pestana
-  var STRIPE_LINKS = {
-    pro:        'https://buy.stripe.com/TU_LINK_PRO',
-    enterprise: 'https://buy.stripe.com/TU_LINK_ENTERPRISE'
-  };
+  // Si elige Pro, primero registrar y luego redirigir al checkout de Stripe
   if(plan !== 'starter') {
-    var stripeUrl = STRIPE_LINKS[plan];
-    if(!stripeUrl || stripeUrl.indexOf('TU_LINK') !== -1) {
-      alert('Configura tus Payment Links de Stripe en register.html (variable STRIPE_LINKS).');
-      return;
-    }
-    // Registrar la cuenta primero
     fetch('/api/register', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -134,11 +124,20 @@ function handleRegister(e) {
     .then(function(r){ return r.json(); })
     .then(function(res) {
       if(res.ok) {
-        // Abrir Stripe en nueva pestana para generar confianza
-        window.open(stripeUrl, '_blank', 'noopener,noreferrer');
-        document.getElementById('success-msg').textContent = 'Cuenta creada. Completando pago en nueva pestana...';
+        // Cuenta creada, ahora redirigir al checkout de Stripe
+        document.getElementById('success-msg').textContent = 'Cuenta creada. Redirigiendo al pago...';
         document.getElementById('success-msg').classList.add('show');
-        setTimeout(function(){ window.location.href = '/'; }, 3000);
+        fetch('/api/checkout', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({plan: 'pro'})
+        })
+        .then(function(r2){ return r2.json(); })
+        .then(function(d2) {
+          if(d2.url) window.location.href = d2.url;
+          else { window.location.href = '/'; }
+        })
+        .catch(function(){ window.location.href = '/'; });
       } else {
         var el = document.getElementById('error-msg');
         el.textContent = res.error || 'Error al crear la cuenta';
