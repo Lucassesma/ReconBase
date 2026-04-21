@@ -828,11 +828,11 @@ function toggleVigConfig() {
 async function guardarHorario() {
   var activo = document.getElementById('vig-activo').checked;
   var hora = parseInt(document.getElementById('vig-hora').value, 10);
-  var dias = '';
+  var dias = [];
   if (activo) {
     for (var i=0; i<7; i++) {
       var cb = document.getElementById('dia-'+i);
-      if (cb && cb.checked) dias += i;
+      if (cb && cb.checked) dias.push(i);
     }
     if (dias.length === 0) { mostrarMsgVig('Selecciona al menos un día', false); return; }
   }

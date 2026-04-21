@@ -1860,6 +1860,7 @@ function navSwitch(mode) {
    ESCÁNER INTEGRADO — código en /static/js/scanner.js
 ═══════════════════════════════════════════════ */
 window.RB = { isLoggedIn: {{ 'true' if user and user.is_authenticated else 'false' }} };
+var isLoggedIn = window.RB.isLoggedIn;
 </script>
 <script src="/static/js/scanner.js?v=2"></script>
 
