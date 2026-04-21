@@ -261,6 +261,41 @@ pre, code { max-width: 100%; overflow-x: auto; word-break: break-word; }
   .cf-visual { overflow: hidden !important; }
 }
 
+/* Mockup "Esto es lo que ves cuando escaneas" — el grid interno
+   1fr 1fr tiene cards criticos con contenido largo. En movil
+   pasamos todo a 1 columna para que sea legible. */
+@media (max-width: 720px) {
+  .product-preview-mock {
+    /* Reducir paddings internos */
+  }
+  /* Ocultar el dashboard tabs (Auditoria/Dashboard/Exportar/...) que scroll no ayuda */
+  .product-preview-mock > div:nth-child(3) {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+  .product-preview-mock > div:nth-child(3)::-webkit-scrollbar { display: none; }
+  /* Grid principal de resultados: 1 columna */
+  .product-preview-mock > div:last-child > div:last-child {
+    grid-template-columns: 1fr !important;
+    gap: .85rem !important;
+  }
+  /* Scan bar: input + boton en columna */
+  .product-preview-mock > div:last-child > div:first-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  /* Header con email del user: permitir wrap */
+  .product-preview-mock > div:nth-child(2) {
+    flex-wrap: wrap !important;
+    gap: .5rem !important;
+    padding: .5rem .85rem !important;
+  }
+  .product-preview-mock > div:nth-child(2) > div:last-child {
+    font-size: .62rem !important;
+    margin-left: 0 !important;
+  }
+}
+
 /* Hero counter / numbers: evitar overflow horizontal */
 @media (max-width: 520px) {
   .hero-counter-inner { flex-wrap: wrap !important; justify-content: center; }
