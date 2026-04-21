@@ -238,6 +238,7 @@ def sitemap():
         {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly"},
         {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly"},
         {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly"},
+        {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly"},
     ]
     # Añadir posts del blog al sitemap
     try:
@@ -259,6 +260,83 @@ def robots():
     from flask import Response
     txt = "User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nSitemap: https://reconbase-production.up.railway.app/sitemap.xml"
     return Response(txt, mimetype="text/plain")
+
+
+# ── SEO: Herramienta gratuita DMARC/SPF ──
+@app.route("/comprobar-dmarc-spf")
+def tool_dmarc_spf():
+    return render_template("tool_dmarc_spf.html")
+
+@app.route("/api/check-dmarc-spf", methods=["POST"])
+@limiter.limit("30 per hour")
+def api_check_dmarc_spf():
+    """Comprueba SPF + DMARC de un dominio. Público, sin login. Devuelve raw para educar al usuario."""
+    import re as _re
+    data = request.get_json(silent=True) or {}
+    raw  = (data.get("dominio") or "").strip()[:255]
+    if not raw:
+        return jsonify({"error": "Introduce un dominio"}), 400
+
+    # Limpiar: quitar http(s)://, www., paths, @ (si vino email)
+    dominio = raw.split("@")[-1] if "@" in raw else raw
+    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
+    if not dominio or "." not in dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+
+    spf_present, spf_raw = False, ""
+    dmarc_present, dmarc_raw = False, ""
+
+    try:
+        import dns.resolver as _dr
+        resolver = _dr.Resolver()
+        resolver.lifetime = 5
+        try:
+            for rd in resolver.resolve(dominio, "TXT"):
+                txt = rd.to_text().strip('"')
+                if "v=spf1" in txt.lower():
+                    spf_present = True
+                    spf_raw = txt
+                    break
+        except Exception:
+            pass
+        try:
+            for rd in resolver.resolve("_dmarc." + dominio, "TXT"):
+                txt = rd.to_text().strip('"')
+                if "v=dmarc1" in txt.lower():
+                    dmarc_present = True
+                    dmarc_raw = txt
+                    break
+        except Exception:
+            pass
+    except ImportError:
+        # Fallback DNS-over-HTTPS (Google)
+        try:
+            import urllib.request as _ur, urllib.parse as _up
+            def _doh(name):
+                url = f"https://dns.google/resolve?name={_up.quote(name)}&type=TXT"
+                req = _ur.Request(url, headers={"Accept": "application/dns-json"})
+                with _ur.urlopen(req, timeout=5) as r:
+                    return json.loads(r.read().decode("utf-8"))
+            r = _doh(dominio)
+            for ans in r.get("Answer", []) or []:
+                data_txt = (ans.get("data") or "").strip('"')
+                if "v=spf1" in data_txt.lower():
+                    spf_present = True; spf_raw = data_txt; break
+            r2 = _doh("_dmarc." + dominio)
+            for ans in r2.get("Answer", []) or []:
+                data_txt = (ans.get("data") or "").strip('"')
+                if "v=dmarc1" in data_txt.lower():
+                    dmarc_present = True; dmarc_raw = data_txt; break
+        except Exception as e:
+            logger.warning(f"[DMARC tool] DoH fallback error {dominio}: {e}")
+
+    return jsonify({
+        "dominio": dominio,
+        "spf":   spf_present,
+        "spf_raw":   spf_raw,
+        "dmarc": dmarc_present,
+        "dmarc_raw": dmarc_raw,
+    })
 
 @app.route("/google9b381a283a68cc0a.html")
 def google_verify():

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprobar DMARC y SPF gratis — ¿Pueden suplantar tu dominio? · ReconBase</title>
+<meta name="description" content="Comprueba en 5 segundos si tu dominio tiene los registros SPF y DMARC configurados. Evita que suplanten el correo de tu empresa. Gratis, sin registro.">
+<meta name="keywords" content="comprobar dmarc, comprobar spf, verificar dmarc, test spf, dmarc check, spf check, configurar dmarc, suplantación de correo, phishing dominio">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase-production.up.railway.app/comprobar-dmarc-spf">
+<meta property="og:title" content="Comprobar DMARC y SPF de tu dominio — Gratis">
+<meta property="og:description" content="En 5 segundos sabrás si cualquiera puede enviar emails haciéndose pasar por tu empresa. Sin registro.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase-production.up.railway.app/comprobar-dmarc-spf">
+<meta property="og:image" content="https://reconbase-production.up.railway.app/og/home.png">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Comprobar DMARC y SPF — ReconBase">
+<meta name="twitter:description" content="¿Pueden suplantar tu dominio? Compruébalo gratis en 5 segundos.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Comprobador de DMARC y SPF",
+  "description": "Herramienta gratuita para verificar la configuración de SPF y DMARC de un dominio y detectar riesgo de suplantación de correo.",
+  "url": "https://reconbase-production.up.railway.app/comprobar-dmarc-spf",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Any",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+  "inLanguage": "es-ES"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué es el SPF?",
+      "acceptedAnswer": {"@type": "Answer", "text": "SPF (Sender Policy Framework) es un registro DNS que especifica qué servidores están autorizados a enviar correo en nombre de tu dominio. Sin SPF, cualquiera puede enviar emails haciéndose pasar por tu empresa."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué es el DMARC?",
+      "acceptedAnswer": {"@type": "Answer", "text": "DMARC (Domain-based Message Authentication) es una política que indica qué hacer con los emails que fallan la verificación SPF o DKIM. Sin DMARC, los atacantes pueden enviar phishing usando tu dominio y llegar a la bandeja de entrada."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué pasa si mi dominio no tiene DMARC ni SPF?",
+      "acceptedAnswer": {"@type": "Answer", "text": "Cualquier atacante puede enviar emails fraudulentos usando tu dominio como remitente. Es el método más usado en ataques de phishing dirigido (BEC) a empleados, clientes y proveedores."}
+    },
+    {
+      "@type": "Question",
+      "name": "¿Es gratuita esta comprobación?",
+      "acceptedAnswer": {"@type": "Answer", "text": "Sí, totalmente. No requiere registro ni tarjeta. Solo introduces tu dominio y ves los registros SPF y DMARC al instante."}
+    }
+  ]
+}
+</script>
+
+{% if config.PLAUSIBLE_DOMAIN %}<script defer data-domain="{{ config.PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>{% endif %}
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--surface2:#0D1B13;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--green:#22C55E;--green-dk:#15803D;--red:#EF4444;--amber:#F59E0B}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.6}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:1.5rem;font-size:.85rem}
+.nav-links a{color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff !important;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem}
+
+/* Hero */
+.hero{background:linear-gradient(160deg,#021a0a 0%,#052e16 45%,#063a1c 100%);padding:4rem 6% 3rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 80%,rgba(22,163,74,.14) 0%,transparent 55%),radial-gradient(ellipse at 80% 20%,rgba(22,163,74,.08) 0%,transparent 45%)}
+.hero-inner{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:.35rem .85rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;margin-bottom:1.25rem}
+.dot{width:6px;height:6px;border-radius:50%;background:#22C55E;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+h1{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-bottom:1rem}
+h1 em{font-style:normal;color:#4ADE80}
+.hero-sub{font-size:clamp(.95rem,1.4vw,1.05rem);color:#86EFAC;max-width:580px;margin:0 auto 2rem;opacity:.92}
+
+/* Scan form */
+.scan-form{max-width:560px;margin:0 auto;display:flex;gap:.5rem;flex-wrap:wrap}
+.scan-input{flex:1;min-width:220px;background:rgba(6,13,9,.7);border:1px solid rgba(22,163,74,.4);color:#F0FDF4;padding:.85rem 1.1rem;border-radius:8px;font-size:.95rem;outline:none;font-family:'Inter',sans-serif}
+.scan-input:focus{border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.scan-btn{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.6rem;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.scan-btn:disabled{opacity:.65;cursor:not-allowed}
+.hint{font-size:.72rem;color:rgba(134,239,172,.6);margin-top:.8rem}
+
+/* Results */
+.results{max-width:780px;margin:2rem auto 0;padding:0 6%;display:none}
+.results.show{display:block}
+.verdict{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:10px;padding:1.5rem 1.75rem;margin-bottom:1.25rem}
+.verdict-crit{border-left-color:var(--red)}
+.verdict-warn{border-left-color:var(--amber)}
+.verdict-ok{border-left-color:var(--green)}
+.verdict-label{font-size:.7rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem}
+.verdict-title{font-size:1.15rem;font-weight:800;margin-bottom:.4rem}
+.verdict-desc{font-size:.88rem;color:var(--muted-2);line-height:1.6}
+.record-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+.record-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.6rem}
+.record-name{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.record-pill{display:inline-block;padding:.18rem .55rem;border-radius:4px;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.pill-ok{background:rgba(34,197,94,.12);color:#4ADE80}
+.pill-err{background:rgba(239,68,68,.12);color:#F87171}
+.record-raw{background:#060D09;border:1px solid var(--border);border-radius:6px;padding:.7rem .85rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#86EFAC;word-break:break-all;margin-top:.5rem;line-height:1.5}
+.record-raw-empty{color:var(--muted);font-style:italic}
+
+/* CTA box */
+.cta-box{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.16));border:1px solid rgba(34,197,94,.35);border-radius:12px;padding:1.75rem;margin-top:2rem;text-align:center}
+.cta-title{font-size:1.15rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem}
+.cta-sub{font-size:.87rem;color:#86EFAC;margin-bottom:1.25rem;line-height:1.6}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.9rem}
+
+/* Content */
+.content{max-width:760px;margin:4rem auto 3rem;padding:0 6%}
+.content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin:2.5rem 0 1rem;color:#F0FDF4}
+.content h2:first-child{margin-top:0}
+.content h3{font-size:1.1rem;font-weight:700;margin:1.5rem 0 .75rem;color:#E2EDF8}
+.content p{color:var(--muted-2);margin-bottom:1rem;font-size:.95rem}
+.content code{background:var(--surface);border:1px solid var(--border);padding:.12rem .45rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#86EFAC}
+.content pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#86EFAC;margin:.75rem 0 1.25rem;line-height:1.7}
+.content ul{color:var(--muted-2);margin:.5rem 0 1rem 1.5rem;font-size:.92rem}
+.content li{margin-bottom:.5rem}
+.content strong{color:#E2EDF8}
+.faq{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:.75rem}
+.faq-q{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+.faq-a{font-size:.9rem;color:var(--muted-2);line-height:1.6}
+
+footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.82rem;color:var(--muted);margin-top:3rem}
+footer a{color:var(--muted-2);margin:0 .6rem}
+
+@media (max-width: 720px){
+  nav{padding:.9rem 5%}
+  .nav-links{display:none}
+  .hero{padding:2.5rem 5% 2rem}
+  .scan-form{flex-direction:column}
+  .scan-btn{width:100%}
+  .results{padding:0 5%}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo"><span style="color:var(--text)">RECON</span><span style="color:var(--green)">BASE</span></a>
+  <div class="nav-links">
+    <a href="/">Inicio</a>
+    <a href="/pricing">Precios</a>
+    <a href="/blog">Blog</a>
+    <a href="/register" class="btn-primary">Crear cuenta gratis</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="badge"><span class="dot"></span> Comprobación gratuita · Sin registro</div>
+    <h1>¿Pueden suplantar<br>el correo de <em>tu empresa</em>?</h1>
+    <p class="hero-sub">Comprueba en 5 segundos si tu dominio tiene los registros <strong style="color:#86EFAC">SPF</strong> y <strong style="color:#86EFAC">DMARC</strong> correctamente configurados. Si no los tiene, cualquiera puede enviar emails fraudulentos haciéndose pasar por tu empresa.</p>
+    <form class="scan-form" onsubmit="event.preventDefault();runCheck();">
+      <input type="text" id="domain-input" class="scan-input" placeholder="tuempresa.com" autocomplete="off" spellcheck="false" required>
+      <button type="submit" id="check-btn" class="scan-btn">Comprobar gratis →</button>
+    </form>
+    <div class="hint">Solo el nombre del dominio, sin https:// ni www.</div>
+  </div>
+</section>
+
+<div class="results" id="results">
+  <div id="verdict"></div>
+  <div id="records"></div>
+  <div class="cta-box">
+    <div class="cta-title">¿Quieres vigilarlo cada noche?</div>
+    <div class="cta-sub">ReconBase revisa tu dominio automáticamente y te avisa por email si SPF, DMARC o cualquier otra protección cambia. Crea tu cuenta gratis y empieza a proteger tu empresa.</div>
+    <a href="/register" class="cta-btn" id="cta-register">Crear cuenta gratis →</a>
+  </div>
+</div>
+
+<article class="content">
+  <h2>¿Qué es SPF y por qué lo necesitas?</h2>
+  <p><strong>SPF (Sender Policy Framework)</strong> es un registro DNS de tipo <code>TXT</code> que indica qué servidores están autorizados a enviar emails en nombre de tu dominio. Si alguien intenta enviar un email desde una IP no autorizada, los servidores de destino (Gmail, Outlook, etc.) pueden detectarlo.</p>
+  <p>Sin SPF, cualquier persona desde cualquier servidor puede enviar emails que parezcan venir de <code>@tudominio.com</code> — y el destinatario no tiene forma técnica de saber que es falso.</p>
+
+  <h3>Ejemplo de registro SPF</h3>
+  <pre>v=spf1 include:_spf.google.com include:spf.protection.outlook.com -all</pre>
+  <p>Este registro autoriza a Google Workspace y Microsoft 365 a enviar correos. El <code>-all</code> al final indica que todo lo demás debe rechazarse.</p>
+
+  <h2>¿Qué es DMARC y por qué es aún más importante?</h2>
+  <p><strong>DMARC (Domain-based Message Authentication, Reporting &amp; Conformance)</strong> complementa a SPF añadiendo dos capacidades clave:</p>
+  <ul>
+    <li><strong>Política de actuación:</strong> le dice a los servidores receptores qué hacer con los correos que fallen la verificación (rechazarlos, mandarlos a spam o solo reportarlos).</li>
+    <li><strong>Reportes automáticos:</strong> recibes informes diarios/semanales de los intentos de suplantación detectados.</li>
+  </ul>
+  <p>Sin DMARC, aunque tengas SPF, los atacantes pueden usar técnicas de spoofing en cabeceras visibles que engañan al usuario final aunque técnicamente fallen SPF.</p>
+
+  <h3>Ejemplo de registro DMARC</h3>
+  <pre>v=DMARC1; p=reject; rua=mailto:dmarc@tudominio.com; pct=100</pre>
+  <p>Este registro indica política estricta (<code>p=reject</code> — rechaza todo lo no autenticado), que se aplique al 100% de los correos, y envía reportes a <code>dmarc@tudominio.com</code>.</p>
+
+  <h2>Qué pasa si mi empresa no los tiene configurados</h2>
+  <p>Es el escenario más común en PYMEs españolas: <strong>entre el 70% y el 85% de los dominios no tienen DMARC configurado</strong>. Las consecuencias son directas:</p>
+  <ul>
+    <li><strong>Phishing a empleados:</strong> un atacante envía un email desde <code>ceo@tuempresa.com</code> pidiendo transferencias. Los empleados no pueden distinguirlo de uno real.</li>
+    <li><strong>Fraude BEC (Business Email Compromise):</strong> se suplantan facturas a proveedores cambiando el IBAN. Es el ciberataque con mayores pérdidas económicas según el FBI.</li>
+    <li><strong>Daño reputacional:</strong> tus clientes reciben emails de phishing "desde tu empresa" y pierden la confianza.</li>
+    <li><strong>Bajada de deliverability:</strong> Gmail y Microsoft ya exigen DMARC para dominios que envían más de 5.000 correos al día (desde febrero 2024).</li>
+  </ul>
+
+  <h2>Cómo configurar SPF y DMARC</h2>
+  <p>Ambos registros se añaden en el panel DNS de tu proveedor de dominio (GoDaddy, Namecheap, Cloudflare, CDmon, etc.). Son dos registros de tipo <code>TXT</code>:</p>
+  <ol style="color:var(--muted-2);margin:.75rem 0 1rem 1.5rem">
+    <li>Entra al panel DNS de tu dominio.</li>
+    <li>Añade un registro <code>TXT</code> con nombre <code>@</code> y valor <code>v=spf1 include:...</code> según tu proveedor de email.</li>
+    <li>Añade otro <code>TXT</code> con nombre <code>_dmarc</code> y valor <code>v=DMARC1; p=quarantine; rua=mailto:dmarc@tudominio.com</code>.</li>
+    <li>Espera 1-24 horas a que se propague y vuelve a comprobar con esta herramienta.</li>
+  </ol>
+  <p>Recomendación: empieza con <code>p=quarantine</code> (envía a spam los sospechosos) durante 2-4 semanas, revisa los reportes, y pasa a <code>p=reject</code> (rechazo total) cuando estés seguro.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq">
+    <div class="faq-q">¿Tener solo SPF es suficiente?</div>
+    <div class="faq-a">No. SPF protege contra la suplantación a nivel de servidor, pero no evita el spoofing en cabeceras visibles. DMARC es necesario para cerrar completamente esa puerta.</div>
+  </div>
+  <div class="faq">
+    <div class="faq-q">¿Cuánto tarda en propagarse un nuevo registro DMARC?</div>
+    <div class="faq-a">Entre 30 minutos y 24 horas según tu proveedor DNS. Cloudflare es casi instantáneo; otros pueden tardar hasta un día.</div>
+  </div>
+  <div class="faq">
+    <div class="faq-q">¿Puedo romper el envío de emails configurando DMARC mal?</div>
+    <div class="faq-a">Sí, si pones <code>p=reject</code> sin haber configurado SPF y DKIM correctamente. Por eso se recomienda empezar con <code>p=none</code> (solo reportar), revisar los informes 2 semanas y luego subir a <code>quarantine</code> y después a <code>reject</code>.</div>
+  </div>
+  <div class="faq">
+    <div class="faq-q">¿Tengo que pagar algo por esta comprobación?</div>
+    <div class="faq-a">No. La comprobación es totalmente gratuita y no requiere registro. Si quieres vigilancia continua (escaneo diario automático + alertas por email), puedes crear una cuenta gratis en ReconBase.</div>
+  </div>
+
+  <h2>Más allá de SPF y DMARC</h2>
+  <p>SPF y DMARC son solo dos de las muchas capas que protegen a tu empresa. ReconBase también comprueba automáticamente:</p>
+  <ul>
+    <li>Puertos abiertos (RDP, SSH, bases de datos expuestas)</li>
+    <li>Certificados SSL caducados o por caducar</li>
+    <li>Cabeceras HTTP de seguridad (CSP, HSTS, X-Frame-Options)</li>
+    <li>Filtraciones de credenciales en bases de datos comprometidas</li>
+    <li>Cambios sospechosos en tus registros DNS</li>
+  </ul>
+  <p style="margin-top:1.5rem"><a href="/register" class="cta-btn">Crear cuenta gratis para análisis completo →</a></p>
+</article>
+
+<footer>
+  <div>© 2025 ReconBase · Ciberseguridad para PYMEs</div>
+  <div style="margin-top:.6rem">
+    <a href="/">Inicio</a>·
+    <a href="/pricing">Precios</a>·
+    <a href="/blog">Blog</a>·
+    <a href="/terms">Términos</a>·
+    <a href="/privacy">Privacidad</a>
+  </div>
+</footer>
+
+<script>
+function runCheck(){
+  var raw = (document.getElementById('domain-input').value || '').trim();
+  if(!raw){ document.getElementById('domain-input').focus(); return; }
+  var btn = document.getElementById('check-btn');
+  btn.disabled = true;
+  btn.textContent = 'Comprobando...';
+
+  fetch('/api/check-dmarc-spf', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({dominio: raw})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    btn.disabled = false;
+    btn.textContent = 'Comprobar otro →';
+    if(d.error){ alert(d.error); return; }
+    renderResults(d);
+    try { if(typeof plausible==='function') plausible('dmarc_check'); } catch(e){}
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.textContent = 'Comprobar gratis →';
+    alert('Error de conexión. Inténtalo de nuevo.');
+  });
+}
+
+function renderResults(d){
+  var spf = d.spf, dmarc = d.dmarc;
+  var verdictEl = document.getElementById('verdict');
+  var recordsEl = document.getElementById('records');
+
+  var cls, label, title, desc;
+  if(!spf && !dmarc){
+    cls='verdict-crit'; label='CRÍTICO'; title='Tu dominio '+d.dominio+' es suplantable';
+    desc='No tiene SPF ni DMARC configurados. Cualquiera puede enviar emails haciéndose pasar por tu empresa ahora mismo. Es una puerta abierta al phishing y al fraude BEC.';
+  } else if(!dmarc){
+    cls='verdict-warn'; label='ADVERTENCIA'; title='Tienes SPF pero no DMARC';
+    desc='SPF protege a nivel de servidor pero no evita todos los ataques de spoofing. Configura DMARC para cerrar la puerta completamente.';
+  } else if(!spf){
+    cls='verdict-warn'; label='ADVERTENCIA'; title='Tienes DMARC pero no SPF';
+    desc='DMARC necesita SPF (o DKIM) para poder aplicar su política correctamente. Configura SPF cuanto antes.';
+  } else {
+    cls='verdict-ok'; label='CORRECTO'; title='Tu dominio está protegido';
+    desc='Tiene SPF y DMARC configurados. Buen trabajo. Asegúrate de que la política DMARC esté en p=quarantine o p=reject para protección real.';
+  }
+
+  verdictEl.innerHTML =
+    '<div class="verdict '+cls+'">'+
+      '<div class="verdict-label" style="color:'+(cls==='verdict-crit'?'#EF4444':cls==='verdict-warn'?'#F59E0B':'#22C55E')+'">'+label+'</div>'+
+      '<div class="verdict-title">'+escapeHtml(title)+'</div>'+
+      '<div class="verdict-desc">'+escapeHtml(desc)+'</div>'+
+    '</div>';
+
+  recordsEl.innerHTML =
+    '<div class="record-card">'+
+      '<div class="record-head">'+
+        '<span class="record-name">SPF · '+escapeHtml(d.dominio)+'</span>'+
+        '<span class="record-pill '+(spf?'pill-ok':'pill-err')+'">'+(spf?'Presente':'Ausente')+'</span>'+
+      '</div>'+
+      '<div class="record-raw '+(d.spf_raw?'':'record-raw-empty')+'">'+(d.spf_raw?escapeHtml(d.spf_raw):'No se encontró ningún registro TXT con v=spf1')+'</div>'+
+    '</div>'+
+    '<div class="record-card">'+
+      '<div class="record-head">'+
+        '<span class="record-name">DMARC · _dmarc.'+escapeHtml(d.dominio)+'</span>'+
+        '<span class="record-pill '+(dmarc?'pill-ok':'pill-err')+'">'+(dmarc?'Presente':'Ausente')+'</span>'+
+      '</div>'+
+      '<div class="record-raw '+(d.dmarc_raw?'':'record-raw-empty')+'">'+(d.dmarc_raw?escapeHtml(d.dmarc_raw):'No se encontró ningún registro TXT con v=DMARC1')+'</div>'+
+    '</div>';
+
+  // Update CTA based on result
+  var ctaReg = document.getElementById('cta-register');
+  if(ctaReg) ctaReg.href = '/register?target='+encodeURIComponent(d.dominio);
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+</script>
+</body>
+</html>
