@@ -498,6 +498,44 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     <a href="#precios" class="nav-link" onclick="navSwitch('landing')">Precios</a>
     <a href="#faq" class="nav-link" onclick="navSwitch('landing')">FAQ</a>
   </div>
+  <!-- Hamburger movil -->
+  <button id="nav-hamb" aria-label="Menu" onclick="rbToggleHamb()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:8px;padding:.45rem .6rem;cursor:pointer;color:var(--text)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div id="nav-hamb-panel" style="display:none;position:fixed;top:62px;left:1rem;right:1rem;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 40px rgba(15,23,42,.15);z-index:9500;padding:.5rem 0">
+    {% if user and user.is_authenticated %}
+    <a href="#escaner" onclick="rbCloseHamb();navSwitch('escaner')" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Escáner</a>
+    {% endif %}
+    <a href="#caracteristicas" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Características</a>
+    <a href="#como-funciona" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Cómo funciona</a>
+    <a href="#precios" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Precios</a>
+    <a href="#faq" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">FAQ</a>
+    {% if not (user and user.is_authenticated) %}
+    <a href="/login" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#16A34A;font-weight:700;font-size:.95rem">Iniciar sesión</a>
+    <a href="/register" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#fff;background:linear-gradient(135deg,#16A34A,#22C55E);margin:.3rem .6rem;border-radius:8px;font-weight:700;font-size:.95rem;text-align:center">Registro gratuito →</a>
+    {% else %}
+    <a href="/perfil" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#16A34A;font-weight:700;font-size:.95rem">Mi perfil</a>
+    {% endif %}
+  </div>
+  <script>
+    function rbToggleHamb(){
+      var p=document.getElementById('nav-hamb-panel');
+      p.style.display = (p.style.display==='block')?'none':'block';
+    }
+    function rbCloseHamb(){
+      var p=document.getElementById('nav-hamb-panel');
+      if(p) p.style.display='none';
+    }
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', function(e){
+      var panel = document.getElementById('nav-hamb-panel');
+      var btn = document.getElementById('nav-hamb');
+      if(!panel || !btn) return;
+      if(panel.style.display==='block' && !panel.contains(e.target) && !btn.contains(e.target)){
+        panel.style.display='none';
+      }
+    });
+  </script>
   <div class="nav-right" style="display:flex;align-items:center;gap:.75rem">
     {% if user and user.is_authenticated %}
     <!-- Campana de notificaciones -->

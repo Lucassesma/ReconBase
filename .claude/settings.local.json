@@ -28,7 +28,8 @@
       "Bash(python -c ':*)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(dir \"C:\\\\Users\\\\lucas\\\\Desktop\\\\ReconBase\\\\static\")",
-      "Bash(wc -l C:/Users/lucas/Desktop/ReconBase/templates/*.html)"
+      "Bash(wc -l C:/Users/lucas/Desktop/ReconBase/templates/*.html)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")"
     ]
   }
 }

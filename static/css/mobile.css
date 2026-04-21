@@ -176,3 +176,93 @@ pre, code { max-width: 100%; overflow-x: auto; word-break: break-word; }
 @media (max-width: 720px) {
   html, body { overflow-x: hidden; max-width: 100vw; }
 }
+
+/* ============================================================
+   LANDING — fixes especificos mobile
+   ============================================================ */
+
+/* Demo preview: labels legibles en fondo oscuro.
+   La landing usa --text:#0F172A (tema claro) pero .demo-preview
+   tiene fondo oscuro. Sobrescribir a color claro para contraste. */
+.demo-preview .dri-label,
+.demo-preview input,
+.demo-preview .dp-input {
+  color: #E2EDF8 !important;
+}
+/* Mantener .status-ok/err/warn con sus colores propios, no sobrescribir */
+
+/* Hamburger — solo se muestra en movil */
+@media (max-width: 900px) {
+  #nav-hamb {
+    display: inline-flex !important; align-items: center;
+    margin-left: auto;  /* agrupa con nav-right a la derecha */
+    margin-right: .5rem;
+  }
+  nav .nav-links { display: none !important; }
+}
+@media (max-width: 520px) {
+  nav .nav-right { gap: .4rem !important; }
+  nav .nav-right .btn-login,
+  nav .nav-right .btn-nav { padding: .45rem .7rem !important; font-size: .72rem !important; }
+  nav { padding: .75rem .8rem !important; }
+}
+@media (min-width: 901px) {
+  #nav-hamb, #nav-hamb-panel { display: none !important; }
+}
+
+/* Terminal de vigilancia nocturna: en movil, cada log en columna */
+@media (max-width: 720px) {
+  .log {
+    flex-wrap: wrap !important;
+    gap: .25rem .6rem !important;
+    font-size: .72rem !important;
+    padding: .4rem 0 !important;
+  }
+  .log .lt { min-width: 56px !important; font-size: .68rem !important; }
+  .log .lok, .log .lwarn, .log .lcrit { min-width: 58px !important; font-size: .68rem !important; }
+  .log .lmsg {
+    flex-basis: 100% !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    color: #CBD5E1 !important;
+    padding-left: 0 !important;
+  }
+  .log .ltgt {
+    flex-basis: 100% !important;
+    white-space: normal !important;
+    word-break: break-all !important;
+    padding-left: 0 !important;
+    font-size: .7rem !important;
+  }
+}
+
+/* Demo-preview contenedor: padding reducido en movil */
+@media (max-width: 720px) {
+  .demo-preview { min-height: auto !important; padding: 0 !important; }
+  .demo-panel { padding: 1rem !important; }
+  .demo-result-item { padding: .55rem .7rem !important; gap: .6rem !important; }
+  .dri-label { font-size: .75rem !important; }
+  .dri-status { font-size: .68rem !important; }
+
+  /* Mockup browser interno (#dp-2) — escalar padding/fuentes */
+  #dp-2 { padding: .5rem !important; }
+  #dp-2 > div > div:first-child > div:last-child { font-size: .55rem !important; } /* url bar */
+}
+@media (max-width: 520px) {
+  /* Mockup browser — escalar el contenido para que quepa sin recorte */
+  #dp-2 { padding: .25rem !important; overflow: hidden !important; }
+  #dp-2 > div {
+    transform: scale(.82);
+    transform-origin: top left;
+    width: 122% !important;
+    margin-bottom: -18%;
+  }
+  /* Los mockups del hero 73% en .cf-visual tambien */
+  .cf-visual { overflow: hidden !important; }
+}
+
+/* Hero counter / numbers: evitar overflow horizontal */
+@media (max-width: 520px) {
+  .hero-counter-inner { flex-wrap: wrap !important; justify-content: center; }
+}
+
