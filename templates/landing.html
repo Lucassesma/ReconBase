@@ -616,12 +616,6 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="sc-tab" onclick="scSwitch('exportar',this)">Exportar</div>
   <div class="sc-tab" onclick="scSwitch('historial',this)">Historial</div>
   <div class="sc-tab" onclick="scSwitch('tendencia',this)">Tendencia</div>
-  <div class="sc-tab" onclick="scSwitch('comparar',this)">Comparar</div>
-  <div class="sc-tab" onclick="scSwitch('ssl',this)">SSL</div>
-  <div class="sc-tab" onclick="scSwitch('uptime',this)">Uptime</div>
-  <div class="sc-tab" onclick="scSwitch('dns',this)">DNS</div>
-  <div class="sc-tab" onclick="scSwitch('tecnologias',this)">Tecnologías</div>
-  <div class="sc-tab" onclick="scSwitch('iprep',this)">Reputación IP</div>
 </div>
 
 <div class="sc-content">
@@ -771,69 +765,6 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     </div>
   </div>
 
-  <!-- COMPARAR -->
-  <div class="sc-panel" id="sc-comparar">
-    <div style="margin-bottom:1.25rem">
-      <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Selecciona dos escaneos para comparar</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-        <div>
-          <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.3rem">Escaneo A (anterior)</label>
-          <select id="sc-cmp-a" style="width:100%;background:#0D1117;border:1px solid var(--border);color:#E2E8F0;border-radius:6px;padding:.5rem 2rem .5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;-webkit-appearance:none;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right .65rem center"><option value="" style="background:#0D1117;color:#E2E8F0">— Selecciona —</option></select>
-        </div>
-        <div>
-          <label style="font-size:.72rem;color:var(--muted);display:block;margin-bottom:.3rem">Escaneo B (reciente)</label>
-          <select id="sc-cmp-b" style="width:100%;background:#0D1117;border:1px solid var(--border);color:#E2E8F0;border-radius:6px;padding:.5rem 2rem .5rem .75rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;-webkit-appearance:none;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 8L1 3h10z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right .65rem center"><option value="" style="background:#0D1117;color:#E2E8F0">— Selecciona —</option></select>
-        </div>
-      </div>
-      <button onclick="scComparar()" style="background:#15803D;color:#fff;border:none;padding:.6rem 1.5rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Comparar →</button>
-    </div>
-    <div id="sc-cmp-result" style="display:none"></div>
-    <div class="sc-empty" id="sc-cmp-empty"><h3>Sin historial</h3><p>Necesitas al menos 2 escaneos para comparar.</p></div>
-  </div>
-
-  <!-- SSL -->
-  <div class="sc-panel" id="sc-ssl">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Monitorización SSL/TLS</h3><p style="font-size:.8rem;color:var(--muted)">Estado de los certificados SSL de tus dominios activos.</p></div>
-      <button onclick="rbRefreshSSL()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Actualizar</button>
-    </div>
-    <div id="sc-ssl-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando datos SSL...</div></div>
-  </div>
-
-  <!-- UPTIME -->
-  <div class="sc-panel" id="sc-uptime">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Monitorización Uptime</h3><p style="font-size:.8rem;color:var(--muted)">Disponibilidad y tiempo de respuesta de tus dominios (últimas 24h).</p></div>
-    </div>
-    <div id="sc-uptime-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando datos de uptime...</div></div>
-  </div>
-
-  <!-- DNS -->
-  <div class="sc-panel" id="sc-dns">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Cambios DNS</h3><p style="font-size:.8rem;color:var(--muted)">Detecta nuevos registros A, MX, TXT y NS o registros eliminados.</p></div>
-      <button onclick="rbRefreshDNS()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Escanear DNS</button>
-    </div>
-    <div id="sc-dns-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando registros DNS...</div></div>
-  </div>
-
-  <!-- TECNOLOGÍAS -->
-  <div class="sc-panel" id="sc-tecnologias">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Detección de tecnologías</h3><p style="font-size:.8rem;color:var(--muted)">CMS, frameworks, servidores y librerías detectadas en tus dominios.</p></div>
-      <button onclick="rbRefreshTech()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Detectar</button>
-    </div>
-    <div id="sc-tech-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando tecnologías...</div></div>
-  </div>
-
-  <!-- REPUTACIÓN IP -->
-  <div class="sc-panel" id="sc-iprep">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div><h3 style="font-size:1rem;font-weight:700;margin-bottom:.2rem">Reputación IP</h3><p style="font-size:.8rem;color:var(--muted)">Comprueba si las IPs de tus dominios aparecen en listas negras de spam o malware.</p></div>
-      <button onclick="rbRefreshIPRep()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:.45rem .9rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">↻ Comprobar</button>
-    </div>
-    <div id="sc-iprep-content"><div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Cargando reputación IP...</div></div>
-  </div>
 
 </div><!-- /sc-content -->
 </section>
