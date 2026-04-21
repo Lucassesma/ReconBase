@@ -7,7 +7,7 @@ from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from models import (db, User, Scan, Domain, BlogPost,
                     SSLCheck, UptimeCheck, Notification, DNSRecord,
-                    TechDetection, IPReputation, AuditLog, Invoice)
+                    TechDetection, IPReputation, AuditLog, Invoice, Lead)
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
 import ssl as _ssl_mod, socket, time, re
@@ -756,6 +756,77 @@ def scan_demo():
         "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
         "demo": True, "locked": False
     })
+
+@app.route("/api/lead-unlock", methods=["POST"])
+@limiter.limit("10 per hour")
+def lead_unlock():
+    """Captura email + ejecuta scan completo. Lead magnet sin registro: menos fricción que crear cuenta."""
+    import re as _re
+    data     = request.get_json() or {}
+    email    = (data.get("email") or "").strip().lower()[:120]
+    objetivo = (data.get("objetivo") or "").strip()[:200]
+
+    if not email or not _re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return jsonify({"error": "Email inválido"}), 400
+    if not objetivo:
+        return jsonify({"error": "Introduce un dominio"}), 400
+
+    dominio = objetivo.split("@")[-1] if "@" in objetivo else objetivo
+    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
+    if not dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+
+    es_ip_flag = engine.es_ip(dominio)
+
+    try: puertos = engine.scan_critical_ports_fast(dominio)
+    except Exception: puertos = []
+    try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
+    except Exception: dns = {}
+    try: headers = engine.check_security_headers(dominio)
+    except Exception: headers = {}
+    try: ssl_info = engine.ssl_scan(dominio)
+    except Exception: ssl_info = {}
+    try:
+        banners = engine.banner_grab(dominio, puertos)
+        os_det  = engine.detect_os_from_banners(banners)
+    except Exception: banners = {}; os_det = None
+
+    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+    if ssl_info.get("caducado"):
+        riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
+    elif ssl_info.get("pronto_a_caducar"):
+        riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
+    label, color = label_riesgo(riesgo)
+
+    resultado = {
+        "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
+        "puertos": puertos, "dns": dns,
+        "headers": {k: bool(v) for k, v in headers.items()},
+        "subs": [], "leaks": 0,
+        "riesgo": riesgo, "label": label, "color": color,
+        "desglose": desglose, "ssl": ssl_info,
+        "banners": banners, "os": os_det,
+        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+        "demo": True, "locked": False
+    }
+
+    # Guardar lead (no bloquea si falla)
+    try:
+        ya_user = User.query.filter_by(email=email).first()
+        lead = Lead(
+            email=email, objetivo=objetivo, dominio=dominio,
+            riesgo=riesgo, resultado=resultado,
+            ip=(request.headers.get('X-Forwarded-For', request.remote_addr) or '')[:45],
+            user_agent=(request.headers.get('User-Agent') or '')[:255],
+            convertido=bool(ya_user),
+        )
+        db.session.add(lead)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.warning(f"No se pudo guardar lead {email}: {e}")
+
+    return jsonify(resultado)
 
 @app.route("/api/checkout", methods=["POST"])
 def crear_checkout():

@@ -1657,6 +1657,39 @@ function heroScan(){
   });
 }
 
+function leadUnlock(targetEnc){
+  var emailEl = document.getElementById('lead-email');
+  var msgEl = document.getElementById('lead-msg');
+  var btn = document.getElementById('lead-btn');
+  var email = (emailEl.value||'').trim();
+  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+    msgEl.textContent='Email no válido'; msgEl.style.color='#FCA5A5'; msgEl.style.display='block';
+    emailEl.focus(); return;
+  }
+  btn.textContent='Analizando...'; btn.disabled=true; emailEl.disabled=true;
+  msgEl.style.display='none';
+  fetch('/api/lead-unlock',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({email:email, objetivo:decodeURIComponent(targetEnc)})
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    btn.textContent='Ver informe →'; btn.disabled=false; emailEl.disabled=false;
+    if(d.error){ msgEl.textContent=d.error; msgEl.style.color='#FCA5A5'; msgEl.style.display='block'; return; }
+    // Re-render con los resultados completos
+    d.locked = false;
+    d.unlocked_by_lead = true;
+    d.lead_email = email;
+    renderDemoResult(d);
+    try { if(typeof plausible==='function') plausible('lead_unlock'); } catch(e){}
+  })
+  .catch(function(){
+    btn.textContent='Ver informe →'; btn.disabled=false; emailEl.disabled=false;
+    msgEl.textContent='Error de conexión. Inténtalo de nuevo.'; msgEl.style.color='#FCA5A5'; msgEl.style.display='block';
+  });
+}
+
 function demoCard(type,title,desc){
   var C={crit:{b:'#3B0D0D',l:'#EF4444',bg:'rgba(239,68,68,.13)',c:'#EF4444',lbl:'CRÍTICO'},warn:{b:'#3B1F0A',l:'#F59E0B',bg:'rgba(245,158,11,.11)',c:'#F59E0B',lbl:'ADVERTENCIA'},ok:{b:'#0A2615',l:'#22C55E',bg:'rgba(34,197,94,.1)',c:'#22C55E',lbl:'OK'}};
   var s=C[type]||C.ok;
@@ -1694,27 +1727,31 @@ function renderDemoResult(d){
   else if((d.puertos||[]).length===0) html+=demoCard('ok','Sin puertos críticos expuestos','No se detectaron servicios sensibles accesibles desde internet.');
   else html+=demoCard('ok','Puertos bajo control','Solo puertos estándar (80/443) detectados.');
 
-  // Si el usuario no está logueado, mostrar el resto bloqueado
-  if (d.locked || !isLoggedIn) {
+  // Si el usuario no está logueado Y no ha desbloqueado con email, mostrar el resto bloqueado
+  if ((d.locked || !isLoggedIn) && !d.unlocked_by_lead) {
     html += lockedCard('Suplantación de email (SPF / DMARC)', 'Análisis completo de los registros DNS que protegen tu dominio contra phishing.');
     html += lockedCard('Cabeceras HTTP de seguridad', 'Auditoría de CSP, X-Frame-Options, HSTS y otras cabeceras críticas.');
     html += lockedCard('Certificado SSL/TLS', 'Comprobación de validez, fecha de caducidad y configuración del certificado.');
     html += lockedCard('Sistema operativo detectado', 'Identificación del SO del servidor a partir del análisis de banners.');
     html += lockedCard('Filtraciones en bases de datos', 'Comprobación de si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).');
-    html += '<div style="margin-top:1rem;background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(22,163,74,.15));border:1px solid #16A34A;border-radius:10px;padding:1.1rem 1.3rem;text-align:center">'+
-      '<div style="font-size:.88rem;font-weight:800;color:#F0FDF4;margin-bottom:.4rem">Desbloquea el análisis completo gratis</div>'+
-      '<div style="font-size:.78rem;color:#86EFAC;margin-bottom:.75rem">Crea una cuenta en 30 segundos y ve todos los resultados de este escaneo, más historial, alertas e informe PDF.</div>'+
-      '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.6rem;border-radius:8px;font-weight:700;font-size:.82rem">Crear cuenta gratis →</a>'+
-      ' <a href="/login" style="display:inline-block;color:#86EFAC;padding:.7rem 1rem;font-size:.78rem">Ya tengo cuenta</a>'+
+    html += '<div id="lead-unlock-box" style="margin-top:1rem;background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(22,163,74,.15));border:1px solid #16A34A;border-radius:10px;padding:1.4rem 1.3rem;text-align:center">'+
+      '<div style="font-size:1rem;font-weight:800;color:#F0FDF4;margin-bottom:.4rem">🔓 Desbloquea el informe completo</div>'+
+      '<div style="font-size:.8rem;color:#86EFAC;margin-bottom:1rem">Introduce tu email y te mostramos los 5 hallazgos bloqueados. Sin contraseña, sin tarjeta.</div>'+
+      '<div style="display:flex;gap:.5rem;max-width:420px;margin:0 auto;flex-wrap:wrap">'+
+        '<input type="email" id="lead-email" placeholder="tu@email.com" style="flex:1;min-width:180px;background:rgba(6,13,9,.7);border:1px solid rgba(22,163,74,.4);color:#F0FDF4;padding:.7rem 1rem;border-radius:8px;font-size:.88rem;outline:none" onkeydown="if(event.key===\'Enter\')leadUnlock(\''+encodeURIComponent(d.objetivo)+'\')">'+
+        '<button id="lead-btn" onclick="leadUnlock(\''+encodeURIComponent(d.objetivo)+'\')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.7rem 1.4rem;border-radius:8px;font-weight:700;font-size:.85rem;cursor:pointer;white-space:nowrap">Ver informe →</button>'+
+      '</div>'+
+      '<div id="lead-msg" style="margin-top:.6rem;font-size:.75rem;color:#FCA5A5;display:none"></div>'+
+      '<div style="margin-top:.9rem;font-size:.72rem;color:rgba(134,239,172,.6)">O <a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="color:#86EFAC;text-decoration:underline">crea una cuenta</a> para guardar, historial, alertas e informe PDF</div>'+
       '</div>';
     document.getElementById('dr-grid').innerHTML = html;
     // CTA inferior
     document.getElementById('dr-cta').innerHTML =
       '<div style="flex:1">'+
         '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem">Este es solo un adelanto</div>'+
-        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9">Regístrate gratis para ver DNS, cabeceras, SSL, sistema operativo y brechas filtradas.</div>'+
+        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9">Con tu email ves DNS, cabeceras, SSL, sistema operativo y más. Sin crear cuenta.</div>'+
       '</div>'+
-      '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.88rem;white-space:nowrap">Desbloquear análisis →</a>';
+      '<button onclick="document.getElementById(\'lead-email\').focus();document.getElementById(\'lead-unlock-box\').scrollIntoView({behavior:\'smooth\',block:\'center\'})" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.88rem;white-space:nowrap;cursor:pointer">Desbloquear con email →</button>';
     document.getElementById('dr-steps').innerHTML='';
     return;
   }
@@ -1777,11 +1814,11 @@ function renderDemoResult(d){
         '<div style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,0,0,.2);border-radius:6px;padding:.3rem .8rem;margin-bottom:.6rem">'+
           '<span style="font-size:.75rem;font-weight:700;color:'+problemaColor+';font-family:\'JetBrains Mono\',monospace">● '+problemaTxt+' en '+d.objetivo+'</span>'+
         '</div>'+
-        '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem;letter-spacing:-.03em">Guarda el informe y activa la vigilancia</div>'+
-        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9;line-height:1.6">Crea una cuenta gratis en 30 segundos. Sin tarjeta. Recibirás el informe completo con pasos de acción concretos.</div>'+
+        '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem;letter-spacing:-.03em">'+(d.unlocked_by_lead?'Guarda tu análisis y activa la vigilancia':'Guarda el informe y activa la vigilancia')+'</div>'+
+        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9;line-height:1.6">'+(d.unlocked_by_lead?'Crea tu cuenta gratis para guardar este informe, recibir alertas cuando cambie algo y descargar el PDF ejecutivo.':'Crea una cuenta gratis en 30 segundos. Sin tarjeta. Recibirás el informe completo con pasos de acción concretos.')+'</div>'+
       '</div>'+
       '<div style="display:flex;flex-direction:column;gap:.5rem;flex-shrink:0">'+
-        '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;display:block;text-align:center">Crear cuenta gratis →</a>'+
+        '<a href="/register?target='+encodeURIComponent(d.objetivo)+(d.unlocked_by_lead&&d.lead_email?'&email='+encodeURIComponent(d.lead_email):'')+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;display:block;text-align:center">Crear cuenta gratis →</a>'+
         '<a href="/login" style="color:#86EFAC;font-size:.78rem;text-align:center;opacity:.8">Ya tengo cuenta</a>'+
       '</div>';
 
