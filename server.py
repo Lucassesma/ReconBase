@@ -552,6 +552,13 @@ def api_register():
     login_user(user)
     enviar_email_verificacion(user)
     enviar_email_bienvenida(user)
+    # Marcar como conversos los leads previos de este email
+    try:
+        Lead.query.filter_by(email=email, convertido=False).update({Lead.convertido: True})
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.warning(f"[Register] No se pudo marcar leads de {email}: {e}")
     return jsonify({"ok": True})
 
 @app.route("/api/stripe-portal", methods=["POST"])
@@ -825,6 +832,13 @@ def lead_unlock():
     except Exception as e:
         db.session.rollback()
         logger.warning(f"No se pudo guardar lead {email}: {e}")
+
+    # Email con resumen del informe (solo si no es usuario existente)
+    try:
+        if not User.query.filter_by(email=email).first():
+            enviar_email_lead(email, objetivo, riesgo, label, puertos, dns, ssl_info, es_followup=False)
+    except Exception as e:
+        logger.warning(f"No se pudo enviar email a lead {email}: {e}")
 
     return jsonify(resultado)
 
@@ -1363,6 +1377,75 @@ def enviar_email_limite_free(destinatario):
             logger.error(f"[Limite] Error a {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
+def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, ssl_info, es_followup=False):
+    """Email tras desbloquear informe con email (lead magnet). Si es_followup=True, es el recordatorio 48h."""
+    def _send():
+        try:
+            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            nivel = "CRÍTICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
+            color = "#EF4444" if riesgo >= 70 else "#F59E0B" if riesgo >= 40 else "#22C55E"
+
+            # Contar problemas concretos
+            problemas = []
+            crit_ports = [p for p in (puertos or []) if p.get('puerto') in {3389, 22, 3306, 5432, 27017, 6379, 5900, 23, 21, 1433}]
+            if crit_ports:
+                problemas.append(f"🔴 <strong>{len(crit_ports)} puerto{'s' if len(crit_ports)>1 else ''} crítico{'s' if len(crit_ports)>1 else ''} expuesto{'s' if len(crit_ports)>1 else ''}</strong>: {', '.join(str(p['puerto']) for p in crit_ports[:4])}")
+            if dns_info and not dns_info.get('spf') and not dns_info.get('dmarc'):
+                problemas.append("🔴 <strong>Dominio suplantable</strong>: sin SPF ni DMARC configurados")
+            elif dns_info and not dns_info.get('dmarc'):
+                problemas.append("🟡 <strong>DMARC no configurado</strong>: riesgo de phishing con tu dominio")
+            elif dns_info and not dns_info.get('spf'):
+                problemas.append("🟡 <strong>SPF no configurado</strong>: emails suplantables")
+            if ssl_info and ssl_info.get('caducado'):
+                problemas.append("🔴 <strong>Certificado SSL caducado</strong>: los navegadores avisan de inseguridad")
+            elif ssl_info and ssl_info.get('pronto_a_caducar'):
+                problemas.append(f"🟡 <strong>SSL caduca en {ssl_info.get('dias_restantes','?')} días</strong>")
+
+            problemas_html = "<ul style='margin:.5rem 0 1rem;padding-left:1.2rem;line-height:1.8'>" + \
+                "".join(f"<li>{p}</li>" for p in problemas[:5]) + "</ul>" if problemas else \
+                "<p style='color:#22C55E'>✓ No se detectaron problemas críticos en este escaneo.</p>"
+
+            if es_followup:
+                subject = f"Recordatorio: {objetivo} tiene {riesgo}% de riesgo — ¿lo vas a proteger?"
+                titulo = f"¿Sigues con {riesgo}% de riesgo en {objetivo}?"
+                intro = (
+                    f"Hace 48 horas analizaste <strong>{objetivo}</strong> con ReconBase.<br>"
+                    f"El nivel de riesgo era <strong style='color:{color}'>{riesgo}% — {label}</strong> y aún no has creado cuenta.<br><br>"
+                    "Esto es lo que sigue sin resolverse:"
+                )
+                cta_text = "Crear cuenta y proteger mi empresa →"
+            else:
+                subject = f"Tu informe de {objetivo} — Riesgo {nivel} ({riesgo}%)"
+                titulo = f"Informe de {objetivo}: {riesgo}% de riesgo"
+                intro = (
+                    f"Acabas de analizar <strong>{objetivo}</strong> en ReconBase.<br>"
+                    f"Nivel de riesgo: <strong style='color:{color}'>{riesgo}% — {label}</strong>.<br><br>"
+                    "Resumen de los hallazgos más importantes:"
+                )
+                cta_text = "Guardar informe + activar vigilancia →"
+
+            cuerpo = (
+                f"{intro}"
+                f"{problemas_html}"
+                "<p style='font-size:.88rem;color:#64748B;margin-top:1rem'>"
+                "Con una cuenta gratuita puedes:<br>"
+                "• Guardar este informe y su historial<br>"
+                "• Recibir alertas automáticas cuando algo cambie<br>"
+                "• Descargar el PDF ejecutivo con pasos de remediación"
+                "</p>"
+            )
+
+            from urllib.parse import quote
+            cta_url = f"{base_url}/register?email={quote(destinatario)}&target={quote(objetivo)}"
+
+            with app.app_context():
+                send_html_email(destinatario, subject, titulo, cuerpo, cta_url=cta_url, cta_text=cta_text)
+                logger.info(f"[Lead{'Followup' if es_followup else ''}] Email enviado a {destinatario} · {objetivo} · {riesgo}%")
+        except Exception as e:
+            logger.error(f"[Lead email] Error a {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+
 def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_anterior=None):
     def _send():
         try:
@@ -1871,6 +1954,44 @@ def cron_reengagement():
             if ultimo_scan and limite - timedelta(days=1) <= ultimo_scan.timestamp <= limite:
                 enviar_email_reengagement(user)
 
+def cron_lead_followup():
+    """Envía email recordatorio a leads capturados hace 48-72h que aún no han creado cuenta."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        ventana_ini = ahora - timedelta(hours=72)
+        ventana_fin = ahora - timedelta(hours=48)
+        try:
+            candidatos = Lead.query.filter(
+                Lead.created_at >= ventana_ini,
+                Lead.created_at <  ventana_fin,
+                Lead.followup_sent == False,
+                Lead.convertido == False
+            ).all()
+        except Exception as e:
+            logger.warning(f"[LeadFollowup] Query error (tabla nueva?): {e}")
+            return
+
+        for lead in candidatos:
+            try:
+                # Si ya creó cuenta entre medias, marcar convertido y saltar
+                if User.query.filter_by(email=lead.email).first():
+                    lead.convertido = True
+                    lead.followup_sent = True
+                    db.session.commit()
+                    continue
+                r = lead.resultado or {}
+                enviar_email_lead(
+                    lead.email, lead.objetivo, lead.riesgo,
+                    r.get('label', ''), r.get('puertos', []),
+                    r.get('dns', {}), r.get('ssl', {}),
+                    es_followup=True
+                )
+                lead.followup_sent = True
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"[LeadFollowup] Error con lead {lead.id}: {e}")
+
 def cron_onboarding():
     """Envía email a usuarios registrados hace ~2 días que no han hecho ningún escaneo."""
     with app.app_context():
@@ -1892,6 +2013,7 @@ scheduler.add_job(cron_ssl_alerts,      'cron', hour=9,  minute=0)
 scheduler.add_job(cron_resumen_mensual, 'cron', hour=8,  minute=0)
 scheduler.add_job(cron_trial_expiring,  'cron', hour=9,  minute=30)
 scheduler.add_job(cron_reengagement,    'cron', hour=11, minute=0)
+scheduler.add_job(cron_lead_followup,   'cron', hour=10, minute=30)
 scheduler.start()
 
 @app.route("/api/horario", methods=["POST"])
@@ -3488,6 +3610,7 @@ with app.app_context():
         "ALTER TABLE domains ADD COLUMN scan_hora INTEGER",
         "ALTER TABLE domains ADD COLUMN scan_dias VARCHAR(20)",
         "CREATE TABLE IF NOT EXISTS blog_posts (id SERIAL PRIMARY KEY, slug VARCHAR(200) UNIQUE NOT NULL, titulo VARCHAR(300) NOT NULL, excerpt VARCHAR(500), contenido TEXT NOT NULL, autor VARCHAR(100) DEFAULT 'ReconBase', imagen VARCHAR(500), publicado BOOLEAN DEFAULT FALSE NOT NULL, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), tags VARCHAR(300))",
+        "ALTER TABLE leads ADD COLUMN followup_sent BOOLEAN DEFAULT FALSE NOT NULL",
         # ── Batch 2 ──
         "ALTER TABLE users ADD COLUMN trial_used BOOLEAN DEFAULT FALSE NOT NULL",
         "ALTER TABLE users ADD COLUMN onboarding_done BOOLEAN DEFAULT FALSE NOT NULL",
