@@ -134,7 +134,6 @@ a{text-decoration:none;color:inherit}
     <div class="tab" onclick="switchTab('exportar',this)">Exportar</div>
     <div class="tab" onclick="switchTab('historial',this)">Historial</div>
     <div class="tab" onclick="switchTab('tendencia',this)">Tendencia</div>
-    <div class="tab" onclick="switchTab('vigilancia',this)">Vigilancia {% if plan == 'free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}</div>
   </div>
 
   <div class="content">
@@ -322,121 +321,6 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <div class="panel" id="panel-vigilancia">
-      {% if plan == 'free' %}
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:420px;text-align:center;padding:2rem">
-        <div style="width:72px;height:72px;border-radius:16px;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.2);display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1.5rem">🔒</div>
-        <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.75rem">Solo disponible en Pro</div>
-        <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem">Vigilancia nocturna 24/7</h2>
-        <p style="color:var(--muted);font-size:.9rem;max-width:440px;line-height:1.7;margin-bottom:2rem">Cada noche a las 3:00 AM ReconBase escanea tu dominio automaticamente. Si detecta algo nuevo o el riesgo sube, recibes un email al instante. Tu duermes, nosotros vigilamos.</p>
-        <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:2rem;text-align:left;width:100%;max-width:320px">
-          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Escaneo automatico cada noche</div>
-          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Alerta por email si sube el riesgo</div>
-          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Historial completo de vigilancia</div>
-          <div style="display:flex;align-items:center;gap:.75rem;font-size:.85rem;color:var(--muted)"><span style="color:var(--green);font-size:1rem">✓</span> Sin hacer nada, funciona solo</div>
-        </div>
-        <a href="/#precios"><button style="background:#16A34A;color:#fff;border:none;padding:.85rem 2.5rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.92rem;cursor:pointer">Activar vigilancia — Pro 29€/mes</button></a>
-      </div>
-      {% else %}
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
-          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Estado</div>
-          {% if scan_dias %}
-          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
-            <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s ease infinite"></span>
-            <span style="font-weight:700;font-size:1rem">Vigilancia activa</span>
-          </div>
-          <div style="font-size:.82rem;color:var(--muted)">Tu dominio se escanea segun tu horario configurado</div>
-          {% else %}
-          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
-            <span style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span>
-            <span style="font-weight:700;font-size:1rem;color:var(--muted)">Vigilancia desactivada</span>
-          </div>
-          <div style="font-size:.82rem;color:var(--dim)">Activa el escaneo automatico en la configuracion</div>
-          {% endif %}
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
-          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Horario configurado</div>
-          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ '%02d:00'|format(scan_hora) }} · hora de Madrid</div>
-          <div style="font-size:.82rem;color:var(--muted)">{% set dias_nombres = ['L','M','X','J','V','S','D'] %}{% for d in range(7) %}<span style="{% if d|string in scan_dias %}color:#4ADE80{% else %}color:var(--dim){% endif %};margin-right:4px">{{ dias_nombres[d] }}</span>{% endfor %}</div>
-        </div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
-          <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.75rem">Ultimo escaneo automatico</div>
-          {% if ultimo_auto %}
-          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">{{ ultimo_auto.resultado.get('riesgo', 0) }}% — {{ ultimo_auto.resultado.get('label', '') }}</div>
-          <div style="font-size:.82rem;color:var(--muted)">{{ ultimo_auto.timestamp.strftime('%d %b %Y · %H:%M') }}</div>
-          {% else %}
-          <div style="font-weight:700;font-size:1rem;margin-bottom:.4rem">Pendiente</div>
-          <div style="font-size:.82rem;color:var(--muted)">El primer escaneo sera en tu proximo horario</div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Configuración del horario -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin-bottom:1.25rem">
-        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Configurar horario de vigilancia</div>
-        <div style="margin-bottom:1.25rem">
-          <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer">
-            <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer" onchange="toggleVigConfig()">
-            <span style="font-size:.88rem;font-weight:600">Activar escaneo automático</span>
-          </label>
-        </div>
-        <div id="vig-config" style="{% if not scan_dias %}display:none{% endif %}">
-        <div style="display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start">
-          <div>
-            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Hora del escaneo</div>
-            <select id="vig-hora" style="background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.5rem .85rem;outline:none;cursor:pointer">
-              {% for h in range(24) %}<option value="{{ h }}" {% if h == scan_hora %}selected{% endif %}>{{ '%02d:00'|format(h) }}</option>{% endfor %}
-            </select>
-          </div>
-          <div>
-            <div style="font-size:.78rem;color:var(--muted);margin-bottom:.6rem">Días de la semana</div>
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-              {% set dias_nombres = [('L',0),('M',1),('X',2),('J',3),('V',4),('S',5),('D',6)] %}
-              {% for nombre, num in dias_nombres %}
-              <label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer">
-                <input type="checkbox" id="dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer">
-                <span style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ nombre }}</span>
-              </label>
-              {% endfor %}
-            </div>
-          </div>
-          <div style="display:flex;align-items:flex-end">
-            <button onclick="guardarHorario()" style="background:#16A34A;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar horario</button>
-          </div>
-        </div>
-        <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
-        </div><!-- /vig-config -->
-        <div id="vig-msg-off" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
-        <div style="margin-top:1rem;{% if scan_dias %}display:none{% endif %}" id="vig-save-off">
-          <button onclick="guardarHorario()" style="background:#475569;color:#fff;border:none;padding:.6rem 1.4rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button>
-        </div>
-      </div>
-      {% if ultimo_auto %}
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
-        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1rem">Resultado del ultimo escaneo automatico</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
-          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
-            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Dominio</div>
-            <div style="font-size:.85rem;font-weight:700;color:#93C5FD">{{ ultimo_auto.dominio }}</div>
-          </div>
-          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
-            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Puertos expuestos</div>
-            <div style="font-size:1.2rem;font-weight:800">{{ ultimo_auto.resultado.get('puertos', [])|length }}</div>
-          </div>
-          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
-            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Filtraciones</div>
-            <div style="font-size:1.2rem;font-weight:800">{{ ultimo_auto.resultado.get('leaks', 0) }}</div>
-          </div>
-          <div style="background:#080C14;border-radius:8px;padding:1rem;text-align:center">
-            <div style="font-size:.68rem;color:var(--muted);margin-bottom:.3rem">Subdominios</div>
-            <div style="font-size:1.2rem;font-weight:800">{{ ultimo_auto.resultado.get('subs', [])|length }}</div>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-      {% endif %}
-    </div>
 
   </div>
 </div>
@@ -963,7 +847,7 @@ async function guardarHorario() {
   var d = await r.json();
   if(d.ok) {
     mostrarMsgVig('Guardado. Actualizando...', true);
-    setTimeout(function(){ window.location.href = '/app?tab=vigilancia'; }, 800);
+    setTimeout(function(){ window.location.href = '/perfil'; }, 800);
   } else mostrarMsgVig(d.error || 'Error al guardar', false);
 }
 function mostrarMsgVig(txt, ok) {
@@ -982,8 +866,9 @@ function cerrarSesion() {
 // Inicializar
 loadHistorial();
 var urlTab = new URLSearchParams(window.location.search).get('tab');
-if(urlTab) {
-  var tabEl = document.querySelector('.tab:nth-child(' + ({auditoria:1,dashboard:2,exportar:3,historial:4,tendencia:5,vigilancia:6}[urlTab]||1) + ')');
+var validTabs = {auditoria:1,dashboard:2,exportar:3,historial:4,tendencia:5};
+if(urlTab && validTabs[urlTab]) {
+  var tabEl = document.querySelector('.tab:nth-child(' + validTabs[urlTab] + ')');
   if(tabEl) switchTab(urlTab, tabEl);
 }
 

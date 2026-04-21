@@ -617,7 +617,6 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="sc-tab" onclick="scSwitch('historial',this)">Historial</div>
   <div class="sc-tab" onclick="scSwitch('tendencia',this)">Tendencia</div>
   <div class="sc-tab" onclick="scSwitch('comparar',this)">Comparar</div>
-  <div class="sc-tab" onclick="scSwitch('vigilancia',this)">Vigilancia{% if plan=='free' %}<span style="font-size:.6rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:3px">PRO</span>{% endif %}</div>
   <div class="sc-tab" onclick="scSwitch('ssl',this)">SSL</div>
   <div class="sc-tab" onclick="scSwitch('uptime',this)">Uptime</div>
   <div class="sc-tab" onclick="scSwitch('dns',this)">DNS</div>
@@ -790,50 +789,6 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
     </div>
     <div id="sc-cmp-result" style="display:none"></div>
     <div class="sc-empty" id="sc-cmp-empty"><h3>Sin historial</h3><p>Necesitas al menos 2 escaneos para comparar.</p></div>
-  </div>
-
-  <!-- VIGILANCIA -->
-  <div class="sc-panel" id="sc-vigilancia">
-    {% if plan == 'free' %}
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:360px;text-align:center;padding:2rem">
-      <div style="width:64px;height:64px;border-radius:14px;background:#F0FDF4;border:1px solid #BBF7D0;display:flex;align-items:center;justify-content:center;font-size:1.75rem;margin-bottom:1.5rem">🔒</div>
-      <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;margin-bottom:.6rem">Solo disponible en Pro</div>
-      <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.6rem">Vigilancia nocturna 24/7</h2>
-      <p style="color:var(--muted);font-size:.88rem;max-width:400px;line-height:1.7;margin-bottom:1.75rem">Cada noche ReconBase escanea tu dominio. Si el riesgo sube, recibes un email al instante.</p>
-      <button onclick="pagarPlanLanding('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.8rem 2.25rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer">Activar — Pro 29€/mes</button>
-    </div>
-    {% else %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem">
-        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem">Estado</div>
-        {% if scan_dias %}<div style="display:flex;align-items:center;gap:.5rem"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span><span style="font-weight:700">Vigilancia activa</span></div>
-        {% else %}<div style="display:flex;align-items:center;gap:.5rem"><span style="width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block"></span><span style="font-weight:700;color:var(--muted)">Desactivada</span></div>{% endif %}
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem">
-        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem">Horario</div>
-        <div style="font-weight:700">{{ '%02d:00'|format(scan_hora) }} · Madrid</div>
-        <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">{% set dn=['L','M','X','J','V','S','D'] %}{% for d in range(7) %}<span style="{% if d|string in scan_dias %}color:var(--accent);font-weight:700{% else %}color:var(--dim){% endif %};margin-right:4px">{{ dn[d] }}</span>{% endfor %}</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem">
-        <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem">Último automático</div>
-        {% if ultimo_auto %}<div style="font-weight:700">{{ ultimo_auto.resultado.get('riesgo',0) }}% — {{ ultimo_auto.resultado.get('label','') }}</div><div style="font-size:.8rem;color:var(--muted)">{{ ultimo_auto.timestamp.strftime('%d %b %Y · %H:%M') }}</div>
-        {% else %}<div style="color:var(--muted)">Pendiente</div>{% endif %}
-      </div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem">
-      <div style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem">Configurar horario</div>
-      <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;margin-bottom:1rem"><input type="checkbox" id="sc-vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px" onchange="scToggleVig()"><span style="font-size:.88rem;font-weight:600">Activar escaneo automático</span></label>
-      <div id="sc-vig-config" style="{% if not scan_dias %}display:none{% endif %}">
-        <div style="display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start">
-          <div><div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Hora</div><select id="sc-vig-hora" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:.45rem .8rem;outline:none">{% for h in range(24) %}<option value="{{ h }}" {% if h==scan_hora %}selected{% endif %}>{{ '%02d:00'|format(h) }}</option>{% endfor %}</select></div>
-          <div><div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Días</div><div style="display:flex;gap:.5rem;flex-wrap:wrap">{% for nombre,num in [('L',0),('M',1),('X',2),('J',3),('V',4),('S',5),('D',6)] %}<label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer"><input type="checkbox" id="sc-dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px"><span style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ nombre }}</span></label>{% endfor %}</div></div>
-          <div style="display:flex;align-items:flex-end"><button onclick="scGuardarHorario()" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar</button></div>
-        </div>
-        <div id="sc-vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
-      </div>
-      <div id="sc-vig-save-off" style="margin-top:1rem;{% if scan_dias %}display:none{% endif %}"><button onclick="scGuardarHorario()" style="background:#E2E8F0;color:var(--muted);border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Guardar (desactivar)</button></div>
-    </div>
-    {% endif %}
   </div>
 
   <!-- SSL -->
