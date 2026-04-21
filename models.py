@@ -211,6 +211,21 @@ class AuditLog(db.Model):
 
 
 # ─── Facturas ─────────────────────────────────────────────────────────────────
+class Lead(db.Model):
+    """Captura de email desde el demo scanner de la landing — lead magnet sin registro completo."""
+    __tablename__ = 'leads'
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(120), nullable=False, index=True)
+    objetivo   = db.Column(db.String(255), nullable=False)
+    dominio    = db.Column(db.String(255), nullable=False)
+    riesgo     = db.Column(db.Integer, default=0)
+    resultado  = db.Column(db.JSON, nullable=True)
+    ip         = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    convertido = db.Column(db.Boolean, default=False)  # True si luego crea cuenta
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class Invoice(db.Model):
     __tablename__ = 'invoices'
     id                = db.Column(db.Integer, primary_key=True)
