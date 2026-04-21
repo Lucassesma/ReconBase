@@ -1,0 +1,178 @@
+/* ============================================================
+   ReconBase — mobile.css
+   Responsive global overrides. Se carga DESPUES del <style>
+   inline de cada template para ganar en la cascada.
+   Breakpoints:  <=980 tablet   <=720 tablet/portrait   <=520 mobile
+   ============================================================ */
+
+/* -------- Tablet / pantallas medias -------- */
+@media (max-width: 980px) {
+  /* Dashboard (app.html) */
+  .topbar { padding: .75rem 1rem !important; }
+  .tabs { padding: 0 1rem !important; overflow-x: auto; overflow-y: hidden;
+          -webkit-overflow-scrolling: touch; scrollbar-width: none;
+          flex-wrap: nowrap; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { white-space: nowrap; padding: .7rem 1rem !important; font-size: .82rem !important; }
+  .content { padding: 1.25rem 1rem !important; }
+  .metrics { grid-template-columns: repeat(3, 1fr) !important; }
+  .main-grid { grid-template-columns: 1fr !important; }
+  .sec-grid { grid-template-columns: 1fr !important; }
+  .export-grid { grid-template-columns: 1fr !important; }
+
+  /* Perfil */
+  .main { padding: 0 1.25rem !important; margin-top: 1.5rem !important; }
+  .stat-grid { gap: .6rem !important; }
+  .stat-num { font-size: 1.3rem !important; }
+  .info-row { flex-wrap: wrap; gap: .35rem; }
+  .info-val { text-align: left !important; }
+
+  /* Pricing */
+  .plans { padding: 0 1.25rem !important; }
+  .table-wrap { padding: 0 1rem !important; }
+  .cmp { font-size: .8rem !important; }
+  .cmp th, .cmp td { padding: .6rem .5rem !important; }
+
+  /* Navs con padding horizontal 6% — reducir */
+  nav, .nav { padding-left: 1.1rem !important; padding-right: 1.1rem !important; }
+}
+
+/* -------- Móvil pequeño (<=720) -------- */
+@media (max-width: 720px) {
+  /* Dashboard */
+  .metrics { grid-template-columns: repeat(2, 1fr) !important; gap: .5rem !important; }
+  .metric { padding: .8rem !important; }
+  .metric-val { font-size: 1.3rem !important; }
+  .metric-lbl { font-size: .62rem !important; }
+
+  .scanner-bar { flex-direction: column !important; gap: .6rem !important; }
+  .btn-scan { width: 100% !important; padding: .85rem 1rem !important; }
+
+  .topbar-right { gap: .5rem !important; }
+  .topbar-right .back-link { display: none; } /* liberar espacio */
+  .logo-ver { display: none; }
+
+  .gauge-card { padding: 1rem !important; }
+  .gauge-wrap { width: 180px !important; height: 100px !important; }
+
+  /* Tablas: scroll horizontal en móvil */
+  .subs-card, .chart-card { padding: 1rem !important; }
+  .subs-table, .hist-table, .tbl, .cmp {
+    display: block; overflow-x: auto; white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Perfil */
+  .page-title { font-size: 1.35rem !important; }
+  .card { padding: 1.25rem !important; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .stat-num { font-size: 1.15rem !important; }
+  .stat-lbl { font-size: .58rem !important; }
+
+  /* Login / register */
+  .main { padding: 1.25rem !important; }
+  .card { padding: 1.75rem 1.4rem !important; }
+  .card-title { font-size: 1.3rem !important; }
+  .plan-select { grid-template-columns: 1fr !important; }
+
+  /* Pricing plans stack */
+  .plans { grid-template-columns: 1fr !important; gap: 1rem !important; }
+  .plan { padding: 1.5rem 1.25rem !important; }
+  .plan-price { font-size: 2.25rem !important; }
+
+  /* Footer */
+  footer { flex-direction: column !important; text-align: center !important;
+           gap: .75rem !important; padding: 2rem 1rem !important; }
+
+  /* Nav genérico: ocultar enlaces secundarios dejando sólo CTA */
+  .nav-links a:not(.nav-cta):not([href="/login"]):not([href="/register"]) { display: none !important; }
+  .nav-links { gap: .75rem !important; }
+
+  /* Topbar del dashboard: logo más chico */
+  .topbar svg { height: 20px !important; }
+  nav svg, .nav svg { height: 22px !important; }
+}
+
+/* -------- Móvil muy pequeño (<=520) -------- */
+@media (max-width: 520px) {
+  /* Dashboard */
+  .tab { padding: .6rem .75rem !important; font-size: .76rem !important; }
+  .tabs { padding: 0 .5rem !important; }
+  .content { padding: 1rem .75rem !important; }
+  .topbar { padding: .65rem .75rem !important; }
+
+  .metric-val { font-size: 1.15rem !important; }
+  .metric-sub { font-size: .65rem !important; }
+
+  .gauge-card { padding: .85rem !important; }
+  .gauge-wrap { width: 160px !important; height: 90px !important; }
+  .gauge-pct { font-size: 1.7rem !important; }
+
+  .rcard { padding: .9rem 1rem !important; }
+  .rcard-title { font-size: .82rem !important; }
+  .rcard-body { font-size: .76rem !important; }
+
+  .btn-export { font-size: .82rem !important; padding: .7rem !important; }
+  .export-card { padding: 1.25rem !important; }
+
+  /* Perfil */
+  .stat-grid { grid-template-columns: repeat(3, 1fr) !important; gap: .4rem !important; }
+  .stat-box { padding: .7rem .35rem !important; }
+  .stat-num { font-size: 1rem !important; }
+  .stat-lbl { font-size: .54rem !important; letter-spacing: .04em !important; }
+  .page-title { font-size: 1.2rem !important; }
+  .page-sub { font-size: .82rem !important; }
+  .card { padding: 1.1rem !important; }
+  .card-title { font-size: .6rem !important; margin-bottom: .9rem !important; }
+
+  /* Login / register */
+  .main { padding: 1rem .75rem !important; }
+  .card { padding: 1.5rem 1.2rem !important; }
+
+  /* Landing */
+  .hero h1 { font-size: 1.65rem !important; }
+  .hero p, .hero-sub { font-size: .92rem !important; }
+  .hero { padding: 2.5rem 1.1rem 2rem !important; }
+  .section, .demo-section { padding: 2.5rem 1.1rem !important; }
+  .sec-label { font-size: .68rem !important; }
+  h2 { font-size: clamp(1.5rem, 5vw, 2rem) !important; }
+  .hero-btns .btn, .hero-btns a { width: 100% !important; text-align: center; }
+  .compat { gap: 1.25rem !important; padding: .8rem 1rem !important; }
+
+  /* Pricing */
+  .plan-price { font-size: 2rem !important; }
+  h1 { font-size: clamp(1.6rem, 6vw, 2.2rem) !important; }
+
+  /* Blog */
+  .post-title { font-size: 1.5rem !important; }
+  article h1, article h2 { font-size: 1.4rem !important; }
+
+  /* Tablas en móvil pequeño — aún más compactas */
+  .cmp, .subs-table, .hist-table, .tbl { font-size: .76rem !important; }
+  .cmp th, .cmp td { padding: .55rem .45rem !important; }
+
+  /* Botones full-width por defecto en móvil */
+  button.btn-submit, button.btn-plan, .btn-plan { width: 100% !important; }
+
+  /* CTAs flex/inline que se salen */
+  .hero-counter-inner { flex-direction: column; gap: .75rem !important; }
+
+  /* Hero scanner demo */
+  .scanner-bar input, .scanner-bar button { font-size: .85rem !important; }
+  .sc-metrics { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Banner free del dashboard se salía */
+  .content > div[style*="linear-gradient(90deg,rgba(20,83,45"] {
+    flex-direction: column !important; align-items: flex-start !important;
+    padding: 1rem !important; margin: 0 0 1rem 0 !important;
+  }
+}
+
+/* -------- Forzar imagenes y videos flexibles siempre -------- */
+img, video, svg { max-width: 100%; height: auto; }
+pre, code { max-width: 100%; overflow-x: auto; word-break: break-word; }
+
+/* -------- Evitar desbordes horizontales globales -------- */
+@media (max-width: 720px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+}
