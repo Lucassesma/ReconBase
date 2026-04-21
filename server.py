@@ -68,9 +68,25 @@ mail = Mail(app)
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 RESEND_FROM    = os.getenv("RESEND_FROM", "ReconBase <onboarding@resend.dev>")
 
+def _smtp_configured():
+    return bool(app.config.get('MAIL_USERNAME') and app.config.get('MAIL_PASSWORD'))
+
+def _send_via_smtp(to, subject, body, html=None):
+    """Envía por SMTP (Flask-Mail). Usado como fallback cuando Resend falla."""
+    msg = Message(
+        subject=subject,
+        recipients=[to] if isinstance(to, str) else to,
+        body=body,
+    )
+    if html:
+        msg.html = html
+    mail.send(msg)
+    return True
+
 def send_email(to, subject, body):
-    """Envía un email. Usa Resend (HTTPS) si RESEND_API_KEY está configurado,
-    si no cae a SMTP via Flask-Mail. Lanza excepción si falla para que el caller decida."""
+    """Envía un email. Intenta Resend primero; si falla con 4xx (dominio no verificado,
+    API key inválida, etc.) cae a SMTP si está configurado. Lanza solo si ningún
+    proveedor funciona."""
     if RESEND_API_KEY:
         payload = json.dumps({
             "from": RESEND_FROM,
@@ -96,25 +112,37 @@ def send_email(to, subject, body):
                 return True
         except urllib.error.HTTPError as he:
             err_raw = he.read().decode("utf-8", errors="ignore")
-            logger.error(f"[Resend] HTTPError {he.code} a {to}: {err_raw}")
-            # Intenta extraer el 'message' del JSON de error de Resend
+            # 403 tipico: sender (RESEND_FROM) no verificado o destino fuera del sandbox
+            hint = ""
+            if he.code == 403:
+                hint = " (probable: dominio en RESEND_FROM sin verificar en resend.com/domains, o sandbox limitado al email del owner)"
+            logger.warning(f"[Resend] {he.code} a {to}{hint}: {err_raw[:200]}")
+            # Fallback a SMTP si esta disponible — no romper el flujo
+            if _smtp_configured():
+                try:
+                    _send_via_smtp(to, subject, body)
+                    logger.info(f"[Resend→SMTP fallback] OK a {to}")
+                    return True
+                except Exception as smtp_err:
+                    logger.error(f"[Resend→SMTP fallback] Tambien fallo: {smtp_err}")
             try:
                 err_json = json.loads(err_raw)
                 err_msg = err_json.get("message") or err_json.get("error") or err_raw
             except Exception:
                 err_msg = err_raw
-            raise RuntimeError(f"Resend {he.code}: {err_msg}")
+            raise RuntimeError(f"Resend {he.code}: {err_msg}{hint}")
         except Exception as e:
-            logger.exception(f"[Resend] Fallo a {to}: {e}")
+            logger.warning(f"[Resend] Error red a {to}: {e}")
+            if _smtp_configured():
+                try:
+                    _send_via_smtp(to, subject, body)
+                    logger.info(f"[Resend→SMTP fallback] OK a {to}")
+                    return True
+                except Exception as smtp_err:
+                    logger.error(f"[Resend→SMTP fallback] Tambien fallo: {smtp_err}")
             raise
     else:
-        # Fallback a SMTP
-        mail.send(Message(
-            subject=subject,
-            recipients=[to] if isinstance(to, str) else to,
-            body=body,
-        ))
-        return True
+        return _send_via_smtp(to, subject, body)
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -497,7 +525,9 @@ def enviar_email_verificacion(user):
             )
             logger.info(f"[Verify] Email enviado a {user.email}")
         except Exception as e:
-            logger.exception(f"[Verify] Error enviando a {user.email}: {e}")
+            # No usar exception() — es un fallo de config de proveedor, no un crash.
+            # Evita ruido en Sentry y deja un log claro para el operador.
+            logger.warning(f"[Verify] No se pudo enviar verificacion a {user.email}: {e}")
     threading.Thread(target=_send, daemon=True).start()
     return True
 
@@ -723,7 +753,7 @@ def scan_demo():
         "riesgo": riesgo, "label": label, "color": color,
         "desglose": desglose, "ssl": ssl_info,
         "banners": banners, "os": os_det,
-        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
         "demo": True, "locked": False
     })
 
@@ -752,7 +782,11 @@ def checkout_informe():
     scan_id = data.get("scan_id")
     if not scan_id:
         return jsonify({"error": "scan_id requerido"}), 400
-    scan_obj = Scan.query.get(int(scan_id))
+    try:
+        scan_id = int(scan_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "scan_id inválido"}), 400
+    scan_obj = Scan.query.get(scan_id)
     if not scan_obj or scan_obj.user_id != current_user.id:
         return jsonify({"error": "Escaneo no encontrado"}), 404
     try:
@@ -1010,8 +1044,10 @@ def eliminar_cuenta():
     # 3) Cerrar sesión y borrar usuario
     try:
         logout_user()
-        db.session.delete(db.session.get(User, user_id))
-        db.session.commit()
+        u_obj = db.session.get(User, user_id)
+        if u_obj:
+            db.session.delete(u_obj)
+            db.session.commit()
         logger.info(f"[GDPR] Cuenta {email} eliminada completamente")
     except Exception as e:
         db.session.rollback()
@@ -1384,7 +1420,7 @@ def scan():
         "ssl":       ssl_info,
         "banners":   banners,
         "os":        os_det,
-        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
     }
 
     scan = Scan(
@@ -1441,7 +1477,7 @@ def historial():
     scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).limit(limite).all()
     result = []
     for s in scans:
-        r = dict(s.resultado)
+        r = dict(s.resultado or {})
         r['scan_id'] = s.id
         r['timestamp'] = s.timestamp.strftime('%d/%m/%Y %H:%M')
         result.append(r)
@@ -1453,7 +1489,7 @@ def get_scan(scan_id):
     scan = Scan.query.filter_by(id=scan_id, user_id=current_user.id).first()
     if not scan:
         return jsonify({"error": "Escaneo no encontrado"}), 404
-    return jsonify(scan.resultado)
+    return jsonify(scan.resultado or {})
 
 @app.route("/api/pdf", methods=["POST"])
 @login_required
@@ -2168,15 +2204,31 @@ def send_html_email(to, subject, titulo, cuerpo_html, cta_url=None, cta_text=Non
                 return True
         except urllib.error.HTTPError as he:
             err_body = he.read().decode('utf-8', errors='ignore')
-            logger.error(f"[Resend HTML] HTTPError {he.code} a {to}: {err_body[:300]}")
-            raise RuntimeError(f"Resend {he.code}: {err_body[:200]}")
+            hint = ""
+            if he.code == 403:
+                hint = " (dominio RESEND_FROM sin verificar o sandbox limitado)"
+            logger.warning(f"[Resend HTML] {he.code} a {to}{hint}: {err_body[:200]}")
+            # Fallback a SMTP — no romper el flujo de registro/notificacion
+            if _smtp_configured():
+                try:
+                    _send_via_smtp(to, subject, text_body, html=html)
+                    logger.info(f"[Resend HTML→SMTP fallback] OK a {to}")
+                    return True
+                except Exception as smtp_err:
+                    logger.error(f"[Resend HTML→SMTP fallback] Tambien fallo: {smtp_err}")
+            raise RuntimeError(f"Resend {he.code}: {err_body[:200]}{hint}")
         except Exception as e:
-            logger.error(f"[Resend HTML] Error a {to}: {e}")
+            logger.warning(f"[Resend HTML] Error red a {to}: {e}")
+            if _smtp_configured():
+                try:
+                    _send_via_smtp(to, subject, text_body, html=html)
+                    logger.info(f"[Resend HTML→SMTP fallback] OK a {to}")
+                    return True
+                except Exception as smtp_err:
+                    logger.error(f"[Resend HTML→SMTP fallback] Tambien fallo: {smtp_err}")
             raise
     else:
-        msg = Message(subject=subject, recipients=[to] if isinstance(to, str) else to,
-                      body=text_body, html=html)
-        mail.send(msg)
+        _send_via_smtp(to, subject, text_body, html=html)
         return True
 
 # ── ADMIN PANEL ──
@@ -3271,12 +3323,13 @@ def descargar_factura_pdf(fid):
         pdf.set_font('Helvetica', '', 10)
         periodo = (f" ({factura.periodo_desde.strftime('%d/%m/%Y')} — {factura.periodo_hasta.strftime('%d/%m/%Y')})"
                    if factura.periodo_desde and factura.periodo_hasta else "")
-        pdf.cell(110, 8, factura.concepto + periodo, border=1)
-        pdf.cell(40, 8, f"{factura.importe:.2f} {factura.moneda}", border=1, align='R')
+        pdf.cell(110, 8, (factura.concepto or '') + periodo, border=1)
+        _imp = factura.importe or 0.0
+        pdf.cell(40, 8, f"{_imp:.2f} {factura.moneda or 'EUR'}", border=1, align='R')
         pdf.ln(10)
         pdf.set_font('Helvetica', 'B', 12)
         pdf.cell(110, 9, 'TOTAL')
-        pdf.cell(40, 9, f"{factura.importe:.2f} {factura.moneda}", align='R')
+        pdf.cell(40, 9, f"{_imp:.2f} {factura.moneda or 'EUR'}", align='R')
         pdf.ln(16)
         pdf.set_font('Helvetica', '', 9)
         pdf.set_text_color(150, 150, 150)
@@ -3400,11 +3453,15 @@ def ratelimit_handler(e):
 
 @app.errorhandler(404)
 def not_found(e):
+    if request.path.startswith('/api/'):
+        return jsonify({"ok": False, "error": "Not found"}), 404
     return render_template("404.html"), 404
 
 @app.errorhandler(500)
 def server_error(e):
     logger.error(f"Error 500: {e}")
+    if request.path.startswith('/api/'):
+        return jsonify({"ok": False, "error": "Internal server error"}), 500
     return render_template("500.html"), 500
 
 if __name__ == "__main__":
