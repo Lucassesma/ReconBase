@@ -204,6 +204,44 @@ select.form-input{cursor:pointer}
     {% endif %}
   </div>
 
+  <!-- Vigilancia nocturna (Pro) -->
+  {% if plan_ef == 'pro' %}
+  <div class="card">
+    <div class="card-title">Vigilancia nocturna automática</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">
+      ReconBase escanea tu dominio automáticamente según el horario que configures. Si detecta cambios o sube el riesgo, te avisa por email.
+    </div>
+    <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;margin-bottom:1.25rem">
+      <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer" onchange="toggleVigConfig()">
+      <span style="font-size:.9rem;font-weight:600">Activar escaneo automático</span>
+    </label>
+    <div id="vig-config" style="{% if not scan_dias %}display:none{% endif %}">
+      <div style="display:flex;flex-wrap:wrap;gap:2rem;align-items:flex-start;margin-bottom:1rem">
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Hora del escaneo</div>
+          <select id="vig-hora" style="background:#080C14;border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.88rem;padding:.5rem .85rem;outline:none;cursor:pointer">
+            {% for h in range(24) %}<option value="{{ h }}" {% if h == scan_hora %}selected{% endif %}>{{ '%02d:00'|format(h) }}</option>{% endfor %}
+          </select>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.35rem">Hora de Madrid</div>
+        </div>
+        <div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem">Días de la semana</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            {% for nombre, num in [('L',0),('M',1),('X',2),('J',3),('V',4),('S',5),('D',6)] %}
+            <label style="display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer">
+              <input type="checkbox" id="dia-{{ num }}" value="{{ num }}" {% if num|string in scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer">
+              <span style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--muted)">{{ nombre }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <button onclick="guardarHorario()" class="btn btn-green" style="padding:.6rem 1.4rem;font-size:.85rem">Guardar horario</button>
+    <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
+  </div>
+  {% endif %}
+
   <!-- Trial Pro 14 días -->
   {% if not user.trial_used and user.plan == 'free' %}
   <div class="card" style="border-color:#166534;background:linear-gradient(135deg,#0A1F12,#0A1410)">
@@ -780,6 +818,40 @@ function reenviarVerificacion() {
     alert('Error de conexión: ' + e);
     if (btn) { btn.disabled=false; btn.textContent='Reenviar email'; }
   });
+}
+
+// ── Vigilancia nocturna (horario) ──
+function toggleVigConfig() {
+  var activo = document.getElementById('vig-activo').checked;
+  document.getElementById('vig-config').style.display = activo ? 'block' : 'none';
+}
+async function guardarHorario() {
+  var activo = document.getElementById('vig-activo').checked;
+  var hora = parseInt(document.getElementById('vig-hora').value, 10);
+  var dias = '';
+  if (activo) {
+    for (var i=0; i<7; i++) {
+      var cb = document.getElementById('dia-'+i);
+      if (cb && cb.checked) dias += i;
+    }
+    if (dias.length === 0) { mostrarMsgVig('Selecciona al menos un día', false); return; }
+  }
+  var r = await fetch('/api/horario', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hora:hora, dias:dias})});
+  var d = await r.json();
+  if (d.ok) {
+    mostrarMsgVig('Horario guardado correctamente', true);
+    setTimeout(function(){ window.location.reload(); }, 900);
+  } else {
+    mostrarMsgVig(d.error || 'Error al guardar', false);
+  }
+}
+function mostrarMsgVig(txt, ok) {
+  var el = document.getElementById('vig-msg');
+  if (!el) return;
+  el.textContent = txt;
+  el.style.color = ok ? '#22C55E' : '#EF4444';
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display='none'; }, 3000);
 }
 </script>
 </body>
