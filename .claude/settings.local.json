@@ -29,7 +29,18 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(dir \"C:\\\\Users\\\\lucas\\\\Desktop\\\\ReconBase\\\\static\")",
       "Bash(wc -l C:/Users/lucas/Desktop/ReconBase/templates/*.html)",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(awk 'NR==324{print NR\": \"$0} /panel-vigilancia/{print NR\": \"$0}' C:/Users/lucas/Desktop/ReconBase/templates/app.html)",
+      "Bash(python -c 'import jinja2; env=jinja2.Environment\\(loader=jinja2.FileSystemLoader\\('\\\\''templates'\\\\''\\)\\); *)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('models.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('reconbase_engine.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -m py_compile server.py models.py)",
+      "Bash(findstr /I \"\\\\.env\")",
+      "Bash(git check-ignore *)",
+      "Bash(findstr /I env)"
     ]
   }
 }

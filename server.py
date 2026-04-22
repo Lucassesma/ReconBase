@@ -39,7 +39,13 @@ except ImportError:
 
 load_dotenv()
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "cambiame_por_algo_seguro")
+_SECRET_KEY = os.getenv("SECRET_KEY")
+if not _SECRET_KEY:
+    # En desarrollo local permitimos un fallback, pero en producción (Railway) lo exigimos
+    if os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("RAILWAY_ENVIRONMENT"):
+        raise RuntimeError("SECRET_KEY no configurada en producción")
+    _SECRET_KEY = "dev_only_secret_change_in_prod"
+app.secret_key = _SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -921,22 +927,29 @@ def lead_unlock():
     return jsonify(resultado)
 
 @app.route("/api/checkout", methods=["POST"])
+@login_required
+@limiter.limit("10 per hour")
 def crear_checkout():
-    data = request.get_json()
+    data = request.get_json() or {}
     plan = data.get("plan", "")
-    if plan != "pro" or not STRIPE_PRICE_PRO:
-        return jsonify({"error": f"Plan no valido o precio no configurado. PRICE_PRO={STRIPE_PRICE_PRO}"}), 400
+    if plan != "pro":
+        return jsonify({"error": "Plan no válido"}), 400
+    if not STRIPE_PRICE_PRO:
+        app.logger.error("STRIPE_PRICE_PRO no configurado")
+        return jsonify({"error": "Pago temporalmente no disponible"}), 503
     try:
         checkout_session = stripe.checkout.Session.create(
             mode="subscription",
-            customer_email=current_user.email if current_user.is_authenticated else None,
+            customer_email=current_user.email,
+            client_reference_id=str(current_user.id),
             line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
             success_url=request.host_url + "pago-exito",
             cancel_url=request.host_url + "#precios",
         )
         return jsonify({"url": checkout_session.url})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.exception("Error creando checkout Stripe")
+        return jsonify({"error": "No se pudo iniciar el pago"}), 500
 
 @app.route("/api/checkout-informe", methods=["POST"])
 @login_required
