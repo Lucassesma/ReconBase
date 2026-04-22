@@ -106,7 +106,7 @@ def send_email(to, subject, body):
             headers={
                 "Authorization": f"Bearer {RESEND_API_KEY}",
                 "Content-Type": "application/json",
-                "User-Agent": "ReconBase/1.0 (+https://reconbase-production.up.railway.app)",
+                "User-Agent": f"ReconBase/1.0 (+{BASE_URL})",
                 "Accept": "application/json",
             },
             method="POST",
@@ -232,10 +232,20 @@ API_KEY        = os.getenv("RECONBASE_API_KEY", "")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_PRO = os.getenv("STRIPE_PRICE_PRO", "")
 
+# URL pública del sitio. Configurar BASE_URL en el entorno de producción
+# (ej: Railway) con el dominio definitivo. En desarrollo local cae a localhost.
+BASE_URL = os.getenv("BASE_URL", "http://localhost:5000").rstrip("/")
+# Host "bonito" para mostrar en emails / PDFs / footers (sin esquema)
+BASE_HOST = BASE_URL.split("://", 1)[-1]
+
+@app.context_processor
+def inject_base_url():
+    return {"base_url": BASE_URL, "base_host": BASE_HOST}
+
 # ── RUTAS PÚBLICAS ──
 @app.route("/sitemap.xml")
 def sitemap():
-    base = "https://reconbase-production.up.railway.app"
+    base = BASE_URL
     urls = [
         {"loc": base + "/",        "priority": "1.0",  "changefreq": "weekly"},
         {"loc": base + "/login",   "priority": "0.6",  "changefreq": "monthly"},
@@ -264,7 +274,7 @@ def sitemap():
 @app.route("/robots.txt")
 def robots():
     from flask import Response
-    txt = "User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nSitemap: https://reconbase-production.up.railway.app/sitemap.xml"
+    txt = f"User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nSitemap: {BASE_URL}/sitemap.xml"
     return Response(txt, mimetype="text/plain")
 
 
@@ -438,7 +448,7 @@ def og_image(page):
             y_feat += 40
 
     # CTA
-    cta = "reconbase-production.up.railway.app"
+    cta = BASE_HOST
     cta_bbox = draw.textbbox((0, 0), cta, font=font_small)
     cta_w = cta_bbox[2] - cta_bbox[0]
     draw.text(((W - cta_w) // 2, 550), cta, fill="#475569", font=font_small)
@@ -545,7 +555,7 @@ def share_scan():
         import secrets as _sec
         scan_obj.share_token = _sec.token_urlsafe(16)
         db.session.commit()
-    base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+    base_url = BASE_URL
     return jsonify({"ok": True, "url": f"{base_url}/report/{scan_obj.share_token}"})
 
 @app.route("/report/<token>")
@@ -594,7 +604,7 @@ def api_login():
     return jsonify({"ok": True})
 
 def enviar_email_verificacion(user):
-    base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+    base_url = BASE_URL
     link = f"{base_url}/verify-email/{user.verify_token}"
     def _send():
         try:
@@ -657,7 +667,7 @@ def stripe_portal():
             customer_id = customers.data[0].id
         else:
             return jsonify({"ok": False, "error": "No se encontró un cliente con tu email en Stripe. ¿Has realizado algún pago?"}), 404
-        base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+        base_url = BASE_URL
         try:
             portal_session = stripe.billing_portal.Session.create(
                 customer=customer_id,
@@ -737,7 +747,7 @@ def reenviar_verificacion():
     current_user.generate_verify_token()
     db.session.commit()
     try:
-        base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+        base_url = BASE_URL
         link = f"{base_url}/verify-email/{current_user.verify_token}"
         send_html_email(
             current_user.email,
@@ -1277,7 +1287,7 @@ def enviar_email_onboarding(destinatario):
                 "  - Si tu dominio puede ser suplantado para ataques de phishing\n\n"
                 "Muchas empresas descubren problemas graves en su primer escaneo.\n\n"
                 "Entra ahora y analiza gratis:\n"
-                "https://reconbase-production.up.railway.app/app\n\n"
+                f"{BASE_URL}/app\n\n"
                 "--\nReconBase - Seguridad perimetral para PYMEs\n"
             )
             with app.app_context():
@@ -1325,9 +1335,9 @@ def enviar_email_post_escaneo(destinatario, empresa, objetivo, riesgo, label, de
                 f"{'='*50}\n\n"
                 f"PUNTOS A REVISAR:\n{problemas}\n"
                 f"Cada uno de estos problemas tiene una solución concreta. Entra al dashboard para ver el informe completo con los pasos exactos:\n\n"
-                f"https://reconbase-production.up.railway.app/\n\n"
+                f"{BASE_URL}/\n\n"
                 f"Si quieres que ReconBase vigile tu dominio automáticamente cada noche y te avise si algo cambia, activa el plan Pro:\n"
-                f"https://reconbase-production.up.railway.app/#precios\n\n"
+                f"{BASE_URL}/#precios\n\n"
                 f"--\nReconBase - Seguridad perimetral para PYMEs\n"
             )
             with app.app_context():
@@ -1349,7 +1359,7 @@ def enviar_email_bienvenida(user):
     # 2. Le decimos a la función que espere esos dos textos
     def _send(email, empresa):
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             with app.app_context():
                 send_html_email(
                     email, # Cambiado
@@ -1378,7 +1388,7 @@ def enviar_email_pro_activado(user):
     # 2. La función ahora recibe esos textos
     def _send(email, empresa):
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             with app.app_context():
                 send_html_email(
                     email, # Usamos la variable 'email'
@@ -1407,7 +1417,7 @@ def enviar_email_pro_activado(user):
 def enviar_email_trial_expirando(user, dias_restantes):
     def _send():
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             dias_txt = f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}"
             with app.app_context():
                 send_html_email(
@@ -1429,7 +1439,7 @@ def enviar_email_trial_expirando(user, dias_restantes):
 def enviar_email_reset(user):
     def _send():
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             link = f"{base_url}/reset-password/{user.reset_token}"
             with app.app_context():
                 send_html_email(
@@ -1449,7 +1459,7 @@ def enviar_email_reset(user):
 def enviar_email_limite_free(destinatario):
     def _send():
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             with app.app_context():
                 send_html_email(
                     destinatario,
@@ -1472,7 +1482,7 @@ def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, 
     """Email tras desbloquear informe con email (lead magnet). Si es_followup=True, es el recordatorio 48h."""
     def _send():
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             nivel = "CRÍTICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
             color = "#EF4444" if riesgo >= 70 else "#F59E0B" if riesgo >= 40 else "#22C55E"
 
@@ -1573,7 +1583,7 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
                 f"{cambio_html}"
                 f"{'<p><strong>Puntos a revisar:</strong></p><ul>' + desglose_html + '</ul>' if desglose_html else ''}"
             )
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             with app.app_context():
                 send_html_email(
                     destinatario,
@@ -1831,7 +1841,7 @@ def enviar_informe_automatico(destinatario, dominio, riesgo, label, desglose, pu
                 f"{'PUNTOS A REVISAR:' if desglose_txt else 'Todo en orden, no se detectaron problemas criticos.'}\n"
                 f"{desglose_txt}{puertos_txt}\n"
                 f"Ver informe completo:\n"
-                f"https://reconbase-production.up.railway.app/app\n\n"
+                f"{BASE_URL}/app\n\n"
                 f"--\nReconBase - Vigilancia automatica Pro\n"
             )
             with app.app_context():
@@ -1921,7 +1931,7 @@ def enviar_alerta_ssl(destinatario, dominio, dias_restantes):
                 f"  2. Busca la opción 'Renovar certificado SSL'\n"
                 f"  3. Si usas Let's Encrypt, ejecuta: certbot renew\n\n"
                 f"Ver detalles en tu dashboard:\n"
-                f"https://reconbase-production.up.railway.app/\n\n"
+                f"{BASE_URL}/\n\n"
                 f"--\nReconBase - Vigilancia automática Pro\n"
             )
             with app.app_context():
@@ -1960,7 +1970,7 @@ def enviar_resumen_mensual(destinatario, empresa, scans_mes, riesgo_promedio, do
                 f"DOMINIOS ANALIZADOS: {', '.join(dominios[:5]) if dominios else 'Ninguno'}\n"
                 f"{'='*50}\n\n"
                 f"Entra al dashboard para ver el historial completo:\n"
-                f"https://reconbase-production.up.railway.app/\n\n"
+                f"{BASE_URL}/\n\n"
                 f"--\nReconBase - Resumen mensual de seguridad\n"
             )
             with app.app_context():
@@ -2011,7 +2021,7 @@ def cron_trial_expiring():
 def enviar_email_reengagement(user):
     def _send():
         try:
-            base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+            base_url = BASE_URL
             cuerpo = (
                 f"Hola {user.empresa},\n\n"
                 f"Hace tiempo que no escaneas tu dominio en ReconBase.\n\n"
@@ -2447,7 +2457,7 @@ def html_email_wrapper(titulo, cuerpo_html, cta_url=None, cta_text=None):
       <tr><td style="padding:32px 40px 24px;border-top:1px solid #152B1E;margin-top:24px">
         <p style="color:#475569;font-size:12px;margin:0">
           ReconBase — Seguridad perimetral para PYMEs<br>
-          <a href="https://reconbase-production.up.railway.app" style="color:#22C55E;text-decoration:none">reconbase-production.up.railway.app</a>
+          <a href="{BASE_URL}" style="color:#22C55E;text-decoration:none">{BASE_HOST}</a>
         </p>
       </td></tr>
     </table>
@@ -2478,7 +2488,7 @@ def send_html_email(to, subject, titulo, cuerpo_html, cta_url=None, cta_text=Non
             headers={
                 "Authorization": f"Bearer {RESEND_API_KEY}",
                 "Content-Type": "application/json",
-                "User-Agent": "ReconBase/1.0 (+https://reconbase-production.up.railway.app)",
+                "User-Agent": f"ReconBase/1.0 (+{BASE_URL})",
                 "Accept": "application/json",
             },
             method="POST",
@@ -2665,7 +2675,7 @@ def notificar_integraciones(user, resultado):
     riesgo  = resultado.get("riesgo", 0)
     label   = resultado.get("label", "")
     puertos = resultado.get("puertos", [])
-    base_url = os.getenv("BASE_URL", "https://reconbase-production.up.railway.app")
+    base_url = BASE_URL
 
     # Slack
     if user.slack_webhook:
@@ -3218,7 +3228,7 @@ def cron_pdf_reports():
                 send_html_email(user.email,
                     f"Informe de seguridad — {periodo}",
                     "Tu informe de seguridad ReconBase", cuerpo,
-                    "https://reconbase-production.up.railway.app/",
+                    BASE_URL + "/",
                     "Ver plataforma")
             except Exception as e:
                 logger.error(f"[Cron PDF] {user.email}: {e}")
@@ -3531,7 +3541,7 @@ Tienes acceso completo a todas las funciones:</p>
 <li>API pública</li><li>Alertas avanzadas</li>
 </ul>
 <p>Tu trial expira el <strong>{user.trial_end.strftime('%d/%m/%Y')}</strong>.</p>""",
-            "https://reconbase-production.up.railway.app/",
+            BASE_URL + "/",
             "Ir a ReconBase")
     except Exception:
         pass
@@ -3577,7 +3587,7 @@ def descargar_factura_pdf(fid):
         pdf.cell(0, 14, 'RECONBASE', ln=True, align='L')
         pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(100, 116, 139)
-        pdf.cell(0, 6, 'reconbase-production.up.railway.app', ln=True)
+        pdf.cell(0, 6, BASE_HOST, ln=True)
         pdf.cell(0, 6, 'hola@reconbase.io', ln=True)
         pdf.ln(8)
         pdf.set_font('Helvetica', 'B', 28)

@@ -6,12 +6,12 @@
 <title>Blog de Ciberseguridad — ReconBase</title>
 <meta name="description" content="Artículos, guías y novedades sobre ciberseguridad para PYMEs. Aprende a proteger tu empresa con ReconBase.">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://reconbase-production.up.railway.app/blog">
+<link rel="canonical" href="{{ base_url }}/blog">
 <meta property="og:title" content="Blog — ReconBase">
 <meta property="og:description" content="Artículos y guías de ciberseguridad para PYMEs.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://reconbase-production.up.railway.app/blog">
-<meta property="og:image" content="https://reconbase-production.up.railway.app/og/home.png">
+<meta property="og:url" content="{{ base_url }}/blog">
+<meta property="og:image" content="{{ base_url }}/og/home.png">
 <meta property="og:locale" content="es_ES">
 {% if config.PLAUSIBLE_DOMAIN %}<script defer data-domain="{{ config.PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>{% endif %}
 {% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://reconbase-production.up.railway.app">🌐 Demo en vivo</a> ·
+  <a href="#-instalación-local">🌐 Demo en vivo</a> ·
   <a href="#-módulos-de-análisis">📡 Módulos</a> ·
   <a href="#-stack-técnico">🛠 Stack</a> ·
   <a href="#-instalación-local">⚙️ Instalación</a>

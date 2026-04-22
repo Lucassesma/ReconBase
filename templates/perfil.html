@@ -388,7 +388,7 @@ select.form-input{cursor:pointer}
     </div>
     <details style="margin-top:.5rem">
       <summary style="cursor:pointer;color:var(--green);font-size:.8rem;font-weight:600">Ver ejemplo de uso</summary>
-      <pre style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.8rem;margin-top:.5rem;font-size:.75rem;overflow-x:auto;color:var(--muted)">curl -X POST https://reconbase-production.up.railway.app/api/v1/scan \
+      <pre style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.8rem;margin-top:.5rem;font-size:.75rem;overflow-x:auto;color:var(--muted)">curl -X POST {{ base_url }}/api/v1/scan \
   -H "X-API-Key: tu_api_key" \
   -H "Content-Type: application/json" \
   -d '{"dominio": "ejemplo.com"}'</pre>
