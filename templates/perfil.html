@@ -61,6 +61,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 select.form-input{cursor:pointer}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
 </head>
 <body>
 <nav>
@@ -697,7 +698,7 @@ async function eliminarCuenta() {
     });
     var d = await r.json();
     if (d.ok) {
-      alert('Tu cuenta ha sido eliminada. Gracias por haber usado ReconBase.');
+      toast('Tu cuenta ha sido eliminada. Gracias por haber usado ReconBase.', 'ok');
       window.location.href = '/';
     } else {
       err.textContent = d.error || 'No se pudo eliminar la cuenta';
@@ -815,7 +816,7 @@ function reenviarVerificacion() {
     if (btn) { btn.disabled=false; btn.textContent='Reenviar email'; }
   })
   .catch(function(e){
-    alert('Error de conexión: ' + e);
+    toast('Error de conexión: ' + e, 'err');
     if (btn) { btn.disabled=false; btn.textContent='Reenviar email'; }
   });
 }

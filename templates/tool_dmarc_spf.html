@@ -149,6 +149,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
   .results{padding:0 5%}
 }
 </style>
+<script src="/static/js/toast.js"></script>
 </head>
 <body>
 
@@ -283,14 +284,14 @@ function runCheck(){
   .then(function(d){
     btn.disabled = false;
     btn.textContent = 'Comprobar otro →';
-    if(d.error){ alert(d.error); return; }
+    if(d.error){ toast(d.error, 'err'); return; }
     renderResults(d);
     try { if(typeof plausible==='function') plausible('dmarc_check'); } catch(e){}
   })
   .catch(function(){
     btn.disabled = false;
     btn.textContent = 'Comprobar gratis →';
-    alert('Error de conexión. Inténtalo de nuevo.');
+    toast('Error de conexión. Inténtalo de nuevo.', 'err');
   });
 }
 

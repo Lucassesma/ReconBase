@@ -117,6 +117,7 @@ footer a{color:var(--muted);margin:0 .75rem}
 }
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
 </head>
 <body>
 
@@ -267,9 +268,9 @@ async function suscribirse(){
     });
     var d = await r.json();
     if (d.url) window.location.href = d.url;
-    else alert(d.error || 'Error al iniciar el pago');
+    else toast(d.error || 'Error al iniciar el pago', 'err');
   } catch(e) {
-    alert('Error de conexión. Inténtalo de nuevo.');
+    toast('Error de conexión. Inténtalo de nuevo.', 'err');
   }
 }
 </script>

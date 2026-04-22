@@ -37,6 +37,7 @@ tr:hover{background:rgba(34,197,94,.04)}
 .mono{font-family:'JetBrains Mono',monospace;font-size:.78rem}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
 </head>
 <body>
 <nav>
@@ -131,7 +132,7 @@ async function cambiarPlan(uid, plan) {
   });
   var d = await r.json();
   if (d.ok) location.reload();
-  else alert(d.error || 'Error');
+  else toast(d.error || 'Error', 'err');
 }
 
 async function borrarUser(uid, email) {
@@ -142,7 +143,7 @@ async function borrarUser(uid, email) {
   });
   var d = await r.json();
   if (d.ok) { document.getElementById('row-' + uid).remove(); }
-  else alert(d.error || 'Error');
+  else toast(d.error || 'Error', 'err');
 }
 </script>
 </body>

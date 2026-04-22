@@ -18,11 +18,6 @@ function scSwitch(tab, el) {
   if (tab === 'tendencia')   scRenderTendencia();
   if (tab === 'dashboard' && scCurrentData) scRenderDashboard(scCurrentData);
   if (tab === 'exportar'  && scCurrentData) scRenderExport(scCurrentData);
-  if (tab === 'ssl')         scLoadSSL();
-  if (tab === 'uptime')      scLoadUptime();
-  if (tab === 'dns')         scLoadDNS();
-  if (tab === 'tecnologias') scLoadTecnologias();
-  if (tab === 'iprep')       scLoadIPRep();
 }
 
 function scLanzar() {
