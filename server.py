@@ -1018,7 +1018,7 @@ def verificar_informe():
                 db.session.commit()
                 return jsonify({"ok": True})
     except Exception as e:
-        print(f"[!] Error verificando informe: {e}")
+        app.logger.exception(f"Error verificando informe: {e}")
     return jsonify({"ok": False})
 
 @app.route("/api/webhook", methods=["POST"])

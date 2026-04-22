@@ -111,6 +111,7 @@ a{text-decoration:none;color:inherit}
 .btn-clear:hover{border-color:var(--red);color:var(--red)}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -353,7 +354,7 @@ function switchTab(name, el) {
 // ── SCAN ──
 function lanzarScan() {
   var objetivo = document.getElementById('objetivo').value.trim();
-  if(!objetivo) { alert('Introduce un dominio o email'); return; }
+  if(!objetivo) { toast('Introduce un dominio o email', 'err'); return; }
 
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('results').classList.remove('show');
@@ -390,9 +391,9 @@ function lanzarScan() {
     clearInterval(stepInterval);
     if(data.error) {
       if(data.error === 'limite_free') {
-        alert('Has alcanzado el límite de 10 escaneos este mes.\nPásate a Pro para escaneos ilimitados y vigilancia nocturna automática.');
+        toast('Has alcanzado el límite de 10 escaneos este mes.\nPásate a Pro para escaneos ilimitados y vigilancia nocturna automática.', 'err');
       } else {
-        alert('Error: ' + data.error);
+        toast('Error: ' + data.error, 'err');
       }
       resetLoading();
       return;
@@ -415,7 +416,7 @@ function lanzarScan() {
   })
   .catch(function(e) {
     clearInterval(stepInterval);
-    alert('Error de conexion con el servidor. Asegurate de que Flask esta corriendo.');
+    toast('Error de conexion con el servidor. Asegurate de que Flask esta corriendo.', 'err');
     resetLoading();
   });
 }
@@ -653,9 +654,9 @@ function comprarInforme(scanId) {
   .then(function(r){ return r.json(); })
   .then(function(j){
     if(j.url) { window.location.href = j.url; }
-    else { alert('Error al iniciar el pago.'); btn.textContent = 'Obtener informe completo — 9\u20AC'; btn.disabled = false; }
+    else { toast('Error al iniciar el pago.', 'err'); btn.textContent = 'Obtener informe completo — 9\u20AC'; btn.disabled = false; }
   })
-  .catch(function(){ alert('Error de red.'); btn.textContent = 'Obtener informe completo — 9\u20AC'; btn.disabled = false; });
+  .catch(function(){ toast('Error de red.', 'err'); btn.textContent = 'Obtener informe completo — 9\u20AC'; btn.disabled = false; });
 }
 
 function descargarPDF() {
@@ -680,7 +681,7 @@ function descargarPDF() {
     a.click();
     URL.revokeObjectURL(url);
   })
-  .catch(function() { alert('Error generando PDF.'); })
+  .catch(function() { toast('Error generando PDF.', 'err'); })
   .finally(function() { btn.textContent = 'Descargar PDF'; btn.disabled = false; });
 }
 
@@ -826,37 +827,9 @@ function stat(label, val, color) {
     '</div>';
 }
 
-function toggleVigConfig() {
-  var activo = document.getElementById('vig-activo').checked;
-  document.getElementById('vig-config').style.display = activo ? 'block' : 'none';
-  document.getElementById('vig-save-off').style.display = activo ? 'none' : 'block';
-}
-
-async function guardarHorario() {
-  var activo = document.getElementById('vig-activo').checked;
-  var hora = activo ? parseInt(document.getElementById('vig-hora').value) : 3;
-  var dias = [];
-  if(activo) {
-    for(var i=0; i<7; i++) {
-      var cb = document.getElementById('dia-'+i);
-      if(cb && cb.checked) dias.push(i);
-    }
-    if(dias.length === 0) { mostrarMsgVig('Selecciona al menos un dia', false); return; }
-  }
-  var r = await fetch('/api/horario', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hora, dias})});
-  var d = await r.json();
-  if(d.ok) {
-    mostrarMsgVig('Guardado. Actualizando...', true);
-    setTimeout(function(){ window.location.href = '/perfil'; }, 800);
-  } else mostrarMsgVig(d.error || 'Error al guardar', false);
-}
-function mostrarMsgVig(txt, ok) {
-  var el = document.getElementById('vig-msg');
-  el.textContent = txt;
-  el.style.color = ok ? '#10B981' : '#EF4444';
-  el.style.display = 'block';
-  setTimeout(function(){ el.style.display='none'; }, 3000);
-}
+// Nota: las funciones toggleVigConfig / guardarHorario / mostrarMsgVig
+// vivían aquí cuando la pestaña "Vigilancia" estaba en el dashboard.
+// Se movieron a /perfil; eliminadas de aquí para no dejar código muerto.
 
 function cerrarSesion() {
   fetch('/api/logout', {method:'POST'})

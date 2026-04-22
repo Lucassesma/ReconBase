@@ -478,6 +478,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 @media(max-width:600px){.sc-metrics{grid-template-columns:repeat(2,1fr)}.scanner-bar{flex-direction:column}.btn-scan{width:100%}}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <body>
@@ -1310,7 +1311,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
           <div style="font-size:.72rem;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:.75rem">ULTIMOS ANALISIS</div>
           <div style="font-size:.8rem;color:#475569;font-family:'JetBrains Mono',monospace;line-height:2">
             <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">google.com</span><span style="color:var(--green)">BAJO 12%</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">example.com</span><span style="color:var(--amber)">MODERADO 45%</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#93C5FD">miempresa.es</span><span style="color:var(--amber)">MODERADO 45%</span></div>
           </div>
         </div>
       </div>
@@ -1625,8 +1626,8 @@ async function pagarPlan(plan){
     const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
     const data=await res.json();
     if(data.url){window.open(data.url,'_blank');}
-    else{alert(data.error||'Error al iniciar el pago');}
-  }catch(e){alert('Error de conexión. Inténtalo de nuevo.');}
+    else{toast(data.error||'Error al iniciar el pago', 'err');}
+  }catch(e){toast('Error de conexión. Inténtalo de nuevo.', 'err');}
 }
 function heroScan(){
   var v=(document.getElementById('hero-domain').value||'').trim();
@@ -1647,13 +1648,13 @@ function heroScan(){
   .then(function(r){return r.json();})
   .then(function(d){
     btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
-    if(d.error){document.getElementById('landing-results').style.display='none';alert(d.error);return;}
+    if(d.error){document.getElementById('landing-results').style.display='none';toast(d.error, 'err');return;}
     renderDemoResult(d);
   })
   .catch(function(){
     btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
     document.getElementById('landing-results').style.display='none';
-    alert('Error de conexión. Inténtalo de nuevo.');
+    toast('Error de conexión. Inténtalo de nuevo.', 'err');
   });
 }
 
@@ -1961,193 +1962,6 @@ function rbMarcarTodasLeidas() {
   } catch(e) {}
 })();
 
-// ═══════════════════════════════════════════════════════
-// SSL PANEL
-// ═══════════════════════════════════════════════════════
-function scLoadSSL() {
-  fetch('/api/ssl').then(function(r){return r.json();}).then(function(d){
-    var el = document.getElementById('sc-ssl-content');
-    if (!el) return;
-    if (!d.ssl || d.ssl.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Añade dominios en tu perfil para ver el estado SSL aquí.</div>'; return;
-    }
-    el.innerHTML = d.ssl.map(function(c){
-      var color = c.valido === false ? '#DC2626' : c.dias_restantes <= 7 ? '#DC2626' : c.dias_restantes <= 30 ? '#D97706' : '#22C55E';
-      var icono = c.valido === false ? '⚠️' : c.dias_restantes <= 7 ? '🔴' : c.dias_restantes <= 30 ? '🟠' : '🟢';
-      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">'+
-        '<div style="display:flex;align-items:center;gap:.75rem">'+
-          '<span style="font-size:1.3rem">'+icono+'</span>'+
-          '<div><div style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+c.dominio+'</div>'+
-          '<div style="font-size:.75rem;color:var(--muted);margin-top:.15rem">'+
-            (c.valido === false ? 'Certificado inválido: '+c.error : 'Emitido por: '+(c.emitido_por||'—'))+
-          '</div></div>'+
-        '</div>'+
-        '<div style="text-align:right">'+
-          '<div style="font-weight:800;font-size:1.1rem;color:'+color+'">'+
-            (c.valido === false ? 'INVÁLIDO' : c.dias_restantes+'d restantes')+
-          '</div>'+
-          '<div style="font-size:.72rem;color:var(--muted)">Expira: '+(c.expira||'—')+'</div>'+
-        '</div></div>';
-    }).join('');
-  }).catch(function(){ document.getElementById('sc-ssl-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar datos SSL</div>'; });
-}
-function rbRefreshSSL() {
-  document.getElementById('sc-ssl-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Actualizando...</div>';
-  fetch('/api/ssl/refresh', {method:'POST'}).then(function(){
-    setTimeout(scLoadSSL, 2000);
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// UPTIME PANEL
-// ═══════════════════════════════════════════════════════
-function scLoadUptime() {
-  fetch('/api/uptime').then(function(r){return r.json();}).then(function(d){
-    var el = document.getElementById('sc-uptime-content');
-    if (!el) return;
-    if (!d.uptime || d.uptime.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Añade dominios en tu perfil para ver el uptime aquí. El sistema los comprueba cada 15 minutos.</div>'; return;
-    }
-    el.innerHTML = d.uptime.map(function(c){
-      var color = c.up ? '#22C55E' : '#DC2626';
-      var dots = (c.history||[]).slice(-24).map(function(h){
-        return '<span title="'+h.ts+(h.ms?' · '+h.ms+'ms':'')+'" style="display:inline-block;width:10px;height:28px;border-radius:3px;background:'+(h.up?'#22C55E':'#DC2626')+';margin:0 1px"></span>';
-      }).join('');
-      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:.75rem">'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem">'+
-          '<div style="display:flex;align-items:center;gap:.6rem">'+
-            '<span style="width:10px;height:10px;border-radius:50%;background:'+color+';display:inline-block"></span>'+
-            '<span style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+c.dominio+'</span>'+
-          '</div>'+
-          '<div style="text-align:right">'+
-            '<span style="font-size:.78rem;font-weight:700;color:'+color+'">'+(c.up ? 'Online' : 'Offline')+'</span>'+
-            (c.response_ms ? ' <span style="font-size:.72rem;color:var(--muted)">· '+c.response_ms+'ms</span>' : '')+
-            (c.status_code ? ' <span style="font-size:.72rem;color:var(--muted)">HTTP '+c.status_code+'</span>' : '')+
-          '</div>'+
-        '</div>'+
-        (dots ? '<div style="display:flex;align-items:flex-end;height:30px;overflow:hidden">'+dots+'</div><div style="font-size:.65rem;color:var(--muted);margin-top:.3rem">Últimas 24h</div>' : '')+
-      '</div>';
-    }).join('');
-  }).catch(function(){ document.getElementById('sc-uptime-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar datos de uptime</div>'; });
-}
-
-// ═══════════════════════════════════════════════════════
-// DNS PANEL
-// ═══════════════════════════════════════════════════════
-function scLoadDNS() {
-  fetch('/api/dns-cambios').then(function(r){return r.json();}).then(function(d){
-    var el = document.getElementById('sc-dns-content');
-    if (!el) return;
-    if (!d.dns || d.dns.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Sin registros DNS todavía. Pulsa «Escanear DNS» para tomar el primer snapshot.</div>'; return;
-    }
-    var html = d.dns.map(function(dom){
-      var rows = dom.registros.map(function(r){
-        var badge = r.activo
-          ? '<span style="font-size:.65rem;background:rgba(34,197,94,.1);color:#4ADE80;border:1px solid #14532D;border-radius:20px;padding:.1rem .45rem;font-family:JetBrains Mono,monospace">Activo</span>'
-          : '<span style="font-size:.65rem;background:rgba(239,68,68,.1);color:#F87171;border:1px solid #7F1D1D;border-radius:20px;padding:.1rem .45rem;font-family:JetBrains Mono,monospace">Eliminado</span>';
-        return '<tr><td style="padding:.4rem .6rem;color:var(--muted);font-family:JetBrains Mono,monospace;font-size:.75rem;white-space:nowrap">'+r.tipo+'</td><td style="padding:.4rem .6rem;color:var(--text);font-size:.78rem;word-break:break-all">'+r.valor+'</td><td style="padding:.4rem .6rem">'+badge+'</td><td style="padding:.4rem .6rem;font-size:.72rem;color:var(--muted)">'+r.desde+'</td></tr>';
-      }).join('');
-      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem">'+
-        '<div style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem;margin-bottom:.75rem">'+dom.dominio+'</div>'+
-        '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>'+
-        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Tipo</th>'+
-        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Valor</th>'+
-        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Estado</th>'+
-        '<th style="text-align:left;padding:.35rem .6rem;color:var(--muted);font-size:.7rem;font-weight:600;border-bottom:1px solid var(--border)">Desde</th>'+
-        '</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-    }).join('');
-    el.innerHTML = html;
-  }).catch(function(){ document.getElementById('sc-dns-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar registros DNS</div>'; });
-}
-function rbRefreshDNS() {
-  document.getElementById('sc-dns-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Escaneando DNS...</div>';
-  fetch('/api/dns-cambios/refresh', {method:'POST'}).then(function(){
-    setTimeout(scLoadDNS, 3000);
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// TECNOLOGÍAS PANEL
-// ═══════════════════════════════════════════════════════
-var _catColor = {
-  'Servidor web':'#2563EB','Lenguaje backend':'#7C3AED','Framework':'#059669','CMS':'#D97706',
-  'E-commerce':'#DB2777','Framework JS':'#EA580C','CSS Framework':'#0891B2','Librería JS':'#65A30D',
-  'Analytics':'#64748B','CDN / Proxy':'#475569','Seguridad':'#22C55E'
-};
-function scLoadTecnologias() {
-  fetch('/api/tecnologias').then(function(r){return r.json();}).then(function(d){
-    var el = document.getElementById('sc-tech-content');
-    if (!el) return;
-    if (!d.tecnologias || d.tecnologias.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Pulsa «Detectar» para analizar las tecnologías de tus dominios.</div>'; return;
-    }
-    el.innerHTML = d.tecnologias.map(function(dom){
-      var techs = (dom.tecnologias||[]);
-      if (techs.length === 0) return '';
-      var chips = techs.map(function(t){
-        var c = _catColor[t.categoria] || '#64748B';
-        return '<div style="display:inline-flex;align-items:center;gap:.4rem;background:'+c+'18;border:1px solid '+c+'44;border-radius:20px;padding:.25rem .75rem;margin:.2rem">'+
-          '<span style="font-size:.75rem;font-weight:700;color:'+c+'">'+t.nombre+'</span>'+
-          (t.version ? '<span style="font-size:.65rem;color:var(--muted)">'+t.version+'</span>' : '')+
-          '<span style="font-size:.6rem;color:'+c+';opacity:.7;background:'+c+'22;padding:.05rem .35rem;border-radius:10px">'+t.categoria+'</span>'+
-        '</div>';
-      }).join('');
-      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem">'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem">'+
-          '<span style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+dom.dominio+'</span>'+
-          '<span style="font-size:.7rem;color:var(--muted)">Detectado: '+dom.detected_at+'</span>'+
-        '</div>'+
-        '<div style="display:flex;flex-wrap:wrap;gap:.15rem">'+chips+'</div>'+
-      '</div>';
-    }).join('') || '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Sin datos. Pulsa «Detectar».</div>';
-  }).catch(function(){ document.getElementById('sc-tech-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar tecnologías</div>'; });
-}
-function rbRefreshTech() {
-  document.getElementById('sc-tech-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Analizando tecnologías...</div>';
-  fetch('/api/tecnologias/refresh', {method:'POST'}).then(function(){
-    setTimeout(scLoadTecnologias, 4000);
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// IP REPUTACIÓN PANEL
-// ═══════════════════════════════════════════════════════
-function scLoadIPRep() {
-  fetch('/api/ip-reputacion').then(function(r){return r.json();}).then(function(d){
-    var el = document.getElementById('sc-iprep-content');
-    if (!el) return;
-    if (!d.reputacion || d.reputacion.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Pulsa «Comprobar» para analizar la reputación IP de tus dominios.</div>'; return;
-    }
-    el.innerHTML = d.reputacion.map(function(c){
-      var ok = c.limpio;
-      var color = ok ? '#22C55E' : '#DC2626';
-      var icono = ok ? '✅' : '🚨';
-      var listas = c.listas_negras && c.listas_negras.length > 0
-        ? '<div style="margin-top:.5rem"><span style="font-size:.72rem;color:#F87171;font-weight:600">Listas: </span>'+c.listas_negras.map(function(l){ return '<span style="font-size:.7rem;color:var(--muted)">'+l+'</span>'; }).join(' · ')+'</div>' : '';
-      return '<div style="background:var(--surface);border:1px solid '+(ok?'var(--border)':'#7F1D1D')+';border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem">'+
-        '<div>'+
-          '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem">'+
-            '<span style="font-size:1.2rem">'+icono+'</span>'+
-            '<span style="font-weight:700;font-family:JetBrains Mono,monospace;font-size:.85rem">'+c.dominio+'</span>'+
-          '</div>'+
-          '<div style="font-size:.78rem;color:var(--muted)">IP: <span style="font-family:JetBrains Mono,monospace">'+c.ip+'</span></div>'+
-          listas+
-        '</div>'+
-        '<div style="text-align:right">'+
-          '<div style="font-weight:800;font-size:1rem;color:'+color+'">'+(ok?'Limpia':'En lista negra')+'</div>'+
-          '<div style="font-size:.7rem;color:var(--muted)">Verificado: '+c.checked_at+'</div>'+
-        '</div></div>';
-    }).join('');
-  }).catch(function(){ document.getElementById('sc-iprep-content').innerHTML = '<div style="color:#F87171;padding:1rem;font-size:.82rem">Error al cargar reputación IP</div>'; });
-}
-function rbRefreshIPRep() {
-  document.getElementById('sc-iprep-content').innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:.85rem">Comprobando listas negras...</div>';
-  fetch('/api/ip-reputacion/refresh', {method:'POST'}).then(function(){
-    setTimeout(scLoadIPRep, 5000);
-  });
-}
 </script>
 </body>
 </html>

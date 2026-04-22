@@ -43,7 +43,8 @@
       "Bash(findstr /I env)",
       "Bash(python -c 'import ast, sys *)",
       "Bash(python -c \"import sys; print\\(sys.prefix\\)\")",
-      "Bash(venv/Scripts/python.exe -c ' *)"
+      "Bash(venv/Scripts/python.exe -c ' *)",
+      "Bash(venv/Scripts/python.exe)"
     ]
   }
 }
