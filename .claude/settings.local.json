@@ -40,7 +40,10 @@
       "Bash(python -m py_compile server.py models.py)",
       "Bash(findstr /I \"\\\\.env\")",
       "Bash(git check-ignore *)",
-      "Bash(findstr /I env)"
+      "Bash(findstr /I env)",
+      "Bash(python -c 'import ast, sys *)",
+      "Bash(python -c \"import sys; print\\(sys.prefix\\)\")",
+      "Bash(venv/Scripts/python.exe -c ' *)"
     ]
   }
 }
