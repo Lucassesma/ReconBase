@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Términos de Servicio — ReconBase</title>
-<meta name="description" content="Términos y condiciones de uso de ReconBase. Consulta las normas de uso de la plataforma de ciberseguridad para PYMEs.">
+<meta name="description" content="Términos y condiciones de uso de ReconBase. Normas de uso de la plataforma de ciberseguridad para PYMEs.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{{ base_url }}/terms">
 <meta property="og:title" content="Términos de Servicio — ReconBase">
@@ -29,6 +29,8 @@ h1{font-size:2rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.5rem}
 h2{font-size:1.1rem;font-weight:700;margin:2.5rem 0 .75rem;color:var(--blue-lt)}
 p{color:#94A3B8;font-size:.92rem;margin-bottom:1rem;line-height:1.8}
 ul{color:#94A3B8;font-size:.92rem;margin:.5rem 0 1rem 1.5rem;line-height:1.8}
+.data-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin:1rem 0;font-size:.88rem}
+.data-box p{margin:.3rem 0}
 footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.78rem;color:var(--dim)}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
@@ -46,55 +48,82 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
 
 <div class="content">
   <h1>Términos de Servicio</h1>
-  <div class="subtitle">Última actualización: Abril 2026</div>
+  <div class="subtitle">Última actualización: 22 de abril de 2026</div>
 
-  <h2>1. Aceptación de los términos</h2>
-  <p>Al registrarte y utilizar ReconBase, aceptas estos Términos de Servicio en su totalidad. Si no estás de acuerdo con alguna parte de estos términos, no debes utilizar nuestro servicio.</p>
+  <h2>1. Identificación del prestador del servicio</h2>
+  <p>En cumplimiento del artículo 10 de la Ley 34/2002 de Servicios de la Sociedad de la Información y Comercio Electrónico (LSSI-CE), se informa al usuario de los siguientes datos identificativos del titular de este sitio web:</p>
+  <div class="data-box">
+    <p><strong>Titular:</strong> Lucas Sesma Vinck</p>
+    <p><strong>NIF:</strong> 53779442Z</p>
+    <p><strong>Domicilio:</strong> Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias), España</p>
+    <p><strong>Email de contacto:</strong> <a href="mailto:hola@reconbase.es">hola@reconbase.es</a></p>
+    <p><strong>Sitio web:</strong> <a href="{{ base_url }}">{{ base_host }}</a></p>
+  </div>
 
-  <h2>2. Descripción del servicio</h2>
-  <p>ReconBase es una plataforma de monitorización de seguridad perimetral para empresas. Nuestro servicio incluye:</p>
+  <h2>2. Aceptación de los términos</h2>
+  <p>El registro en ReconBase y el uso de la plataforma implican la aceptación plena y sin reservas de los presentes Términos de Servicio. Si no estás de acuerdo con alguna parte de estos términos, debes abstenerte de utilizar el servicio.</p>
+
+  <h2>3. Objeto y descripción del servicio</h2>
+  <p>ReconBase es una plataforma SaaS (software como servicio) de monitorización de seguridad perimetral dirigida a empresas. El servicio incluye, entre otros:</p>
   <ul>
-    <li>Análisis de puertos y servicios expuestos</li>
-    <li>Verificación de registros DNS, SPF y DMARC</li>
-    <li>Auditoría de cabeceras HTTP de seguridad</li>
+    <li>Análisis de puertos y servicios expuestos públicamente</li>
+    <li>Verificación de registros DNS, SPF, DKIM y DMARC</li>
+    <li>Auditoría de cabeceras HTTP de seguridad y certificados SSL/TLS</li>
     <li>Detección de subdominios activos</li>
     <li>Búsqueda de filtraciones de datos en bases de datos públicas</li>
-    <li>Alertas automáticas por email (plan Pro)</li>
+    <li>Generación de informes y alertas automáticas por email (plan Pro)</li>
   </ul>
+  <p>El prestador se reserva el derecho a modificar, ampliar o reducir las funcionalidades del servicio sin previo aviso, salvo obligación legal en contrario.</p>
 
-  <h2>3. Uso aceptable</h2>
-  <p>El usuario se compromete a utilizar ReconBase únicamente sobre dominios y activos digitales de su propiedad o sobre los que tenga autorización expresa. Queda estrictamente prohibido:</p>
+  <h2>4. Uso aceptable y obligaciones del usuario</h2>
+  <p>El usuario se compromete a utilizar ReconBase exclusivamente sobre dominios, sistemas y activos digitales de su propiedad o sobre los que disponga de autorización expresa del titular. Queda estrictamente prohibido:</p>
   <ul>
     <li>Analizar dominios o sistemas de terceros sin su consentimiento</li>
-    <li>Utilizar el servicio para actividades ilegales o maliciosas</li>
-    <li>Intentar acceder a datos de otros usuarios</li>
-    <li>Sobrecargar o atacar la infraestructura de ReconBase</li>
+    <li>Utilizar el servicio con fines ilegales, fraudulentos o contrarios a la moral y al orden público</li>
+    <li>Intentar acceder a datos, cuentas o recursos de otros usuarios</li>
+    <li>Sobrecargar, interferir o intentar comprometer la infraestructura de ReconBase</li>
+    <li>Revender, sublicenciar o distribuir el servicio sin autorización escrita</li>
+    <li>Realizar ingeniería inversa sobre la plataforma</li>
   </ul>
+  <p>El incumplimiento de estas obligaciones podrá suponer la suspensión o cancelación inmediata de la cuenta, sin derecho a reembolso, así como el ejercicio de las acciones legales correspondientes.</p>
 
-  <h2>4. Cuentas de usuario</h2>
-  <p>Eres responsable de mantener la confidencialidad de tu contraseña y de todas las actividades realizadas bajo tu cuenta. Debes notificarnos inmediatamente si detectas un acceso no autorizado.</p>
+  <h2>5. Registro y cuentas de usuario</h2>
+  <p>Para acceder a determinadas funcionalidades es necesario crear una cuenta. El usuario es responsable de la veracidad de los datos facilitados y de mantener la confidencialidad de sus credenciales. Cualquier actividad realizada bajo la cuenta se presumirá efectuada por el titular. En caso de acceso no autorizado, el usuario deberá notificarlo de inmediato a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
 
-  <h2>5. Planes y pagos</h2>
-  <p>ReconBase ofrece un plan gratuito con funciones básicas y un plan Pro de pago mensual. Los pagos se procesan a través de Stripe con certificación PCI DSS. No almacenamos datos de tarjetas de crédito.</p>
-  <p>Las suscripciones se renuevan automáticamente cada mes. Puedes cancelar en cualquier momento desde tu panel de usuario, conservando el acceso hasta el final del periodo pagado.</p>
+  <h2>6. Planes, precios y pagos</h2>
+  <p>ReconBase ofrece un plan gratuito con funcionalidades limitadas y un plan Pro de suscripción mensual recurrente. Los precios aplicables son los publicados en <a href="{{ base_url }}/#precios">la página de precios</a> e incluyen el IVA cuando proceda.</p>
+  <p>Los pagos se procesan a través de <a href="https://stripe.com/es" target="_blank" rel="noopener">Stripe Payments Europe, Ltd.</a>, proveedor certificado PCI-DSS Nivel 1. ReconBase no almacena ni tiene acceso a los datos de tarjeta del usuario.</p>
+  <p>Las suscripciones se renuevan automáticamente al inicio de cada periodo. El usuario puede cancelar la renovación en cualquier momento desde su panel, conservando el acceso hasta la finalización del periodo ya facturado.</p>
 
-  <h2>6. Limitación de responsabilidad</h2>
-  <p>ReconBase proporciona información de carácter orientativo sobre el estado de seguridad de los dominios analizados. No garantizamos la detección de todas las vulnerabilidades existentes. El usuario es el único responsable de las decisiones tomadas en base a los resultados obtenidos.</p>
-  <p>En ningún caso ReconBase será responsable de daños directos, indirectos, incidentales o consecuentes derivados del uso o imposibilidad de uso del servicio.</p>
+  <h2>7. Derecho de desistimiento</h2>
+  <p>De conformidad con el artículo 103.m del Real Decreto Legislativo 1/2007, el derecho de desistimiento no resulta aplicable una vez el usuario haya accedido al contenido digital del servicio tras el inicio de la suscripción, al tratarse de contenido digital suministrado en soporte no material que se ejecuta con consentimiento expreso.</p>
 
-  <h2>7. Propiedad intelectual</h2>
-  <p>Todo el contenido, código, diseño y tecnología de ReconBase es propiedad exclusiva de sus creadores. Queda prohibida su reproducción, distribución o uso comercial sin autorización expresa.</p>
+  <h2>8. Propiedad intelectual e industrial</h2>
+  <p>Todos los contenidos, código fuente, interfaz, diseño gráfico, marcas, logotipos y elementos incluidos en ReconBase son titularidad exclusiva del prestador o de sus licenciantes, y están protegidos por la normativa española e internacional en materia de propiedad intelectual e industrial. Queda prohibida su reproducción, distribución, comunicación pública, transformación o uso comercial sin autorización expresa.</p>
 
-  <h2>8. Modificaciones del servicio</h2>
-  <p>Nos reservamos el derecho de modificar, suspender o discontinuar el servicio en cualquier momento, notificando a los usuarios con la mayor antelación posible.</p>
+  <h2>9. Limitación de responsabilidad</h2>
+  <p>ReconBase proporciona información de carácter orientativo sobre el estado de seguridad de los activos analizados. El prestador no garantiza la detección exhaustiva de todas las vulnerabilidades existentes ni la ausencia de falsos positivos o negativos. El usuario es el único responsable de las decisiones adoptadas en base a los resultados obtenidos.</p>
+  <p>En la medida máxima permitida por la ley, el prestador no será responsable de los daños indirectos, lucro cesante, pérdida de datos, o perjuicios comerciales derivados del uso o imposibilidad de uso del servicio. La responsabilidad agregada del prestador por cualquier reclamación quedará limitada al importe abonado por el usuario durante los tres meses anteriores al hecho que motive la reclamación.</p>
 
-  <h2>9. Legislación aplicable</h2>
-  <p>Estos términos se rigen por la legislación española. Cualquier disputa será sometida a los tribunales competentes de España.</p>
+  <h2>10. Disponibilidad del servicio</h2>
+  <p>El prestador realizará esfuerzos razonables para mantener el servicio operativo 24/7, pero no garantiza una disponibilidad ininterrumpida. Podrán producirse interrupciones por mantenimiento programado, incidencias técnicas o causas de fuerza mayor, sin que ello genere derecho a indemnización.</p>
 
-  <h2>10. Contacto</h2>
-  <p>Para cualquier consulta sobre estos términos puedes contactarnos en <a href="mailto:ReconBase.alertas@gmail.com">ReconBase.alertas@gmail.com</a></p>
+  <h2>11. Protección de datos personales</h2>
+  <p>El tratamiento de los datos personales del usuario se rige por la <a href="/privacy">Política de Privacidad</a>, que forma parte integrante de estos Términos.</p>
+
+  <h2>12. Modificación de los términos</h2>
+  <p>El prestador podrá modificar los presentes Términos en cualquier momento. Los cambios sustanciales se notificarán a los usuarios registrados por email con al menos 15 días de antelación. El uso continuado del servicio tras la entrada en vigor de los cambios supondrá la aceptación de los mismos.</p>
+
+  <h2>13. Nulidad parcial</h2>
+  <p>Si alguna cláusula de estos Términos fuera declarada nula o inaplicable por un tribunal competente, el resto de cláusulas mantendrán su plena validez y efecto.</p>
+
+  <h2>14. Legislación aplicable y jurisdicción</h2>
+  <p>Los presentes Términos se rigen por la legislación española. Para la resolución de cualquier controversia derivada de los mismos, las partes se someten expresamente a los Juzgados y Tribunales de Gijón (Asturias), con renuncia expresa a cualquier otro fuero que pudiera corresponderles, salvo que la normativa de consumidores establezca un fuero imperativo distinto.</p>
+
+  <h2>15. Contacto</h2>
+  <p>Para cualquier consulta relacionada con estos Términos puedes escribirnos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
 </div>
 
-<footer>2026 ReconBase. Todos los derechos reservados. · <a href="/privacy">Política de Privacidad</a></footer>
+<footer>© 2026 Lucas Sesma Vinck — ReconBase. Todos los derechos reservados. · <a href="/privacy">Política de Privacidad</a> · <a href="/cookies">Política de Cookies</a></footer>
 </body>
 </html>
