@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Política de Privacidad — ReconBase</title>
-<meta name="description" content="Política de privacidad de ReconBase. Cómo tratamos tus datos, tus derechos RGPD y nuestra política de cookies.">
+<meta name="description" content="Política de privacidad de ReconBase. Cómo tratamos tus datos conforme al RGPD y tus derechos como usuario.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{{ base_url }}/privacy">
 <meta property="og:title" content="Política de Privacidad — ReconBase">
-<meta property="og:description" content="Cómo tratamos tus datos en ReconBase. Tus derechos RGPD y nuestra política de cookies.">
+<meta property="og:description" content="Cómo tratamos tus datos en ReconBase. Tus derechos RGPD.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ base_url }}/privacy">
 <meta property="og:image" content="{{ base_url }}/og/privacy.png">
@@ -29,6 +29,11 @@ h1{font-size:2rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.5rem}
 h2{font-size:1.1rem;font-weight:700;margin:2.5rem 0 .75rem;color:var(--blue-lt)}
 p{color:#94A3B8;font-size:.92rem;margin-bottom:1rem;line-height:1.8}
 ul{color:#94A3B8;font-size:.92rem;margin:.5rem 0 1rem 1.5rem;line-height:1.8}
+.data-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin:1rem 0;font-size:.88rem}
+.data-box p{margin:.3rem 0}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0}
+th,td{border:1px solid var(--border);padding:.6rem .8rem;text-align:left;color:#94A3B8}
+th{background:var(--surface);color:var(--text);font-weight:700}
 footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.78rem;color:var(--dim)}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
@@ -46,64 +51,109 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
 
 <div class="content">
   <h1>Política de Privacidad</h1>
-  <div class="subtitle">Última actualización: Abril 2026</div>
+  <div class="subtitle">Última actualización: 22 de abril de 2026</div>
+
+  <p>La presente Política de Privacidad regula el tratamiento de los datos personales que recopilamos a través de ReconBase, en cumplimiento del Reglamento (UE) 2016/679 (RGPD) y de la Ley Orgánica 3/2018 de Protección de Datos Personales y garantía de los derechos digitales (LOPDGDD).</p>
 
   <h2>1. Responsable del tratamiento</h2>
-  <p>ReconBase es el responsable del tratamiento de los datos personales recogidos a través de esta plataforma. Puedes contactarnos en <a href="mailto:ReconBase.alertas@gmail.com">ReconBase.alertas@gmail.com</a></p>
+  <div class="data-box">
+    <p><strong>Responsable:</strong> Lucas Sesma Vinck</p>
+    <p><strong>NIF:</strong> 53779442Z</p>
+    <p><strong>Domicilio:</strong> Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias), España</p>
+    <p><strong>Email:</strong> <a href="mailto:hola@reconbase.es">hola@reconbase.es</a></p>
+  </div>
+  <p>No se ha designado Delegado de Protección de Datos (DPO) al no concurrir los supuestos del artículo 37 del RGPD.</p>
 
-  <h2>2. Datos que recopilamos</h2>
-  <p>Recopilamos los siguientes datos cuando te registras y usas ReconBase:</p>
+  <h2>2. Datos personales que tratamos</h2>
   <ul>
-    <li><strong>Datos de registro:</strong> nombre de empresa, dirección de email y contraseña (almacenada de forma encriptada)</li>
-    <li><strong>Datos de uso:</strong> dominios y emails analizados, resultados de los escaneos, fechas y horas de acceso</li>
-    <li><strong>Datos de pago:</strong> procesados exclusivamente por Stripe. ReconBase no almacena datos de tarjetas de crédito</li>
+    <li><strong>Datos de registro:</strong> nombre de empresa, email y contraseña (almacenada con hash bcrypt; no se guarda en texto plano).</li>
+    <li><strong>Datos de uso:</strong> dominios y direcciones analizadas, resultados de los escaneos, fecha y hora de los accesos, dirección IP y user-agent del navegador.</li>
+    <li><strong>Datos de facturación:</strong> email y metadatos de la suscripción; el pago se procesa íntegramente por Stripe, que actúa como responsable independiente respecto a los datos de la tarjeta.</li>
+    <li><strong>Comunicaciones:</strong> contenido de los emails o mensajes que nos envíes al soporte.</li>
   </ul>
 
-  <h2>3. Finalidad del tratamiento</h2>
-  <p>Utilizamos tus datos para:</p>
+  <h2>3. Finalidades y base legal del tratamiento</h2>
+  <table>
+    <thead><tr><th>Finalidad</th><th>Base legal (art. 6 RGPD)</th></tr></thead>
+    <tbody>
+      <tr><td>Prestación del servicio contratado</td><td>Ejecución de contrato (art. 6.1.b)</td></tr>
+      <tr><td>Gestión de la cuenta y suscripción</td><td>Ejecución de contrato (art. 6.1.b)</td></tr>
+      <tr><td>Envío de alertas de seguridad y resultados de escaneo</td><td>Ejecución de contrato (art. 6.1.b)</td></tr>
+      <tr><td>Facturación y cumplimiento fiscal</td><td>Obligación legal (art. 6.1.c)</td></tr>
+      <tr><td>Envío de comunicaciones comerciales sobre el producto</td><td>Interés legítimo (art. 6.1.f); baja en cualquier momento</td></tr>
+      <tr><td>Mejora del servicio y métricas agregadas</td><td>Interés legítimo (art. 6.1.f)</td></tr>
+      <tr><td>Atender requerimientos de autoridades</td><td>Obligación legal (art. 6.1.c)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Plazo de conservación</h2>
+  <p>Conservamos los datos mientras el usuario mantenga una cuenta activa. Tras la cancelación eliminamos los datos personales en un plazo máximo de 30 días, con las siguientes excepciones:</p>
   <ul>
-    <li>Prestarte el servicio de monitorización de seguridad</li>
-    <li>Enviarte alertas automáticas sobre vulnerabilidades detectadas</li>
-    <li>Gestionar tu cuenta y suscripción</li>
-    <li>Mejorar la plataforma y sus funcionalidades</li>
-    <li>Cumplir con obligaciones legales</li>
+    <li>Datos de facturación: 6 años (art. 30 Código de Comercio y normativa fiscal).</li>
+    <li>Registros de acceso y logs de seguridad: hasta 12 meses por razones de seguridad.</li>
+    <li>Datos requeridos por orden judicial o administrativa: durante el tiempo exigido.</li>
   </ul>
 
-  <h2>4. Base legal del tratamiento</h2>
-  <p>El tratamiento de tus datos se basa en la ejecución del contrato de servicio aceptado al registrarte, tu consentimiento para el envío de comunicaciones y el cumplimiento de obligaciones legales aplicables.</p>
+  <h2>5. Destinatarios y encargados del tratamiento</h2>
+  <p>Tus datos pueden ser comunicados a los siguientes proveedores, que actúan como encargados del tratamiento bajo contrato conforme al artículo 28 RGPD:</p>
+  <table>
+    <thead><tr><th>Proveedor</th><th>Finalidad</th><th>Ubicación</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://railway.app/legal/privacy" target="_blank" rel="noopener">Railway Corp.</a></td><td>Alojamiento de la aplicación y base de datos</td><td>EE.UU. (cláusulas contractuales tipo)</td></tr>
+      <tr><td><a href="https://stripe.com/es/privacy" target="_blank" rel="noopener">Stripe Payments Europe, Ltd.</a></td><td>Procesamiento de pagos y suscripciones</td><td>Irlanda (UE)</td></tr>
+      <tr><td><a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener">Resend, Inc.</a></td><td>Envío de emails transaccionales</td><td>EE.UU. (cláusulas contractuales tipo)</td></tr>
+      <tr><td><a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Functional Software, Inc. (Sentry)</a></td><td>Monitorización de errores (si está activo)</td><td>EE.UU. (cláusulas contractuales tipo)</td></tr>
+    </tbody>
+  </table>
+  <p>No vendemos ni cedemos tus datos a terceros con fines comerciales.</p>
 
-  <h2>5. Conservación de datos</h2>
-  <p>Conservamos tus datos mientras mantengas una cuenta activa en ReconBase. Cuando canceles tu cuenta, eliminaremos tus datos personales en un plazo máximo de 30 días, salvo obligación legal de conservación.</p>
+  <h2>6. Transferencias internacionales</h2>
+  <p>Algunos de nuestros proveedores están ubicados fuera del Espacio Económico Europeo (EE.UU.). Dichas transferencias se amparan en las Cláusulas Contractuales Tipo aprobadas por la Comisión Europea (Decisión 2021/914) y, en su caso, en el marco <em>EU-U.S. Data Privacy Framework</em>.</p>
 
-  <h2>6. Compartición de datos</h2>
-  <p>No vendemos ni compartimos tus datos personales con terceros, salvo en los siguientes casos:</p>
+  <h2>7. Derechos del interesado</h2>
+  <p>Como titular de los datos, puedes ejercer en cualquier momento los siguientes derechos:</p>
   <ul>
-    <li><strong>Stripe:</strong> procesador de pagos, para gestionar suscripciones</li>
-    <li><strong>Railway:</strong> proveedor de infraestructura cloud donde se aloja la aplicación</li>
-    <li><strong>Obligación legal:</strong> si fuera requerido por autoridades competentes</li>
+    <li><strong>Acceso:</strong> obtener confirmación de qué datos tratamos y una copia de los mismos.</li>
+    <li><strong>Rectificación:</strong> corregir datos inexactos o incompletos.</li>
+    <li><strong>Supresión ("derecho al olvido"):</strong> solicitar la eliminación de tus datos.</li>
+    <li><strong>Oposición:</strong> oponerte al tratamiento basado en interés legítimo.</li>
+    <li><strong>Limitación del tratamiento</strong> en los supuestos del art. 18 RGPD.</li>
+    <li><strong>Portabilidad:</strong> recibir tus datos en formato estructurado y legible por máquina.</li>
+    <li><strong>No ser objeto de decisiones automatizadas</strong> con efectos significativos. ReconBase no realiza este tipo de decisiones.</li>
+    <li><strong>Retirar el consentimiento</strong> en cualquier momento, sin que afecte a la licitud del tratamiento previo.</li>
   </ul>
+  <p>Para ejercer estos derechos, escribe a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a> adjuntando copia de un documento identificativo. Responderemos en el plazo máximo de un mes.</p>
 
-  <h2>7. Tus derechos (RGPD)</h2>
-  <p>De acuerdo con el Reglamento General de Protección de Datos (RGPD), tienes derecho a:</p>
+  <h2>8. Derecho a reclamar ante la autoridad de control</h2>
+  <p>Si consideras que el tratamiento de tus datos no se ajusta a la normativa, o que no hemos atendido adecuadamente tus derechos, puedes presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong>:</p>
+  <div class="data-box">
+    <p>C/ Jorge Juan, 6 — 28001 Madrid</p>
+    <p>Teléfono: 901 100 099 / 912 663 517</p>
+    <p>Sede electrónica: <a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a></p>
+  </div>
+
+  <h2>9. Seguridad de los datos</h2>
+  <p>Aplicamos medidas técnicas y organizativas apropiadas al nivel de riesgo:</p>
   <ul>
-    <li><strong>Acceso:</strong> solicitar una copia de los datos que tenemos sobre ti</li>
-    <li><strong>Rectificación:</strong> corregir datos inexactos o incompletos</li>
-    <li><strong>Supresión:</strong> solicitar la eliminación de tus datos</li>
-    <li><strong>Portabilidad:</strong> recibir tus datos en formato estructurado</li>
-    <li><strong>Oposición:</strong> oponerte al tratamiento de tus datos</li>
+    <li>Conexiones cifradas (TLS 1.2+) en toda la plataforma</li>
+    <li>Contraseñas almacenadas con hash bcrypt</li>
+    <li>Autenticación en dos factores (2FA TOTP) disponible para los usuarios</li>
+    <li>Control de acceso restringido a la base de datos</li>
+    <li>Logging y monitorización de accesos sospechosos</li>
+    <li>Copias de seguridad automáticas diarias</li>
   </ul>
-  <p>Para ejercer cualquiera de estos derechos, contacta en <a href="mailto:ReconBase.alertas@gmail.com">ReconBase.alertas@gmail.com</a></p>
+  <p>En caso de producirse una violación de seguridad que pudiera suponer un riesgo para los derechos y libertades de los usuarios afectados, lo notificaremos a la AEPD en el plazo de 72 horas y, cuando proceda, a los interesados.</p>
 
-  <h2>8. Seguridad</h2>
-  <p>Aplicamos medidas técnicas y organizativas para proteger tus datos: contraseñas encriptadas con bcrypt, conexiones cifradas mediante HTTPS y acceso restringido a la base de datos.</p>
+  <h2>10. Menores de edad</h2>
+  <p>ReconBase está dirigido exclusivamente a personas mayores de 18 años. No recopilamos conscientemente datos de menores. Si detectamos la creación de una cuenta por un menor, procederemos a eliminarla.</p>
 
-  <h2>9. Cookies</h2>
-  <p>ReconBase utiliza únicamente cookies de sesión estrictamente necesarias para mantener tu sesión iniciada. No utilizamos cookies de seguimiento ni publicidad.</p>
+  <h2>11. Cookies</h2>
+  <p>Utilizamos únicamente las cookies técnicas imprescindibles para mantener la sesión del usuario y recordar su consentimiento. Consulta nuestra <a href="/cookies">Política de Cookies</a> para más detalle.</p>
 
-  <h2>10. Cambios en esta política</h2>
-  <p>Podemos actualizar esta política de privacidad ocasionalmente. Te notificaremos por email ante cambios significativos. El uso continuado del servicio implica la aceptación de la política vigente.</p>
+  <h2>12. Cambios en esta política</h2>
+  <p>Podemos actualizar esta Política de Privacidad. Publicaremos la versión vigente con su fecha de actualización en esta página y, en caso de cambios sustanciales, notificaremos a los usuarios registrados por email con al menos 15 días de antelación.</p>
 </div>
 
-<footer>2026 ReconBase. Todos los derechos reservados. · <a href="/terms">Términos de Servicio</a></footer>
+<footer>© 2026 Lucas Sesma Vinck — ReconBase. Todos los derechos reservados. · <a href="/terms">Términos de Servicio</a> · <a href="/cookies">Política de Cookies</a></footer>
 </body>
 </html>

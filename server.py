@@ -253,6 +253,7 @@ def sitemap():
         {"loc": base + "/pricing", "priority": "0.9",  "changefreq": "monthly"},
         {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly"},
         {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly"},
+        {"loc": base + "/cookies", "priority": "0.3",  "changefreq": "yearly"},
         {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly"},
         {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly"},
     ]
@@ -577,6 +578,10 @@ def terms():
 def privacy():
     return render_template("privacy.html")
 
+@app.route("/cookies")
+def cookies_policy():
+    return render_template("cookies.html")
+
 @app.route("/register")
 def register_page():
     return render_template("register.html")
@@ -678,7 +683,7 @@ def stripe_portal():
             msg = str(ire)
             logger.error(f"[Portal] InvalidRequest: {msg}")
             if "configuration" in msg.lower() or "no configuration" in msg.lower():
-                return jsonify({"ok": False, "error": "El portal de facturación no está activado en Stripe. Escríbenos a soporte@reconbase.io y cancelamos tu suscripción manualmente."}), 500
+                return jsonify({"ok": False, "error": "El portal de facturación no está activado en Stripe. Escríbenos a hola@reconbase.es y cancelamos tu suscripción manualmente."}), 500
             return jsonify({"ok": False, "error": f"Stripe: {msg}"}), 500
         return jsonify({"ok": True, "url": portal_session.url})
     except stripe.error.AuthenticationError:
@@ -3588,7 +3593,7 @@ def descargar_factura_pdf(fid):
         pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(0, 6, BASE_HOST, ln=True)
-        pdf.cell(0, 6, 'hola@reconbase.io', ln=True)
+        pdf.cell(0, 6, 'hola@reconbase.es', ln=True)
         pdf.ln(8)
         pdf.set_font('Helvetica', 'B', 28)
         pdf.set_text_color(0, 0, 0)
