@@ -1733,8 +1733,13 @@ def scan():
 @app.route("/api/historial", methods=["GET"])
 @login_required
 def historial():
-    limite = 3 if current_user.plan == 'free' else 50
-    scans = Scan.query.filter_by(user_id=current_user.id).order_by(Scan.timestamp.desc()).limit(limite).all()
+    # Free: últimos 7 días. Pro: histórico ilimitado.
+    q = Scan.query.filter_by(user_id=current_user.id)
+    if current_user.plan_efectivo == 'free':
+        from datetime import datetime, timedelta
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        q = q.filter(Scan.timestamp >= cutoff)
+    scans = q.order_by(Scan.timestamp.desc()).limit(500).all()
     result = []
     for s in scans:
         r = dict(s.resultado or {})
@@ -2613,11 +2618,11 @@ def anadir_dominio():
     dominio = _re3.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
     if not dominio or len(dominio) < 3:
         return jsonify({"ok": False, "error": "Dominio no válido"}), 400
-    # Limites: free=1, pro=10
-    max_doms = 1 if current_user.plan_efectivo == 'free' else 10
+    # Limites: free=5, pro=50
+    max_doms = 5 if current_user.plan_efectivo == 'free' else 50
     count = Domain.query.filter_by(user_id=current_user.id).count()
     if count >= max_doms:
-        plan_txt = "1 dominio en plan Gratis" if max_doms == 1 else f"{max_doms} dominios en plan Pro"
+        plan_txt = f"{max_doms} dominios en plan Gratis" if current_user.plan_efectivo == 'free' else f"{max_doms} dominios en plan Pro"
         return jsonify({"ok": False, "error": f"Máximo {plan_txt}. Elimina uno antes de añadir otro."}), 400
     existing = Domain.query.filter_by(user_id=current_user.id, dominio=dominio).first()
     if existing:
@@ -2660,6 +2665,9 @@ def get_integraciones():
 @login_required
 @limiter.limit("10 per hour")
 def guardar_integraciones():
+    # Integraciones (Slack / webhooks custom) son exclusivas del plan Pro
+    if current_user.plan_efectivo == 'free':
+        return jsonify({"ok": False, "error": "Las integraciones (Slack y webhooks) son exclusivas del plan Pro. Actualiza tu plan para activarlas."}), 403
     data = request.get_json() or {}
     user = db.session.get(User, current_user.id)
     slack = (data.get("slack_webhook") or "").strip()
