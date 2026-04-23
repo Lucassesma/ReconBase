@@ -1929,7 +1929,11 @@ var isLoggedIn = window.RB.isLoggedIn;
 <script src="/static/js/scanner.js?v=2"></script>
 
 <!-- GDPR Cookie Banner -->
-<div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+<style>
+  #cookie-banner{display:none !important;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  #cookie-banner.is-visible{display:flex !important}
+</style>
+<div id="cookie-banner" aria-hidden="true">
   <div style="font-size:.8rem;color:#94A3B8;max-width:600px;line-height:1.5">
     Usamos cookies técnicas esenciales para el funcionamiento de la plataforma. No usamos cookies de seguimiento ni publicidad. <a href="/privacy" style="color:#22C55E;text-decoration:underline">Política de privacidad</a>
   </div>
@@ -1940,22 +1944,24 @@ var isLoggedIn = window.RB.isLoggedIn;
 </div>
 <script>
 (function(){
+  try {
+    if (localStorage.getItem('rb_cookie_consent')) return;
+  } catch(e) { return; }
   var banner = document.getElementById('cookie-banner');
   if (!banner) return;
-  if (localStorage.getItem('rb_cookie_consent')) {
-    banner.style.display = 'none';
-  } else {
-    banner.style.display = 'flex';
-  }
+  banner.classList.add('is-visible');
+  banner.setAttribute('aria-hidden', 'false');
 })();
 function aceptarCookies() {
-  localStorage.setItem('rb_cookie_consent', 'accepted');
-  document.getElementById('cookie-banner').style.display = 'none';
+  try { localStorage.setItem('rb_cookie_consent', 'accepted'); } catch(e) {}
+  var b = document.getElementById('cookie-banner');
+  if (b) { b.classList.remove('is-visible'); b.setAttribute('aria-hidden', 'true'); }
   fetch('/api/cookie-consent', {method:'POST'}).catch(function(){});
 }
 function rechazarCookies() {
-  localStorage.setItem('rb_cookie_consent', 'essential');
-  document.getElementById('cookie-banner').style.display = 'none';
+  try { localStorage.setItem('rb_cookie_consent', 'essential'); } catch(e) {}
+  var b = document.getElementById('cookie-banner');
+  if (b) { b.classList.remove('is-visible'); b.setAttribute('aria-hidden', 'true'); }
 }
 
 // ═══════════════════════════════════════════════════════
