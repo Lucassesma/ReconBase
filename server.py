@@ -1,5 +1,5 @@
 # ReconBase v2 — build 20260414
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, Response, abort
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, Response, abort, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_mail import Mail, Message
 from flask_limiter import Limiter
@@ -484,14 +484,23 @@ def index():
     stats_scans   = Scan.query.count()
     stats_vulns   = max(int(stats_scans * 2.3), 12)
     stats_breaches = User.query.count()
-    return render_template("landing.html", user=current_user,
+    # Si el usuario ya dio consentimiento (cookie HTTP), NO renderizamos el banner.
+    # Esto elimina cualquier race condition o parpadeo en cliente.
+    show_cookie_banner = not request.cookies.get("cookie_consent")
+    resp = make_response(render_template("landing.html", user=current_user,
                            plan=plan, scans_mes=scans_mes,
                            ultimo_auto=ultimo_auto,
                            api_key_ok=bool(API_KEY),
                            scan_hora=scan_hora, scan_dias=scan_dias,
                            stats_scans=stats_scans,
                            stats_vulns=stats_vulns,
-                           stats_breaches=stats_breaches)
+                           stats_breaches=stats_breaches,
+                           show_cookie_banner=show_cookie_banner))
+    # Evitar que el navegador cachee el HTML (para que los fixes lleguen al instante)
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 @app.route("/login")
 def login_page():
@@ -2449,8 +2458,16 @@ def admin_borrar_post(post_id):
 @app.route("/api/cookie-consent", methods=["POST"])
 def cookie_consent():
     """Registra el consentimiento de cookies (para cumplir con la ley)."""
+    value = "accepted"
+    try:
+        data = request.get_json(silent=True) or {}
+        if data.get("level") == "essential":
+            value = "essential"
+    except Exception:
+        pass
     resp = jsonify({"ok": True})
-    resp.set_cookie("cookie_consent", "accepted", max_age=365*24*3600, httponly=True, samesite="Lax")
+    # NO httponly — así el JS puede leerla también como segundo nivel de detección.
+    resp.set_cookie("cookie_consent", value, max_age=365*24*3600, samesite="Lax")
     return resp
 
 # ── EMAILS HTML TRANSACCIONALES ──
