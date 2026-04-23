@@ -323,7 +323,29 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 .dr-step{font-size:.65rem;color:#4ADE80;font-family:'JetBrains Mono',monospace;opacity:0;transition:opacity .3s}
 .dr-step.show{opacity:1}
 .dr-cta{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);border-radius:12px;padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
-@media(max-width:600px){.dr-header{gap:.85rem}.dr-score{font-size:3.5rem}.dr-cta{flex-direction:column;text-align:center}}
+/* Summary hit banner */
+.dr-hit{display:none;margin-bottom:1.5rem;padding:1.2rem 1.4rem;border-radius:12px;align-items:center;gap:1.2rem;flex-wrap:wrap;animation:drHitIn .45s cubic-bezier(.4,0,.2,1)}
+.dr-hit.crit{background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.05));border:1px solid rgba(239,68,68,.35);box-shadow:0 0 0 1px rgba(239,68,68,.18), 0 10px 40px -12px rgba(239,68,68,.35)}
+.dr-hit.warn{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.05));border:1px solid rgba(245,158,11,.35);box-shadow:0 0 0 1px rgba(245,158,11,.18), 0 10px 40px -12px rgba(245,158,11,.35)}
+.dr-hit.ok{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.04));border:1px solid rgba(34,197,94,.3)}
+.dr-hit.show{display:flex}
+.dr-hit-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.4rem;font-weight:900}
+.dr-hit.crit .dr-hit-icon{background:rgba(239,68,68,.18);color:#FCA5A5}
+.dr-hit.warn .dr-hit-icon{background:rgba(245,158,11,.18);color:#FCD34D}
+.dr-hit.ok .dr-hit-icon{background:rgba(34,197,94,.2);color:#86EFAC}
+.dr-hit-body{flex:1;min-width:200px}
+.dr-hit-title{font-size:1.05rem;font-weight:800;color:#F0FDF4;letter-spacing:-.01em;line-height:1.3;margin-bottom:.25rem}
+.dr-hit-sub{font-size:.78rem;color:#94A3B8;line-height:1.5}
+.dr-hit-cta{background:linear-gradient(135deg,#BEF264,#A3E635);color:#052e16;border:none;padding:.85rem 1.5rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:800;font-size:.88rem;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;box-shadow:0 0 0 1px rgba(163,230,53,.4), 0 6px 20px -6px rgba(163,230,53,.5);transition:transform .15s, box-shadow .15s}
+.dr-hit-cta:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(163,230,53,.65), 0 10px 28px -6px rgba(163,230,53,.8)}
+@keyframes drHitIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+/* Trust badges */
+.rb-trust-badge{display:flex;align-items:center;gap:.6rem;padding:.6rem .9rem;background:rgba(15,30,16,.6);border:1px solid var(--border);border-radius:8px;color:#86EFAC;transition:border-color .15s, transform .15s;cursor:default}
+.rb-trust-badge:hover{border-color:rgba(134,239,172,.35);transform:translateY(-1px)}
+.rb-trust-badge svg{flex-shrink:0;color:#4ADE80}
+.rb-trust-name{font-size:.78rem;font-weight:800;color:#F0FDF4;letter-spacing:-.01em;line-height:1.1}
+.rb-trust-desc{font-size:.62rem;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:.15rem;letter-spacing:.03em}
+@media(max-width:600px){.dr-header{gap:.85rem}.dr-score{font-size:3.5rem}.dr-cta{flex-direction:column;text-align:center}.dr-hit{flex-direction:column;text-align:center}.dr-hit-cta{width:100%;justify-content:center}}
 /* HERO SCANNER */
 .hero-scan-form{margin-top:1.75rem}
 .hsf-wrap{display:flex;background:rgba(255,255,255,.07);border:1px solid rgba(134,239,172,.3);border-radius:10px;overflow:hidden;max-width:480px;transition:border-color .2s}
@@ -841,6 +863,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
   <div class="dr-wrap">
     <div class="dr-steps" id="dr-steps"></div>
     <div class="dr-header" id="dr-header"></div>
+    <div class="dr-hit" id="dr-hit"></div>
     <div class="dr-bar"><div class="dr-bar-fill" id="dr-bar-fill" style="width:0%"></div></div>
     <div class="dr-grid" id="dr-grid"></div>
     <div class="dr-cta" id="dr-cta"></div>
@@ -1529,6 +1552,36 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 
     </div>
 
+    <!-- Trust badges: seguridad y cumplimiento -->
+    <div class="rb-trust" style="max-width:960px;margin:2.5rem auto 0;padding:1.5rem 1.2rem;background:rgba(6,13,9,.4);border:1px solid var(--border);border-radius:12px">
+      <div style="text-align:center;font-size:.68rem;font-family:'JetBrains Mono',monospace;letter-spacing:.15em;color:#64748B;margin-bottom:1rem;text-transform:uppercase">Tus datos, protegidos y en Europa</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:.75rem">
+        <div class="rb-trust-badge" title="Reglamento General de Protección de Datos — UE 2016/679">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 6v6c0 5 3.5 9.5 9 10 5.5-.5 9-5 9-10V6l-9-4z"/><path d="M9 12l2 2 4-4"/></svg>
+          <div><div class="rb-trust-name">RGPD</div><div class="rb-trust-desc">Datos en la UE</div></div>
+        </div>
+        <div class="rb-trust-badge" title="Alineado con ISO/IEC 27001 — Sistema de Gestión de Seguridad de la Información">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div><div class="rb-trust-name">ISO 27001</div><div class="rb-trust-desc">Controles alineados</div></div>
+        </div>
+        <div class="rb-trust-badge" title="Esquema Nacional de Seguridad — Real Decreto 311/2022">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <div><div class="rb-trust-name">ENS</div><div class="rb-trust-desc">Compatible sector público</div></div>
+        </div>
+        <div class="rb-trust-badge" title="Servidores ubicados en la Unión Europea">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M2 12h20M12 2v20"/></svg>
+          <div><div class="rb-trust-name">Hosted in EU</div><div class="rb-trust-desc">Frankfurt · Railway</div></div>
+        </div>
+        <div class="rb-trust-badge" title="Todas las comunicaciones cifradas con TLS 1.2+">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15v2M12 9v2"/><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>
+          <div><div class="rb-trust-name">TLS 1.3</div><div class="rb-trust-desc">Cifrado extremo a extremo</div></div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:.7rem;color:#475569;margin-top:1rem;line-height:1.6">
+        No vendemos ni compartimos tus datos. <a href="/privacy" style="color:#64748B;text-decoration:underline">Política de privacidad</a> · <a href="/cookies" style="color:#64748B;text-decoration:underline">Cookies</a>
+      </div>
+    </div>
+
     <!-- Tabla comparativa actualizada -->
     <div style="max-width:780px;margin:2.5rem auto 0;overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:.82rem">
@@ -1703,6 +1756,8 @@ function heroScan(){
   var steps=['→ Escaneando puertos...','→ Verificando DNS y correo...','→ Analizando cabeceras HTTP...','→ Comprobando SSL/TLS...'];
   var stepsEl=document.getElementById('dr-steps');
   stepsEl.innerHTML=steps.map(function(s,i){return'<span class="dr-step" id="drs'+i+'">'+s+'</span>';}).join('');
+  var hitReset=document.getElementById('dr-hit');
+  if(hitReset){hitReset.className='dr-hit';hitReset.innerHTML='';}
   document.getElementById('landing-results').style.display='block';
   document.getElementById('landing-results').scrollIntoView({behavior:'smooth',block:'start'});
   steps.forEach(function(_,i){setTimeout(function(){var el=document.getElementById('drs'+i);if(el)el.classList.add('show');},i*1800);});
@@ -1771,6 +1826,63 @@ function lockedCard(title, teaser){
 
 function renderDemoResult(d){
   var col=d.riesgo>=70?'#EF4444':d.riesgo>=40?'#F59E0B':'#22C55E';
+
+  // === Hit banner: resumen de riesgos detectados ===
+  (function(){
+    var risks = 0;
+    var critical = 0;
+    // Puertos críticos expuestos
+    var critSet = [3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443];
+    var cp = (d.puertos||[]).filter(function(p){return critSet.indexOf(p)!==-1;});
+    if (cp.length){ risks += cp.length; critical += cp.length; }
+    // DNS SPF/DMARC
+    if (d.dns){
+      if (!d.dns.spf && !d.dns.dmarc){ risks += 1; critical += 1; }
+      else if (!d.dns.spf || !d.dns.dmarc){ risks += 1; }
+    }
+    // Cabeceras HTTP
+    if (d.headers){
+      var miss = 0;
+      if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) miss++;
+      if (!d.headers['Content-Security-Policy']) miss++;
+      if (!d.headers['X-Content-Type-Options']) miss++;
+      if (miss >= 2) risks += 1;
+      else if (miss === 1) risks += 1;
+    }
+    // SSL
+    if (d.ssl){
+      if (!d.ssl.tiene_ssl){ risks += 1; critical += 1; }
+      else if (d.ssl.caducado){ risks += 1; critical += 1; }
+      else if (d.ssl.pronto_a_caducar){ risks += 1; }
+    }
+    var hit = document.getElementById('dr-hit');
+    if (!hit) return;
+    hit.className = 'dr-hit show';
+    var cls, icon, title, sub;
+    if (risks === 0){
+      cls = 'ok'; icon = '✓';
+      title = 'No hemos detectado riesgos críticos en ' + (d.objetivo||'tu dominio');
+      sub = 'Regístrate gratis para activar vigilancia continua y recibir alertas automáticas si algo cambia.';
+    } else {
+      cls = critical > 0 ? 'crit' : 'warn';
+      icon = critical > 0 ? '!' : '⚠';
+      var palabra = risks === 1 ? 'posible riesgo' : 'posibles riesgos';
+      title = 'Hemos encontrado ' + risks + ' ' + palabra + ' en ' + (d.objetivo||'tu dominio');
+      sub = (isLoggedIn
+        ? 'Abre el escáner para ver el informe técnico completo y recomendaciones detalladas.'
+        : 'Regístrate gratis para ver el informe completo con las recomendaciones específicas.');
+    }
+    hit.classList.add(cls);
+    var ctaHref = isLoggedIn ? '/app' : ('/register?target=' + encodeURIComponent(d.objetivo||''));
+    var ctaLabel = isLoggedIn ? 'Abrir en el escáner →' : 'Regístrate gratis →';
+    hit.innerHTML =
+      '<div class="dr-hit-icon">' + icon + '</div>' +
+      '<div class="dr-hit-body">' +
+        '<div class="dr-hit-title">' + title + '</div>' +
+        '<div class="dr-hit-sub">' + sub + '</div>' +
+      '</div>' +
+      '<a href="' + ctaHref + '" class="dr-hit-cta">' + ctaLabel + '</a>';
+  })();
 
   // Header
   document.getElementById('dr-header').innerHTML=
