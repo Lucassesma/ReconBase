@@ -1816,6 +1816,23 @@ def generar_pdf():
     subs = datos.get("subs",[])
     sec("Subdominios", f"Total detectados: {len(subs)}." + (f" {', '.join([s['subdominio'] for s in subs[:8]])}" if subs else ""))
 
+    # Marca de agua "generado con plan gratis" para usuarios free — palanca de conversion viral
+    if current_user.plan_efectivo == 'free':
+        pdf.ln(8)
+        pdf.set_draw_color(34,197,94)
+        pdf.set_line_width(0.3)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(34, 197, 94)
+        pdf.cell(0, 5, sanitizar("Informe generado con ReconBase - Plan Gratuito"), ln=True, align="C")
+        pdf.set_font("Helvetica", size=8)
+        pdf.set_text_color(71, 85, 105)
+        pdf.cell(0, 5, sanitizar("Analiza tu empresa en 2 minutos en reconbase.es - Sin tarjeta"), ln=True, align="C")
+        pdf.set_font("Helvetica", size=7)
+        pdf.set_text_color(148, 163, 184)
+        pdf.cell(0, 4, sanitizar("Plan Pro: vigilancia nocturna 24/7, alertas automaticas e informe ejecutivo sin marca de agua"), ln=True, align="C")
+
     buf = io.BytesIO()
     pdf.output(buf)
     buf.seek(0)
