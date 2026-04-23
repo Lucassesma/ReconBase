@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Precios — ReconBase | Ciberseguridad para PYMEs desde 0€</title>
-<meta name="description" content="Planes de ReconBase: Gratis con 10 escaneos al mes o Pro con vigilancia 24/7, alertas automáticas y filtraciones Deep Web. Sin permanencia, cancela cuando quieras.">
+<meta name="description" content="Planes de ReconBase: Gratis con 5 dominios y 10 escaneos/mes o Pro con vigilancia 24/7, alertas automáticas, Slack y filtraciones Deep Web. Sin permanencia, cancela cuando quieras.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="{{ base_url }}/pricing">
 <meta property="og:title" content="Precios — ReconBase | Desde 0€">
@@ -143,7 +143,7 @@ footer a{color:var(--muted);margin:0 .75rem}
   <div class="toggle" id="toggle" onclick="toggleBilling()">
     <span id="lbl-m" style="font-weight:700">Mensual</span>
     <div class="toggle-sw"><div class="toggle-knob"></div></div>
-    <span id="lbl-a" style="color:var(--dim)">Anual <span class="save">2 meses gratis</span></span>
+    <span id="lbl-a" style="color:var(--dim)">Anual <span class="save">Ahorra 58€/año</span></span>
   </div>
 </section>
 
@@ -153,16 +153,19 @@ footer a{color:var(--muted);margin:0 .75rem}
     <div class="plan-price">0<span>/ mes</span></div>
     <div class="plan-desc">Para empresas que quieren conocer su estado de seguridad sin coste.</div>
     <div class="plan-div"></div>
+    <div class="pf"><span class="ck"></span>Hasta 5 dominios</div>
     <div class="pf"><span class="ck"></span>10 análisis al mes</div>
     <div class="pf"><span class="ck"></span>Escáner de puertos expuestos</div>
     <div class="pf"><span class="ck"></span>Verificación DNS / SPF / DMARC</div>
     <div class="pf"><span class="ck"></span>Cabeceras de seguridad HTTP</div>
     <div class="pf"><span class="ck"></span>Certificado SSL/TLS</div>
+    <div class="pf"><span class="ck"></span>Historial últimos 7 días</div>
     <div class="pf"><span class="ck"></span>Informe PDF (9€/informe)</div>
     <div class="plan-div"></div>
     <div class="pf off"><span class="ck"></span>Filtraciones Deep Web</div>
     <div class="pf off"><span class="ck"></span>Vigilancia nocturna 24/7</div>
-    <div class="pf off"><span class="ck"></span>Alertas automáticas</div>
+    <div class="pf off"><span class="ck"></span>Alertas automáticas por email</div>
+    <div class="pf off"><span class="ck"></span>Integración Slack · Webhooks</div>
     <a href="/register" class="btn-plan ol">Empezar gratis</a>
   </div>
 
@@ -174,10 +177,12 @@ footer a{color:var(--muted);margin:0 .75rem}
     <div class="plan-desc">Para empresas que necesitan protección continua, no solo análisis puntuales.</div>
     <div class="plan-div"></div>
     <div class="pf"><span class="ck"></span>Todo lo del plan Gratis</div>
+    <div class="pf"><span class="ck"></span>Hasta 50 dominios</div>
     <div class="pf"><span class="ck"></span>Escaneos ilimitados</div>
     <div class="pf"><span class="ck"></span>Filtraciones Deep Web (HIBP)</div>
     <div class="pf"><span class="ck"></span>Vigilancia nocturna 24/7</div>
     <div class="pf"><span class="ck"></span>Alertas por email automáticas</div>
+    <div class="pf"><span class="ck"></span><strong>Integración con Slack</strong> + webhooks custom</div>
     <div class="pf"><span class="ck"></span>Informe PDF ejecutivo incluido</div>
     <div class="pf"><span class="ck"></span>Historial ilimitado</div>
     <div class="pf"><span class="ck"></span>Soporte prioritario</div>
@@ -194,6 +199,7 @@ footer a{color:var(--muted);margin:0 .75rem}
   <table class="cmp">
     <thead><tr><th>Característica</th><th class="free">Gratis</th><th class="pro">Pro</th></tr></thead>
     <tbody>
+      <tr><td>Dominios monitorizables</td><td class="c">5</td><td class="pro">50</td></tr>
       <tr><td>Escaneos al mes</td><td class="c">10</td><td class="pro">Ilimitados</td></tr>
       <tr><td>Puertos expuestos</td><td class="c">✓</td><td class="pro">✓</td></tr>
       <tr><td>DNS / SPF / DMARC</td><td class="c">✓</td><td class="pro">✓</td></tr>
@@ -203,7 +209,8 @@ footer a{color:var(--muted);margin:0 .75rem}
       <tr><td>Filtraciones Deep Web</td><td class="c">—</td><td class="pro">✓</td></tr>
       <tr><td>Vigilancia nocturna 24/7</td><td class="c">—</td><td class="pro">✓</td></tr>
       <tr><td>Alertas por email automáticas</td><td class="c">—</td><td class="pro">✓</td></tr>
-      <tr><td>Historial de escaneos</td><td class="c">Últimos 10</td><td class="pro">Ilimitado</td></tr>
+      <tr><td>Integración Slack · webhooks</td><td class="c">—</td><td class="pro">✓</td></tr>
+      <tr><td>Historial de escaneos</td><td class="c">7 días</td><td class="pro">Ilimitado</td></tr>
       <tr><td>Informe PDF ejecutivo</td><td class="c">9€/informe</td><td class="pro">Incluido</td></tr>
       <tr><td>Guías de remediación paso a paso</td><td class="c">✓</td><td class="pro">✓</td></tr>
       <tr><td>Soporte prioritario</td><td class="c">—</td><td class="pro">✓</td></tr>
@@ -215,9 +222,9 @@ footer a{color:var(--muted);margin:0 .75rem}
   <h2>Preguntas frecuentes</h2>
   <div class="faq-item"><div class="faq-q">¿Necesito tarjeta para empezar?</div><div class="faq-a">No. El plan gratis no requiere tarjeta. Solo la pedimos si decides suscribirte a Pro.</div></div>
   <div class="faq-item"><div class="faq-q">¿Puedo cancelar cuando quiera?</div><div class="faq-a">Sí. Desde tu perfil tienes un botón "Gestionar suscripción" que abre el portal de Stripe donde puedes cancelar. Conservas el acceso hasta el final del periodo pagado.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Qué diferencia hay entre mensual y anual?</div><div class="faq-a">El plan anual cuesta 290€/año (equivalente a 24,16€/mes), dos meses gratis frente al pago mensual.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Qué diferencia hay entre mensual y anual?</div><div class="faq-a">El plan anual cuesta 290€/año (equivalente a 24,16€/mes). Pagando anualmente te ahorras 58€ al año (el precio de dos meses) frente al pago mensual.</div></div>
   <div class="faq-item"><div class="faq-q">¿Qué es la "vigilancia nocturna 24/7"?</div><div class="faq-a">Cada noche reescaneamos tu dominio automáticamente. Si detectamos un puerto nuevo abierto, un certificado por caducar, una cabecera que dejó de estar o una nueva filtración, recibes un aviso por email.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Qué pasa con mis datos si cancelo?</div><div class="faq-a">Conservas tu cuenta gratis con los últimos 10 escaneos. Puedes solicitar el borrado total escribiéndonos según el RGPD.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Qué pasa con mis datos si cancelo?</div><div class="faq-a">Conservas tu cuenta gratis con el historial de los últimos 7 días. Puedes solicitar el borrado total escribiéndonos según el RGPD.</div></div>
   <div class="faq-item"><div class="faq-q">¿Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente. Solo puedes analizar dominios que tú introduces. El motor usa técnicas pasivas sobre infraestructura pública.</div></div>
 </div>
 
