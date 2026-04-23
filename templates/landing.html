@@ -5,6 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ReconBase — Analiza la seguridad de tu empresa gratis</title>
 
+<!-- BLOQUEO ANTI-FLASH DEL COOKIE BANNER: se ejecuta ANTES de pintar nada.
+     Si hay consent (localStorage o cookie HTTP), inyecta CSS que oculta el
+     banner para siempre en esta carga. Sin este bloqueo, el banner se pinta
+     durante ~50ms antes de que el JS de limpieza lo retire → parpadeo. -->
+<script>
+(function(){
+  try {
+    var hasLocal = false;
+    try { hasLocal = !!localStorage.getItem('rb_cookie_consent'); } catch(_){}
+    var hasCookie = (document.cookie || '').indexOf('cookie_consent=') !== -1;
+    if (hasLocal || hasCookie){
+      var s = document.createElement('style');
+      s.setAttribute('data-rb','cookie-banner-blocker');
+      s.appendChild(document.createTextNode('#cookie-banner{display:none !important}'));
+      (document.head || document.documentElement).appendChild(s);
+    }
+  } catch(e) {}
+})();
+</script>
+
 <!-- SEO básico -->
 <meta name="description" content="ReconBase analiza gratis la seguridad de tu dominio: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.">
 <meta name="keywords" content="analizar seguridad dominio, escaner seguridad web, filtraciones datos empresa, seguridad pymes, auditoría seguridad gratis, SPF DMARC, puertos expuestos">
@@ -2073,18 +2093,24 @@ function rechazarCookies() {
 </script>
 {% endif %}
 <script>
-// Si el banner está en el DOM pero la cookie HTTP ya existe por otro canal, lo eliminamos.
+// Sincronización server ↔ cliente del consent. El banner ya está oculto por el
+// bloqueador del <head> si hay cualquier rastro de consent; aquí solo:
+// - Eliminamos el nodo del DOM (defensivo, por si acaso)
+// - Si el server no tiene la cookie HTTP pero el cliente sí tenía localStorage,
+//   hacemos fetch para que el server lo sepa en la próxima carga.
 (function(){
   try {
     var cookies = document.cookie || '';
-    if (cookies.indexOf('cookie_consent=') !== -1){
+    var hasCookie = cookies.indexOf('cookie_consent=') !== -1;
+    var localVal = null;
+    try { localVal = localStorage.getItem('rb_cookie_consent'); } catch(_){}
+    if (hasCookie || localVal){
       var b = document.getElementById('cookie-banner');
       if (b && b.parentNode) b.parentNode.removeChild(b);
-    } else if (typeof localStorage !== 'undefined' && localStorage.getItem('rb_cookie_consent')){
-      // Tenemos consent local pero el server no lo sabe — sincronizamos.
-      var b = document.getElementById('cookie-banner');
-      if (b && b.parentNode) b.parentNode.removeChild(b);
-      fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level: localStorage.getItem('rb_cookie_consent')})}).catch(function(){});
+      if (!hasCookie && localVal){
+        // sincronizar server (silencioso)
+        fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level: localVal})}).catch(function(){});
+      }
     }
   } catch(e) {}
 })();
