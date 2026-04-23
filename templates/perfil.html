@@ -301,11 +301,29 @@ select.form-input{cursor:pointer}
   </div>
 
   <!-- Integraciones -->
-  <div class="card">
-    <div class="card-title">Integraciones</div>
+  <div class="card" style="position:relative">
+    <div class="card-title">Integraciones {% if user.plan_efectivo == 'free' %}<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.62rem;background:#14532D;color:#4ADE80;padding:.15rem .55rem;border-radius:12px;letter-spacing:.05em;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:.35rem">🔒 PRO</span>{% endif %}</div>
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Recibe notificaciones automáticas en Slack o tu propio webhook tras cada escaneo.
     </div>
+    {% if user.plan_efectivo == 'free' %}
+    <div style="padding:1.1rem 1.25rem;background:linear-gradient(135deg,rgba(20,83,45,.35),rgba(21,128,61,.1));border:1px solid #14532D;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div style="font-size:.85rem;color:#CBD5E1;line-height:1.5">
+        Las integraciones con <strong style="color:#E2EDF8">Slack</strong> y <strong style="color:#E2EDF8">webhooks</strong> están disponibles a partir del plan Pro. Lleva las alertas al canal donde ya trabajas.
+      </div>
+      <a href="/#precios" style="text-decoration:none"><button class="btn btn-green" style="white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
+    </div>
+    <div style="opacity:.4;pointer-events:none;margin-top:1rem">
+      <div class="form-group">
+        <label class="form-label">Slack Webhook URL</label>
+        <input class="form-input" type="url" id="int-slack" placeholder="https://hooks.slack.com/services/T.../B.../xxx" disabled>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Webhook personalizado (HTTPS)</label>
+        <input class="form-input" type="url" id="int-webhook" placeholder="https://tu-servidor.com/webhook" disabled>
+      </div>
+    </div>
+    {% else %}
     <div class="form-group">
       <label class="form-label">Slack Webhook URL</label>
       <input class="form-input" type="url" id="int-slack" placeholder="https://hooks.slack.com/services/T.../B.../xxx">
@@ -317,6 +335,7 @@ select.form-input{cursor:pointer}
     <button class="btn btn-green" onclick="guardarIntegraciones()">Guardar integraciones</button>
     <div class="msg msg-ok" id="int-ok" style="display:none">Integraciones guardadas</div>
     <div class="msg msg-err" id="int-err"></div>
+    {% endif %}
   </div>
 
   <!-- Alertas configurables -->
@@ -655,16 +674,20 @@ loadDominios();
 
 // ── Integraciones ──
 async function loadIntegraciones() {
+  var slackInput = document.getElementById('int-slack');
+  var webhookInput = document.getElementById('int-webhook');
+  if (!slackInput || !webhookInput || slackInput.disabled) return;
   try {
     var r = await fetch('/api/integraciones');
     var d = await r.json();
-    document.getElementById('int-slack').value = d.slack_webhook || '';
-    document.getElementById('int-webhook').value = d.custom_webhook || '';
+    slackInput.value = d.slack_webhook || '';
+    webhookInput.value = d.custom_webhook || '';
   } catch(e) { console.error(e); }
 }
 async function guardarIntegraciones() {
   var ok  = document.getElementById('int-ok');
   var err = document.getElementById('int-err');
+  if (!ok || !err) return;
   ok.style.display='none'; err.style.display='none';
   var r = await fetch('/api/integraciones', {
     method:'POST', headers:{'Content-Type':'application/json'},
