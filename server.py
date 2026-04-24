@@ -244,11 +244,6 @@ def inject_base_url():
 
 # ── RUTAS PÚBLICAS ──
 
-@app.route('/loaderio-8e6bb67e75cb4bc3f4e965cc1c34bffa.txt')
-@app.route('/loaderio-8e6bb67e75cb4bc3f4e965cc1c34bffa/')
-def loaderio_verification():
-    return "loaderio-8e6bb67e75cb4bc3f4e965cc1c34bffa"
-
 @app.route("/sitemap.xml")
 def sitemap():
     base = BASE_URL
