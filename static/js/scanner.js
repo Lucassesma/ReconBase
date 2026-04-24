@@ -698,11 +698,13 @@ function toggleBilling() {
   }
 }
 function pagarPlanActual() {
-  pagarPlanLanding('pro');
+  pagarPlanLanding('pro', billingAnual ? 'anual' : 'mensual');
 }
 
-function pagarPlanLanding(plan) {
-  fetch('/api/checkout', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({plan:plan})})
+function pagarPlanLanding(plan, billing) {
+  var payload = {plan: plan};
+  if (billing) payload.billing = billing;
+  fetch('/api/checkout', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
   .then(function(r){return r.json();})
   .then(function(d){ if(d.url){window.open(d.url,'_blank');}else{alert(d.error||'Error al iniciar el pago');} })
   .catch(function(){alert('Error de conexión.');});

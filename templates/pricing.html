@@ -271,7 +271,7 @@ async function suscribirse(){
     var r = await fetch('/api/checkout', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({plan:'pro'})
+      body: JSON.stringify({plan:'pro', billing: billingAnnual ? 'anual' : 'mensual'})
     });
     var d = await r.json();
     if (d.url) window.location.href = d.url;
