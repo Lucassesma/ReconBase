@@ -240,3 +240,13 @@ class Invoice(db.Model):
     periodo_desde     = db.Column(db.DateTime, nullable=True)
     periodo_hasta     = db.Column(db.DateTime, nullable=True)
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ProcessedWebhook(db.Model):
+    """Tabla de idempotencia para webhooks de Stripe.
+    Evita que un reintento de Stripe duplique facturas, activaciones, etc."""
+    __tablename__ = 'processed_webhooks'
+    id          = db.Column(db.Integer, primary_key=True)
+    event_id    = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    event_type  = db.Column(db.String(80),  nullable=True)
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)

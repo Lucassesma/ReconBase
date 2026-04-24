@@ -7,7 +7,8 @@ from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from models import (db, User, Scan, Domain, BlogPost,
                     SSLCheck, UptimeCheck, Notification, DNSRecord,
-                    TechDetection, IPReputation, AuditLog, Invoice, Lead)
+                    TechDetection, IPReputation, AuditLog, Invoice, Lead,
+                    ProcessedWebhook)
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
 import ssl as _ssl_mod, socket, time, re
@@ -174,8 +175,12 @@ def inject_csrf():
 # ─── Cabeceras HTTP de seguridad ───
 @app.after_request
 def set_security_headers(resp):
-    # HSTS: forzar HTTPS durante 1 año
-    resp.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    # HSTS: forzar HTTPS durante 1 año (preload para envío a lista global del navegador)
+    resp.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+    # X-XSS-Protection: 0 desactiva el auditor legacy (recomendación OWASP moderna)
+    resp.headers.setdefault('X-XSS-Protection', '0')
+    # COOP: aísla la ventana del sitio de popups cross-origin
+    resp.headers.setdefault('Cross-Origin-Opener-Policy', 'same-origin')
     # Anti clickjacking
     resp.headers.setdefault('X-Frame-Options', 'DENY')
     # Anti MIME-sniffing
@@ -214,6 +219,29 @@ def block_sensitive_files():
     if any(lpath.endswith(ext) for ext in _BLOCKED_EXT) or path in _BLOCKED_NAMES:
         abort(404)
 
+
+# ─── Redirect canónico al dominio oficial (SEO + rel="canonical" + trust) ───
+# Config: export CANONICAL_HOST=reconbase.es (en Railway). Si no está set, se
+# desactiva — útil en desarrollo local o si aún no has apuntado el DNS.
+CANONICAL_HOST = (os.getenv("CANONICAL_HOST", "") or "").strip().lower()
+
+@app.before_request
+def enforce_canonical_host():
+    if not CANONICAL_HOST:
+        return  # desactivado
+    host = (request.host or "").lower()
+    # Extraer sólo el hostname (sin puerto) para comparar
+    host_only = host.split(":")[0]
+    if host_only == CANONICAL_HOST:
+        return  # ya estamos en el canónico
+    # No redirigir webhook, healthchecks ni endpoints de verificación ACME
+    skip_prefixes = ("/api/webhook", "/.well-known/")
+    if any(request.path.startswith(p) for p in skip_prefixes):
+        return
+    # Preservar path + query
+    target = f"https://{CANONICAL_HOST}{request.full_path.rstrip('?') if request.query_string else request.path}"
+    return redirect(target, code=301)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
@@ -248,28 +276,38 @@ def inject_base_url():
 @app.route("/sitemap.xml")
 def sitemap():
     base = BASE_URL
+    today = datetime.utcnow().strftime("%Y-%m-%d")
     urls = [
-        {"loc": base + "/",        "priority": "1.0",  "changefreq": "weekly"},
-        {"loc": base + "/login",   "priority": "0.6",  "changefreq": "monthly"},
-        {"loc": base + "/register","priority": "0.8",  "changefreq": "monthly"},
-        {"loc": base + "/pricing", "priority": "0.9",  "changefreq": "monthly"},
-        {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly"},
-        {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly"},
-        {"loc": base + "/cookies", "priority": "0.3",  "changefreq": "yearly"},
-        {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly"},
-        {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly"},
+        {"loc": base + "/",        "priority": "1.0",  "changefreq": "weekly",  "lastmod": today},
+        {"loc": base + "/login",   "priority": "0.6",  "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/register","priority": "0.8",  "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/pricing", "priority": "0.9",  "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/terms",   "priority": "0.3",  "changefreq": "yearly",  "lastmod": today},
+        {"loc": base + "/privacy", "priority": "0.3",  "changefreq": "yearly",  "lastmod": today},
+        {"loc": base + "/cookies", "priority": "0.3",  "changefreq": "yearly",  "lastmod": today},
+        {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly",  "lastmod": today},
+        {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
     ]
-    # Añadir posts del blog al sitemap
+    # Añadir posts del blog con su lastmod real
     try:
         blog_posts = BlogPost.query.filter_by(publicado=True).all()
         for bp in blog_posts:
-            urls.append({"loc": f"{base}/blog/{bp.slug}", "priority": "0.6", "changefreq": "monthly"})
+            lastmod = getattr(bp, "updated_at", None) or getattr(bp, "created_at", None)
+            urls.append({
+                "loc": f"{base}/blog/{bp.slug}",
+                "priority": "0.6",
+                "changefreq": "monthly",
+                "lastmod": lastmod.strftime("%Y-%m-%d") if lastmod else today,
+            })
     except Exception:
         pass
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     for u in urls:
-        xml += f'  <url><loc>{u["loc"]}</loc><changefreq>{u["changefreq"]}</changefreq><priority>{u["priority"]}</priority></url>\n'
+        xml += (f'  <url><loc>{u["loc"]}</loc>'
+                f'<lastmod>{u["lastmod"]}</lastmod>'
+                f'<changefreq>{u["changefreq"]}</changefreq>'
+                f'<priority>{u["priority"]}</priority></url>\n')
     xml += '</urlset>'
     from flask import Response
     return Response(xml, mimetype="application/xml")
@@ -277,7 +315,18 @@ def sitemap():
 @app.route("/robots.txt")
 def robots():
     from flask import Response
-    txt = f"User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /api/\nSitemap: {BASE_URL}/sitemap.xml"
+    # Bloquear rutas privadas/panel/API; permitir el resto
+    txt = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /app\n"
+        "Disallow: /api/\n"
+        "Disallow: /perfil\n"
+        "Disallow: /admin\n"
+        "Disallow: /verificar-email\n"
+        "Disallow: /reset-password\n"
+        f"Sitemap: {BASE_URL}/sitemap.xml\n"
+    )
     return Response(txt, mimetype="text/plain")
 
 
@@ -536,6 +585,7 @@ def reset_password_page(token):
     return render_template("reset_password.html", token=token)
 
 @app.route("/api/reset-password", methods=["POST"])
+@limiter.limit("10 per hour")
 def api_reset_password():
     data     = request.get_json()
     token    = data.get("token", "")
@@ -790,6 +840,7 @@ def reenviar_verificacion():
         return jsonify({"ok": False, "error": msg}), 500
 
 @app.route("/verify-email/<token>")
+@limiter.limit("30 per hour")
 def verify_email(token):
     user = User.query.filter_by(verify_token=token).first()
     if not user:
@@ -1042,92 +1093,256 @@ def verificar_informe():
         app.logger.exception(f"Error verificando informe: {e}")
     return jsonify({"ok": False})
 
+def _resolve_user_from_obj(obj):
+    """Busca el usuario: primero client_reference_id, luego metadata.user_id,
+    luego email directo, finalmente customer de Stripe."""
+    # 1) client_reference_id (fijado por nosotros en crear_checkout)
+    ref = getattr(obj, "client_reference_id", None)
+    if ref:
+        try:
+            u = User.query.get(int(ref))
+            if u:
+                return u
+        except Exception:
+            pass
+    # 2) metadata.user_id
+    meta = getattr(obj, "metadata", {}) or {}
+    try:
+        uid = meta.get("user_id") if hasattr(meta, "get") else None
+        if uid:
+            u = User.query.get(int(uid))
+            if u:
+                return u
+    except Exception:
+        pass
+    # 3) email directo en el objeto
+    email = getattr(obj, "customer_email", None)
+    if not email:
+        details = getattr(obj, "customer_details", None)
+        if details:
+            email = getattr(details, "email", None)
+    # 4) customer de Stripe
+    if not email:
+        customer_id = getattr(obj, "customer", None)
+        if customer_id:
+            try:
+                customer = stripe.Customer.retrieve(customer_id)
+                email = getattr(customer, "email", None)
+            except Exception as e:
+                logger.warning(f"[Webhook] retrieve customer {customer_id}: {e}")
+    if email:
+        return User.query.filter_by(email=email).first()
+    return None
+
+
 @app.route("/api/webhook", methods=["POST"])
 def stripe_webhook():
+    # 1) Validar que el secreto exista (evita aceptar eventos sin firma en prod)
+    secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    if not secret:
+        logger.error("[Webhook] STRIPE_WEBHOOK_SECRET no configurado — rechazando evento")
+        return jsonify({"error": "webhook no configurado"}), 503
+
     payload    = request.get_data()
     sig_header = request.headers.get("Stripe-Signature", "")
-    secret     = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    if not sig_header:
+        logger.warning("[Webhook] Falta header Stripe-Signature")
+        return jsonify({"error": "firma ausente"}), 400
+
+    # 2) Verificar firma HMAC
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, secret)
-    except Exception as e:
-        print(f"[Webhook] Firma invalida: {e}")
+    except stripe.error.SignatureVerificationError as e:
+        logger.warning(f"[Webhook] Firma invalida: {e}")
         return jsonify({"error": "firma invalida"}), 400
+    except ValueError as e:
+        logger.warning(f"[Webhook] Payload invalido: {e}")
+        return jsonify({"error": "payload invalido"}), 400
+    except Exception as e:
+        logger.exception(f"[Webhook] Error verificando firma: {e}")
+        return jsonify({"error": "error verificando"}), 400
+
+    event_id   = getattr(event, "id", None) or event.get("id") if hasattr(event, "get") else getattr(event, "id", None)
+    event_type = getattr(event, "type", None) or (event.get("type") if hasattr(event, "get") else None)
+
+    # 3) Idempotencia — si ya procesamos este event.id, responder 200 sin re-ejecutar
+    if event_id:
+        try:
+            if ProcessedWebhook.query.filter_by(event_id=event_id).first():
+                logger.info(f"[Webhook] Evento duplicado ignorado: {event_id} ({event_type})")
+                return jsonify({"ok": True, "duplicate": True})
+        except Exception as e:
+            logger.warning(f"[Webhook] Idempotencia check falló: {e}")
+            db.session.rollback()
 
     try:
         obj  = event.data.object
-        tipo = event.type
+        tipo = event_type or event.type
 
         if tipo == "checkout.session.completed":
             mode = getattr(obj, "mode", None)
             if mode == "payment":
                 # Pago puntual: desbloquear PDF del escaneo
                 meta    = getattr(obj, "metadata", {}) or {}
-                scan_id = meta.get("scan_id")
+                scan_id = meta.get("scan_id") if hasattr(meta, "get") else None
                 if scan_id:
-                    scan_obj = Scan.query.get(int(scan_id))
-                    if scan_obj:
-                        scan_obj.pdf_unlocked = True
-                        db.session.commit()
-                        print(f"[Webhook] PDF desbloqueado para scan {scan_id}")
+                    try:
+                        scan_obj = Scan.query.get(int(scan_id))
+                        if scan_obj:
+                            scan_obj.pdf_unlocked = True
+                            db.session.commit()
+                            logger.info(f"[Webhook] PDF desbloqueado para scan {scan_id}")
+                    except Exception as _e:
+                        logger.exception(f"[Webhook] desbloqueo PDF: {_e}")
+                        db.session.rollback()
             else:
                 # Suscripción Pro
-                email = getattr(obj, "customer_email", None)
-                if not email:
-                    details = getattr(obj, "customer_details", None)
-                    if details:
-                        email = getattr(details, "email", None)
-                print(f"[Webhook] checkout Pro completado, email={email}")
-                if email:
-                    user = User.query.filter_by(email=email).first()
-                    if user:
+                user = _resolve_user_from_obj(obj)
+                meta = getattr(obj, "metadata", {}) or {}
+                billing = (meta.get("billing") if hasattr(meta, "get") else None) or "mensual"
+                amount_total = getattr(obj, "amount_total", None)  # céntimos
+                currency = (getattr(obj, "currency", "eur") or "eur").upper()
+
+                if user:
+                    user.plan = "pro"
+                    db.session.commit()
+                    try:
+                        enviar_email_pro_activado(user)
+                    except Exception as _me:
+                        logger.warning(f"[Webhook] email pro_activado: {_me}")
+                    logger.info(f"[Webhook] Plan pro activado para {user.email} (billing={billing})")
+
+                    # Crear factura automática
+                    try:
+                        desde = datetime.utcnow()
+                        if billing in ("anual", "annual", "yearly"):
+                            hasta = desde + timedelta(days=365)
+                            concepto = "Plan Pro ReconBase — Suscripción anual"
+                            importe_default = 290.00
+                        else:
+                            hasta = desde + timedelta(days=30)
+                            concepto = "Plan Pro ReconBase — Suscripción mensual"
+                            importe_default = 29.00
+                        importe = (amount_total / 100.0) if amount_total else importe_default
+                        inv = Invoice(
+                            user_id=user.id,
+                            numero=_generar_numero_factura(),
+                            concepto=concepto,
+                            importe=importe,
+                            moneda=currency,
+                            estado='pagada',
+                            periodo_desde=desde,
+                            periodo_hasta=hasta,
+                        )
+                        db.session.add(inv)
+                        db.session.commit()
+                        _crear_notificacion(user.id, 'sistema',
+                            '✅ Plan Pro activado',
+                            'Tu suscripción Pro está activa. Ahora tienes acceso a todas las funciones premium.',
+                            '/perfil')
+                    except Exception as _ie:
+                        logger.exception(f"[Webhook] Crear factura: {_ie}")
+                        db.session.rollback()
+                else:
+                    logger.warning(f"[Webhook] Usuario no resuelto para checkout.session.completed (session {getattr(obj, 'id', '?')})")
+
+        elif tipo == "customer.subscription.updated":
+            # Cambio de estado/plan — mantener plan pro si la sub sigue activa
+            status = getattr(obj, "status", None)
+            user = _resolve_user_from_obj(obj)
+            if user:
+                if status in ("active", "trialing"):
+                    if user.plan != "pro":
                         user.plan = "pro"
                         db.session.commit()
-                        enviar_email_pro_activado(user)
-                        print(f"[Webhook] Plan actualizado a pro para {email}")
-                        # Crear factura automática
-                        try:
-                            desde = datetime.utcnow()
-                            hasta = desde + timedelta(days=30)
-                            inv = Invoice(
-                                user_id=user.id,
-                                numero=_generar_numero_factura(),
-                                concepto="Plan Pro ReconBase — Suscripción mensual",
-                                importe=29.00,
-                                moneda='EUR',
-                                estado='pagada',
-                                periodo_desde=desde,
-                                periodo_hasta=hasta,
-                            )
-                            db.session.add(inv)
-                            db.session.commit()
-                            _crear_notificacion(user.id, 'sistema',
-                                '✅ Plan Pro activado',
-                                'Tu suscripción Pro está activa. Ahora tienes acceso a todas las funciones premium.',
-                                '/perfil')
-                        except Exception as _ie:
-                            logger.error(f"[Invoice] {_ie}")
-                            db.session.rollback()
-                    else:
-                        print(f"[Webhook] Usuario no encontrado: {email}")
+                        logger.info(f"[Webhook] Sub activa → pro: {user.email}")
+                elif status in ("canceled", "unpaid", "incomplete_expired"):
+                    if user.plan != "free":
+                        user.plan = "free"
+                        db.session.commit()
+                        logger.info(f"[Webhook] Sub {status} → free: {user.email}")
 
         elif tipo == "customer.subscription.deleted":
-            # Look up the customer in Stripe to get their email
-            customer_id = getattr(obj, "customer", None)
-            email = None
-            if customer_id:
+            user = _resolve_user_from_obj(obj)
+            if user and user.plan != "free":
+                user.plan = "free"
+                db.session.commit()
+                logger.info(f"[Webhook] Plan degradado a free: {user.email}")
+
+        elif tipo == "invoice.paid":
+            # Renovación recurrente — crear factura en nuestra base
+            user = _resolve_user_from_obj(obj)
+            if user:
                 try:
-                    customer = stripe.Customer.retrieve(customer_id)
-                    email = getattr(customer, "email", None)
-                except Exception as e:
-                    print(f"[Webhook] Error obteniendo customer: {e}")
-            if email:
-                user = User.query.filter_by(email=email).first()
-                if user:
-                    user.plan = "free"
-                    db.session.commit()
-                    print(f"[Webhook] Plan degradado a free para {email}")
+                    # No duplicar si ya existe esta stripe_invoice_id
+                    stripe_inv_id = getattr(obj, "id", None)
+                    if stripe_inv_id and Invoice.query.filter_by(stripe_invoice_id=stripe_inv_id).first():
+                        logger.info(f"[Webhook] Factura {stripe_inv_id} ya registrada")
+                    else:
+                        amount_paid = getattr(obj, "amount_paid", None) or getattr(obj, "amount_due", 0)
+                        currency = (getattr(obj, "currency", "eur") or "eur").upper()
+                        # Determinar si es anual/mensual por período de facturación
+                        lines = getattr(obj, "lines", None)
+                        billing = "mensual"
+                        try:
+                            if lines and hasattr(lines, "data") and lines.data:
+                                first = lines.data[0]
+                                period = getattr(first, "period", None)
+                                if period:
+                                    start = getattr(period, "start", 0)
+                                    end   = getattr(period, "end", 0)
+                                    if end and start and (end - start) > 60*60*24*90:
+                                        billing = "anual"
+                        except Exception:
+                            pass
+                        concepto = ("Plan Pro ReconBase — Renovación anual"
+                                    if billing == "anual"
+                                    else "Plan Pro ReconBase — Renovación mensual")
+                        desde = datetime.utcnow()
+                        hasta = desde + timedelta(days=365 if billing == "anual" else 30)
+                        inv = Invoice(
+                            user_id=user.id,
+                            stripe_invoice_id=stripe_inv_id,
+                            numero=_generar_numero_factura(),
+                            concepto=concepto,
+                            importe=(amount_paid / 100.0) if amount_paid else 0,
+                            moneda=currency,
+                            estado='pagada',
+                            periodo_desde=desde,
+                            periodo_hasta=hasta,
+                        )
+                        db.session.add(inv)
+                        db.session.commit()
+                        logger.info(f"[Webhook] invoice.paid → factura creada para {user.email}")
+                except Exception as _ie:
+                    logger.exception(f"[Webhook] invoice.paid crear factura: {_ie}")
+                    db.session.rollback()
+
+        elif tipo == "invoice.payment_failed":
+            user = _resolve_user_from_obj(obj)
+            if user:
+                try:
+                    _crear_notificacion(user.id, 'sistema',
+                        '⚠️ Error al renovar tu suscripción',
+                        'No hemos podido cobrar tu renovación del plan Pro. Actualiza tu método de pago para no perder acceso.',
+                        '/perfil')
+                    logger.warning(f"[Webhook] invoice.payment_failed: {user.email}")
+                except Exception as _ne:
+                    logger.warning(f"[Webhook] notificación payment_failed: {_ne}")
+
+        # 4) Marcar evento como procesado (idempotencia)
+        if event_id:
+            try:
+                db.session.add(ProcessedWebhook(event_id=event_id, event_type=tipo))
+                db.session.commit()
+            except Exception as _pe:
+                # UNIQUE violation si otro proceso ganó la carrera — no pasa nada
+                db.session.rollback()
+
     except Exception as e:
-        print(f"[Webhook] Error procesando evento: {e}")
+        logger.exception(f"[Webhook] Error procesando evento {event_type}: {e}")
+        db.session.rollback()
+        # Devolver 500 para que Stripe reintente
         return jsonify({"error": str(e)}), 500
 
     return jsonify({"ok": True})
@@ -2468,6 +2683,7 @@ def admin_borrar_post(post_id):
 
 # ── BANNER DE COOKIES ──
 @app.route("/api/cookie-consent", methods=["POST"])
+@limiter.limit("60 per hour")
 def cookie_consent():
     """Registra el consentimiento de cookies (para cumplir con la ley)."""
     value = "accepted"
@@ -3785,6 +4001,8 @@ with app.app_context():
         "CREATE TABLE IF NOT EXISTS ip_reputations (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), dominio VARCHAR(255) NOT NULL, ip VARCHAR(45) NOT NULL, limpio BOOLEAN NOT NULL DEFAULT TRUE, listas_negras TEXT, checked_at TIMESTAMP DEFAULT NOW())",
         "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), evento VARCHAR(100) NOT NULL, ip VARCHAR(45), user_agent VARCHAR(500), detalles TEXT, created_at TIMESTAMP DEFAULT NOW())",
         "CREATE TABLE IF NOT EXISTS invoices (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), stripe_invoice_id VARCHAR(100), numero VARCHAR(50) NOT NULL, concepto VARCHAR(255) NOT NULL, importe FLOAT NOT NULL, moneda VARCHAR(10) DEFAULT 'EUR', estado VARCHAR(20) DEFAULT 'pagada', periodo_desde TIMESTAMP, periodo_hasta TIMESTAMP, created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS processed_webhooks (id SERIAL PRIMARY KEY, event_id VARCHAR(120) UNIQUE NOT NULL, event_type VARCHAR(80), created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE INDEX IF NOT EXISTS idx_processed_webhooks_event_id ON processed_webhooks(event_id)",
     ]:
         try:
             db.session.execute(text(col_sql))
