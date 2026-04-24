@@ -2065,11 +2065,17 @@ var isLoggedIn = window.RB.isLoggedIn;
      SOLO si no hay consent (ni localStorage ni cookie HTTP). Sin HTML no puede
      haber parpadeo, race condition ni problemas de caché. -->
 <script>
+// ═══════════════════════════════════════════════════════════════════
+// RB_COOKIE_VERSION: c9e7a38-clientside — si ves esto en consola, estás
+// en la versión donde el banner NO está en el HTML del servidor.
+// ═══════════════════════════════════════════════════════════════════
+console.log('[RB] cookie-banner version: c9e7a38-clientside');
 (function(){
   // ¿Ya tiene consent? En cualquiera de los dos canales.
   var hasLocal = false;
   try { hasLocal = !!localStorage.getItem('rb_cookie_consent'); } catch(_){}
   var hasCookie = (document.cookie || '').indexOf('cookie_consent=') !== -1;
+  console.log('[RB] consent:', {hasLocal:hasLocal, hasCookie:hasCookie, cookieStr:document.cookie});
   if (hasLocal || hasCookie){
     // Sincronizar server si solo tenía localStorage
     if (hasLocal && !hasCookie){
