@@ -231,6 +231,7 @@ def load_user(user_id):
 API_KEY        = os.getenv("RECONBASE_API_KEY", "")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PRICE_PRO = os.getenv("STRIPE_PRICE_PRO", "")
+STRIPE_PRICE_PRO_ANUAL = os.getenv("PRICE_PRO_ANUAL", "") or os.getenv("STRIPE_PRICE_PRO_ANUAL", "")
 
 # URL pública del sitio. Configurar BASE_URL en el entorno de producción
 # (ej: Railway) con el dominio definitivo. En desarrollo local cae a localhost.
@@ -957,9 +958,18 @@ def lead_unlock():
 def crear_checkout():
     data = request.get_json() or {}
     plan = data.get("plan", "")
+    billing = (data.get("billing") or "mensual").lower()
     if plan != "pro":
         return jsonify({"error": "Plan no válido"}), 400
-    if not STRIPE_PRICE_PRO:
+
+    if billing in ("anual", "annual", "yearly"):
+        price_id = STRIPE_PRICE_PRO_ANUAL or STRIPE_PRICE_PRO  # fallback a mensual si no hay anual
+        if not STRIPE_PRICE_PRO_ANUAL:
+            app.logger.warning("PRICE_PRO_ANUAL no configurado — usando precio mensual como fallback")
+    else:
+        price_id = STRIPE_PRICE_PRO
+
+    if not price_id:
         app.logger.error("STRIPE_PRICE_PRO no configurado")
         return jsonify({"error": "Pago temporalmente no disponible"}), 503
     try:
@@ -967,9 +977,10 @@ def crear_checkout():
             mode="subscription",
             customer_email=current_user.email,
             client_reference_id=str(current_user.id),
-            line_items=[{"price": STRIPE_PRICE_PRO, "quantity": 1}],
+            line_items=[{"price": price_id, "quantity": 1}],
             success_url=request.host_url + "pago-exito",
             cancel_url=request.host_url + "#precios",
+            metadata={"billing": billing, "user_id": str(current_user.id)},
         )
         return jsonify({"url": checkout_session.url})
     except Exception as e:
