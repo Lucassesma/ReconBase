@@ -2060,59 +2060,62 @@ var isLoggedIn = window.RB.isLoggedIn;
 </script>
 <script src="/static/js/scanner.js?v=2"></script>
 
-<!-- GDPR Cookie Banner -->
-{% if show_cookie_banner %}
-<style>
-  #cookie-banner{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-  #cookie-banner[hidden]{display:none !important}
-</style>
-<div id="cookie-banner">
-  <div style="font-size:.8rem;color:#94A3B8;max-width:600px;line-height:1.5">
-    Usamos cookies técnicas esenciales para el funcionamiento de la plataforma. No usamos cookies de seguimiento ni publicidad. <a href="/privacy" style="color:#22C55E;text-decoration:underline">Política de privacidad</a>
-  </div>
-  <div style="display:flex;gap:.75rem;flex-shrink:0">
-    <button onclick="aceptarCookies()" style="background:#15803D;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Aceptar</button>
-    <button onclick="rechazarCookies()" style="background:transparent;color:#64748B;border:1px solid #1E293B;padding:.5rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-size:.82rem;cursor:pointer">Solo esenciales</button>
-  </div>
-</div>
+<!-- GDPR Cookie Banner — 100% client-side injection.
+     NO hay HTML del banner en el servidor. El JS lo construye y lo inserta
+     SOLO si no hay consent (ni localStorage ni cookie HTTP). Sin HTML no puede
+     haber parpadeo, race condition ni problemas de caché. -->
 <script>
-function _rbHideCookieBanner(){
-  var b = document.getElementById('cookie-banner');
-  if (b && b.parentNode) { b.parentNode.removeChild(b); }
-}
-function aceptarCookies() {
-  try { localStorage.setItem('rb_cookie_consent', 'accepted'); } catch(e) {}
-  _rbHideCookieBanner();
-  fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:'accepted'})}).catch(function(){});
-}
-function rechazarCookies() {
-  try { localStorage.setItem('rb_cookie_consent', 'essential'); } catch(e) {}
-  _rbHideCookieBanner();
-  fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:'essential'})}).catch(function(){});
-}
-</script>
-{% endif %}
-<script>
-// Sincronización server ↔ cliente del consent. El banner ya está oculto por el
-// bloqueador del <head> si hay cualquier rastro de consent; aquí solo:
-// - Eliminamos el nodo del DOM (defensivo, por si acaso)
-// - Si el server no tiene la cookie HTTP pero el cliente sí tenía localStorage,
-//   hacemos fetch para que el server lo sepa en la próxima carga.
 (function(){
-  try {
-    var cookies = document.cookie || '';
-    var hasCookie = cookies.indexOf('cookie_consent=') !== -1;
-    var localVal = null;
-    try { localVal = localStorage.getItem('rb_cookie_consent'); } catch(_){}
-    if (hasCookie || localVal){
-      var b = document.getElementById('cookie-banner');
-      if (b && b.parentNode) b.parentNode.removeChild(b);
-      if (!hasCookie && localVal){
-        // sincronizar server (silencioso)
-        fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level: localVal})}).catch(function(){});
-      }
+  // ¿Ya tiene consent? En cualquiera de los dos canales.
+  var hasLocal = false;
+  try { hasLocal = !!localStorage.getItem('rb_cookie_consent'); } catch(_){}
+  var hasCookie = (document.cookie || '').indexOf('cookie_consent=') !== -1;
+  if (hasLocal || hasCookie){
+    // Sincronizar server si solo tenía localStorage
+    if (hasLocal && !hasCookie){
+      try {
+        var v = localStorage.getItem('rb_cookie_consent');
+        fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:v})}).catch(function(){});
+      } catch(_){}
     }
-  } catch(e) {}
+    return; // ya consentido — no hacemos nada
+  }
+
+  // Construir e insertar el banner
+  function _rbRemoveBanner(){
+    var el = document.getElementById('cookie-banner');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }
+  window.aceptarCookies = function(){
+    try { localStorage.setItem('rb_cookie_consent','accepted'); } catch(_){}
+    _rbRemoveBanner();
+    fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:'accepted'})}).catch(function(){});
+  };
+  window.rechazarCookies = function(){
+    try { localStorage.setItem('rb_cookie_consent','essential'); } catch(_){}
+    _rbRemoveBanner();
+    fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:'essential'})}).catch(function(){});
+  };
+
+  function build(){
+    if (document.getElementById('cookie-banner')) return; // ya existe
+    var div = document.createElement('div');
+    div.id = 'cookie-banner';
+    div.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
+    div.innerHTML =
+      '<div style="font-size:.8rem;color:#94A3B8;max-width:600px;line-height:1.5">' +
+        'Usamos cookies técnicas esenciales para el funcionamiento de la plataforma. No usamos cookies de seguimiento ni publicidad. ' +
+        '<a href="/privacy" style="color:#22C55E;text-decoration:underline">Política de privacidad</a>' +
+      '</div>' +
+      '<div style="display:flex;gap:.75rem;flex-shrink:0">' +
+        '<button onclick="aceptarCookies()" style="background:#15803D;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:6px;font-family:Inter,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Aceptar</button>' +
+        '<button onclick="rechazarCookies()" style="background:transparent;color:#64748B;border:1px solid #1E293B;padding:.5rem 1rem;border-radius:6px;font-family:Inter,sans-serif;font-size:.82rem;cursor:pointer">Solo esenciales</button>' +
+      '</div>';
+    (document.body || document.documentElement).appendChild(div);
+  }
+
+  if (document.body) build();
+  else document.addEventListener('DOMContentLoaded', build, {once:true});
 })();
 
 // ═══════════════════════════════════════════════════════
