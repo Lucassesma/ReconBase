@@ -44,7 +44,14 @@
       "Bash(python -c 'import ast, sys *)",
       "Bash(python -c \"import sys; print\\(sys.prefix\\)\")",
       "Bash(venv/Scripts/python.exe -c ' *)",
-      "Bash(venv/Scripts/python.exe)"
+      "Bash(venv/Scripts/python.exe)",
+      "Bash(python -c \"import py_compile; py_compile.compile\\('server.py', doraise=True\\); print\\('server.py OK'\\)\")",
+      "Bash(python -m venv --help)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py',encoding='utf-8'\\).read\\(\\)\\); print\\('server.py OK'\\)\")",
+      "Bash(py -c ' *)",
+      "Bash(venv/Scripts/python.exe -c \"import ast; ast.parse\\(open\\('server.py',encoding='utf-8'\\).read\\(\\)\\); print\\('server.py OK'\\)\")",
+      "Bash(where ffmpeg *)",
+      "Bash(venv/Scripts/python.exe -m pip install imageio imageio-ffmpeg)"
     ]
   }
 }
