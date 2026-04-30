@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Theme bootstrap (antes de pintar para evitar FOUC) -->
+<script>(function(){try{var t=localStorage.getItem('rb_theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(_){}})();</script>
 <title>ReconBase — Analiza la seguridad de tu empresa gratis</title>
 
 <!-- Banner de cookies: se gestiona 100% al final del body en su propio bloque.
@@ -509,6 +511,8 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 @media(max-width:600px){.sc-metrics{grid-template-columns:repeat(2,1fr)}.scanner-bar{flex-direction:column}.btn-scan{width:100%}}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
+<link rel="stylesheet" href="/static/css/theme.css">
+<script src="/static/js/theme.js" defer></script>
 <script src="/static/js/toast.js"></script>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

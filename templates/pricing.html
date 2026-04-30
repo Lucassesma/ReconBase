@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script>(function(){try{var t=localStorage.getItem('rb_theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(_){}})();</script>
 <title>Precios — ReconBase | Ciberseguridad para PYMEs desde 0€</title>
 <meta name="description" content="Planes de ReconBase: Gratis con 5 dominios y 10 escaneos/mes o Pro con vigilancia 24/7, alertas automáticas, Slack y filtraciones Deep Web. Sin permanencia, cancela cuando quieras.">
 <meta name="robots" content="index,follow">
@@ -43,13 +44,13 @@
 
 <style>
 :root{
-  --bg:#F7F8FA; --surface:#FFFFFF; --text:#0F172A; --muted:#475569;
-  --dim:#64748B; --border:#E2E8F0; --accent:#16A34A; --accent2:#22C55E;
+  --bg:#060D09; --surface:#0A1410; --surface-2:#0F1B14; --text:#E2EDF8; --muted:#94A3B8;
+  --dim:#64748B; --border:#152B1E; --accent:#16A34A; --accent2:#22C55E;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.nav{position:sticky;top:0;z-index:50;background:rgba(247,248,250,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:1rem 6%;display:flex;align-items:center;justify-content:space-between}
+.nav{position:sticky;top:0;z-index:50;background:rgba(8,12,20,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:1rem 6%;display:flex;align-items:center;justify-content:space-between}
 .nav-logo{font-family:'Arial Black',sans-serif;font-weight:900;font-size:1.15rem;letter-spacing:-.02em}
 .nav-logo span{color:var(--accent)}
 .nav-links{display:flex;gap:1.75rem;align-items:center;font-size:.88rem;font-weight:600}
@@ -62,15 +63,15 @@ h1{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.035em;line-he
 .sub{font-size:1.05rem;color:var(--muted);max-width:560px;margin:0 auto}
 
 .toggle{display:flex;align-items:center;justify-content:center;gap:.75rem;margin:2.5rem 0 2rem}
-.toggle-sw{width:44px;height:24px;background:#DCFCE7;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;border:1px solid #86EFAC}
+.toggle-sw{width:44px;height:24px;background:rgba(34,197,94,.18);border-radius:12px;position:relative;cursor:pointer;transition:background .2s;border:1px solid rgba(34,197,94,.4)}
 .toggle-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#22C55E;transition:left .2s}
 .toggle.annual .toggle-knob{left:23px}
-.save{font-size:.7rem;background:#DCFCE7;color:#15803D;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.25rem}
+.save{font-size:.7rem;background:rgba(34,197,94,.15);color:#86EFAC;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.25rem;border:1px solid rgba(34,197,94,.3)}
 
 .plans{max-width:800px;margin:0 auto;padding:0 6%;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
 .plan{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem 1.75rem;position:relative;transition:transform .2s,box-shadow .2s}
-.plan:hover{transform:translateY(-2px);box-shadow:0 10px 30px -10px rgba(15,23,42,.1)}
-.plan.hot{border-color:var(--accent);box-shadow:0 10px 40px -10px rgba(22,163,74,.25)}
+.plan:hover{transform:translateY(-2px);box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+.plan.hot{border-color:var(--accent);box-shadow:0 10px 40px -10px rgba(22,163,74,.4)}
 .plan-badge{position:absolute;top:-10px;right:1.5rem;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.25rem .7rem;border-radius:6px;font-size:.68rem;font-weight:800;letter-spacing:.08em}
 .plan-name{font-size:.78rem;font-family:'JetBrains Mono',monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.15em;font-weight:700;margin-bottom:.75rem}
 .plan-price{font-size:2.75rem;font-weight:900;letter-spacing:-.04em;line-height:1;margin-bottom:.2rem}
@@ -79,20 +80,20 @@ h1{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.035em;line-he
 .plan-desc{font-size:.85rem;color:var(--muted);margin:.75rem 0 1.25rem;min-height:48px}
 .plan-div{height:1px;background:var(--border);margin:1rem 0}
 .pf{display:flex;align-items:flex-start;gap:.6rem;padding:.35rem 0;font-size:.85rem;color:var(--text)}
-.pf .ck{width:18px;height:18px;border-radius:50%;background:#DCFCE7;color:#15803D;font-weight:900;font-size:.68rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.12rem}
+.pf .ck{width:18px;height:18px;border-radius:50%;background:rgba(34,197,94,.2);color:#86EFAC;font-weight:900;font-size:.68rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.12rem}
 .pf .ck::before{content:"✓"}
 .pf.off{color:var(--dim)}
-.pf.off .ck{background:#F1F5F9;color:#94A3B8}
+.pf.off .ck{background:#1E293B;color:#475569}
 .pf.off .ck::before{content:"—"}
 .btn-plan{display:block;text-align:center;padding:.85rem 1.4rem;border-radius:10px;font-weight:700;font-size:.9rem;margin-top:1.5rem;cursor:pointer;border:none;font-family:inherit;width:100%}
 .btn-plan.sl{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff}
-.btn-plan.ol{background:#fff;color:var(--text);border:1px solid var(--border)}
-.btn-plan.ol:hover{border-color:var(--accent)}
+.btn-plan.ol{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-plan.ol:hover{border-color:var(--accent);background:rgba(34,197,94,.05)}
 
 .table-wrap{max-width:800px;margin:4rem auto 2rem;padding:0 6%}
 .table-wrap h2{font-size:1.5rem;font-weight:800;text-align:center;margin-bottom:1.5rem;letter-spacing:-.02em}
 .cmp{width:100%;border-collapse:collapse;font-size:.88rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.cmp th{text-align:left;padding:.85rem 1rem;background:#F8FAFC;font-weight:700;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.cmp th{text-align:left;padding:.85rem 1rem;background:var(--surface-2);font-weight:700;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
 .cmp th.free{text-align:center}
 .cmp th.pro{text-align:center;color:var(--accent)}
 .cmp td{padding:.75rem 1rem;border-top:1px solid var(--border);color:var(--muted)}
@@ -118,6 +119,8 @@ footer a{color:var(--muted);margin:0 .75rem}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
 <script src="/static/js/toast.js"></script>
+<link rel="stylesheet" href="/static/css/theme.css">
+<script src="/static/js/theme.js" defer></script>
 </head>
 <body>
 
