@@ -5,25 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ReconBase — Analiza la seguridad de tu empresa gratis</title>
 
-<!-- BLOQUEO ANTI-FLASH DEL COOKIE BANNER: se ejecuta ANTES de pintar nada.
-     Si hay consent (localStorage o cookie HTTP), inyecta CSS que oculta el
-     banner para siempre en esta carga. Sin este bloqueo, el banner se pinta
-     durante ~50ms antes de que el JS de limpieza lo retire → parpadeo. -->
-<script>
-(function(){
-  try {
-    var hasLocal = false;
-    try { hasLocal = !!localStorage.getItem('rb_cookie_consent'); } catch(_){}
-    var hasCookie = (document.cookie || '').indexOf('cookie_consent=') !== -1;
-    if (hasLocal || hasCookie){
-      var s = document.createElement('style');
-      s.setAttribute('data-rb','cookie-banner-blocker');
-      s.appendChild(document.createTextNode('#cookie-banner{display:none !important}'));
-      (document.head || document.documentElement).appendChild(s);
-    }
-  } catch(e) {}
-})();
-</script>
+<!-- Banner de cookies: se gestiona 100% al final del body en su propio bloque.
+     No hay HTML server-side, así que aquí no hace falta blocker anti-flash. -->
+
 
 <!-- SEO básico -->
 <meta name="description" content="ReconBase analiza gratis la seguridad de tu dominio: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.">
@@ -2066,45 +2050,41 @@ var isLoggedIn = window.RB.isLoggedIn;
      haber parpadeo, race condition ni problemas de caché. -->
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// RB_COOKIE_VERSION: c9e7a38-clientside — si ves esto en consola, estás
-// en la versión donde el banner NO está en el HTML del servidor.
+// RB_COOKIE_VERSION: v3-direct-cookie — el botón escribe document.cookie
+// directamente (sin esperar fetch), así la próxima carga ya no muestra
+// banner aunque el fetch al servidor falle o tarde.
 // ═══════════════════════════════════════════════════════════════════
-console.log('[RB] cookie-banner version: c9e7a38-clientside');
 (function(){
-  // ¿Ya tiene consent? En cualquiera de los dos canales.
-  var hasLocal = false;
-  try { hasLocal = !!localStorage.getItem('rb_cookie_consent'); } catch(_){}
-  var hasCookie = (document.cookie || '').indexOf('cookie_consent=') !== -1;
-  console.log('[RB] consent:', {hasLocal:hasLocal, hasCookie:hasCookie, cookieStr:document.cookie});
-  if (hasLocal || hasCookie){
-    // Sincronizar server si solo tenía localStorage
-    if (hasLocal && !hasCookie){
-      try {
-        var v = localStorage.getItem('rb_cookie_consent');
-        fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:v})}).catch(function(){});
-      } catch(_){}
-    }
-    return; // ya consentido — no hacemos nada
+  var KEY_LS = 'rb_consent_v3';
+  var KEY_CK = 'rb_consent';
+
+  function hasConsent(){
+    try { if (localStorage.getItem(KEY_LS)) return true; } catch(_){}
+    return /(^|;\s*)rb_consent=/.test(document.cookie || '') ||
+           /(^|;\s*)cookie_consent=/.test(document.cookie || ''); // legacy
+  }
+  function persistConsent(level){
+    try { localStorage.setItem(KEY_LS, level); } catch(_){}
+    // Cookie directa — no esperamos al fetch del servidor
+    var maxAge = 365*24*3600;
+    var secure = (location.protocol === 'https:') ? '; Secure' : '';
+    document.cookie = KEY_CK + '=' + level + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax' + secure;
+    // Y notificamos al server en background (no bloquea)
+    try {
+      fetch('/api/cookie-consent', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({level: level}),
+        keepalive: true
+      }).catch(function(){});
+    } catch(_){}
   }
 
-  // Construir e insertar el banner
-  function _rbRemoveBanner(){
-    var el = document.getElementById('cookie-banner');
-    if (el && el.parentNode) el.parentNode.removeChild(el);
-  }
-  window.aceptarCookies = function(){
-    try { localStorage.setItem('rb_cookie_consent','accepted'); } catch(_){}
-    _rbRemoveBanner();
-    fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:'accepted'})}).catch(function(){});
-  };
-  window.rechazarCookies = function(){
-    try { localStorage.setItem('rb_cookie_consent','essential'); } catch(_){}
-    _rbRemoveBanner();
-    fetch('/api/cookie-consent', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({level:'essential'})}).catch(function(){});
-  };
+  console.log('[RB] cookie banner v3 — consent =', hasConsent());
+  if (hasConsent()) return;
 
   function build(){
-    if (document.getElementById('cookie-banner')) return; // ya existe
+    if (document.getElementById('cookie-banner')) return;
     var div = document.createElement('div');
     div.id = 'cookie-banner';
     div.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
@@ -2114,11 +2094,16 @@ console.log('[RB] cookie-banner version: c9e7a38-clientside');
         '<a href="/privacy" style="color:#22C55E;text-decoration:underline">Política de privacidad</a>' +
       '</div>' +
       '<div style="display:flex;gap:.75rem;flex-shrink:0">' +
-        '<button onclick="aceptarCookies()" style="background:#15803D;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:6px;font-family:Inter,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Aceptar</button>' +
-        '<button onclick="rechazarCookies()" style="background:transparent;color:#64748B;border:1px solid #1E293B;padding:.5rem 1rem;border-radius:6px;font-family:Inter,sans-serif;font-size:.82rem;cursor:pointer">Solo esenciales</button>' +
+        '<button id="rb-c-accept" type="button" style="background:#15803D;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:6px;font-family:Inter,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Aceptar</button>' +
+        '<button id="rb-c-reject" type="button" style="background:transparent;color:#64748B;border:1px solid #1E293B;padding:.5rem 1rem;border-radius:6px;font-family:Inter,sans-serif;font-size:.82rem;cursor:pointer">Solo esenciales</button>' +
       '</div>';
     (document.body || document.documentElement).appendChild(div);
+    document.getElementById('rb-c-accept').onclick = function(){ persistConsent('accepted'); div.remove(); };
+    document.getElementById('rb-c-reject').onclick = function(){ persistConsent('essential'); div.remove(); };
   }
+  // Mantener compat con las funciones globales antiguas por si algo las llama
+  window.aceptarCookies   = function(){ persistConsent('accepted');  var el=document.getElementById('cookie-banner'); if(el) el.remove(); };
+  window.rechazarCookies  = function(){ persistConsent('essential'); var el=document.getElementById('cookie-banner'); if(el) el.remove(); };
 
   if (document.body) build();
   else document.addEventListener('DOMContentLoaded', build, {once:true});

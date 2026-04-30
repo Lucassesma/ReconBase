@@ -661,6 +661,21 @@ def api_login():
     user     = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
         return jsonify({"ok": False, "error": "Email o contraseña incorrectos"}), 401
+    # Bloquear login si el email no está verificado todavía
+    if not user.email_verified:
+        # Reenviar el email de verificación automáticamente (idempotente, regenera token si hace falta)
+        try:
+            if not user.verify_token:
+                user.generate_verify_token()
+                db.session.commit()
+            enviar_email_verificacion(user)
+        except Exception as e:
+            logger.warning(f"[Login] No se pudo reenviar verificacion a {email}: {e}")
+        return jsonify({
+            "ok": False,
+            "needs_verification": True,
+            "error": "Tu email aún no está verificado. Te hemos reenviado el enlace de confirmación a tu bandeja."
+        }), 403
     # Si tiene 2FA activado, no hacer login todavía — pedir código TOTP
     if getattr(user, 'totp_enabled', False) and user.totp_secret:
         session["2fa_pending_user"] = user.id
@@ -670,25 +685,31 @@ def api_login():
     return jsonify({"ok": True})
 
 def enviar_email_verificacion(user):
-    base_url = BASE_URL
-    link = f"{base_url}/verify-email/{user.verify_token}"
-    def _send():
+    # 1) Extraer atributos MIENTRAS la sesión SQLAlchemy está activa.
+    #    Después del commit, el objeto queda detached y acceder a .email
+    #    desde un hilo aparte lanza DetachedInstanceError.
+    email_destino   = user.email
+    nombre_empresa  = user.empresa
+    verify_token    = user.verify_token
+    base_url        = BASE_URL
+    link            = f"{base_url}/verify-email/{verify_token}"
+
+    def _send(email, empresa, link_url):
         try:
-            send_html_email(
-                user.email,
-                "Confirma tu email — ReconBase",
-                "Verifica tu dirección de email",
-                f"""<p>Hola {user.empresa},</p>
+            with app.app_context():
+                send_html_email(
+                    email,
+                    "Confirma tu email — ReconBase",
+                    "Verifica tu dirección de email",
+                    f"""<p>Hola {empresa},</p>
 <p>Gracias por registrarte en ReconBase. Confirma tu dirección de email haciendo clic en el botón:</p>
 <p>Si no has creado esta cuenta, ignora este mensaje.</p>""",
-                link, "Confirmar email"
-            )
-            logger.info(f"[Verify] Email enviado a {user.email}")
+                    link_url, "Confirmar email"
+                )
+                logger.info(f"[Verify] Email enviado a {email}")
         except Exception as e:
-            # No usar exception() — es un fallo de config de proveedor, no un crash.
-            # Evita ruido en Sentry y deja un log claro para el operador.
-            logger.warning(f"[Verify] No se pudo enviar verificacion a {user.email}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+            logger.warning(f"[Verify] No se pudo enviar verificacion a {email}: {e}")
+    threading.Thread(target=_send, args=(email_destino, nombre_empresa, link), daemon=True).start()
     return True
 
 @app.route("/api/register", methods=["POST"])
@@ -1032,6 +1053,9 @@ def crear_checkout():
             success_url=request.host_url + "pago-exito",
             cancel_url=request.host_url + "#precios",
             metadata={"billing": billing, "user_id": str(current_user.id)},
+            allow_promotion_codes=True,
+            billing_address_collection="auto",
+            tax_id_collection={"enabled": True},
         )
         return jsonify({"url": checkout_session.url})
     except Exception as e:
