@@ -585,7 +585,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
       <div id="rb-notif-list"><div style="text-align:center;color:#475569;padding:1.5rem;font-size:.82rem">Cargando...</div></div>
     </div>
     <a href="/perfil" class="btn-login">Mi perfil</a>
-    {% if user.plan == 'free' %}
+    {% if plan == 'free' %}
     <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 29€/mes</button>
     {% else %}
     <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .7rem;border-radius:20px;font-weight:700">PRO</span>
@@ -2084,9 +2084,9 @@ var isLoggedIn = window.RB.isLoggedIn;
   if (hasConsent()) return;
 
   function build(){
-    if (document.getElementById('cookie-banner')) return;
+    if (document.getElementById('rb-consent-bar')) return;
     var div = document.createElement('div');
-    div.id = 'cookie-banner';
+    div.id = 'rb-consent-bar';
     div.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
     div.innerHTML =
       '<div style="font-size:.8rem;color:#94A3B8;max-width:600px;line-height:1.5">' +
@@ -2102,8 +2102,8 @@ var isLoggedIn = window.RB.isLoggedIn;
     document.getElementById('rb-c-reject').onclick = function(){ persistConsent('essential'); div.remove(); };
   }
   // Mantener compat con las funciones globales antiguas por si algo las llama
-  window.aceptarCookies   = function(){ persistConsent('accepted');  var el=document.getElementById('cookie-banner'); if(el) el.remove(); };
-  window.rechazarCookies  = function(){ persistConsent('essential'); var el=document.getElementById('cookie-banner'); if(el) el.remove(); };
+  window.aceptarCookies   = function(){ persistConsent('accepted');  var el=document.getElementById('rb-consent-bar'); if(el) el.remove(); };
+  window.rechazarCookies  = function(){ persistConsent('essential'); var el=document.getElementById('rb-consent-bar'); if(el) el.remove(); };
 
   if (document.body) build();
   else document.addEventListener('DOMContentLoaded', build, {once:true});
