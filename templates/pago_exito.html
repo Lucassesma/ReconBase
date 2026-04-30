@@ -3,57 +3,211 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pago completado — ReconBase</title>
+<title>¡Bienvenido a Pro! — ReconBase</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--green:#22C55E;--green-dk:#15803D}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column}
-nav{display:flex;align-items:center;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
-.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem;text-align:center}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:3rem 2.5rem;max-width:480px;width:100%}
-.check{width:64px;height:64px;border-radius:50%;background:rgba(34,197,94,.15);border:2px solid #166534;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:1.75rem;animation:pop .4s ease}
-@keyframes pop{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
-.title{font-size:1.5rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.5rem;color:var(--green)}
-.sub{font-size:.9rem;color:var(--muted);line-height:1.7;margin-bottom:2rem}
-.features{text-align:left;margin-bottom:2rem}
-.feature{display:flex;align-items:center;gap:.75rem;padding:.5rem 0;font-size:.85rem;color:var(--text)}
-.feature span{color:var(--green);font-weight:700}
-.actions{display:flex;flex-direction:column;gap:.75rem}
-.btn{padding:.8rem 1.5rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;text-decoration:none;text-align:center;transition:all .2s}
-.btn-primary{background:var(--green-dk);color:#fff}.btn-primary:hover{background:#166534}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--green);color:var(--text)}
+:root{
+  --bg:#060D09;--surface:#0A1410;--surface-2:#0F1B14;--border:#152B1E;
+  --text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;
+  --green:#22C55E;--green-dk:#15803D;--green-glow:rgba(34,197,94,.18);
+  --gold:#FCD34D;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+/* Fondo con gradiente sutil verde radial */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(circle at 50% 0%, rgba(34,197,94,.08), transparent 50%),
+             radial-gradient(circle at 0% 100%, rgba(34,197,94,.04), transparent 40%);
+}
+nav{
+  position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 6%;border-bottom:1px solid var(--border);background:rgba(8,12,20,.6);backdrop-filter:blur(8px)
+}
+.brand{text-decoration:none;display:flex;align-items:center;gap:.5rem}
+.main{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 1.5rem 5rem;text-align:center}
+
+/* Confetti */
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.confetti i{position:absolute;top:-10vh;width:8px;height:14px;border-radius:2px;animation:fall 3.5s cubic-bezier(.4,.6,.6,1) forwards;opacity:0}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0);opacity:0}
+  10%{opacity:1}
+  100%{transform:translateY(110vh) rotate(720deg);opacity:0}
+}
+
+/* Card */
+.card{
+  position:relative;background:linear-gradient(180deg, rgba(34,197,94,.04), rgba(34,197,94,0)),var(--surface);
+  border:1px solid var(--border);border-radius:20px;padding:3rem 2.5rem 2.5rem;
+  max-width:560px;width:100%;
+  box-shadow:0 24px 60px -20px rgba(0,0,0,.5),0 0 0 1px var(--green-glow);
+}
+.card::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:140px;height:3px;background:linear-gradient(90deg,transparent,var(--green),transparent);
+  border-radius:0 0 4px 4px;
+}
+
+/* Check icon */
+.check-wrap{display:flex;justify-content:center;margin-bottom:1.5rem}
+.check{
+  width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle, var(--green-glow), transparent 70%),rgba(34,197,94,.15);
+  border:2px solid var(--green-dk);display:flex;align-items:center;justify-content:center;
+  font-size:2.2rem;color:var(--green);font-weight:700;
+  animation:pop .5s cubic-bezier(.5,1.5,.6,1) both;
+}
+@keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+
+.kicker{
+  display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-family:'JetBrains Mono',monospace;
+  background:var(--green-glow);color:var(--green);padding:.3rem .75rem;border-radius:20px;
+  font-weight:700;letter-spacing:.08em;margin-bottom:1rem;border:1px solid rgba(34,197,94,.25)
+}
+.title{font-size:1.85rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.6rem;line-height:1.15}
+.title em{font-style:normal;background:linear-gradient(135deg,var(--green),#4ADE80);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:.92rem;color:var(--muted-2);line-height:1.6;margin-bottom:2rem;max-width:440px;margin-left:auto;margin-right:auto}
+
+/* Lista de features incluidas */
+.features{text-align:left;margin:0 0 2rem;padding:1.25rem 1.4rem;background:var(--surface-2);border:1px solid var(--border);border-radius:12px}
+.features-title{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--green);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:.85rem}
+.feature{display:flex;align-items:center;gap:.7rem;padding:.4rem 0;font-size:.86rem;color:var(--text)}
+.feature .ico{
+  flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--green-glow);
+  color:var(--green);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700
+}
+
+/* Next steps */
+.nextsteps{margin:0 0 1.5rem;padding:1.1rem 1.3rem;background:rgba(252,211,77,.05);border:1px solid rgba(252,211,77,.2);border-radius:12px;text-align:left}
+.nextsteps-title{font-size:.78rem;font-weight:700;color:var(--gold);margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem}
+.nextsteps p{font-size:.82rem;color:var(--muted-2);line-height:1.55}
+
+/* CTAs */
+.actions{display:flex;flex-direction:column;gap:.7rem}
+.btn{
+  padding:.85rem 1.5rem;border-radius:10px;font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;
+  text-decoration:none;text-align:center;transition:all .2s;border:1px solid transparent;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem
+}
+.btn-primary{background:var(--green-dk);color:#fff;box-shadow:0 4px 14px -2px rgba(34,197,94,.4)}
+.btn-primary:hover{background:#166534;transform:translateY(-1px);box-shadow:0 6px 20px -2px rgba(34,197,94,.5)}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted-2)}
+.btn-ghost:hover{border-color:var(--green);color:var(--text)}
+
+/* Footer note */
+.footer-note{margin-top:2rem;text-align:center;font-size:.72rem;color:var(--muted)}
+.footer-note a{color:var(--muted-2);text-decoration:none;border-bottom:1px dashed var(--border)}
+.footer-note a:hover{color:var(--green);border-color:var(--green)}
+
+/* Responsive */
+@media(max-width:600px){
+  .card{padding:2.25rem 1.5rem 2rem}
+  .title{font-size:1.5rem}
+}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
 </head>
 <body>
+
+<!-- Confetti decorativo -->
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
 <nav>
-  <a href="/" style="text-decoration:none">
+  <a href="/" class="brand">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="24">
       <text x="0" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
       <text x="86" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#22C55E">BASE</text>
     </svg>
   </a>
+  <a href="/perfil" style="font-size:.78rem;color:var(--muted-2);text-decoration:none">Mi perfil →</a>
 </nav>
+
 <div class="main">
   <div class="card">
-    <div class="check">✓</div>
-    <div class="title">Pago completado</div>
-    <div class="sub">Tu plan Pro está activo. Puede tardar unos segundos en reflejarse. Recibirás un email de confirmación.</div>
+
+    <div class="check-wrap">
+      <div class="check">✓</div>
+    </div>
+
+    <div style="text-align:center">
+      <span class="kicker">PLAN PRO ACTIVO</span>
+    </div>
+
+    <h1 class="title">¡Tu empresa ahora está <em>protegida</em>!</h1>
+
+    <p class="sub">
+      Pago confirmado. Tu plan Pro ya está activo y todas las funciones desbloqueadas.
+      Hemos enviado tu factura por email.
+    </p>
+
     <div class="features">
-      <div class="feature"><span>✓</span> Escaneos ilimitados</div>
-      <div class="feature"><span>✓</span> Vigilancia nocturna automática</div>
-      <div class="feature"><span>✓</span> Alertas por email</div>
-      <div class="feature"><span>✓</span> Filtraciones Deep Web</div>
-      <div class="feature"><span>✓</span> Informes PDF ejecutivos</div>
+      <div class="features-title">✦ Acabas de desbloquear</div>
+      <div class="feature"><span class="ico">✓</span> Escaneos ilimitados de tu dominio</div>
+      <div class="feature"><span class="ico">✓</span> Vigilancia nocturna automática 24/7</div>
+      <div class="feature"><span class="ico">✓</span> Alertas instantáneas por email</div>
+      <div class="feature"><span class="ico">✓</span> Detección de filtraciones en Deep Web</div>
+      <div class="feature"><span class="ico">✓</span> Informes PDF ejecutivos ilimitados</div>
+      <div class="feature"><span class="ico">✓</span> Hasta 10 dominios bajo vigilancia</div>
+      <div class="feature"><span class="ico">✓</span> Soporte prioritario</div>
     </div>
+
+    <div class="nextsteps">
+      <div class="nextsteps-title">⚡ Siguientes pasos recomendados</div>
+      <p>
+        <strong style="color:var(--text)">1.</strong> Lanza tu primer escaneo Pro de tu dominio principal.<br>
+        <strong style="color:var(--text)">2.</strong> Activa la vigilancia nocturna en tu perfil.<br>
+        <strong style="color:var(--text)">3.</strong> Añade dominios adicionales si los tienes.
+      </p>
+    </div>
+
     <div class="actions">
-      <a href="/" class="btn btn-primary" onclick="if(typeof navSwitch==='function')navSwitch('escaner')">Empezar a escanear →</a>
-      <a href="/perfil" class="btn btn-ghost">Ver mi perfil</a>
+      <a href="/" class="btn btn-primary">
+        Empezar mi primer escaneo Pro →
+      </a>
+      <a href="/perfil" class="btn btn-ghost">
+        Ir a mi perfil
+      </a>
     </div>
+
+    <div class="footer-note">
+      ¿Algo no cuadra? Escríbenos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a> y te ayudamos en menos de 24h.
+    </div>
+
   </div>
 </div>
+
+<script>
+// Confetti — solo si no se ha mostrado en esta sesión
+(function(){
+  if (sessionStorage.getItem('rb_pe_confetti')) return;
+  sessionStorage.setItem('rb_pe_confetti','1');
+  var colors = ['#22C55E','#15803D','#FCD34D','#4ADE80','#86EFAC','#E2EDF8'];
+  var root = document.getElementById('confetti');
+  if (!root) return;
+  for (var i=0; i<60; i++){
+    var p = document.createElement('i');
+    p.style.left = (Math.random()*100) + 'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDelay = (Math.random()*0.6) + 's';
+    p.style.animationDuration = (2.8 + Math.random()*1.8) + 's';
+    p.style.width = (5 + Math.random()*5) + 'px';
+    p.style.height = (10 + Math.random()*8) + 'px';
+    p.style.transform = 'rotate(' + (Math.random()*360) + 'deg)';
+    root.appendChild(p);
+  }
+  // Limpiar después de la animación para no acumular DOM
+  setTimeout(function(){ root && (root.innerHTML=''); }, 5000);
+})();
+
+// Plausible / GA event (si están cargados)
+try {
+  if (typeof plausible === 'function') plausible('Plan Pro Activado');
+  if (typeof gtag === 'function') gtag('event', 'purchase', {currency:'EUR'});
+} catch(_){}
+</script>
 </body>
 </html>

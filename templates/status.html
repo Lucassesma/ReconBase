@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estado del servicio — ReconBase</title>
+<meta name="description" content="Estado en tiempo real de los servicios de ReconBase: web, base de datos, pagos, emails y CDN.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{{ base_url }}/status">
+<meta property="og:title" content="Estado del servicio — ReconBase">
+<meta property="og:description" content="Comprueba en tiempo real si los servicios de ReconBase están operativos.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ base_url }}/status">
+<meta property="og:locale" content="es_ES">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060D09;--surface:#0A1410;--surface-2:#0F1B14;--border:#152B1E;
+  --text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--dim:#475569;
+  --green:#22C55E;--green-dk:#15803D;--green-glow:rgba(34,197,94,.18);
+  --amber:#F59E0B;--amber-glow:rgba(245,158,11,.15);
+  --red:#EF4444;--red-glow:rgba(239,68,68,.18);
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border);background:rgba(8,12,20,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+nav a.brand{display:flex;align-items:center;gap:.5rem}
+nav .nav-right{display:flex;align-items:center;gap:1.25rem}
+nav .nav-right a{font-size:.82rem;color:var(--muted-2);transition:color .15s}
+nav .nav-right a:hover{color:var(--green)}
+
+.wrap{flex:1;max-width:880px;margin:0 auto;padding:3rem 1.5rem 5rem;width:100%}
+
+/* Header status */
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem 2rem;margin-bottom:2rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%, var(--green-glow), transparent 60%);opacity:.6;pointer-events:none}
+.hero-content{position:relative;z-index:1}
+.kicker{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted-2);background:var(--surface-2);padding:.3rem .8rem;border-radius:20px;font-weight:700;letter-spacing:.12em;margin-bottom:1rem;border:1px solid var(--border);text-transform:uppercase}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0;position:relative}
+.dot.ok{background:var(--green);box-shadow:0 0 0 0 var(--green-glow);animation:pulse 2s infinite}
+.dot.warn{background:var(--amber)}
+.dot.bad{background:var(--red)}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}
+  70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}
+  100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}
+}
+.hero h1{font-size:2rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.4rem}
+.hero h1.ok{color:var(--green)}
+.hero h1.warn{color:var(--amber)}
+.hero h1.bad{color:var(--red)}
+.hero .lastcheck{font-size:.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:.5rem}
+
+/* Service rows */
+.section-title{font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin:0 0 .85rem 1rem}
+.svc-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.svc{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.4rem;border-bottom:1px solid var(--border);transition:background .15s}
+.svc:last-child{border-bottom:none}
+.svc:hover{background:var(--surface-2)}
+.svc-left{display:flex;align-items:center;gap:.85rem;min-width:0}
+.svc-left .dot{margin-top:0}
+.svc-name{font-size:.92rem;font-weight:600;color:var(--text)}
+.svc-detail{font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.svc-right{display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.svc-status{font-size:.78rem;font-weight:700;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em}
+.svc-status.ok{color:var(--green)}
+.svc-status.warn{color:var(--amber)}
+.svc-status.bad{color:var(--red)}
+.svc-latency{font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* Loading skeleton */
+.skel{background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;height:14px;width:60%}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+/* Info card */
+.info{margin-top:2rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.4rem;font-size:.82rem;color:var(--muted-2);line-height:1.7}
+.info strong{color:var(--text)}
+.info a{color:var(--green);border-bottom:1px dashed transparent;transition:border-color .15s}
+.info a:hover{border-color:var(--green)}
+
+footer{border-top:1px solid var(--border);padding:1.5rem 6%;text-align:center;font-size:.75rem;color:var(--dim);margin-top:auto}
+
+@media(max-width:600px){
+  .hero{padding:1.5rem 1.25rem}
+  .hero h1{font-size:1.5rem}
+  .svc{padding:.9rem 1rem;flex-wrap:wrap;align-items:flex-start}
+  .svc-right{flex-direction:column;align-items:flex-end;gap:.2rem}
+}
+</style>
+<link rel="stylesheet" href="/static/css/mobile.css">
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="24">
+      <text x="0" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#E2EDF8">RECON</text>
+      <text x="86" y="29" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" letter-spacing="-0.5" fill="#22C55E">BASE</text>
+    </svg>
+  </a>
+  <div class="nav-right">
+    <a href="/">Inicio</a>
+    <a href="/pricing">Precios</a>
+    <a href="/blog">Blog</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="hero-content">
+      <span class="kicker"><span id="hero-dot" class="dot ok"></span> Estado del sistema</span>
+      <h1 id="hero-title" class="ok">Comprobando…</h1>
+      <p style="color:var(--muted-2);font-size:.92rem;max-width:520px;margin:.4rem auto 0">
+        Estado en tiempo real de todos los servicios que componen ReconBase.
+      </p>
+      <div class="lastcheck" id="last-check">Última comprobación: cargando…</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Servicios</h2>
+  <div class="svc-list" id="svc-list">
+    <div class="svc"><div class="svc-left"><span class="dot warn"></span><div><div class="svc-name skel">&nbsp;</div></div></div></div>
+    <div class="svc"><div class="svc-left"><span class="dot warn"></span><div><div class="svc-name skel">&nbsp;</div></div></div></div>
+    <div class="svc"><div class="svc-left"><span class="dot warn"></span><div><div class="svc-name skel">&nbsp;</div></div></div></div>
+  </div>
+
+  <div class="info">
+    <p><strong>¿Algo no funciona?</strong> Si crees que hay un problema y no lo vemos reflejado aquí, escríbenos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a> con todos los detalles posibles (URL, navegador, captura).</p>
+    <p style="margin-top:.75rem">Esta página se actualiza automáticamente cada 60 segundos. Los datos se cachean en el servidor para no saturar a los proveedores.</p>
+  </div>
+
+</div>
+
+<footer>
+  © 2026 Lucas Sesma Vinck — ReconBase ·
+  <a href="/privacy" style="color:var(--muted)">Privacidad</a> ·
+  <a href="/terms" style="color:var(--muted)">Términos</a>
+</footer>
+
+<script>
+function fmtTime(iso){
+  try {
+    var d = new Date(iso);
+    return d.toLocaleString('es-ES', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  } catch(_){ return iso; }
+}
+
+function render(data){
+  // Hero
+  var hero = document.getElementById('hero-title');
+  var dot = document.getElementById('hero-dot');
+  var titles = {
+    operational: 'Todos los sistemas operativos',
+    degraded:    'Servicio parcialmente degradado',
+    outage:      'Caída del servicio'
+  };
+  var classes = { operational:'ok', degraded:'warn', outage:'bad' };
+  hero.textContent = titles[data.status] || 'Estado desconocido';
+  hero.className = classes[data.status] || 'warn';
+  dot.className  = 'dot ' + (classes[data.status] || 'warn');
+
+  document.getElementById('last-check').textContent =
+    'Última comprobación: ' + fmtTime(data.checked_at) + ' (CET)';
+
+  // Services
+  var list = document.getElementById('svc-list');
+  list.innerHTML = '';
+  data.services.forEach(function(s){
+    var row = document.createElement('div');
+    row.className = 'svc';
+    var dotCls = s.ok ? 'ok' : 'bad';
+    var statusTxt = s.ok ? 'Operativo' : 'Caído';
+    var statusCls = s.ok ? 'ok' : 'bad';
+    row.innerHTML =
+      '<div class="svc-left">' +
+        '<span class="dot ' + dotCls + '"></span>' +
+        '<div>' +
+          '<div class="svc-name">' + escapeHtml(s.name) + '</div>' +
+          '<div class="svc-detail">' + escapeHtml(s.detail || '') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="svc-right">' +
+        '<div class="svc-status ' + statusCls + '">' + statusTxt + '</div>' +
+        '<div class="svc-latency">' + (s.latency_ms != null ? s.latency_ms + ' ms' : '—') + '</div>' +
+      '</div>';
+    list.appendChild(row);
+  });
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+
+function load(){
+  fetch('/api/status', {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(render)
+    .catch(function(){
+      document.getElementById('hero-title').textContent = 'No se pudo conectar';
+      document.getElementById('hero-title').className = 'bad';
+      document.getElementById('hero-dot').className = 'dot bad';
+      document.getElementById('last-check').textContent = 'Error al cargar el estado';
+    });
+}
+
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

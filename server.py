@@ -287,6 +287,7 @@ def sitemap():
         {"loc": base + "/cookies", "priority": "0.3",  "changefreq": "yearly",  "lastmod": today},
         {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly",  "lastmod": today},
         {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/status",  "priority": "0.5",  "changefreq": "daily",   "lastmod": today},
     ]
     # Añadir posts del blog con su lastmod real
     try:
@@ -694,6 +695,94 @@ def pago_exito():
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
+
+
+# ── PÁGINA DE STATUS PÚBLICO ──
+@app.route("/status")
+def status_page():
+    """Estado público de los servicios. Renderiza la plantilla; los checks
+    se hacen vía /api/status para no bloquear la primera carga."""
+    return render_template("status.html")
+
+
+@app.route("/api/status")
+@limiter.limit("60 per hour")
+def api_status():
+    """JSON con el estado de cada dependencia. Cacheado en memoria 60s para
+    no machacar a Stripe/Resend si recargan la página varias veces."""
+    cache_key = "_rb_status_cache"
+    cache_ts_key = "_rb_status_ts"
+    now = time.time()
+    cached = getattr(app, cache_key, None)
+    cached_ts = getattr(app, cache_ts_key, 0)
+    if cached and (now - cached_ts) < 60:
+        return jsonify(cached)
+
+    def _check(name, fn, timeout=4):
+        t0 = time.time()
+        try:
+            ok, detail = fn()
+            return {
+                "name": name,
+                "ok": bool(ok),
+                "latency_ms": int((time.time() - t0) * 1000),
+                "detail": detail or ("Operativo" if ok else "Caído"),
+            }
+        except Exception as e:
+            return {
+                "name": name,
+                "ok": False,
+                "latency_ms": int((time.time() - t0) * 1000),
+                "detail": str(e)[:120],
+            }
+
+    def _check_db():
+        try:
+            from sqlalchemy import text as _sa_text
+            db.session.execute(_sa_text("SELECT 1"))
+            return True, "Operativa"
+        except Exception as e:
+            db.session.rollback()
+            return False, str(e)[:120]
+
+    def _http_head(url, timeout=4, expected=(200, 204, 301, 302, 401, 403)):
+        try:
+            req = urllib.request.Request(url, method="HEAD",
+                                         headers={"User-Agent": "ReconBase-Status/1.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                if resp.status in expected:
+                    return True, f"HTTP {resp.status}"
+                return False, f"HTTP {resp.status}"
+        except urllib.error.HTTPError as he:
+            if he.code in expected:
+                return True, f"HTTP {he.code}"
+            return False, f"HTTP {he.code}"
+        except Exception as e:
+            return False, str(e)[:80]
+
+    services = []
+    services.append(_check("Web (HTTP/HTTPS)", lambda: (True, "Servidor activo")))
+    services.append(_check("Base de datos PostgreSQL", _check_db))
+    services.append(_check("Stripe (pagos)", lambda: _http_head("https://api.stripe.com")))
+    services.append(_check("Resend (emails)", lambda: _http_head("https://api.resend.com")))
+    services.append(_check("Cloudflare (DNS/CDN)", lambda: _http_head("https://www.cloudflare.com")))
+
+    overall = all(s["ok"] for s in services)
+    if overall:
+        global_status = "operational"
+    elif any(s["ok"] for s in services):
+        global_status = "degraded"
+    else:
+        global_status = "outage"
+
+    payload = {
+        "status": global_status,
+        "checked_at": datetime.utcnow().isoformat() + "Z",
+        "services": services,
+    }
+    setattr(app, cache_key, payload)
+    setattr(app, cache_ts_key, now)
+    return jsonify(payload)
 
 @app.route("/privacy")
 def privacy():
@@ -4093,6 +4182,153 @@ with app.app_context():
             db.session.commit()
         except Exception:
             db.session.rollback()
+
+# ─── Bootstrap de blog SEO (idempotente — solo crea si no existe el slug) ───
+_BLOG_SEEDS = [
+    {
+        "slug": "auditoria-seguridad-pymes-espana-guia-2026",
+        "titulo": "Auditoría de seguridad gratis para PYMEs en España: guía completa 2026",
+        "excerpt": "Cómo hacer una auditoría de seguridad básica de tu empresa sin contratar consultores: pasos, herramientas y normativa (RGPD, ENS, ISO 27001).",
+        "tags": "seguridad,pyme,RGPD,ENS,auditoria,2026",
+        "contenido": """
+<h2>¿Por qué tu PYME necesita una auditoría de seguridad?</h2>
+<p>El 43&nbsp;% de los ciberataques en España afectan a pequeñas y medianas empresas, según el INCIBE. La razón es simple: las PYMEs suelen tener menos defensas que las corporaciones grandes, pero los datos que manejan (clientes, facturas, nóminas) son igual de valiosos para los atacantes.</p>
+<p>Una auditoría de seguridad básica te permite identificar los puntos débiles antes de que alguien los explote. Y, lejos de lo que piensa la mayoría, no necesitas un equipo de hackers ni miles de euros en consultores: con las herramientas adecuadas y un par de horas a la semana puedes cubrir lo esencial.</p>
+
+<h2>Qué cubre una auditoría de seguridad básica</h2>
+<ul>
+  <li><strong>Superficie de exposición externa:</strong> qué servicios y puertos están abiertos en tu dominio o IP pública.</li>
+  <li><strong>Configuración de DNS y email:</strong> registros SPF, DKIM y DMARC para evitar suplantaciones.</li>
+  <li><strong>Cabeceras HTTP:</strong> que tu web tenga HTTPS forzado, HSTS, CSP, X-Frame-Options.</li>
+  <li><strong>Filtraciones de datos:</strong> si los emails corporativos aparecen en brechas conocidas (HaveIBeenPwned).</li>
+  <li><strong>Certificados SSL/TLS:</strong> versión TLS, fecha de expiración, emisor.</li>
+  <li><strong>Subdominios olvidados:</strong> entornos de desarrollo, staging, paneles internos accesibles desde fuera.</li>
+</ul>
+
+<h2>Marcos normativos que aplican a tu PYME en España</h2>
+<p>Aunque seas una empresa pequeña, hay tres normativas que casi siempre aplican:</p>
+<ol>
+  <li><strong>RGPD + LOPDGDD:</strong> obligatorio si manejas datos personales de clientes o empleados. Requiere medidas técnicas y organizativas, registro de actividades, y notificación de brechas en 72&nbsp;h.</li>
+  <li><strong>ENS (Esquema Nacional de Seguridad):</strong> si trabajas con la Administración Pública española, aunque sea como subcontrata.</li>
+  <li><strong>NIS2:</strong> si eres proveedor de un sector crítico (salud, energía, logística), aunque seas pequeño.</li>
+</ol>
+
+<h2>Cómo hacer la auditoría tú mismo</h2>
+<p>El proceso simplificado:</p>
+<ol>
+  <li>Lista todos tus dominios, IPs públicas y servicios expuestos.</li>
+  <li>Pasa cada uno por un escáner como <a href="/">ReconBase</a> o <code>nmap</code> + <code>testssl.sh</code>.</li>
+  <li>Comprueba SPF/DMARC en <a href="/comprobar-dmarc-spf">esta herramienta gratuita</a>.</li>
+  <li>Comprueba si tus emails están en brechas en <a href="https://haveibeenpwned.com" target="_blank" rel="noopener">HaveIBeenPwned</a>.</li>
+  <li>Documenta los hallazgos y prioriza por riesgo (CVSS, criticidad del activo).</li>
+  <li>Aplica los fixes y reescanea.</li>
+</ol>
+
+<h2>Cuándo contratar un profesional</h2>
+<p>La auditoría DIY te cubre el 80&nbsp;% del riesgo común. Pero si manejas datos sensibles (sanitarios, financieros, biométricos) o ya has sufrido un incidente, contrata un pentester certificado. En España hay buenos profesionales por 2.000–5.000&nbsp;€ por proyecto.</p>
+
+<h2>Conclusión</h2>
+<p>La seguridad de tu empresa no es opcional, pero tampoco tiene por qué ser cara. <a href="/">Empieza con una auditoría gratuita</a> de tu dominio en 2&nbsp;minutos y descubre qué tienes expuesto. Si los resultados te asustan, hablamos.</p>
+""".strip()
+    },
+    {
+        "slug": "configurar-spf-dkim-dmarc-paso-a-paso",
+        "titulo": "Cómo configurar SPF, DKIM y DMARC paso a paso (ejemplos para Gmail, Office 365 y servidor propio)",
+        "excerpt": "Guía práctica para configurar SPF, DKIM y DMARC y evitar que suplanten tu dominio en correos. Ejemplos copy-paste para Gmail, Microsoft 365 y servidores propios.",
+        "tags": "email,SPF,DMARC,DKIM,seguridad,phishing",
+        "contenido": """
+<h2>El problema: cualquiera puede enviar emails como si fuera tú</h2>
+<p>Por defecto, el protocolo SMTP no verifica el remitente. Eso significa que un atacante puede enviar un correo aparentando venir de <code>jefe@tuempresa.es</code> aunque no tenga acceso a tu dominio. Es la base del 90&nbsp;% del phishing dirigido a empresas (Business Email Compromise).</p>
+<p>SPF, DKIM y DMARC son tres registros DNS que, juntos, cierran este agujero. Configurarlos toma ~30&nbsp;minutos y reduce drásticamente las suplantaciones.</p>
+
+<h2>1. SPF — Sender Policy Framework</h2>
+<p>SPF declara qué servidores tienen permiso para enviar emails con tu dominio. Es un registro TXT en tu DNS.</p>
+<p><strong>Ejemplo para Google Workspace + Resend:</strong></p>
+<pre><code>v=spf1 include:_spf.google.com include:_spf.resend.com ~all</code></pre>
+<p><strong>Ejemplo para Microsoft 365:</strong></p>
+<pre><code>v=spf1 include:spf.protection.outlook.com ~all</code></pre>
+<p><strong>Para servidor propio (con IP fija 1.2.3.4):</strong></p>
+<pre><code>v=spf1 ip4:1.2.3.4 ~all</code></pre>
+<p>El sufijo <code>~all</code> significa "softfail": si el origen no está autorizado, márcalo como sospechoso pero no lo rechaces. Una vez verificado que todo funciona, cámbialo a <code>-all</code> (rechazo estricto).</p>
+
+<h2>2. DKIM — DomainKeys Identified Mail</h2>
+<p>DKIM firma criptográficamente cada email saliente con una clave privada que solo tú tienes. El servidor receptor verifica la firma usando la clave pública publicada en tu DNS.</p>
+<p><strong>Cómo activarlo en Google Workspace:</strong></p>
+<ol>
+  <li>Admin Console → Apps → Google Workspace → Gmail → Authenticate email.</li>
+  <li>Click "Generate new record" → te da un valor TXT para <code>google._domainkey.tudominio.es</code>.</li>
+  <li>Crea ese registro TXT en Cloudflare/tu DNS.</li>
+  <li>Espera a que propague (~30&nbsp;min) y vuelve a Google → "Start authentication".</li>
+</ol>
+<p><strong>En Microsoft 365:</strong> Microsoft Defender → Email & collaboration → Policies → DKIM → Selecciona dominio → Enable.</p>
+
+<h2>3. DMARC — Domain-based Message Authentication</h2>
+<p>DMARC le dice a los servidores receptores qué hacer si SPF y DKIM fallan, y dónde enviarte los reportes.</p>
+<p><strong>Empieza en modo monitor (sin rechazar nada):</strong></p>
+<pre><code>v=DMARC1; p=none; rua=mailto:dmarc@tudominio.es; pct=100; aspf=r; adkim=r</code></pre>
+<p>Crea un TXT en <code>_dmarc.tudominio.es</code> con ese contenido.</p>
+<p>Después de 2 semanas analizando los reportes <code>rua</code>, sube la severidad:</p>
+<pre><code>v=DMARC1; p=quarantine; rua=mailto:dmarc@tudominio.es; pct=50</code></pre>
+<p>Y al cabo de otro mes, máxima severidad:</p>
+<pre><code>v=DMARC1; p=reject; rua=mailto:dmarc@tudominio.es</code></pre>
+
+<h2>4. Verifica que está bien configurado</h2>
+<p>Usa <a href="/comprobar-dmarc-spf">nuestra herramienta gratuita</a> para comprobar tu dominio en 5 segundos. También sirven herramientas como MXToolbox o el "Check MX" de Google.</p>
+
+<h2>Errores comunes</h2>
+<ul>
+  <li><strong>Múltiples SPF records:</strong> solo puede haber UNO por dominio. Si tienes varios, fusiónalos.</li>
+  <li><strong>SPF sobrepasa 10 lookups:</strong> el límite del protocolo. Reduce <code>include:</code> innecesarios.</li>
+  <li><strong>DKIM sin propagar:</strong> espera 30&nbsp;min – 24&nbsp;h tras crear el registro.</li>
+  <li><strong>DMARC reject directo:</strong> si pones <code>p=reject</code> sin pasar por <code>p=none</code>, romperás emails legítimos.</li>
+</ul>
+
+<h2>Conclusión</h2>
+<p>Configurar SPF, DKIM y DMARC es la mejor inversión de seguridad por hora invertida que puede hacer una PYME. <a href="/comprobar-dmarc-spf">Comprueba tu dominio gratis aquí</a> y arregla lo que falte hoy mismo.</p>
+""".strip()
+    },
+]
+
+with app.app_context():
+    try:
+        for _seed in _BLOG_SEEDS:
+            existing = BlogPost.query.filter_by(slug=_seed["slug"]).first()
+            if existing:
+                continue
+            _bp = BlogPost(
+                slug=_seed["slug"],
+                titulo=_seed["titulo"],
+                excerpt=_seed["excerpt"],
+                contenido=_seed["contenido"],
+                tags=_seed["tags"],
+                publicado=True,
+                autor="ReconBase",
+            )
+            db.session.add(_bp)
+        db.session.commit()
+        logger.info(f"[Bootstrap] Blog seeds OK ({len(_BLOG_SEEDS)} verificados)")
+    except Exception as _bse:
+        logger.warning(f"[Bootstrap] blog seeds: {_bse}")
+        db.session.rollback()
+
+
+# ─── Bootstrap de admin: marcar como admin los emails listados en ADMIN_EMAILS ───
+# Uso: en Railway define ADMIN_EMAILS="lucas@example.com,otro@example.com"
+# Se ejecuta en cada arranque, es idempotente.
+with app.app_context():
+    try:
+        _admin_emails_raw = os.getenv("ADMIN_EMAILS", "")
+        _admin_emails = [e.strip().lower() for e in _admin_emails_raw.split(",") if e.strip()]
+        if _admin_emails:
+            for _ae in _admin_emails:
+                _u = User.query.filter_by(email=_ae).first()
+                if _u and not _u.is_admin:
+                    _u.is_admin = True
+                    db.session.commit()
+                    logger.info(f"[Bootstrap] Usuario {_ae} promovido a admin via ADMIN_EMAILS")
+    except Exception as _bae:
+        logger.warning(f"[Bootstrap] ADMIN_EMAILS: {_bae}")
+        db.session.rollback()
 
 # ─── Exentar rutas /api/* del CSRF ───
 # Las protegemos con SameSite=Lax + HttpOnly + mismo origen (fetch AJAX).
