@@ -763,8 +763,10 @@ def api_status():
     services = []
     services.append(_check("Web (HTTP/HTTPS)", lambda: (True, "Servidor activo")))
     services.append(_check("Base de datos PostgreSQL", _check_db))
-    services.append(_check("Stripe (pagos)", lambda: _http_head("https://api.stripe.com")))
-    services.append(_check("Resend (emails)", lambda: _http_head("https://api.resend.com")))
+    # Stripe: usa /v1 (devuelve 401 sin auth, lo cual confirma que el API está vivo).
+    services.append(_check("Stripe (pagos)", lambda: _http_head("https://api.stripe.com/v1/charges", expected=(200,401,403))))
+    # Resend: igual; sin token devuelve 401, eso prueba que la API responde.
+    services.append(_check("Resend (emails)", lambda: _http_head("https://api.resend.com/emails", expected=(200,401,403,405))))
     services.append(_check("Cloudflare (DNS/CDN)", lambda: _http_head("https://www.cloudflare.com")))
 
     overall = all(s["ok"] for s in services)
@@ -1829,46 +1831,52 @@ def enviar_email_pro_activado(user):
     threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
 
 def enviar_email_trial_expirando(user, dias_restantes):
-    def _send():
+    email_destino  = user.email
+    nombre_empresa = user.empresa
+    base_url       = BASE_URL
+    def _send(email, empresa, dias):
         try:
-            base_url = BASE_URL
-            dias_txt = f"{dias_restantes} día{'s' if dias_restantes != 1 else ''}"
+            dias_txt = f"{dias} día{'s' if dias != 1 else ''}"
             with app.app_context():
                 send_html_email(
-                    user.email,
+                    email,
                     f"Tu trial Pro termina en {dias_txt} — ReconBase",
                     f"⏳ Tu trial termina en {dias_txt}",
-                    f"Hola <strong>{user.empresa}</strong>,<br><br>"
+                    f"Hola <strong>{empresa}</strong>,<br><br>"
                     f"Tu periodo de prueba Pro termina en <strong>{dias_txt}</strong>.<br><br>"
                     f"Cuando expire perderás acceso a: vigilancia nocturna, alertas, filtraciones y PDFs.<br><br>"
                     f"Suscríbete ahora para mantener la protección completa.",
                     cta_url=f"{base_url}/#precios",
                     cta_text="Suscribirme a Pro — 29€/mes"
                 )
-                logger.info(f"[Trial] Aviso HTML a {user.email} ({dias_restantes}d)")
+                logger.info(f"[Trial] Aviso HTML a {email} ({dias}d)")
         except Exception as e:
-            logger.error(f"[Trial] Error a {user.email}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+            logger.error(f"[Trial] Error a {email}: {e}")
+    threading.Thread(target=_send, args=(email_destino, nombre_empresa, dias_restantes), daemon=True).start()
 
 def enviar_email_reset(user):
-    def _send():
+    # Extraer atributos antes de lanzar el thread (evita DetachedInstanceError)
+    email_destino = user.email
+    reset_token   = user.reset_token
+    base_url      = BASE_URL
+    link          = f"{base_url}/reset-password/{reset_token}"
+
+    def _send(email, link_url):
         try:
-            base_url = BASE_URL
-            link = f"{base_url}/reset-password/{user.reset_token}"
             with app.app_context():
                 send_html_email(
-                    user.email,
+                    email,
                     "Restablece tu contraseña — ReconBase",
                     "Restablecer contraseña",
                     "Has solicitado restablecer tu contraseña en ReconBase.<br><br>"
                     "El enlace es válido durante <strong>1 hora</strong>. Si no lo solicitaste, ignora este email.",
-                    cta_url=link,
+                    cta_url=link_url,
                     cta_text="Restablecer contraseña"
                 )
-                logger.info(f"[Reset] Email HTML enviado a {user.email}")
+                logger.info(f"[Reset] Email HTML enviado a {email}")
         except Exception as e:
-            logger.error(f"[Reset] Error a {user.email}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+            logger.error(f"[Reset] Error a {email}: {e}")
+    threading.Thread(target=_send, args=(email_destino, link), daemon=True).start()
 
 def enviar_email_limite_free(destinatario):
     def _send():
@@ -2455,11 +2463,13 @@ def cron_trial_expiring():
                 enviar_email_trial_expirando(user, dias)
 
 def enviar_email_reengagement(user):
-    def _send():
+    email_destino  = user.email
+    nombre_empresa = user.empresa
+    base_url       = BASE_URL
+    def _send(email, empresa):
         try:
-            base_url = BASE_URL
             cuerpo = (
-                f"Hola {user.empresa},\n\n"
+                f"Hola {empresa},\n\n"
                 f"Hace tiempo que no escaneas tu dominio en ReconBase.\n\n"
                 f"Las amenazas cambian constantemente. En las últimas 2 semanas:\n"
                 f"  - Nuevas brechas de datos pueden haber expuesto emails de tu empresa\n"
@@ -2471,14 +2481,14 @@ def enviar_email_reengagement(user):
             )
             with app.app_context():
                 mail.send(Message(
-                    subject=f"Hace 2 semanas que no revisas la seguridad de {user.empresa} — ReconBase",
-                    recipients=[user.email],
+                    subject=f"Hace 2 semanas que no revisas la seguridad de {empresa} — ReconBase",
+                    recipients=[email],
                     body=cuerpo
                 ))
-                print(f"[Reengage] Email enviado a {user.email}")
+                logger.info(f"[Reengage] Email enviado a {email}")
         except Exception as e:
-            print(f"[!] Error reengage {user.email}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+            logger.warning(f"[Reengage] Error reengage {email}: {e}")
+    threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
 
 def cron_reengagement():
     """Envía email a usuarios que no han escaneado en 14 días."""
