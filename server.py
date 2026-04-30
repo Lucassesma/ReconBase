@@ -629,7 +629,67 @@ def report_publico(token):
 
 @app.route("/pago-exito")
 def pago_exito():
-    return render_template("pago_exito.html")
+    """Página tras pago. Sirve también como fallback de reconciliación:
+    si el webhook no llegó (eventos en cola, fallo de red, etc.), aquí
+    consultamos a Stripe la sesión y actualizamos el plan del usuario."""
+    session_id = request.args.get("session_id", "")
+    reconciled = False
+    if session_id and current_user.is_authenticated and stripe.api_key:
+        try:
+            sess = stripe.checkout.Session.retrieve(session_id)
+            # Verificar que la sesión es de este usuario (anti-spoofing)
+            ref = getattr(sess, "client_reference_id", None)
+            same_user = (ref and str(ref) == str(current_user.id))
+            email_match = (getattr(sess, "customer_email", "") or "").lower() == current_user.email.lower()
+            if same_user or email_match:
+                mode = getattr(sess, "mode", None)
+                # payment_status puede ser 'paid', 'unpaid', 'no_payment_required' (cupón 100%)
+                pstatus = getattr(sess, "payment_status", "")
+                if mode == "subscription" and pstatus in ("paid", "no_payment_required"):
+                    if current_user.plan != "pro":
+                        current_user.plan = "pro"
+                        db.session.commit()
+                        reconciled = True
+                        logger.info(f"[PagoExito] Reconciliación: plan→pro para {current_user.email} (session {session_id})")
+                        try:
+                            enviar_email_pro_activado(current_user)
+                        except Exception as _me:
+                            logger.warning(f"[PagoExito] email pro_activado: {_me}")
+                        # Crear factura si no hay ya una para esta sesión
+                        try:
+                            meta = getattr(sess, "metadata", {}) or {}
+                            billing = (meta.get("billing") if hasattr(meta, "get") else None) or "mensual"
+                            amount_total = getattr(sess, "amount_total", None)
+                            currency = (getattr(sess, "currency", "eur") or "eur").upper()
+                            desde = datetime.utcnow()
+                            if billing in ("anual", "annual", "yearly"):
+                                hasta = desde + timedelta(days=365)
+                                concepto = "Plan Pro ReconBase — Suscripción anual"
+                                importe_default = 290.00
+                            else:
+                                hasta = desde + timedelta(days=30)
+                                concepto = "Plan Pro ReconBase — Suscripción mensual"
+                                importe_default = 29.00
+                            importe = (amount_total / 100.0) if amount_total else importe_default
+                            inv = Invoice(
+                                user_id=current_user.id,
+                                stripe_invoice_id=getattr(sess, "id", None),
+                                numero=_generar_numero_factura(),
+                                concepto=concepto,
+                                importe=importe,
+                                moneda=currency,
+                                estado='pagada',
+                                periodo_desde=desde,
+                                periodo_hasta=hasta,
+                            )
+                            db.session.add(inv)
+                            db.session.commit()
+                        except Exception as _ie:
+                            logger.warning(f"[PagoExito] crear factura: {_ie}")
+                            db.session.rollback()
+        except Exception as e:
+            logger.warning(f"[PagoExito] retrieve session {session_id}: {e}")
+    return render_template("pago_exito.html", reconciled=reconciled)
 
 @app.route("/terms")
 def terms():
@@ -1050,7 +1110,7 @@ def crear_checkout():
             customer_email=current_user.email,
             client_reference_id=str(current_user.id),
             line_items=[{"price": price_id, "quantity": 1}],
-            success_url=request.host_url + "pago-exito",
+            success_url=request.host_url + "pago-exito?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.host_url + "#precios",
             metadata={"billing": billing, "user_id": str(current_user.id)},
             allow_promotion_codes=True,
