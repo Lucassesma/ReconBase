@@ -60,6 +60,25 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .pill-amber{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid #78350F}
 .pill-gray{background:rgba(100,116,139,.1);color:#94A3B8;border:1px solid #334155}
 select.form-input{cursor:pointer}
+
+/* === Cards colapsables (secciones avanzadas) === */
+details.card-collapsible{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:1.1rem;overflow:hidden;transition:border-color .2s}
+details.card-collapsible[open]{border-color:#1F3D29}
+details.card-collapsible > summary{
+  list-style:none; cursor:pointer; padding:1.15rem 1.5rem;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+  font-size:.92rem; font-weight:600; color:var(--text);
+  user-select:none; transition:background .15s;
+}
+details.card-collapsible > summary::-webkit-details-marker{display:none}
+details.card-collapsible > summary:hover{background:rgba(34,197,94,.04)}
+details.card-collapsible > summary .summary-meta{display:flex;align-items:center;gap:.55rem;font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;font-weight:500;text-transform:none;letter-spacing:0}
+details.card-collapsible > summary .chev{transition:transform .2s;color:var(--muted);font-size:.85rem;line-height:1}
+details.card-collapsible[open] > summary .chev{transform:rotate(90deg);color:var(--green)}
+details.card-collapsible .col-body{padding:0 1.5rem 1.5rem 1.5rem;border-top:1px solid var(--border);padding-top:1.25rem}
+details.card-collapsible .col-body > .form-group:first-child,
+details.card-collapsible .col-body > div:first-child{margin-top:0}
+.col-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(34,197,94,.08);color:var(--green);font-size:.92rem;flex-shrink:0}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
 <script src="/static/js/toast.js"></script>
@@ -303,9 +322,16 @@ select.form-input{cursor:pointer}
     <div class="msg msg-err" id="dom-err" style="margin-top:.5rem"></div>
   </div>
 
-  <!-- Integraciones -->
-  <div class="card" style="position:relative">
-    <div class="card-title">Integraciones {% if user.plan_efectivo == 'free' %}<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.62rem;background:#14532D;color:#4ADE80;padding:.15rem .55rem;border-radius:12px;letter-spacing:.05em;font-family:'JetBrains Mono',monospace;vertical-align:middle;margin-left:.35rem">🔒 PRO</span>{% endif %}</div>
+  <!-- Integraciones (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">🔌</span>
+        <span>Integraciones (Slack, Webhook){% if user.plan_efectivo == 'free' %} <span style="font-size:.62rem;background:#14532D;color:#4ADE80;padding:.15rem .55rem;border-radius:12px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:.4rem">🔒 PRO</span>{% endif %}</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Recibe notificaciones automáticas en Slack o tu propio webhook tras cada escaneo.
     </div>
@@ -339,11 +365,19 @@ select.form-input{cursor:pointer}
     <div class="msg msg-ok" id="int-ok" style="display:none">Integraciones guardadas</div>
     <div class="msg msg-err" id="int-err"></div>
     {% endif %}
-  </div>
+    </div>
+  </details>
 
-  <!-- Alertas configurables -->
-  <div class="card">
-    <div class="card-title">Alertas</div>
+  <!-- Alertas configurables (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">🔔</span>
+        <span>Alertas por email</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Configura el nivel mínimo de riesgo para recibir alertas por email.
     </div>
@@ -353,11 +387,20 @@ select.form-input{cursor:pointer}
       <option value="70">Solo crítico (70%+)</option>
     </select>
     <div class="msg msg-ok" id="alert-ok" style="display:none">Guardado</div>
-  </div>
+    </div>
+  </details>
 
-  <!-- Informe PDF automático -->
-  <div class="card">
-    <div class="card-title">Informe PDF automático</div>
+  <!-- Informe PDF automático (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">📄</span>
+        <span>Informe PDF automático</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
+    <div class="card-title" style="display:none">Informe PDF automático</div>
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.4">
       Recibe un informe PDF de seguridad en tu email de forma automática. Elige frecuencia y día de envío.
     </div>
@@ -391,11 +434,19 @@ select.form-input{cursor:pointer}
       </div>
     </div>
     <div class="msg msg-ok" id="pdf-ok" style="display:none">Guardado</div>
-  </div>
+    </div>
+  </details>
 
-  <!-- API Key -->
-  <div class="card">
-    <div class="card-title">API pública</div>
+  <!-- API Key (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">⚙️</span>
+        <span>API pública (desarrolladores)</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Usa tu API key para integrar escaneos en tus propias herramientas o CI/CD.
       <br>Free: 10 llamadas/mes · Pro: 100 llamadas/mes.
@@ -416,11 +467,19 @@ select.form-input{cursor:pointer}
   -H "Content-Type: application/json" \
   -d '{"dominio": "ejemplo.com"}'</pre>
     </details>
-  </div>
+    </div>
+  </details>
 
-  <!-- 2FA -->
-  <div class="card">
-    <div class="card-title">Autenticación de dos factores (2FA)</div>
+  <!-- 2FA (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">🔐</span>
+        <span>Autenticación en dos pasos (2FA)</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Protege tu cuenta con Google Authenticator u otra app TOTP compatible.
     </div>
@@ -442,12 +501,13 @@ select.form-input{cursor:pointer}
       <button class="btn-outline-red" onclick="disableTotp()" style="font-size:.82rem">Desactivar 2FA</button>
       <div class="msg msg-err" id="totp-dis-err" style="margin-top:.4rem"></div>
     </div>
-  </div>
+    </div>
+  </details>
 
-  <!-- Facturas -->
+  <!-- Facturas (solo si hay alguna) -->
+  {% if facturas %}
   <div class="card">
     <div class="card-title">Mis facturas</div>
-    {% if facturas %}
     <table class="tbl">
       <thead><tr><th>Nº</th><th>Concepto</th><th>Importe</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
       <tbody>
@@ -463,48 +523,59 @@ select.form-input{cursor:pointer}
       {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <div style="font-size:.82rem;color:var(--muted);text-align:center;padding:1rem 0">No hay facturas todavía. Aparecerán aquí cuando actives el plan Pro.</div>
-    {% endif %}
   </div>
+  {% endif %}
 
-  <!-- Audit Log de seguridad -->
-  <div class="card">
-    <div class="card-title">Historial de accesos</div>
-    <div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem">Últimas 50 acciones de seguridad en tu cuenta.</div>
-    <div id="audit-list"><div style="text-align:center;color:var(--dim);font-size:.82rem;padding:1rem">Cargando...</div></div>
-  </div>
-
-  <!-- Privacidad (RGPD) -->
-  <div class="card">
-    <div class="card-title">Privacidad y datos (RGPD)</div>
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.5">
-      Tienes derecho a descargar todos tus datos personales (art. 20 RGPD) y a eliminar tu cuenta de forma permanente (art. 17 RGPD).
+  <!-- Audit Log de seguridad (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">📜</span>
+        <span>Historial de accesos</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem">Últimas 50 acciones de seguridad en tu cuenta.</div>
+      <div id="audit-list"><div style="text-align:center;color:var(--dim);font-size:.82rem;padding:1rem">Cargando...</div></div>
     </div>
+  </details>
 
-    <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
-      <a href="/api/exportar-datos" class="btn" style="background:#0f1b2d;border:1px solid var(--border);color:#93c5fd;padding:.6rem 1.1rem;border-radius:7px;font-size:.82rem;font-weight:600;text-decoration:none;display:inline-block">⬇ Descargar mis datos (JSON)</a>
-    </div>
-
-    <details style="margin-top:.5rem">
-      <summary style="cursor:pointer;color:#F87171;font-size:.85rem;font-weight:600;padding:.4rem 0">Eliminar cuenta de forma permanente</summary>
-      <div style="margin-top:.9rem;padding:1rem;border:1px solid #7F1D1D;border-radius:8px;background:#1a0a0a">
-        <div style="font-size:.8rem;color:#FCA5A5;margin-bottom:.9rem;line-height:1.5">
-          <strong>Acción irreversible.</strong> Se cancelará tu suscripción de Stripe (si tienes una activa), se borrarán todos tus escaneos y se eliminará tu cuenta. No podrás recuperar los datos.
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tu contraseña</label>
-          <input class="form-input" type="password" id="del-pass" placeholder="Contraseña actual" autocomplete="current-password">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Escribe <code style="color:#F87171">ELIMINAR</code> para confirmar</label>
-          <input class="form-input" type="text" id="del-confirm" placeholder="ELIMINAR" autocomplete="off">
-        </div>
-        <button class="btn-outline-red" onclick="eliminarCuenta()" id="btn-del-cuenta">Eliminar cuenta definitivamente</button>
-        <div class="msg msg-err" id="msg-del-err"></div>
+  <!-- Privacidad (RGPD) (colapsable) -->
+  <details class="card-collapsible">
+    <summary>
+      <span style="display:flex;align-items:center;gap:.75rem">
+        <span class="col-icon">🛡️</span>
+        <span>Privacidad y datos (RGPD)</span>
+      </span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="col-body">
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.5">
+        Descarga tus datos (art. 20 RGPD) o elimina tu cuenta (art. 17 RGPD).
       </div>
-    </details>
-  </div>
+      <a href="/api/exportar-datos" class="btn" style="background:#0f1b2d;border:1px solid var(--border);color:#93c5fd;padding:.6rem 1.1rem;border-radius:7px;font-size:.82rem;font-weight:600;text-decoration:none;display:inline-block;width:auto;margin-bottom:1rem">⬇ Descargar mis datos (JSON)</a>
+
+      <details style="margin-top:.5rem">
+        <summary style="cursor:pointer;color:#F87171;font-size:.85rem;font-weight:600;padding:.4rem 0">Eliminar cuenta de forma permanente</summary>
+        <div style="margin-top:.9rem;padding:1rem;border:1px solid #7F1D1D;border-radius:8px;background:#1a0a0a">
+          <div style="font-size:.8rem;color:#FCA5A5;margin-bottom:.9rem;line-height:1.5">
+            <strong>Acción irreversible.</strong> Se cancelará tu suscripción de Stripe (si tienes una activa), se borrarán todos tus escaneos y se eliminará tu cuenta. No podrás recuperar los datos.
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tu contraseña</label>
+            <input class="form-input" type="password" id="del-pass" placeholder="Contraseña actual" autocomplete="current-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Escribe <code style="color:#F87171">ELIMINAR</code> para confirmar</label>
+            <input class="form-input" type="text" id="del-confirm" placeholder="ELIMINAR" autocomplete="off">
+          </div>
+          <button class="btn-outline-red" onclick="eliminarCuenta()" id="btn-del-cuenta">Eliminar cuenta definitivamente</button>
+          <div class="msg msg-err" id="msg-del-err"></div>
+        </div>
+      </details>
+    </div>
+  </details>
 
   <!-- Cerrar sesión -->
   <div style="margin-bottom:3rem">

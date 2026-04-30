@@ -22,24 +22,25 @@ html, body, .nav, .card, .plan, .svc, .feature, button, input, textarea {
 
 /* === Botón flotante de toggle === */
 .rb-theme-toggle{
-  position:fixed; bottom:1.25rem; right:1.25rem;
-  width:44px; height:44px; border-radius:50%;
-  background:#0A1410; color:#FCD34D;
-  border:1px solid #1E2D4A;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; z-index:8000;
-  box-shadow:0 6px 24px -6px rgba(0,0,0,.5);
-  transition:transform .15s ease, background .2s ease;
-  font-size:1.15rem; line-height:1;
+  position:fixed !important; bottom:1.25rem !important; right:1.25rem !important;
+  width:48px !important; height:48px !important; border-radius:50% !important;
+  background:#0A1410 !important; color:#FCD34D !important;
+  border:1px solid rgba(252,211,77,.4) !important;
+  display:flex !important; align-items:center !important; justify-content:center !important;
+  cursor:pointer !important; z-index:99999 !important;
+  box-shadow:0 8px 32px -6px rgba(0,0,0,.6), 0 0 0 1px rgba(252,211,77,.15) !important;
+  transition:transform .15s ease, background .2s ease, color .2s ease !important;
+  padding:0 !important;
 }
-.rb-theme-toggle:hover{ transform:translateY(-2px); }
+.rb-theme-toggle:hover{ transform:translateY(-2px) scale(1.05) !important; }
+.rb-theme-toggle:active{ transform:translateY(0) scale(.96) !important; }
 html[data-theme="light"] .rb-theme-toggle{
-  background:#FFFFFF; color:#0F172A; border-color:#E2E8F0;
-  box-shadow:0 6px 24px -6px rgba(15,23,42,.15);
+  background:#FFFFFF !important; color:#0F172A !important; border-color:#E2E8F0 !important;
+  box-shadow:0 8px 32px -6px rgba(15,23,42,.2), 0 0 0 1px rgba(15,23,42,.05) !important;
 }
-.rb-theme-toggle .icon-sun, .rb-theme-toggle .icon-moon{display:none}
-html[data-theme="light"] .rb-theme-toggle .icon-moon{display:inline}
-html:not([data-theme="light"]) .rb-theme-toggle .icon-sun{display:inline}
+.rb-theme-toggle svg{ display:none !important; }
+html[data-theme="light"] .rb-theme-toggle .icon-moon{ display:block !important; }
+html:not([data-theme="light"]) .rb-theme-toggle .icon-sun{ display:block !important; }
 
 /* Ajustes específicos cuando estás en modo claro: paneles que tenían
    fondo oscuro hardcoded deben aclararse. Solo aplica a los más visibles. */
