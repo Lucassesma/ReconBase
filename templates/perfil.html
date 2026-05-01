@@ -538,7 +538,7 @@ details.card-collapsible .col-body > div:first-child{margin-top:0}
     </div>
   </details>
 
-  <!-- Privacidad (RGPD) (colapsable) -->
+  <!-- Privacidad (RGPD) (colapsable) — botón eliminar visible al expandir -->
   <details class="card-collapsible">
     <summary>
       <span style="display:flex;align-items:center;gap:.75rem">
@@ -549,28 +549,26 @@ details.card-collapsible .col-body > div:first-child{margin-top:0}
     </summary>
     <div class="col-body">
       <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.5">
-        Descarga tus datos (art. 20 RGPD) o elimina tu cuenta (art. 17 RGPD).
+        Tienes derecho a descargar todos tus datos personales (art. 20 RGPD) y a eliminar tu cuenta de forma permanente (art. 17 RGPD).
       </div>
-      <a href="/api/exportar-datos" class="btn" style="background:#0f1b2d;border:1px solid var(--border);color:#93c5fd;padding:.6rem 1.1rem;border-radius:7px;font-size:.82rem;font-weight:600;text-decoration:none;display:inline-block;width:auto;margin-bottom:1rem">⬇ Descargar mis datos (JSON)</a>
+      <a href="/api/exportar-datos" class="btn" style="background:#0f1b2d;border:1px solid var(--border);color:#93c5fd;padding:.6rem 1.1rem;border-radius:7px;font-size:.82rem;font-weight:600;text-decoration:none;display:inline-block;width:auto;margin-bottom:1.5rem">⬇ Descargar mis datos (JSON)</a>
 
-      <details style="margin-top:.5rem">
-        <summary style="cursor:pointer;color:#F87171;font-size:.85rem;font-weight:600;padding:.4rem 0">Eliminar cuenta de forma permanente</summary>
-        <div style="margin-top:.9rem;padding:1rem;border:1px solid #7F1D1D;border-radius:8px;background:#1a0a0a">
-          <div style="font-size:.8rem;color:#FCA5A5;margin-bottom:.9rem;line-height:1.5">
-            <strong>Acción irreversible.</strong> Se cancelará tu suscripción de Stripe (si tienes una activa), se borrarán todos tus escaneos y se eliminará tu cuenta. No podrás recuperar los datos.
-          </div>
-          <div class="form-group">
-            <label class="form-label">Tu contraseña</label>
-            <input class="form-input" type="password" id="del-pass" placeholder="Contraseña actual" autocomplete="current-password">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Escribe <code style="color:#F87171">ELIMINAR</code> para confirmar</label>
-            <input class="form-input" type="text" id="del-confirm" placeholder="ELIMINAR" autocomplete="off">
-          </div>
-          <button class="btn-outline-red" onclick="eliminarCuenta()" id="btn-del-cuenta">Eliminar cuenta definitivamente</button>
-          <div class="msg msg-err" id="msg-del-err"></div>
+      <div style="margin-top:.5rem;padding:1.1rem 1.25rem;border:1px solid #7F1D1D;border-radius:8px;background:linear-gradient(180deg,#1a0a0a,#0F0606)">
+        <div style="font-size:.85rem;color:#FCA5A5;font-weight:700;margin-bottom:.5rem">⚠️ Eliminar mi cuenta de forma permanente</div>
+        <div style="font-size:.78rem;color:#F87171;margin-bottom:1rem;line-height:1.5">
+          <strong>Acción irreversible.</strong> Se cancelará tu suscripción de Stripe (si tienes una activa), se borrarán todos tus escaneos y se eliminará tu cuenta. No podrás recuperar los datos.
         </div>
-      </details>
+        <div class="form-group">
+          <label class="form-label">Tu contraseña</label>
+          <input class="form-input" type="password" id="del-pass" placeholder="Contraseña actual" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Escribe <code style="color:#F87171">ELIMINAR</code> para confirmar</label>
+          <input class="form-input" type="text" id="del-confirm" placeholder="ELIMINAR" autocomplete="off">
+        </div>
+        <button class="btn-outline-red" onclick="eliminarCuenta()" id="btn-del-cuenta">Eliminar cuenta definitivamente</button>
+        <div class="msg msg-err" id="msg-del-err"></div>
+      </div>
     </div>
   </details>
 

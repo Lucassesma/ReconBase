@@ -106,11 +106,22 @@ CABECERAS = {
 }
 
 def check_security_headers(domain, timeout=6):
+    """Comprueba cabeceras de seguridad. Usa UA de navegador real para evitar
+    que Cloudflare/CDNs sirvan una página de bot-challenge sin las cabeceras
+    reales del sitio (que era lo que pasaba con UA 'ReconBase-Enterprise-v2')."""
     resultados = {v: False for v in CABECERAS.values()}
+    browser_ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/126.0.0.0 Safari/537.36")
     for scheme in ["https","http"]:
         try:
             r = requests.get(f"{scheme}://{domain}", timeout=timeout,
-                             allow_redirects=True, headers={"User-Agent":"ReconBase-Enterprise-v2"})
+                             allow_redirects=True,
+                             headers={
+                                 "User-Agent": browser_ua,
+                                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                                 "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+                             })
             for k, v in CABECERAS.items():
                 if k in r.headers: resultados[v] = True
             return resultados
