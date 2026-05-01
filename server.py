@@ -1067,6 +1067,8 @@ def scan_demo():
             "demo": True, "locked": True
         })
 
+    # Logged-in: ejecuta el MISMO conjunto de checks que /api/scan para que
+    # el resultado del demo y el del dashboard coincidan exactamente.
     try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
     except Exception: dns = {}
     try: headers = engine.check_security_headers(dominio)
@@ -1077,8 +1079,19 @@ def scan_demo():
         banners = engine.banner_grab(dominio, puertos)
         os_det  = engine.detect_os_from_banners(banners)
     except Exception: banners = {}; os_det = None
+    try: subs = [] if es_ip_flag else engine.scan_subdomains(dominio)
+    except Exception: subs = []
+    try: cms = {"cms": None, "version": None, "riesgo": False, "detalle": ""} if es_ip_flag else engine.detect_cms(dominio)
+    except Exception: cms = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
+    leaks = []
+    es_email = "@" in objetivo
+    if es_email and API_KEY:
+        try: leaks = engine.check_leaks_real(objetivo, API_KEY) or []
+        except Exception: leaks = []
 
-    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+    riesgo, desglose = calcular_riesgo(puertos, dns, leaks, headers)
+    if cms.get("riesgo"):
+        riesgo = min(100, riesgo + 10); desglose["CMS desactualizable"] = 10
     if ssl_info.get("caducado"):
         riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
     elif ssl_info.get("pronto_a_caducar"):
@@ -1089,9 +1102,9 @@ def scan_demo():
         "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
         "puertos": puertos, "dns": dns,
         "headers": {k: bool(v) for k, v in headers.items()},
-        "subs": [], "leaks": 0, "leaks_raw": [],
+        "subs": subs, "leaks": len(leaks), "leaks_raw": leaks,
         "riesgo": riesgo, "label": label, "color": color,
-        "desglose": desglose, "ssl": ssl_info,
+        "desglose": desglose, "cms": cms, "ssl": ssl_info,
         "banners": banners, "os": os_det,
         "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
         "demo": True, "locked": False
@@ -2036,7 +2049,13 @@ def scan():
             return jsonify({"error": "limite_free"}), 403
 
     data     = request.get_json()
-    objetivo = data.get("objetivo","").strip().replace("https://","").replace("http://","").rstrip("/")
+    raw      = (data.get("objetivo") or "").strip()
+    if not raw:
+        return jsonify({"error": "Objetivo vacío"}), 400
+    # Normalización consistente con /api/scan-demo: quita scheme, www., path, espacios
+    import re as _re_norm
+    objetivo = _re_norm.sub(r'^https?://', '', raw, flags=_re_norm.IGNORECASE)
+    objetivo = objetivo.replace('www.', '', 1).split('/')[0].rstrip('.').lower()
     if not objetivo:
         return jsonify({"error": "Objetivo vacío"}), 400
 

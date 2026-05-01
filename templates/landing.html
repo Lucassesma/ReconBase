@@ -1886,18 +1886,13 @@ function renderDemoResult(d){
         : 'Regístrate gratis para ver el informe completo con las recomendaciones específicas.');
     }
     hit.classList.add(cls);
-    var objetivoSafe = (d.objetivo||'').replace(/"/g,'&quot;');
     var ctaLabel = isLoggedIn ? 'Abrir en el escáner →' : 'Regístrate gratis →';
     var ctaInner;
     if (isLoggedIn){
-      // Lleva al escáner real (autenticado) y pre-rellena el dominio.
-      ctaInner = '<a href="#escaner" class="dr-hit-cta" onclick="event.preventDefault();' +
-                 'var o=document.getElementById(\'sc-objetivo\');' +
-                 'if(o){o.value=' + JSON.stringify(d.objetivo||'') + ';o.focus();}' +
-                 'if(typeof navSwitch===\'function\')navSwitch(\'escaner\');' +
-                 'var t=document.getElementById(\'escaner\')||document.querySelector(\'.scanner-bar\');' +
-                 'if(t)t.scrollIntoView({behavior:\'smooth\',block:\'center\'});' +
-                 'return false;">' + ctaLabel + '</a>';
+      // Función global rbAbrirEscaner(): cambia a vista escáner, pre-rellena
+      // y lanza el scan completo (mismo que el dashboard) — sin discrepancias.
+      var safeObj = (d.objetivo||'').replace(/'/g, "\\'");
+      ctaInner = '<button type="button" class="dr-hit-cta" onclick="rbAbrirEscaner(\'' + safeObj + '\')" style="cursor:pointer;border:none">' + ctaLabel + '</button>';
     } else {
       ctaInner = '<a href="/register?target=' + encodeURIComponent(d.objetivo||'') + '" class="dr-hit-cta">' + ctaLabel + '</a>';
     }
@@ -1916,7 +1911,7 @@ function renderDemoResult(d){
     '<div><div style="font-size:.7rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.15em">'+d.label+'</div>'+
     '<div style="font-size:.85rem;color:#86EFAC;margin-top:.3rem">'+d.objetivo+' · '+d.timestamp+'</div></div>'+
     (isLoggedIn
-      ? '<a href="#escaner" onclick="event.preventDefault();var o=document.getElementById(\'sc-objetivo\');if(o)o.value='+JSON.stringify(d.objetivo)+';navSwitch(\'escaner\');" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap;text-decoration:none">Ver en el escáner →</a>'
+      ? '<button type="button" onclick="rbAbrirEscaner(\''+(d.objetivo||'').replace(/\'/g,"\\\\'")+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap;border:none;cursor:pointer">Ver en el escáner →</button>'
       : '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap">Guardar informe →</a>');
 
   // Barra de riesgo
@@ -2026,6 +2021,30 @@ function renderDemoResult(d){
 
   // Limpiar pasos de carga
   document.getElementById('dr-steps').innerHTML='';
+}
+
+/* ── ABRIR ESCÁNER (desde demo result, navega + pre-rellena + lanza scan completo) ── */
+function rbAbrirEscaner(objetivo) {
+  // 1. Cambiar a vista escáner
+  if (typeof navSwitch === 'function') navSwitch('escaner');
+  // 2. Pre-rellenar el input
+  var inp = document.getElementById('sc-objetivo');
+  if (inp) {
+    inp.value = objetivo || '';
+    inp.focus();
+  }
+  // 3. Ocultar el banner de "demo result" del landing (ya no aplica en vista escáner)
+  var lr = document.getElementById('landing-results');
+  if (lr) lr.style.display = 'none';
+  // 4. Scroll al input
+  setTimeout(function(){
+    var sb = document.querySelector('.scanner-bar') || document.getElementById('escaner');
+    if (sb) sb.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 50);
+  // 5. Lanzar el scan completo (mismo que el dashboard, no la versión limitada del demo)
+  if (typeof scLanzar === 'function') {
+    setTimeout(function(){ scLanzar(); }, 200);
+  }
 }
 
 /* ── NAV SWITCH ── */
