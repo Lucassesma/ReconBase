@@ -54,7 +54,10 @@
       "Bash(venv/Scripts/python.exe -m pip install imageio imageio-ffmpeg)",
       "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('server.py OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('server.py OK'\\); import ast; ast.parse\\(open\\('models.py', encoding='utf-8'\\).read\\(\\)\\); print\\('models.py OK'\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python)",
+      "Bash(pip install *)",
+      "Bash(python -m pip install imageio imageio-ffmpeg --quiet)"
     ]
   }
 }
