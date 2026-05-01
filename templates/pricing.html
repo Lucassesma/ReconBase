@@ -19,7 +19,12 @@
 <meta name="twitter:title" content="Precios — ReconBase | Desde 0€">
 <meta name="twitter:description" content="Planes desde 0€. Escaneo completo de seguridad para tu dominio, cabeceras, SSL, DNS y filtraciones.">
 <meta name="twitter:image" content="{{ base_url }}/og/pricing.png">
-{% if config.PLAUSIBLE_DOMAIN %}<script defer data-domain="{{ config.PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>{% endif %}
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://plausible.io/js/pa-uwYWoSD9fwi10xFjxribC.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
 {% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
