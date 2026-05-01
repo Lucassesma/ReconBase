@@ -331,6 +331,72 @@ def robots():
     return Response(txt, mimetype="text/plain")
 
 
+# ── PROXY PLAUSIBLE — esquiva adblockers sin romper la privacidad ──
+# El script y los eventos se sirven desde reconbase.es (no plausible.io)
+# de modo que filtros como uBlock/Brave Shields no los bloquean.
+# Plausible recibe el evento normal incluyendo X-Forwarded-For del visitante.
+_PLAUSIBLE_SCRIPT_URL = "https://plausible.io/js/pa-uwYWoSD9fwi10xFjxribC.js"
+_PLAUSIBLE_EVENT_URL  = "https://plausible.io/api/event"
+_PLAUSIBLE_SCRIPT_CACHE = {"data": None, "ts": 0}
+
+@app.route("/js/pa.js")
+def proxy_plausible_script():
+    """Sirve el script de Plausible desde nuestro dominio. Cachea 1h en memoria."""
+    import time as _t
+    from flask import Response
+    now = _t.time()
+    if _PLAUSIBLE_SCRIPT_CACHE["data"] and (now - _PLAUSIBLE_SCRIPT_CACHE["ts"]) < 3600:
+        return Response(_PLAUSIBLE_SCRIPT_CACHE["data"], mimetype="application/javascript",
+                        headers={"Cache-Control": "public, max-age=3600"})
+    try:
+        req = urllib.request.Request(_PLAUSIBLE_SCRIPT_URL,
+                                     headers={"User-Agent": "ReconBase-Proxy/1.0"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            body = resp.read()
+            _PLAUSIBLE_SCRIPT_CACHE["data"] = body
+            _PLAUSIBLE_SCRIPT_CACHE["ts"]   = now
+            return Response(body, mimetype="application/javascript",
+                            headers={"Cache-Control": "public, max-age=3600"})
+    except Exception as e:
+        logger.warning(f"[PlausibleProxy] script fetch falló: {e}")
+        # Devolver un stub que no rompe nada
+        stub = b"window.plausible=window.plausible||function(){};"
+        return Response(stub, mimetype="application/javascript",
+                        headers={"Cache-Control": "no-cache"})
+
+
+@app.route("/api/track", methods=["POST"])
+@limiter.limit("300 per minute")
+def proxy_plausible_event():
+    """Reenvía el evento al endpoint real de Plausible añadiendo
+    X-Forwarded-For para que cuente la IP del visitante real."""
+    payload = request.get_data()
+    if not payload:
+        return ("", 204)
+    # IP real del visitante (Cloudflare la pone en CF-Connecting-IP)
+    real_ip = (request.headers.get("CF-Connecting-IP")
+               or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+               or request.remote_addr or "")
+    user_agent = request.headers.get("User-Agent", "Mozilla/5.0")
+    fwd_headers = {
+        "Content-Type": "application/json",
+        "User-Agent": user_agent,
+        "X-Forwarded-For": real_ip,
+    }
+    try:
+        req = urllib.request.Request(_PLAUSIBLE_EVENT_URL, data=payload,
+                                     headers=fwd_headers, method="POST")
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            return ("", resp.status)
+    except urllib.error.HTTPError as he:
+        # Reenviar el código de estado real (Plausible puede devolver 202/400/etc)
+        return ("", he.code)
+    except Exception as e:
+        # Fallar silenciosamente — analytics nunca debe romper el flujo del usuario
+        logger.warning(f"[PlausibleProxy] event forward falló: {e}")
+        return ("", 202)  # Decir OK al cliente para no contaminar logs del browser
+
+
 # ── SEO: Herramienta gratuita DMARC/SPF ──
 @app.route("/comprobar-dmarc-spf")
 def tool_dmarc_spf():

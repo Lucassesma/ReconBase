@@ -33,10 +33,10 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
 <!-- Privacy-friendly analytics by Plausible -->
-<script async data-domain="reconbase.es" src="https://plausible.io/js/pa-uwYWoSD9fwi10xFjxribC.js"></script>
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
 <script>
   window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
+  plausible.init({domain:"reconbase.es", endpoint:"/api/track"})
 </script>
 </head>
 <body>

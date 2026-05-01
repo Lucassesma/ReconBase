@@ -14,10 +14,10 @@
 <meta property="og:image" content="{{ base_url }}/og/privacy.png">
 <meta property="og:locale" content="es_ES">
 <!-- Privacy-friendly analytics by Plausible -->
-<script async data-domain="reconbase.es" src="https://plausible.io/js/pa-uwYWoSD9fwi10xFjxribC.js"></script>
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
 <script>
   window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
+  plausible.init({domain:"reconbase.es", endpoint:"/api/track"})
 </script>
 {% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%233B82F6'>B</text></svg>">

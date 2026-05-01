@@ -34,10 +34,7 @@
 <meta name="twitter:description" content="Escanea tu dominio en 2 minutos. Detecta puertos expuestos, filtraciones de datos y vulnerabilidades DNS. Gratis, sin conocimientos técnicos.">
 <meta name="twitter:image" content="{{ base_url }}/og/home.png">
 
-<!-- Analytics (Plausible o GA, configurable por env) -->
-{% if config.PLAUSIBLE_DOMAIN %}
-<script defer data-domain="{{ config.PLAUSIBLE_DOMAIN }}" src="https://plausible.io/js/script.js"></script>
-{% endif %}
+<!-- Analytics (GA opcional; Plausible se inserta abajo proxied via /js/pa.js) -->
 {% if config.GA_ID %}
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>
@@ -512,10 +509,10 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;display:flex;justify-c
 <link rel="stylesheet" href="/static/css/mobile.css">
 <script src="/static/js/toast.js"></script>
 <!-- Privacy-friendly analytics by Plausible -->
-<script async data-domain="reconbase.es" src="https://plausible.io/js/pa-uwYWoSD9fwi10xFjxribC.js"></script>
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
 <script>
   window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init()
+  plausible.init({domain:"reconbase.es", endpoint:"/api/track"})
 </script>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
