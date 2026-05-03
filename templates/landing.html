@@ -1711,20 +1711,30 @@ function animateCounter(id,target,dur){
   requestAnimationFrame(step);
 }
 var heroAnimated=false;
-var gaugeEl=document.querySelector('.gauge-wrap');
-if(gaugeEl){
-  var obs=new IntersectionObserver(function(e){
-    if(e[0].isIntersecting&&!heroAnimated){
-      heroAnimated=true;
-      animateGauge();
-      animateCounter('cnt-dominios',{{ stats_scans | default(0) }},2000);
-      animateCounter('cnt-vulns',{{ stats_vulns | default(0) }},2200);
-      animateCounter('cnt-breaches',{{ stats_breaches | default(0) }},1800);
+function _heroAnimateOnce(){
+  if (heroAnimated) return;
+  heroAnimated=true;
+  // animateGauge solo afecta al gauge visual (oculto en móvil → no-op visual,
+  // pero seguro de llamar). Los contadores se animan siempre.
+  try { animateGauge(); } catch(_){}
+  animateCounter('cnt-dominios',{{ stats_scans | default(0) }},2000);
+  animateCounter('cnt-vulns',{{ stats_vulns | default(0) }},2200);
+  animateCounter('cnt-breaches',{{ stats_breaches | default(0) }},1800);
+}
+// Observador principal: la franja de contadores SIEMPRE es visible (incluso
+// en móvil). Usamos el contenedor de los stats como trigger.
+var counterEl = document.querySelector('.hero-counter') || document.querySelector('.gauge-wrap');
+if (counterEl){
+  var obs = new IntersectionObserver(function(e){
+    if (e[0].isIntersecting){
+      _heroAnimateOnce();
       obs.disconnect();
     }
-  },{threshold:.2});
-  obs.observe(gaugeEl);
+  },{threshold:.15});
+  obs.observe(counterEl);
 }
+// Fallback: si por algún motivo no se dispara en 1.5s, lanzar igual
+setTimeout(_heroAnimateOnce, 1500);
 function animarTerminal(){
   ['tlog1','tlog2','tlog3','tlog4','tlog5','tlog6'].forEach((id,i)=>{
     setTimeout(()=>{

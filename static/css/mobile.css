@@ -301,3 +301,39 @@ pre, code { max-width: 100%; overflow-x: auto; word-break: break-word; }
   .hero-counter-inner { flex-wrap: wrap !important; justify-content: center; }
 }
 
+/* Stats del hero adaptados a móvil: más grandes, mejor espaciado, divisores
+   horizontales en lugar de verticales para que respiren. Mismo contenido
+   que desktop, layout adaptado. */
+@media (max-width: 768px) {
+  .hero-counter { padding: 1.5rem 6% !important; }
+  .hero-counter-inner {
+    flex-direction: column !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+  }
+  .hc-stat {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    padding: .85rem 0 !important;
+    border-bottom: 1px solid rgba(22,163,74,.15) !important;
+    width: 100% !important;
+    gap: 1rem !important;
+  }
+  .hc-stat:last-child { border-bottom: none !important; }
+  .hc-num {
+    font-size: 1.6rem !important;
+    font-weight: 800 !important;
+    color: #4ADE80 !important;
+    letter-spacing: -.03em !important;
+    line-height: 1 !important;
+  }
+  .hc-lbl {
+    font-size: .82rem !important;
+    color: rgba(226,237,248,.75) !important;
+    text-align: right !important;
+  }
+  .hc-div { display: none !important; } /* Divisores verticales fuera */
+}
+
