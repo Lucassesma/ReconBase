@@ -69,16 +69,16 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="success-msg" id="success-msg">Cuenta creada correctamente. Redirigiendo...</div>
     <form onsubmit="handleRegister(event)">
       <div class="field">
-        <label>Nombre de empresa</label>
-        <input type="text" id="empresa" placeholder="Mi Empresa SL" required>
-      </div>
-      <div class="field">
         <label>Email</label>
-        <input type="email" id="email" placeholder="admin@miempresa.com" value="{{ request.args.get('email', '') }}" required>
+        <input type="email" id="email" placeholder="tu@empresa.com" value="{{ request.args.get('email', '') }}" required autofocus>
       </div>
       <div class="field">
         <label>Contraseña</label>
         <input type="password" id="password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+      </div>
+      <div class="field">
+        <label>Nombre de empresa <span style="color:var(--muted);font-size:.75rem;font-weight:400">(opcional)</span></label>
+        <input type="text" id="empresa" placeholder="Lo puedes rellenar después">
       </div>
       <div class="field">
         <label>Plan</label>

@@ -935,13 +935,17 @@ def api_register():
     data     = request.get_json()
     email    = data.get("email", "").strip().lower()
     password = data.get("password", "")
-    empresa  = data.get("empresa", "").strip()
-    if not email or not password or not empresa:
-        return jsonify({"ok": False, "error": "Todos los campos son obligatorios"}), 400
+    empresa  = (data.get("empresa") or "").strip()
+    if not email or not password:
+        return jsonify({"ok": False, "error": "Email y contraseña son obligatorios"}), 400
     if len(password) < 8:
         return jsonify({"ok": False, "error": "La contraseña debe tener al menos 8 caracteres"}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({"ok": False, "error": "Este email ya está registrado"}), 400
+    # Si no rellenan empresa, fallback al nombre antes del @ (capitalizado).
+    # Lo pueden cambiar luego en /perfil.
+    if not empresa:
+        empresa = email.split("@")[0].replace(".", " ").replace("_", " ").title()[:120] or "Tu empresa"
     user = User(email=email, empresa=empresa)
     user.set_password(password)
     user.generate_verify_token()
