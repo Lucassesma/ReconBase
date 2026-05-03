@@ -1868,9 +1868,15 @@ def enviar_email_bienvenida(user):
                     cta_url=base_url,
                     cta_text="Hacer mi primer escaneo"
                 )
-                logger.info(f"[Welcome] Email HTML enviado a {email}") # Cambiado
+                logger.info(f"[Welcome] Email HTML enviado a {email}")
         except Exception as e:
-            logger.error(f"[Welcome] Error a {email}: {e}") # Cambiado
+            # 403 de Resend, bounces, emails role-based, etc. NO son bugs del código
+            # → degradar a WARNING para no spamear Sentry con falsos positivos
+            err_str = str(e)
+            if "Resend 403" in err_str or "Resend 4" in err_str or "bounce" in err_str.lower():
+                logger.warning(f"[Welcome] Email rechazado por proveedor para {email}: {err_str[:200]}")
+            else:
+                logger.error(f"[Welcome] Error a {email}: {e}")
 
     # 3. Lanzamos el hilo pasándole nuestros textos seguros
     threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
@@ -1904,7 +1910,7 @@ def enviar_email_pro_activado(user):
                 )
                 logger.info(f"[Pro] Email HTML enviado a {email}")
         except Exception as e:
-            logger.error(f"[Pro] Error a {email}: {e}")
+            logger.warning(f"[Pro] Error a {email}: {e}")
             
     # 3. Arrancamos el hilo pasándole LAS DOS variables seguras
     threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
@@ -1930,7 +1936,7 @@ def enviar_email_trial_expirando(user, dias_restantes):
                 )
                 logger.info(f"[Trial] Aviso HTML a {email} ({dias}d)")
         except Exception as e:
-            logger.error(f"[Trial] Error a {email}: {e}")
+            logger.warning(f"[Trial] Error a {email}: {e}")
     threading.Thread(target=_send, args=(email_destino, nombre_empresa, dias_restantes), daemon=True).start()
 
 def enviar_email_reset(user):
@@ -1954,7 +1960,7 @@ def enviar_email_reset(user):
                 )
                 logger.info(f"[Reset] Email HTML enviado a {email}")
         except Exception as e:
-            logger.error(f"[Reset] Error a {email}: {e}")
+            logger.warning(f"[Reset] Error a {email}: {e}")
     threading.Thread(target=_send, args=(email_destino, link), daemon=True).start()
 
 def enviar_email_limite_free(destinatario):
@@ -1976,7 +1982,7 @@ def enviar_email_limite_free(destinatario):
                 )
                 logger.info(f"[Limite] Email HTML enviado a {destinatario}")
         except Exception as e:
-            logger.error(f"[Limite] Error a {destinatario}: {e}")
+            logger.warning(f"[Limite] Error a {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, ssl_info, es_followup=False):
@@ -2044,7 +2050,7 @@ def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, 
                 send_html_email(destinatario, subject, titulo, cuerpo, cta_url=cta_url, cta_text=cta_text)
                 logger.info(f"[Lead{'Followup' if es_followup else ''}] Email enviado a {destinatario} · {objetivo} · {riesgo}%")
         except Exception as e:
-            logger.error(f"[Lead email] Error a {destinatario}: {e}")
+            logger.warning(f"[Lead email] Error a {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 
@@ -2096,7 +2102,7 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
                 )
                 logger.info(f"[Alerta] HTML enviado a {destinatario} ({objetivo} {riesgo}%)")
         except Exception as e:
-            logger.error(f"[Alerta] Error a {destinatario}: {e}")
+            logger.warning(f"[Alerta] Error a {destinatario}: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 @app.route("/api/scan", methods=["POST"])
@@ -2227,8 +2233,18 @@ def scan():
         elif riesgo > riesgo_anterior:
             enviar_alerta_email(current_user.email, objetivo, riesgo, label, desglose, riesgo_anterior)
 
-    # Notificar integraciones (Slack / webhook) en segundo plano
-    threading.Thread(target=notificar_integraciones, args=(current_user, resultado), daemon=True).start()
+    # Notificar integraciones (Slack / webhook) en segundo plano.
+    # Capturar atributos del usuario AHORA: dentro del hilo, current_user
+    # es un proxy que pierde el request context y devuelve None.
+    _slack_url  = getattr(current_user, "slack_webhook", None)
+    _custom_url = getattr(current_user, "custom_webhook", None)
+    if _slack_url or _custom_url:
+        _user_snapshot = type("UserSnap", (), {
+            "slack_webhook":  _slack_url,
+            "custom_webhook": _custom_url,
+            "email":          current_user.email,
+        })()
+        threading.Thread(target=notificar_integraciones, args=(_user_snapshot, resultado), daemon=True).start()
 
     return jsonify(resultado)
 
@@ -3213,7 +3229,24 @@ def guardar_integraciones():
     return jsonify({"ok": True})
 
 def notificar_integraciones(user, resultado):
-    """Envía notificación de resultado de escaneo a Slack y/o webhook custom del usuario."""
+    """Envía notificación de resultado de escaneo a Slack y/o webhook custom del usuario.
+    Robusto frente a:
+      - user=None (current_user fuera de request context)
+      - user detached (atributos lazy-load fallan en hilo)
+    """
+    if not user:
+        return
+    # Capturar atributos AHORA (en el hilo del request, sesión SQLA viva).
+    try:
+        slack_url    = getattr(user, "slack_webhook", None)
+        custom_url   = getattr(user, "custom_webhook", None)
+        user_email   = getattr(user, "email", "?")
+    except Exception as _detach:
+        logger.warning(f"[Integraciones] user detached, skip: {_detach}")
+        return
+    if not slack_url and not custom_url:
+        return  # nada que notificar
+
     dominio = resultado.get("dominio", "")
     riesgo  = resultado.get("riesgo", 0)
     label   = resultado.get("label", "")
@@ -3221,7 +3254,7 @@ def notificar_integraciones(user, resultado):
     base_url = BASE_URL
 
     # Slack
-    if user.slack_webhook:
+    if slack_url:
         try:
             emoji = ":red_circle:" if riesgo >= 70 else ":large_orange_circle:" if riesgo >= 40 else ":large_green_circle:"
             slack_msg = {
@@ -3238,16 +3271,16 @@ def notificar_integraciones(user, resultado):
                 ]
             }
             payload = json.dumps(slack_msg).encode("utf-8")
-            req = urllib.request.Request(user.slack_webhook, data=payload,
+            req = urllib.request.Request(slack_url, data=payload,
                                         headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
                                         method="POST")
             urllib.request.urlopen(req, timeout=10)
-            logger.info(f"[Slack] Notificación enviada a {user.email}")
+            logger.info(f"[Slack] Notificación enviada a {user_email}")
         except Exception as e:
-            logger.error(f"[Slack] Error para {user.email}: {e}")
+            logger.warning(f"[Slack] Error para {user_email}: {e}")
 
     # Custom webhook
-    if user.custom_webhook:
+    if custom_url:
         try:
             webhook_payload = json.dumps({
                 "event": "scan_completed",
@@ -3258,13 +3291,13 @@ def notificar_integraciones(user, resultado):
                 "timestamp": resultado.get("timestamp", ""),
                 "url": base_url,
             }).encode("utf-8")
-            req = urllib.request.Request(user.custom_webhook, data=webhook_payload,
+            req = urllib.request.Request(custom_url, data=webhook_payload,
                                         headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
                                         method="POST")
             urllib.request.urlopen(req, timeout=10)
-            logger.info(f"[Webhook] Notificación enviada a {user.email}")
+            logger.info(f"[Webhook] Notificación enviada a {user_email}")
         except Exception as e:
-            logger.error(f"[Webhook] Error para {user.email}: {e}")
+            logger.warning(f"[Webhook] Error para {user_email}: {e}")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ─── HELPERS: SSL, Uptime, Tech, DNS, IP Rep, Audit, Notificaciones ────────
