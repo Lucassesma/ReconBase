@@ -236,13 +236,19 @@ def enforce_canonical_host():
     host_only = host.split(":")[0]
     if host_only == CANONICAL_HOST:
         return  # ya estamos en el canónico
-    # No redirigir webhook, healthchecks ni endpoints de verificación ACME
-    skip_prefixes = ("/api/webhook", "/.well-known/")
+    # No redirigir webhook, healthchecks ni endpoints de verificación ACME.
+    # Tampoco redirigir /robots.txt: queremos que el host no-canónico responda
+    # un robots.txt con "Disallow: /" para que crawlers saquen ese host del índice.
+    skip_prefixes = ("/api/webhook", "/.well-known/", "/robots.txt")
     if any(request.path.startswith(p) for p in skip_prefixes):
         return
     # Preservar path + query
     target = f"https://{CANONICAL_HOST}{request.full_path.rstrip('?') if request.query_string else request.path}"
-    return redirect(target, code=301)
+    resp = redirect(target, code=301)
+    # Doble señal a Google/Bing/Brave: este host alternativo NO indexar.
+    # Sirve para que cuando recrawlen el URL viejo lo saquen del índice.
+    resp.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return resp
 
 logging.basicConfig(
     level=logging.INFO,
@@ -318,7 +324,20 @@ def sitemap():
 @app.route("/robots.txt")
 def robots():
     from flask import Response
-    # Bloquear rutas privadas/panel/API; permitir el resto
+    # Si la petición viene del dominio NO canónico (ej. railway.app),
+    # respondemos un robots.txt restrictivo que dice "no indexes nada de aquí".
+    # Esto fuerza a Google/Bing/Brave a sacar ese host de su índice cuando
+    # recrawleen, manteniendo solo reconbase.es en los resultados.
+    host_only = (request.host or "").split(":")[0].lower()
+    if CANONICAL_HOST and host_only != CANONICAL_HOST:
+        txt = (
+            "User-agent: *\n"
+            "Disallow: /\n"
+            f"# Canonical host: {CANONICAL_HOST}\n"
+            f"Sitemap: {BASE_URL}/sitemap.xml\n"
+        )
+        return Response(txt, mimetype="text/plain")
+    # Host canónico: política normal
     txt = (
         "User-agent: *\n"
         "Allow: /\n"
