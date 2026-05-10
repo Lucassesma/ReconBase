@@ -198,12 +198,12 @@ def set_security_headers(resp):
     resp.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://plausible.io https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://plausible.io https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://challenges.cloudflare.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
         "connect-src 'self' https://api.stripe.com https://plausible.io https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; "
-        "frame-src https://js.stripe.com https://checkout.stripe.com https://www.googletagmanager.com; "
+        "frame-src https://js.stripe.com https://checkout.stripe.com https://www.googletagmanager.com https://challenges.cloudflare.com; "
         "form-action 'self' https://checkout.stripe.com; "
         "base-uri 'self'; "
         "object-src 'none'"
@@ -903,7 +903,8 @@ def cookies_policy():
 
 @app.route("/register")
 def register_page():
-    return render_template("register.html")
+    return render_template("register.html",
+                           turnstile_site_key=os.getenv("TURNSTILE_SITE_KEY", ""))
 
 @app.route("/pricing")
 def pricing_page():
@@ -970,6 +971,36 @@ def enviar_email_verificacion(user):
     threading.Thread(target=_send, args=(email_destino, nombre_empresa, link), daemon=True).start()
     return True
 
+def _verify_turnstile(token, remote_ip=None):
+    """Verifica el token del captcha contra el endpoint de Cloudflare.
+    Devuelve True si pasa, False si no. Si no hay secret configurado,
+    devuelve True (modo permisivo, no romper local-dev)."""
+    secret = os.getenv("TURNSTILE_SECRET_KEY", "")
+    if not secret:
+        return True  # Turnstile no configurado → no bloquear
+    if not token:
+        return False
+    try:
+        import urllib.parse as _up
+        payload_data = {"secret": secret, "response": token}
+        if remote_ip:
+            payload_data["remoteip"] = remote_ip
+        body = _up.urlencode(payload_data).encode("utf-8")
+        req = urllib.request.Request(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data=body,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            return bool(result.get("success"))
+    except Exception as e:
+        logger.warning(f"[Turnstile] verify failed: {e}")
+        # Fail-open: si Cloudflare está down, no bloquear registros legítimos
+        return True
+
+
 @app.route("/api/register", methods=["POST"])
 @limiter.limit("5 per hour")
 def api_register():
@@ -977,10 +1008,15 @@ def api_register():
     email    = data.get("email", "").strip().lower()
     password = data.get("password", "")
     empresa  = (data.get("empresa") or "").strip()
+    ts_token = data.get("cf-turnstile-response", "")
     if not email or not password:
         return jsonify({"ok": False, "error": "Email y contraseña son obligatorios"}), 400
     if len(password) < 8:
         return jsonify({"ok": False, "error": "La contraseña debe tener al menos 8 caracteres"}), 400
+    # Anti-bot: verificar Turnstile (si está configurado)
+    remote_ip = request.headers.get("CF-Connecting-IP") or request.remote_addr
+    if not _verify_turnstile(ts_token, remote_ip):
+        return jsonify({"ok": False, "error": "Verificación anti-bot fallida. Recarga la página e inténtalo de nuevo."}), 403
     if User.query.filter_by(email=email).first():
         return jsonify({"ok": False, "error": "Este email ya está registrado"}), 400
     # Si no rellenan empresa, fallback al nombre antes del @ (capitalizado).

@@ -73,6 +73,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
 <script src="/static/js/toast.js"></script>
+{% if turnstile_site_key %}<!-- Cloudflare Turnstile (anti-bot en registro) -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
 <!-- Privacy-friendly analytics by Plausible -->
 <script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
 <script>
@@ -126,6 +128,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
       </div>
       <input type="hidden" id="plan-selected" value="starter">
+      {% if turnstile_site_key %}
+      <!-- Captcha invisible Cloudflare Turnstile -->
+      <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="dark" data-size="flexible" style="margin:1rem 0"></div>
+      {% endif %}
       <button type="submit" class="btn-submit">Crear cuenta gratis</button>
       <div class="terms">Al registrarte aceptas nuestros <a href="/terms">Términos de Servicio</a> y <a href="/privacy">Política de Privacidad</a>.</div>
     </form>
@@ -148,11 +154,16 @@ function selectPlan(el, plan) {
 function handleRegister(e) {
   e.preventDefault();
   var plan = document.getElementById('plan-selected').value;
+  // Recoger token Turnstile si está activo
+  var tsToken = '';
+  var tsInput = document.querySelector('[name="cf-turnstile-response"]');
+  if (tsInput) tsToken = tsInput.value || '';
   var data = {
     empresa: document.getElementById('empresa').value,
     email: document.getElementById('email').value,
     password: document.getElementById('password').value,
-    plan: plan
+    plan: plan,
+    'cf-turnstile-response': tsToken
   };
   // Si elige Pro, primero registrar y luego redirigir al checkout de Stripe
   if(plan !== 'starter') {
