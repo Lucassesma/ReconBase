@@ -2,6 +2,27 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<!-- Google Consent Mode v2 (RGPD) -->
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+// Estado por defecto: denegado (RGPD strict)
+gtag('consent','default',{
+  'ad_storage':'denied','analytics_storage':'denied',
+  'ad_user_data':'denied','ad_personalization':'denied',
+  'functionality_storage':'granted','security_storage':'granted',
+  'wait_for_update':500
+});
+// Si ya hay consentimiento aceptado guardado, flipear a granted ANTES de cargar GTM
+try{
+  var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');
+  if(v==='accepted'){
+    gtag('consent','update',{
+      'ad_storage':'granted','analytics_storage':'granted',
+      'ad_user_data':'granted','ad_personalization':'granted'
+    });
+  }
+}catch(_){}
+</script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -120,6 +141,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <tr><td><a href="https://stripe.com/es/privacy" target="_blank" rel="noopener">Stripe Payments Europe, Ltd.</a></td><td>Procesamiento de pagos y suscripciones</td><td>Irlanda (UE)</td></tr>
       <tr><td><a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener">Resend, Inc.</a></td><td>Envío de emails transaccionales</td><td>EE.UU. (cláusulas contractuales tipo)</td></tr>
       <tr><td><a href="https://plausible.io/data-policy" target="_blank" rel="noopener">Plausible Insights OÜ</a></td><td>Analítica web sin cookies (datos agregados, sin PII)</td><td>Estonia (UE)</td></tr>
+      <tr><td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Ireland Ltd. (Analytics + Tag Manager)</a></td><td>Analítica web detallada y gestión de etiquetas. <strong>Solo activo si el usuario acepta cookies</strong> (Consent Mode v2).</td><td>Irlanda (UE) con sub-procesadores en EE.UU. (DPF + cláusulas contractuales tipo)</td></tr>
       <tr><td><a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Functional Software, Inc. (Sentry)</a></td><td>Monitorización de errores (si está activo)</td><td>EE.UU. (cláusulas contractuales tipo)</td></tr>
     </tbody>
   </table>

@@ -79,7 +79,14 @@
       "Bash(nslookup reconbase.es)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --connect-timeout 5 --max-time 10 https://reconbase-production.up.railway.app/)",
       "Bash(curl -s -o /dev/null -w \"Status %{http_code} | Connect %{time_connect}s | Total %{time_total}s\\\\n\" --connect-timeout 5 --max-time 10 -k https://reconbase.es)",
-      "Bash(curl -v --connect-timeout 5 --max-time 10 -o /dev/null https://reconbase.es)"
+      "Bash(curl -v --connect-timeout 5 --max-time 10 -o /dev/null https://reconbase.es)",
+      "Bash(ping -n 2 104.21.0.5)",
+      "Bash(ping -n 2 172.67.74.226)",
+      "Bash(ping -n 2 104.16.124.96)",
+      "Bash(ping -n 2 172.64.155.209)",
+      "Bash(echo \"\")",
+      "Bash(echo \"172.67.74.226 reconbase.es\")",
+      "Bash(echo \"172.67.74.226 www.reconbase.es\")"
     ]
   }
 }

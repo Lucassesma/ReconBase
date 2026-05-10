@@ -2,6 +2,27 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<!-- Google Consent Mode v2 (RGPD) -->
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+// Estado por defecto: denegado (RGPD strict)
+gtag('consent','default',{
+  'ad_storage':'denied','analytics_storage':'denied',
+  'ad_user_data':'denied','ad_personalization':'denied',
+  'functionality_storage':'granted','security_storage':'granted',
+  'wait_for_update':500
+});
+// Si ya hay consentimiento aceptado guardado, flipear a granted ANTES de cargar GTM
+try{
+  var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');
+  if(v==='accepted'){
+    gtag('consent','update',{
+      'ad_storage':'granted','analytics_storage':'granted',
+      'ad_user_data':'granted','ad_personalization':'granted'
+    });
+  }
+}catch(_){}
+</script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
