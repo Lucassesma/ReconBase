@@ -482,6 +482,45 @@ def google_verify():
 # ── OG Image (PNG dinámico para redes sociales) ──
 _og_cache = {}
 
+# ── Favicon + apple-touch-icon (matan los 4xx en métricas) ──
+_FAVICON_SVG = (
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+    b'<rect width="32" height="32" rx="6" fill="#080C14"/>'
+    b'<text x="3" y="23" font-family="Arial Black,sans-serif" font-weight="900" font-size="18" fill="#E2EDF8">R</text>'
+    b'<text x="16" y="23" font-family="Arial Black,sans-serif" font-weight="900" font-size="18" fill="#22C55E">B</text>'
+    b'</svg>'
+)
+
+@app.route("/favicon.ico")
+@app.route("/favicon.svg")
+@app.route("/static/favicon.svg")
+@app.route("/apple-touch-icon.png")
+@app.route("/apple-touch-icon-precomposed.png")
+def favicon():
+    """Sirve el logo SVG. Browsers piden favicon.ico cada visita y
+    iOS Safari pide apple-touch-icon. Cubrir aquí evita 404 spam."""
+    from flask import Response
+    return Response(_FAVICON_SVG, mimetype="image/svg+xml",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ── /.well-known/security.txt (RFC 9116, recomendación Cloudflare) ──
+@app.route("/.well-known/security.txt")
+def security_txt():
+    """Permite a investigadores reportar vulnerabilidades de forma estándar."""
+    from flask import Response
+    expires = (datetime.utcnow() + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    txt = (
+        "Contact: mailto:hola@reconbase.es\n"
+        f"Expires: {expires}\n"
+        "Preferred-Languages: es, en\n"
+        "Canonical: https://reconbase.es/.well-known/security.txt\n"
+        "Policy: https://reconbase.es/privacy\n"
+    )
+    return Response(txt, mimetype="text/plain",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.route("/og/<page>.png")
 def og_image(page):
     """Genera OG image 1200x630 PNG con Pillow. Cache en memoria."""
