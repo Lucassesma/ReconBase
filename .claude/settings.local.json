@@ -57,7 +57,29 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('server.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python)",
       "Bash(pip install *)",
-      "Bash(python -m pip install imageio imageio-ffmpeg --quiet)"
+      "Bash(python -m pip install imageio imageio-ffmpeg --quiet)",
+      "Read(//c/Users/lucas/Desktop/haick/frontend/**)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Read(//c/Users/lucas/Desktop/haick/backend/**)",
+      "Bash(py -m pip install PyJWT sqlalchemy)",
+      "Bash(py -m pip install stripe --quiet)",
+      "PowerShell(py -m pip install stripe 2>&1)",
+      "PowerShell(Start-Sleep -Seconds 4; \\(Invoke-WebRequest -Uri \"http://localhost:8000/health\" -UseBasicParsing\\).Content)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "WebFetch(domain:reconbase.es)",
+      "Bash(npx tsc *)",
+      "Bash(cmd /c \"cd C:\\\\Users\\\\lucas\\\\Desktop\\\\Haick\\\\frontend && node_modules\\\\.bin\\\\tsc --noEmit 2>&1\")",
+      "Bash(\"C:\\\\Users\\\\lucas\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe\" -m py_compile \"C:\\\\Users\\\\lucas\\\\Desktop\\\\Haick\\\\backend\\\\app\\\\main.py\" \"C:\\\\Users\\\\lucas\\\\Desktop\\\\Haick\\\\backend\\\\app\\\\api\\\\labs.py\" \"C:\\\\Users\\\\lucas\\\\Desktop\\\\Haick\\\\backend\\\\app\\\\api\\\\terminal.py\" \"C:\\\\Users\\\\lucas\\\\Desktop\\\\Haick\\\\backend\\\\app\\\\services\\\\docker_manager.py\" \"C:\\\\Users\\\\lucas\\\\Desktop\\\\Haick\\\\backend\\\\app\\\\services\\\\lab_generator.py\")",
+      "Read(//mnt/c/Users/lucas/Desktop/Haick/**)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -m pip install -q -r requirements.txt)",
+      "Bash(curl -sIL https://reconbase.es)",
+      "Bash(curl -sIL https://reconbase.es/js/pa.js)",
+      "Bash(nslookup reconbase.es)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" --connect-timeout 5 --max-time 10 https://reconbase-production.up.railway.app/)",
+      "Bash(curl -s -o /dev/null -w \"Status %{http_code} | Connect %{time_connect}s | Total %{time_total}s\\\\n\" --connect-timeout 5 --max-time 10 -k https://reconbase.es)",
+      "Bash(curl -v --connect-timeout 5 --max-time 10 -o /dev/null https://reconbase.es)"
     ]
   }
 }

@@ -16,6 +16,8 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
+
+
 # ─── Sentry (error monitoring) ───
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 if SENTRY_DSN:
@@ -196,12 +198,12 @@ def set_security_headers(resp):
     resp.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://plausible.io https://www.googletagmanager.com; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://plausible.io https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https://api.stripe.com https://plausible.io https://www.google-analytics.com; "
-        "frame-src https://js.stripe.com https://checkout.stripe.com; "
+        "connect-src 'self' https://api.stripe.com https://plausible.io https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; "
+        "frame-src https://js.stripe.com https://checkout.stripe.com https://www.googletagmanager.com; "
         "form-action 'self' https://checkout.stripe.com; "
         "base-uri 'self'; "
         "object-src 'none'"
