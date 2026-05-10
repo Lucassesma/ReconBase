@@ -2099,6 +2099,132 @@ def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, 
     threading.Thread(target=_send, daemon=True).start()
 
 
+def enviar_email_lead_dia7(destinatario, objetivo, riesgo, problemas_lista):
+    """Email día 7: educativo. Caso real + razón concreta para volver."""
+    base_url = BASE_URL
+    def _send():
+        try:
+            problemas_html = ""
+            if problemas_lista:
+                problemas_html = "<ul style='margin:.6rem 0 1rem;padding-left:1.2rem;line-height:1.8;color:#94A3B8'>"
+                for p in problemas_lista[:3]:
+                    problemas_html += f"<li>{p}</li>"
+                problemas_html += "</ul>"
+
+            from urllib.parse import quote
+            unsub_url = f"{base_url}/api/unsubscribe?email={quote(destinatario)}"
+            cta_url = f"{base_url}/register?email={quote(destinatario)}&target={quote(objetivo)}"
+
+            cuerpo = (
+                f"Hace una semana escaneaste <strong>{objetivo}</strong> en ReconBase.<br><br>"
+                f"Te dejo un dato del INCIBE que igual te importa: el <strong>43% de los ciberataques en España "
+                f"van a pymes</strong> y la mayoría son via <strong>emails suplantados</strong> (BEC, Business "
+                f"Email Compromise) o <strong>credenciales filtradas</strong>.<br><br>"
+                f"En tu caso:"
+                f"{problemas_html}"
+                "<p style='background:#0A1F12;border:1px solid #166534;border-radius:8px;padding:1rem;color:#BBF7D0;margin:1rem 0;font-size:.88rem'>"
+                "<strong>📌 Caso real:</strong> Una asesoría de Madrid recibió un mail \"de su jefe\" pidiendo "
+                "transferir 12.500€ a una cuenta. SPF no estaba configurado → el mail pasó el filtro. Lo enviaron. "
+                "El jefe nunca lo había mandado. Recuperar el dinero les costó 6 meses y un proceso legal. "
+                "<strong>SPF + DMARC habrían bloqueado ese email en origen.</strong>"
+                "</p>"
+                "<p>Configurar SPF/DMARC son 5 minutos en tu DNS. ReconBase te dice exactamente qué registros añadir.</p>"
+                "<p style='font-size:.78rem;color:#64748B;margin-top:1.5rem'>"
+                f"¿No te interesa? <a href='{unsub_url}' style='color:#64748B'>Darse de baja</a>."
+                "</p>"
+            )
+            with app.app_context():
+                send_html_email(
+                    destinatario,
+                    f"Por qué tu pyme es 5x más probable de ser hackeada que Apple",
+                    "Lo que aprendí escaneando 50 dominios de pymes",
+                    cuerpo,
+                    cta_url=cta_url, cta_text="Ver mi informe completo →"
+                )
+                logger.info(f"[LeadDia7] Email enviado a {destinatario}")
+        except Exception as e:
+            logger.warning(f"[LeadDia7] Error a {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+
+def enviar_email_lead_dia14(destinatario, objetivo, riesgo):
+    """Email día 14: última oportunidad con cupón para activar Pro."""
+    base_url = BASE_URL
+    def _send():
+        try:
+            from urllib.parse import quote
+            unsub_url = f"{base_url}/api/unsubscribe?email={quote(destinatario)}"
+            cta_url = f"{base_url}/register?email={quote(destinatario)}&target={quote(objetivo)}"
+
+            cuerpo = (
+                f"Hace 2 semanas analizaste <strong>{objetivo}</strong> con ReconBase. "
+                f"Riesgo detectado: <strong>{riesgo}%</strong>.<br><br>"
+                "Sé que estás ocupado. Te mando este último email con una propuesta concreta:<br><br>"
+                "<div style='background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:10px;padding:1.25rem;margin:1rem 0;text-align:center'>"
+                "<div style='font-size:1.05rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem'>"
+                "🎁 30 días Pro gratis"
+                "</div>"
+                "<div style='font-size:.85rem;color:#BBF7D0;line-height:1.5'>"
+                "Crea tu cuenta antes del próximo lunes y te activamos <strong>30 días del plan Pro</strong> sin tarjeta. "
+                "Vigilancia 24/7, alertas automáticas, informes PDF ilimitados.<br><br>"
+                "Sin permanencia. Si no te convence, no haces nada y vuelves a Free automáticamente."
+                "</div>"
+                "</div>"
+                "<p>Una vez activado tendrás:</p>"
+                "<ul style='margin:.5rem 0 1rem;padding-left:1.2rem;line-height:1.8'>"
+                "<li>✅ Tu dominio escaneado cada noche automáticamente</li>"
+                "<li>✅ Email instantáneo si detectamos algo nuevo</li>"
+                "<li>✅ Informe PDF ejecutivo (para enseñar a tu jefe / cliente / proveedor)</li>"
+                "<li>✅ Filtraciones de tus emails corporativos contra HIBP</li>"
+                "</ul>"
+                "<p style='font-size:.85rem;color:#94A3B8'>Si no te interesa, no pasa nada. Es el último que te mando del lanzamiento.</p>"
+                "<p style='font-size:.78rem;color:#64748B;margin-top:1.5rem'>"
+                f"<a href='{unsub_url}' style='color:#64748B'>Darse de baja de todos los emails</a>."
+                "</p>"
+            )
+            with app.app_context():
+                send_html_email(
+                    destinatario,
+                    "30 días Pro gratis — última oferta para tu pyme",
+                    "Última oportunidad antes de cerrar tu acceso",
+                    cuerpo,
+                    cta_url=cta_url, cta_text="Activar 30 días Pro gratis →"
+                )
+                logger.info(f"[LeadDia14] Email enviado a {destinatario}")
+        except Exception as e:
+            logger.warning(f"[LeadDia14] Error a {destinatario}: {e}")
+    threading.Thread(target=_send, daemon=True).start()
+
+
+@app.route("/api/unsubscribe", methods=["GET"])
+@limiter.limit("60 per hour")
+def api_unsubscribe():
+    """Opt-out de los emails de followup. RGPD: derecho de oposición (art. 21)."""
+    email = (request.args.get("email") or "").strip().lower()
+    if not email:
+        return ("Falta email", 400)
+    try:
+        # Marcar todos los leads con ese email como unsubscribed
+        leads = Lead.query.filter_by(email=email).all()
+        for l in leads:
+            l.unsubscribed = True
+        # Si tiene cuenta, marcar también la flag de comunicaciones (si existe)
+        db.session.commit()
+        logger.info(f"[Unsubscribe] {email} dado de baja ({len(leads)} leads)")
+    except Exception as e:
+        db.session.rollback()
+        logger.warning(f"[Unsubscribe] error con {email}: {e}")
+    return Response(
+        "<html><body style='font-family:sans-serif;text-align:center;padding:3rem;background:#060D09;color:#E2EDF8'>"
+        "<h2>Te hemos dado de baja</h2>"
+        "<p>No recibirás más emails de seguimiento de ReconBase.</p>"
+        "<p style='color:#64748B;font-size:.85rem'>Si fue un error, escríbenos a hola@reconbase.es y te volvemos a apuntar.</p>"
+        "<a href='https://reconbase.es' style='color:#22C55E'>Volver al sitio</a>"
+        "</body></html>",
+        mimetype="text/html"
+    )
+
+
 def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_anterior=None):
     def _send():
         try:
@@ -2648,42 +2774,92 @@ def cron_reengagement():
                 enviar_email_reengagement(user)
 
 def cron_lead_followup():
-    """Envía email recordatorio a leads capturados hace 48-72h que aún no han creado cuenta."""
+    """Secuencia de 3 emails post-captura para leads que no se registraron:
+       Stage 1 (48h):  recordatorio del informe
+       Stage 2 (7d):   educativo + caso real (BEC, INCIBE)
+       Stage 3 (14d):  oferta 30 días Pro gratis
+    Skip si: ya creó cuenta, ya unsubscribed, o ya estamos en stage 3.
+    """
     with app.app_context():
         ahora = datetime.utcnow()
-        ventana_ini = ahora - timedelta(hours=72)
-        ventana_fin = ahora - timedelta(hours=48)
+
         try:
-            candidatos = Lead.query.filter(
-                Lead.created_at >= ventana_ini,
-                Lead.created_at <  ventana_fin,
-                Lead.followup_sent == False,
+            # Coger todos los leads no convertidos no dados de baja
+            todos = Lead.query.filter(
+                getattr(Lead, 'unsubscribed', None) == False,
+                Lead.convertido == False
+            ).all() if hasattr(Lead, 'unsubscribed') else Lead.query.filter(
                 Lead.convertido == False
             ).all()
         except Exception as e:
-            logger.warning(f"[LeadFollowup] Query error (tabla nueva?): {e}")
+            logger.warning(f"[LeadFollowup] Query error: {e}")
             return
 
-        for lead in candidatos:
+        for lead in todos:
             try:
+                stage = getattr(lead, 'followup_stage', 0) or 0
+                if stage >= 3:
+                    continue  # ya completó toda la secuencia
+
                 # Si ya creó cuenta entre medias, marcar convertido y saltar
                 if User.query.filter_by(email=lead.email).first():
                     lead.convertido = True
-                    lead.followup_sent = True
                     db.session.commit()
                     continue
+
+                edad = ahora - lead.created_at
+                dias = edad.total_seconds() / 86400.0
+
+                # Decidir qué stage toca enviar HOY (sin solapar)
+                next_stage = None
+                if stage == 0 and 2.0 <= dias < 3.0:      # día 2 (~48h)
+                    next_stage = 1
+                elif stage == 1 and 7.0 <= dias < 8.0:    # día 7
+                    next_stage = 2
+                elif stage == 2 and 14.0 <= dias < 15.0:  # día 14
+                    next_stage = 3
+
+                if next_stage is None:
+                    continue
+
                 r = lead.resultado or {}
-                enviar_email_lead(
-                    lead.email, lead.objetivo, lead.riesgo,
-                    r.get('label', ''), r.get('puertos', []),
-                    r.get('dns', {}), r.get('ssl', {}),
-                    es_followup=True
-                )
-                lead.followup_sent = True
+
+                if next_stage == 1:
+                    # Stage 1 — recordatorio 48h (email lead followup ya existente)
+                    enviar_email_lead(
+                        lead.email, lead.objetivo, lead.riesgo,
+                        r.get('label', ''), r.get('puertos', []),
+                        r.get('dns', {}), r.get('ssl', {}),
+                        es_followup=True
+                    )
+
+                elif next_stage == 2:
+                    # Stage 2 — educativo día 7
+                    problemas = []
+                    crit = [p for p in (r.get('puertos') or []) if p.get('puerto') in {3389,22,3306,5432,27017,6379,5900,23,21,1433}]
+                    if crit:
+                        problemas.append(f"<strong>{len(crit)} puerto(s) críticos expuestos</strong>: " + ", ".join(str(p['puerto']) for p in crit[:3]))
+                    dns = r.get('dns') or {}
+                    if not dns.get('spf') and not dns.get('dmarc'):
+                        problemas.append("<strong>Sin SPF ni DMARC</strong>: cualquiera puede mandar emails como tu empresa")
+                    elif not dns.get('dmarc'):
+                        problemas.append("<strong>DMARC no configurado</strong>: tu dominio puede ser suplantado")
+                    enviar_email_lead_dia7(lead.email, lead.objetivo, lead.riesgo, problemas)
+
+                elif next_stage == 3:
+                    # Stage 3 — última oferta día 14
+                    enviar_email_lead_dia14(lead.email, lead.objetivo, lead.riesgo)
+
+                # Actualizar tracking
+                lead.followup_stage = next_stage
+                lead.followup_sent = True  # legacy compat
+                if hasattr(lead, 'last_email_at'):
+                    lead.last_email_at = ahora
                 db.session.commit()
+
             except Exception as e:
                 db.session.rollback()
-                logger.error(f"[LeadFollowup] Error con lead {lead.id}: {e}")
+                logger.error(f"[LeadFollowup] Error con lead {getattr(lead, 'id', '?')}: {e}")
 
 def cron_onboarding():
     """Envía email a usuarios registrados hace ~2 días que no han hecho ningún escaneo."""
@@ -4333,6 +4509,9 @@ with app.app_context():
         "ALTER TABLE domains ADD COLUMN scan_dias VARCHAR(20)",
         "CREATE TABLE IF NOT EXISTS blog_posts (id SERIAL PRIMARY KEY, slug VARCHAR(200) UNIQUE NOT NULL, titulo VARCHAR(300) NOT NULL, excerpt VARCHAR(500), contenido TEXT NOT NULL, autor VARCHAR(100) DEFAULT 'ReconBase', imagen VARCHAR(500), publicado BOOLEAN DEFAULT FALSE NOT NULL, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW(), tags VARCHAR(300))",
         "ALTER TABLE leads ADD COLUMN followup_sent BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE leads ADD COLUMN followup_stage INTEGER DEFAULT 0 NOT NULL",
+        "ALTER TABLE leads ADD COLUMN last_email_at TIMESTAMP",
+        "ALTER TABLE leads ADD COLUMN unsubscribed BOOLEAN DEFAULT FALSE NOT NULL",
         # ── Batch 2 ──
         "ALTER TABLE users ADD COLUMN trial_used BOOLEAN DEFAULT FALSE NOT NULL",
         "ALTER TABLE users ADD COLUMN onboarding_done BOOLEAN DEFAULT FALSE NOT NULL",

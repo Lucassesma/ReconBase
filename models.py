@@ -223,7 +223,10 @@ class Lead(db.Model):
     ip         = db.Column(db.String(45), nullable=True)
     user_agent = db.Column(db.String(255), nullable=True)
     convertido = db.Column(db.Boolean, default=False)  # True si luego crea cuenta
-    followup_sent = db.Column(db.Boolean, default=False, nullable=False)  # True tras enviar email recordatorio 48h
+    followup_sent = db.Column(db.Boolean, default=False, nullable=False)  # legacy: True tras enviar email 48h
+    followup_stage = db.Column(db.Integer, default=0, nullable=False)  # 0=inicial, 1=48h, 2=7d, 3=14d, 4=último
+    last_email_at = db.Column(db.DateTime, nullable=True)  # último email enviado
+    unsubscribed = db.Column(db.Boolean, default=False, nullable=False)  # opt-out
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
