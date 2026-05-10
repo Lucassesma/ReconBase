@@ -393,7 +393,10 @@ _PROBES = {
 }
 
 def banner_grab(target, puertos_abiertos, timeout=2):
-    """Captura banners de servicios en puertos abiertos."""
+    """Captura banners de servicios en puertos abiertos.
+    Sanitiza el output: PostgreSQL JSONB rechaza \\u0000 (null byte) y
+    otros caracteres de control que pueden venir en banners raw de
+    SMTP/IMAP/MySQL/Redis/etc."""
     banners = {}
     for p_info in puertos_abiertos:
         port = p_info["puerto"]
@@ -411,6 +414,10 @@ def banner_grab(target, puertos_abiertos, timeout=2):
                 banner = s.recv(1024).decode("utf-8", errors="ignore").strip()
             except Exception:
                 banner = ""
+            # Sanitizar: quitar null bytes y caracteres de control no imprimibles
+            # (excepto \t, \n, \r). Esto evita DataError en PostgreSQL JSONB.
+            banner = banner.replace("\x00", "")
+            banner = "".join(c for c in banner if c == "\t" or c == "\n" or c == "\r" or (ord(c) >= 32 and ord(c) != 0x7F))
             if banner:
                 banners[port] = banner[:300]
             s.close()
