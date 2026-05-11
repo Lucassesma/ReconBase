@@ -648,14 +648,26 @@ def index():
     if current_user.is_authenticated:
         from sqlalchemy import extract
         now = datetime.utcnow()
-        scans_mes = Scan.query.filter(
-            Scan.user_id == current_user.id,
-            extract('month', Scan.timestamp) == now.month,
-            extract('year',  Scan.timestamp) == now.year
-        ).count()
-        ultimo_auto = Scan.query.filter_by(user_id=current_user.id).filter(
-            Scan.resultado.op('->>')('automatico') == 'true'
-        ).order_by(Scan.timestamp.desc()).first()
+        try:
+            scans_mes = Scan.query.filter(
+                Scan.user_id == current_user.id,
+                extract('month', Scan.timestamp) == now.month,
+                extract('year',  Scan.timestamp) == now.year
+            ).count()
+        except Exception as e:
+            logger.warning(f"[Index] count scans_mes falló: {e}")
+            db.session.rollback()
+            scans_mes = 0
+        # ⚠️ Defensive: si algún scan tiene bytes raros en JSON (NUL byte legacy),
+        # el operador ->> revienta. Hacer fallback graceful.
+        try:
+            ultimo_auto = Scan.query.filter_by(user_id=current_user.id).filter(
+                Scan.resultado.op('->>')('automatico') == 'true'
+            ).order_by(Scan.timestamp.desc()).first()
+        except Exception as e:
+            logger.warning(f"[Index] ultimo_auto query falló (probable bad JSON en DB): {e}")
+            db.session.rollback()
+            ultimo_auto = None
         plan      = current_user.plan_efectivo
         scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
         scan_dias = current_user.scan_dias.split(',') if current_user.scan_dias else []
