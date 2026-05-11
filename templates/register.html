@@ -175,6 +175,9 @@ function handleRegister(e) {
     .then(function(r){ return r.json(); })
     .then(function(res) {
       if(res.ok) {
+        // GA4 event: registro Pro completado, redirigiendo al checkout
+        try { if(typeof gtag==='function') gtag('event','sign_up',{method:'email',plan:'pro'}); } catch(_){}
+        try { if(typeof plausible==='function') plausible('sign_up'); } catch(_){}
         // Cuenta creada, ahora redirigir al checkout de Stripe
         document.getElementById('success-msg').textContent = 'Cuenta creada. Redirigiendo al pago...';
         document.getElementById('success-msg').classList.add('show');
@@ -205,6 +208,9 @@ function handleRegister(e) {
   .then(function(r){ return r.json(); })
   .then(function(res) {
     if(res.ok) {
+      // GA4 event: nuevo registro completado
+      try { if(typeof gtag==='function') gtag('event','sign_up',{method:'email'}); } catch(_){}
+      try { if(typeof plausible==='function') plausible('sign_up'); } catch(_){}
       document.getElementById('success-msg').classList.add('show');
       setTimeout(function(){ window.location.href = '/'; }, 1500);
     } else {

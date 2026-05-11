@@ -1819,6 +1819,9 @@ function heroScan(){
   .then(function(d){
     btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
     if(d.error){document.getElementById('landing-results').style.display='none';toast(d.error, 'err');return;}
+    // GA4 event: escaneo demo completado
+    try { if(typeof gtag==='function') gtag('event','scan_completed',{scan_type:'demo',risk_score:d.riesgo||0,locked:!!d.locked}); } catch(_){}
+    try { if(typeof plausible==='function') plausible('scan_completed'); } catch(_){}
     renderDemoResult(d);
   })
   .catch(function(){
@@ -1854,6 +1857,7 @@ function leadUnlock(targetEnc){
     d.lead_email = email;
     renderDemoResult(d);
     try { if(typeof plausible==='function') plausible('lead_unlock'); } catch(e){}
+    try { if(typeof gtag==='function') gtag('event','lead_unlock',{method:'email_magnet'}); } catch(_){}
   })
   .catch(function(){
     btn.textContent='Ver informe →'; btn.disabled=false; emailEl.disabled=false;

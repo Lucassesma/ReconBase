@@ -60,6 +60,9 @@ function scLanzar() {
     btn.textContent = 'ESCANEAR'; btn.disabled = false;
     clearInterval(dotInterval);
     if (d.error) { alert(d.error); document.getElementById('sc-empty').style.display='block'; return; }
+    // GA4 event: escaneo completo (usuario autenticado)
+    try { if(typeof gtag==='function') gtag('event','scan_completed',{scan_type:'full',risk_score:d.riesgo||0}); } catch(_){}
+    try { if(typeof plausible==='function') plausible('scan_completed'); } catch(_){}
     scCurrentData = d;
     scRenderResults(d);
     if (d.scan_id) { scActivarBtnPDF(d.scan_id); }
