@@ -245,6 +245,22 @@ class Invoice(db.Model):
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class AnonymousScan(db.Model):
+    """Tracking de escaneos hechos en /api/scan-demo por visitantes anónimos.
+    No guardamos PII — solo dominio, riesgo, hash de IP truncado y referer.
+    Sirve para medir uso real de la web ANTES del registro."""
+    __tablename__ = 'anonymous_scans'
+    id           = db.Column(db.Integer, primary_key=True)
+    dominio      = db.Column(db.String(255), nullable=False, index=True)
+    riesgo       = db.Column(db.Integer, default=0)
+    label        = db.Column(db.String(20), default='')
+    ip_hash      = db.Column(db.String(16), nullable=True, index=True)  # primeros 16 chars del SHA-256
+    referer      = db.Column(db.String(255), nullable=True)
+    user_agent   = db.Column(db.String(100), nullable=True)
+    es_logged    = db.Column(db.Boolean, default=False)  # true si el visitante estaba logueado
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
 class ProcessedWebhook(db.Model):
     """Tabla de idempotencia para webhooks de Stripe.
     Evita que un reintento de Stripe duplique facturas, activaciones, etc."""

@@ -8,7 +8,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from models import (db, User, Scan, Domain, BlogPost,
                     SSLCheck, UptimeCheck, Notification, DNSRecord,
                     TechDetection, IPReputation, AuditLog, Invoice, Lead,
-                    ProcessedWebhook)
+                    ProcessedWebhook, AnonymousScan)
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
 import ssl as _ssl_mod, socket, time, re
@@ -1230,6 +1230,24 @@ def scan_demo():
     try: puertos = engine.scan_critical_ports_fast(dominio)
     except Exception: puertos = []
 
+    # Helper inline para tracking anónimo (sin PII, RGPD-friendly)
+    def _track_demo_scan(dom, ries, lab, logged):
+        try:
+            ip_real = (request.headers.get("CF-Connecting-IP")
+                       or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                       or request.remote_addr or "")
+            ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
+            db.session.add(AnonymousScan(
+                dominio=dom[:255], riesgo=int(ries or 0), label=(lab or "")[:20],
+                ip_hash=ip_h, referer=(request.headers.get("Referer") or "")[:255],
+                user_agent=(request.headers.get("User-Agent") or "")[:100],
+                es_logged=logged
+            ))
+            db.session.commit()
+        except Exception as _te:
+            db.session.rollback()
+            logger.warning(f"[TrackDemo] no se pudo guardar: {_te}")
+
     # Usuarios sin cuenta: SOLO puertos. El resto se muestra bloqueado en el frontend.
     if not current_user.is_authenticated:
         # Riesgo aproximado basado solo en puertos para mostrar algo orientativo
@@ -1237,6 +1255,7 @@ def scan_demo():
         crit_count = len([p for p in puertos if p.get('puerto') in critical_set])
         riesgo_aprox = min(100, crit_count * 25)
         label_aprox, color_aprox = label_riesgo(riesgo_aprox)
+        _track_demo_scan(dominio, riesgo_aprox, label_aprox, logged=False)
         return jsonify({
             "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
             "puertos": puertos,
@@ -1297,6 +1316,7 @@ def scan_demo():
         riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
     label, color = label_riesgo(riesgo)
 
+    _track_demo_scan(dominio, riesgo, label, logged=True)
     return jsonify({
         "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
         "puertos": puertos, "dns": dns,
@@ -3920,12 +3940,36 @@ def admin_metricas():
         db.session.rollback()
     conv_rate = (Lead.query.filter_by(convertido=True).count() / max(leads_total, 1)) * 100 if leads_total else 0
 
-    # ── ESCANEOS ──
+    # ── ESCANEOS (autenticados) ──
     scans_total   = Scan.query.count()
     scans_hoy     = Scan.query.filter(Scan.timestamp >= hoy_start).count()
     scans_semana  = Scan.query.filter(Scan.timestamp >= semana_start).count()
     scans_mes     = Scan.query.filter(extract('month', Scan.timestamp) == now.month,
                                       extract('year',  Scan.timestamp) == now.year).count()
+
+    # ── ESCANEOS ANÓNIMOS (visitantes sin login que usan el demo) ──
+    try:
+        anon_total    = AnonymousScan.query.count()
+        anon_hoy      = AnonymousScan.query.filter(AnonymousScan.created_at >= hoy_start).count()
+        anon_semana   = AnonymousScan.query.filter(AnonymousScan.created_at >= semana_start).count()
+        # Visitantes únicos (por IP hash) hoy
+        anon_unicos_hoy = db.session.query(func.count(func.distinct(AnonymousScan.ip_hash))).\
+            filter(AnonymousScan.created_at >= hoy_start).\
+            filter(AnonymousScan.ip_hash.isnot(None)).scalar() or 0
+        # Top dominios escaneados anónimamente (lo que la GENTE busca)
+        top_anon_dominios = db.session.query(
+            AnonymousScan.dominio, func.count(AnonymousScan.id).label('n'),
+            func.avg(AnonymousScan.riesgo).label('avg_riesgo')
+        ).filter(AnonymousScan.created_at >= semana_start).\
+            group_by(AnonymousScan.dominio).order_by(desc('n')).limit(15).all()
+        # Últimos 10 escaneos anónimos (para ver qué buscan AHORA)
+        anon_recientes = AnonymousScan.query.order_by(AnonymousScan.created_at.desc()).limit(15).all()
+    except Exception as _e:
+        logger.warning(f"[admin_metricas] anonymous_scans table no disponible: {_e}")
+        db.session.rollback()
+        anon_total = anon_hoy = anon_semana = anon_unicos_hoy = 0
+        top_anon_dominios = []
+        anon_recientes = []
 
     # ── FACTURACIÓN ──
     try:
@@ -3966,6 +4010,9 @@ def admin_metricas():
         leads_recientes=leads_recientes, conv_rate=round(conv_rate, 1),
         scans_total=scans_total, scans_hoy=scans_hoy, scans_semana=scans_semana,
         scans_mes=scans_mes, scans_por_dia=scans_por_dia,
+        anon_total=anon_total, anon_hoy=anon_hoy, anon_semana=anon_semana,
+        anon_unicos_hoy=anon_unicos_hoy,
+        top_anon_dominios=top_anon_dominios, anon_recientes=anon_recientes,
         revenue_total=revenue_total, mrr=mrr, ultimas_facturas=ultimas_facturas,
         top_dominios=top_dominios, now=now)
 
@@ -5161,6 +5208,9 @@ with app.app_context():
         "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), evento VARCHAR(100) NOT NULL, ip VARCHAR(45), user_agent VARCHAR(500), detalles TEXT, created_at TIMESTAMP DEFAULT NOW())",
         "CREATE TABLE IF NOT EXISTS invoices (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), stripe_invoice_id VARCHAR(100), numero VARCHAR(50) NOT NULL, concepto VARCHAR(255) NOT NULL, importe FLOAT NOT NULL, moneda VARCHAR(10) DEFAULT 'EUR', estado VARCHAR(20) DEFAULT 'pagada', periodo_desde TIMESTAMP, periodo_hasta TIMESTAMP, created_at TIMESTAMP DEFAULT NOW())",
         "CREATE TABLE IF NOT EXISTS processed_webhooks (id SERIAL PRIMARY KEY, event_id VARCHAR(120) UNIQUE NOT NULL, event_type VARCHAR(80), created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE TABLE IF NOT EXISTS anonymous_scans (id SERIAL PRIMARY KEY, dominio VARCHAR(255) NOT NULL, riesgo INTEGER DEFAULT 0, label VARCHAR(20), ip_hash VARCHAR(16), referer VARCHAR(255), user_agent VARCHAR(100), es_logged BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE INDEX IF NOT EXISTS idx_anon_scans_created ON anonymous_scans(created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_anon_scans_dominio ON anonymous_scans(dominio)",
         "CREATE INDEX IF NOT EXISTS idx_processed_webhooks_event_id ON processed_webhooks(event_id)",
     ]:
         try:
