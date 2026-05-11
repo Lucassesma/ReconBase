@@ -130,7 +130,17 @@ function handleLogin(e) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({email: email, password: password})
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){
+    // Si Cloudflare nos sirve una página HTML de challenge, el JSON.parse falla
+    var ct = r.headers.get('Content-Type') || '';
+    if (!ct.includes('application/json')) {
+      var el = document.getElementById('error-msg');
+      el.innerHTML = 'Tu cuenta o IP está temporalmente bloqueada por el firewall (Cloudflare). Espera 10 minutos y vuelve a intentarlo. <br>Si persiste, escribe a hola@reconbase.es.';
+      el.classList.add('show');
+      throw new Error('Cloudflare WAF block');
+    }
+    return r.json();
+  })
   .then(function(data) {
     if(data.ok && data.requires_2fa) {
       // Mostrar paso 2FA
@@ -145,7 +155,11 @@ function handleLogin(e) {
       el.classList.add('show');
     }
   })
-  .catch(function(){ toast('Error de conexion', 'err'); });
+  .catch(function(err){
+    // No mostrar toast si ya pusimos el error en pantalla
+    if (err && err.message === 'Cloudflare WAF block') return;
+    toast('Error de conexión', 'err');
+  });
 }
 
 function handle2FA(e) {
