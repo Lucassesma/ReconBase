@@ -2559,78 +2559,510 @@ def get_scan(scan_id):
 @login_required
 @limiter.limit("10 per hour")
 def generar_pdf():
+    """Informe ejecutivo de seguridad — diseño profesional con todos los módulos
+    del escáner (puertos, DNS, headers, SSL, CMS/WordPress, filtraciones,
+    subdominios, OS) + cálculo de riesgo desglosado + plan de remediación."""
     if not PDF_OK:
         return jsonify({"error": "fpdf2 no instalado"}), 500
-    datos = request.get_json()
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-    pdf.set_fill_color(8,12,20)
-    pdf.rect(0,0,210,40,"F")
-    pdf.set_font("Helvetica","B",22)
-    w_recon = pdf.get_string_width("RECON")
-    w_base  = pdf.get_string_width("BASE")
-    x_logo  = (210 - w_recon - w_base) / 2
-    pdf.set_y(11)
-    pdf.set_x(x_logo)
-    pdf.set_text_color(226,237,248)
-    pdf.cell(w_recon, 12, "RECON")
-    pdf.set_text_color(59,130,246)
-    pdf.cell(w_base,  12, "BASE", ln=True)
-    pdf.set_font("Helvetica",size=10)
-    pdf.set_text_color(71,85,105)
-    pdf.cell(0,6,"Informe de Auditoria de Seguridad",ln=True,align="C")
-    pdf.ln(15)
-    pdf.set_text_color(30,30,30)
-    pdf.set_font("Helvetica","B",11)
-    pdf.cell(0,8,sanitizar(f"Objetivo: {datos.get('objetivo','')}"),ln=True)
-    pdf.set_font("Helvetica",size=10)
-    pdf.set_text_color(71,85,105)
-    pdf.cell(0,6,sanitizar(f"Fecha: {datos.get('timestamp','')}"),ln=True)
-    pdf.cell(0,6,sanitizar(f"Nivel de riesgo: {datos.get('riesgo',0)}% - {datos.get('label','')}"),ln=True)
-    pdf.ln(4)
-    pdf.set_draw_color(30,45,74)
-    pdf.line(10,pdf.get_y(),200,pdf.get_y())
-    pdf.ln(5)
+    datos = request.get_json() or {}
 
-    def sec(titulo, contenido):
-        pdf.set_font("Helvetica","B",11)
-        pdf.set_text_color(30,30,30)
-        pdf.cell(0,8,sanitizar(titulo),ln=True)
-        pdf.set_font("Helvetica",size=10)
-        pdf.set_text_color(71,85,105)
-        pdf.multi_cell(0,6,sanitizar(contenido))
-        pdf.ln(3)
+    # ─── Paleta de color corporativa ───
+    BRAND_GREEN   = (22, 163, 74)
+    BRAND_GREEN_LIGHT = (34, 197, 94)
+    BG_DARK       = (8, 12, 20)
+    TEXT_DARK     = (15, 23, 42)
+    TEXT_MUTED    = (100, 116, 139)
+    TEXT_LIGHT    = (148, 163, 184)
+    BORDER        = (226, 232, 240)
+    CRIT_RED      = (220, 38, 38)
+    WARN_AMBER    = (245, 158, 11)
+    OK_GREEN      = (22, 163, 74)
+    BG_SOFT       = (248, 250, 252)
 
-    puertos = datos.get("puertos",[])
-    if puertos:
-        lista = ", ".join([f"{p['puerto']}/{p['servicio']}" for p in puertos])
-        sec("Red - Puertos Expuestos", f"{len(puertos)} puerto(s): {lista}. Revise el firewall.")
+    riesgo = int(datos.get('riesgo', 0) or 0)
+    label  = datos.get('label', '')
+    if riesgo >= 70:
+        risk_color, risk_label = CRIT_RED, "CRÍTICO"
+    elif riesgo >= 40:
+        risk_color, risk_label = WARN_AMBER, "MODERADO"
     else:
-        sec("Red", "No se detectan puertos expuestos al exterior.")
+        risk_color, risk_label = OK_GREEN, "BAJO"
 
-    dns = datos.get("dns",{})
-    sec("Autenticacion de Correo", f"SPF: {'OK' if dns.get('SPF') else 'AUSENTE'}  |  DMARC: {'OK' if dns.get('DMARC') else 'AUSENTE'}.")
-    sec("Filtraciones OSINT", f"Registros encontrados: {datos.get('leaks',0)}.")
-    subs = datos.get("subs",[])
-    sec("Subdominios", f"Total detectados: {len(subs)}." + (f" {', '.join([s['subdominio'] for s in subs[:8]])}" if subs else ""))
+    pdf = FPDF(unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.set_margins(15, 15, 15)
 
-    # Marca de agua "generado con plan gratis" para usuarios free — palanca de conversion viral
-    if current_user.plan_efectivo == 'free':
-        pdf.ln(8)
-        pdf.set_draw_color(34,197,94)
-        pdf.set_line_width(0.3)
-        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-        pdf.ln(4)
-        pdf.set_font("Helvetica", "B", 9)
-        pdf.set_text_color(34, 197, 94)
-        pdf.cell(0, 5, sanitizar("Informe generado con ReconBase - Plan Gratuito"), ln=True, align="C")
-        pdf.set_font("Helvetica", size=8)
-        pdf.set_text_color(71, 85, 105)
-        pdf.cell(0, 5, sanitizar("Analiza tu empresa en 2 minutos en reconbase.es - Sin tarjeta"), ln=True, align="C")
+    # ════════════════════════════════════════════════════════
+    # FOOTER en todas las páginas
+    # ════════════════════════════════════════════════════════
+    def draw_footer():
+        pdf.set_y(-15)
         pdf.set_font("Helvetica", size=7)
-        pdf.set_text_color(148, 163, 184)
-        pdf.cell(0, 4, sanitizar("Plan Pro: vigilancia nocturna 24/7, alertas automaticas e informe ejecutivo sin marca de agua"), ln=True, align="C")
+        pdf.set_text_color(*TEXT_LIGHT)
+        pdf.set_draw_color(*BORDER)
+        pdf.line(15, pdf.get_y(), 195, pdf.get_y())
+        pdf.ln(2)
+        pdf.cell(60, 4, sanitizar("ReconBase - Auditoría de seguridad"), align="L")
+        pdf.cell(60, 4, sanitizar(f"Informe de {datos.get('dominio','')}"), align="C")
+        pdf.cell(60, 4, f"Página {pdf.page_no()}", align="R")
+
+    # ════════════════════════════════════════════════════════
+    # PÁGINA 1: PORTADA + RESUMEN EJECUTIVO
+    # ════════════════════════════════════════════════════════
+    pdf.add_page()
+
+    # Header bar
+    pdf.set_fill_color(*BG_DARK)
+    pdf.rect(0, 0, 210, 55, "F")
+    pdf.set_fill_color(*BRAND_GREEN_LIGHT)
+    pdf.rect(0, 55, 210, 1.5, "F")
+
+    # Logo
+    pdf.set_font("Helvetica", "B", 30)
+    pdf.set_text_color(226, 237, 248)
+    pdf.set_xy(15, 18)
+    pdf.cell(pdf.get_string_width("RECON"), 14, "RECON", ln=0)
+    pdf.set_text_color(*BRAND_GREEN_LIGHT)
+    pdf.cell(pdf.get_string_width("BASE"), 14, "BASE", ln=1)
+
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(*TEXT_LIGHT)
+    pdf.set_xy(15, 38)
+    pdf.cell(0, 5, sanitizar("INFORME EJECUTIVO DE AUDITORÍA DE SEGURIDAD"), ln=1)
+    pdf.set_x(15)
+    pdf.cell(0, 5, sanitizar(f"Generado: {datos.get('timestamp','')}"), ln=1)
+
+    pdf.ln(20)
+
+    # ─── Resumen: objetivo + risk score gauge ───
+    pdf.set_y(70)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.cell(0, 5, sanitizar("OBJETIVO ANALIZADO"), ln=1)
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.cell(0, 10, sanitizar(datos.get('objetivo','—')), ln=1)
+    pdf.ln(2)
+
+    # Caja de riesgo grande
+    pdf.set_fill_color(*BG_SOFT)
+    pdf.set_draw_color(*risk_color)
+    pdf.set_line_width(0.5)
+    y_box = pdf.get_y()
+    pdf.rect(15, y_box, 180, 40, "DF")
+    pdf.set_line_width(0.2)
+
+    pdf.set_xy(20, y_box + 5)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.cell(0, 5, sanitizar("NIVEL DE RIESGO"), ln=1)
+    pdf.set_xy(20, y_box + 11)
+    pdf.set_font("Helvetica", "B", 36)
+    pdf.set_text_color(*risk_color)
+    pdf.cell(50, 16, f"{riesgo}%", ln=0)
+    pdf.set_xy(75, y_box + 14)
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.cell(0, 7, sanitizar(risk_label), ln=1)
+    pdf.set_x(75)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.cell(0, 5, sanitizar(label or ""), ln=1)
+
+    pdf.set_y(y_box + 45)
+
+    # ─── Resumen de hallazgos ───
+    pdf.ln(3)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.cell(0, 7, sanitizar("Resumen de hallazgos"), ln=1)
+    pdf.set_draw_color(*BORDER)
+    pdf.line(15, pdf.get_y(), 195, pdf.get_y())
+    pdf.ln(3)
+
+    puertos = datos.get('puertos', []) or []
+    dns     = datos.get('dns', {}) or {}
+    headers = datos.get('headers', {}) or {}
+    ssl_i   = datos.get('ssl', {}) or {}
+    wp      = datos.get('wp', {}) or {}
+    cms     = datos.get('cms', {}) or {}
+    subs    = datos.get('subs', []) or []
+    leaks_n = datos.get('leaks', 0) or 0
+    desglose= datos.get('desglose', {}) or {}
+
+    # Top hallazgos en formato lista con badges
+    critPorts = [p for p in puertos if p.get('puerto') in {3389,22,3306,5432,27017,6379,5900,23,21,1433}]
+    findings = []
+    if critPorts:
+        findings.append(('crit', f"{len(critPorts)} puerto(s) crítico(s) expuesto(s)", ', '.join(str(p['puerto']) for p in critPorts[:5])))
+    if not dns.get('SPF') and not dns.get('DMARC'):
+        findings.append(('crit', "SPF y DMARC ausentes", "Cualquiera puede suplantar tu dominio para enviar emails"))
+    elif not dns.get('DMARC'):
+        findings.append(('warn', "DMARC no configurado", "Riesgo de phishing con tu dominio"))
+    elif not dns.get('SPF'):
+        findings.append(('warn', "SPF no configurado", "Vulnerable a suplantación"))
+    miss_h = [k for k in ['Content-Security-Policy','X-Frame-Options','X-Content-Type-Options'] if not headers.get(k)]
+    if len(miss_h) >= 2:
+        findings.append(('warn', f"{len(miss_h)} cabeceras HTTP ausentes", ', '.join(miss_h)))
+    if ssl_i.get('caducado'):
+        findings.append(('crit', "Certificado SSL caducado", f"Caducó el {ssl_i.get('expira','?')}"))
+    elif ssl_i.get('pronto_a_caducar'):
+        findings.append(('warn', f"SSL caduca en {ssl_i.get('dias_restantes','?')} días", "Renueva pronto"))
+    elif not ssl_i.get('tiene_ssl'):
+        findings.append(('crit', "Sin SSL/TLS", "El sitio no usa HTTPS"))
+    if wp.get('is_wordpress'):
+        wp_issues = []
+        if wp.get('version_outdated'): wp_issues.append(f"versión {wp.get('version','?')} obsoleta")
+        if wp.get('xmlrpc_exposed'):   wp_issues.append("xmlrpc.php expuesto")
+        if wp.get('users_enumerable'): wp_issues.append(f"{len(wp.get('users_found') or [])} usuarios enumerables")
+        if wp.get('vulnerable_plugins'): wp_issues.append(f"{len(wp['vulnerable_plugins'])} plugins vulnerables")
+        if wp.get('sensitive_files'):   wp_issues.append(f"{len(wp['sensitive_files'])} archivos sensibles expuestos")
+        if wp_issues:
+            findings.append(('crit', f"WordPress {wp.get('version','')} con {len(wp_issues)} hallazgos", ' · '.join(wp_issues[:3])))
+    if leaks_n:
+        findings.append(('crit', f"{leaks_n} filtración(es) de datos detectada(s)", "Credenciales comprometidas en brechas"))
+
+    if not findings:
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(*OK_GREEN)
+        pdf.cell(0, 6, sanitizar("✓ No se detectaron problemas críticos en este escaneo."), ln=1)
+    else:
+        for sev, title, desc in findings[:8]:
+            color = CRIT_RED if sev == 'crit' else WARN_AMBER if sev == 'warn' else OK_GREEN
+            tag   = "CRÍTICO" if sev == 'crit' else "AVISO" if sev == 'warn' else "OK"
+            # Badge
+            pdf.set_fill_color(*color)
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font("Helvetica", "B", 7)
+            pdf.cell(18, 5, sanitizar(tag), align="C", fill=True)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 5, "  " + sanitizar(title), ln=1)
+            pdf.set_x(33)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.set_text_color(*TEXT_MUTED)
+            pdf.multi_cell(160, 4.5, sanitizar(desc))
+            pdf.ln(1.5)
+
+    draw_footer()
+
+    # ════════════════════════════════════════════════════════
+    # PÁGINA 2+: DETALLE TÉCNICO
+    # ════════════════════════════════════════════════════════
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.cell(0, 9, sanitizar("Detalle técnico"), ln=1)
+    pdf.set_fill_color(*BRAND_GREEN_LIGHT)
+    pdf.rect(15, pdf.get_y(), 30, 1, "F")
+    pdf.ln(8)
+
+    def section_header(text):
+        if pdf.get_y() > 240:
+            draw_footer()
+            pdf.add_page()
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.set_fill_color(*BG_SOFT)
+        pdf.cell(0, 7, "  " + sanitizar(text), ln=1, fill=True)
+        pdf.ln(2)
+
+    def kv(k, v, color=None):
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(*TEXT_MUTED)
+        pdf.cell(55, 5, sanitizar(k))
+        pdf.set_font("Helvetica", "", 9)
+        if color: pdf.set_text_color(*color)
+        else:     pdf.set_text_color(*TEXT_DARK)
+        pdf.multi_cell(135, 5, sanitizar(str(v)))
+        pdf.ln(0.5)
+
+    def body(text):
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.multi_cell(0, 5, sanitizar(text))
+        pdf.ln(1)
+
+    # ─── 1. Puertos ───
+    section_header("1. PUERTOS Y SERVICIOS EXPUESTOS")
+    if puertos:
+        kv("Total expuestos", str(len(puertos)))
+        kv("Puertos críticos", str(len(critPorts)), CRIT_RED if critPorts else OK_GREEN)
+        if puertos:
+            pdf.ln(1)
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.set_text_color(*TEXT_MUTED)
+            pdf.cell(25, 5, "PUERTO")
+            pdf.cell(60, 5, "SERVICIO")
+            pdf.cell(0, 5, "EVALUACIÓN", ln=1)
+            pdf.set_draw_color(*BORDER); pdf.line(15, pdf.get_y(), 195, pdf.get_y()); pdf.ln(1)
+            for p in puertos[:15]:
+                pdf.set_font("Helvetica", "B", 9)
+                es_crit = p.get('puerto') in {3389,22,3306,5432,27017,6379,5900,23,21,1433}
+                pdf.set_text_color(*CRIT_RED if es_crit else TEXT_DARK)
+                pdf.cell(25, 5, str(p.get('puerto', '?')))
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(*TEXT_DARK)
+                pdf.cell(60, 5, sanitizar(str(p.get('servicio', '?'))[:30]))
+                pdf.set_text_color(*CRIT_RED if es_crit else TEXT_MUTED)
+                pdf.cell(0, 5, sanitizar("Crítico - revisar" if es_crit else "Estándar"), ln=1)
+        pdf.ln(2)
+    else:
+        body("No se detectan puertos expuestos al exterior. Estado seguro.")
+
+    # ─── 2. DNS / Email ───
+    section_header("2. AUTENTICACIÓN DE CORREO (anti-phishing)")
+    kv("SPF (Sender Policy Framework)", "OK" if dns.get('SPF') else "AUSENTE", OK_GREEN if dns.get('SPF') else CRIT_RED)
+    kv("DMARC", "OK" if dns.get('DMARC') else "AUSENTE", OK_GREEN if dns.get('DMARC') else CRIT_RED)
+    if dns.get('SPF_raw'):
+        kv("Registro SPF", dns.get('SPF_raw','')[:200])
+    if dns.get('DMARC_raw'):
+        kv("Registro DMARC", dns.get('DMARC_raw','')[:200])
+    if not dns.get('SPF') or not dns.get('DMARC'):
+        pdf.ln(1)
+        pdf.set_font("Helvetica", "I", 8)
+        pdf.set_text_color(*WARN_AMBER)
+        pdf.multi_cell(0, 4.5, sanitizar("Recomendación: configura SPF + DMARC en tu DNS. Sin esto, cualquiera puede enviar emails simulando ser tu empresa (ataques BEC)."))
+    pdf.ln(2)
+
+    # ─── 3. Cabeceras HTTP ───
+    section_header("3. CABECERAS HTTP DE SEGURIDAD")
+    h_list = [
+        ('Strict-Transport-Security', 'HSTS - fuerza HTTPS'),
+        ('X-Frame-Options', 'Anti-clickjacking'),
+        ('X-Content-Type-Options', 'Anti MIME-sniffing'),
+        ('Content-Security-Policy', 'CSP - anti-XSS'),
+        ('Referrer-Policy', 'Política de referer'),
+        ('Permissions-Policy', 'Permisos del navegador'),
+    ]
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.cell(95, 5, "CABECERA")
+    pdf.cell(45, 5, "PROTECCIÓN")
+    pdf.cell(0, 5, "ESTADO", ln=1)
+    pdf.set_draw_color(*BORDER); pdf.line(15, pdf.get_y(), 195, pdf.get_y()); pdf.ln(1)
+    for hname, hdesc in h_list:
+        present = bool(headers.get(hname) or headers.get(hdesc.split(' - ')[0]))
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.cell(95, 5, sanitizar(hname))
+        pdf.set_text_color(*TEXT_MUTED)
+        pdf.cell(45, 5, sanitizar(hdesc[:35]))
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(*OK_GREEN if present else WARN_AMBER)
+        pdf.cell(0, 5, "Presente" if present else "AUSENTE", ln=1)
+    pdf.ln(2)
+
+    # ─── 4. SSL/TLS ───
+    section_header("4. CERTIFICADO SSL/TLS")
+    if ssl_i.get('tiene_ssl'):
+        kv("Estado", "Caducado" if ssl_i.get('caducado') else ("Próximo a caducar" if ssl_i.get('pronto_a_caducar') else "Válido"),
+           CRIT_RED if ssl_i.get('caducado') else (WARN_AMBER if ssl_i.get('pronto_a_caducar') else OK_GREEN))
+        if ssl_i.get('expira'):       kv("Caduca el", ssl_i.get('expira'))
+        if ssl_i.get('dias_restantes') is not None:
+            kv("Días restantes", str(ssl_i.get('dias_restantes')))
+        if ssl_i.get('emitido_por'):  kv("Emitido por", ssl_i.get('emitido_por'))
+        if ssl_i.get('sujeto'):       kv("Sujeto", ssl_i.get('sujeto'))
+    else:
+        kv("Estado", "Sin certificado SSL/TLS", CRIT_RED)
+        body("CRÍTICO: el sitio no usa HTTPS. Toda comunicación es interceptable.")
+    pdf.ln(2)
+
+    # ─── 5. CMS + WordPress audit ───
+    if cms.get('cms'):
+        section_header(f"5. CMS DETECTADO: {cms.get('cms','').upper()}")
+        kv("CMS", cms.get('cms',''))
+        if cms.get('version'): kv("Versión", cms.get('version',''))
+        if wp.get('is_wordpress'):
+            pdf.ln(1)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.cell(0, 6, sanitizar("Auditoría WordPress detallada"), ln=1)
+            kv("Versión instalada", wp.get('version','?'),
+               WARN_AMBER if wp.get('version_outdated') else OK_GREEN)
+            if wp.get('version_outdated') and wp.get('version_diff'):
+                kv("Análisis de versión", wp.get('version_diff',''), WARN_AMBER)
+            kv("xmlrpc.php", "EXPUESTO (DDoS amplifier / brute-force)" if wp.get('xmlrpc_exposed') else "Protegido",
+               CRIT_RED if wp.get('xmlrpc_exposed') else OK_GREEN)
+            if wp.get('users_enumerable'):
+                users = wp.get('users_found') or []
+                kv("Enumeración de usuarios", f"VULNERABLE - {len(users)} usuarios listables via wp-json", CRIT_RED)
+                if users:
+                    kv("Usuarios visibles", ', '.join(users[:5]), TEXT_MUTED)
+            else:
+                kv("Enumeración de usuarios", "Protegida", OK_GREEN)
+            if wp.get('theme'):
+                kv("Tema activo", wp.get('theme',''))
+            plugins = wp.get('plugins') or []
+            if plugins:
+                kv("Plugins detectados", f"{len(plugins)}: " + ', '.join(plugins[:8]) + ("..." if len(plugins)>8 else ""))
+            vp = wp.get('vulnerable_plugins') or []
+            if vp:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.set_text_color(*CRIT_RED)
+                pdf.cell(0, 5, sanitizar(f"Plugins con vulnerabilidades conocidas: {len(vp)}"), ln=1)
+                for p in vp[:5]:
+                    pdf.set_font("Helvetica", "B", 9)
+                    pdf.set_text_color(*TEXT_DARK)
+                    pdf.cell(0, 5, sanitizar(f"  • {p.get('name','')}"), ln=1)
+                    pdf.set_font("Helvetica", "", 8)
+                    pdf.set_text_color(*TEXT_MUTED)
+                    pdf.multi_cell(0, 4, sanitizar(f"    {p.get('desc','')} [{p.get('severity','').upper()}]"))
+            sf = wp.get('sensitive_files') or []
+            if sf:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.set_text_color(*CRIT_RED)
+                pdf.cell(0, 5, sanitizar(f"Archivos sensibles expuestos: {len(sf)}"), ln=1)
+                for f in sf[:6]:
+                    pdf.set_font("Helvetica", "", 8)
+                    pdf.set_text_color(*TEXT_DARK)
+                    pdf.cell(0, 4, sanitizar(f"  • {f.get('path','')} - {f.get('desc','')}"), ln=1)
+        pdf.ln(2)
+
+    # ─── 6. Filtraciones ───
+    section_header("6. FILTRACIONES DE DATOS")
+    if leaks_n > 0:
+        kv("Brechas encontradas", str(leaks_n), CRIT_RED)
+        leaks_raw = datos.get('leaks_raw') or []
+        for leak in leaks_raw[:5]:
+            if isinstance(leak, dict):
+                name = leak.get('fuente') or leak.get('name') or leak.get('Title','?')
+                date = leak.get('fecha') or leak.get('BreachDate','')
+                body(f"  • {name}  {date}")
+        body("Acciones urgentes: cambia las contraseñas de los emails afectados, activa 2FA, notifica al equipo.")
+    else:
+        kv("Estado", "Sin filtraciones detectadas", OK_GREEN)
+    pdf.ln(2)
+
+    # ─── 7. Subdominios ───
+    section_header("7. SUBDOMINIOS DETECTADOS")
+    if subs:
+        kv("Total", str(len(subs)))
+        for s in subs[:15]:
+            sd = s.get('subdominio') if isinstance(s, dict) else str(s)
+            ip = s.get('ip', '—') if isinstance(s, dict) else ''
+            pdf.set_font("Helvetica", "", 8)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.cell(120, 5, sanitizar(f"  • {sd}"))
+            pdf.set_text_color(*TEXT_MUTED)
+            pdf.cell(0, 5, sanitizar(ip), ln=1)
+    else:
+        body("No se detectaron subdominios activos en el rango analizado.")
+    pdf.ln(2)
+
+    # ─── 8. OS ───
+    if datos.get('os'):
+        section_header("8. SISTEMA OPERATIVO DETECTADO")
+        kv("Inferido de banners", datos.get('os',''))
+        pdf.ln(2)
+
+    # ════════════════════════════════════════════════════════
+    # PÁGINA: DESGLOSE DE RIESGO
+    # ════════════════════════════════════════════════════════
+    if desglose:
+        if pdf.get_y() > 200:
+            draw_footer()
+            pdf.add_page()
+        section_header("DESGLOSE DEL CÁLCULO DE RIESGO")
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_text_color(*TEXT_MUTED)
+        pdf.cell(140, 5, "FACTOR")
+        pdf.cell(0, 5, "PUNTOS", ln=1)
+        pdf.line(15, pdf.get_y(), 195, pdf.get_y()); pdf.ln(1)
+        for factor, pts in desglose.items():
+            pdf.set_font("Helvetica", "", 9)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.cell(140, 5, sanitizar(factor))
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.set_text_color(*WARN_AMBER if pts >= 10 else TEXT_MUTED)
+            pdf.cell(0, 5, f"+{pts}", ln=1)
+        pdf.ln(1)
+        pdf.set_draw_color(*risk_color); pdf.line(15, pdf.get_y(), 195, pdf.get_y()); pdf.ln(2)
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(*risk_color)
+        pdf.cell(140, 7, "TOTAL")
+        pdf.cell(0, 7, f"{riesgo}%", ln=1)
+        pdf.ln(2)
+
+    # ════════════════════════════════════════════════════════
+    # PÁGINA FINAL: PLAN DE REMEDIACIÓN + CTA
+    # ════════════════════════════════════════════════════════
+    if pdf.get_y() > 230:
+        draw_footer()
+        pdf.add_page()
+    else:
+        pdf.ln(8)
+
+    section_header("PLAN DE REMEDIACIÓN RECOMENDADO")
+    recom = []
+    if critPorts:
+        recom.append("Cierra los puertos críticos en el firewall. Solo deja 80/443 abiertos al exterior. RDP, SSH, BBDD → solo accesibles via VPN o IP whitelist.")
+    if not dns.get('SPF') or not dns.get('DMARC'):
+        recom.append("Configura SPF y DMARC en tu DNS. Empieza con DMARC en p=none (monitor) y sube a p=quarantine tras 2 semanas. Guía: reconbase.es/blog/configurar-spf-dkim-dmarc-paso-a-paso")
+    if miss_h:
+        recom.append("Añade cabeceras HTTP en nginx/Apache: Strict-Transport-Security, Content-Security-Policy, X-Frame-Options DENY, X-Content-Type-Options nosniff.")
+    if ssl_i.get('caducado') or ssl_i.get('pronto_a_caducar'):
+        recom.append("Renueva el certificado SSL antes de que caduque. Si usas Let's Encrypt, activa renovación automática (certbot --auto-renew).")
+    if wp.get('is_wordpress'):
+        wpr = []
+        if wp.get('version_outdated'): wpr.append("actualizar WordPress core")
+        if wp.get('xmlrpc_exposed'):   wpr.append("deshabilitar xmlrpc.php en .htaccess")
+        if wp.get('users_enumerable'): wpr.append("bloquear /wp-json/wp/v2/users (plugin Stop User Enumeration)")
+        if wp.get('vulnerable_plugins'): wpr.append(f"actualizar/borrar {len(wp['vulnerable_plugins'])} plugin(s) con CVE")
+        if wp.get('sensitive_files'): wpr.append("borrar archivos .bak, install.php, debug.log accesibles")
+        if wpr:
+            recom.append("WordPress: " + "; ".join(wpr) + ". Instala Wordfence o Sucuri para monitorización continua.")
+    if leaks_n:
+        recom.append(f"Cambia inmediatamente las contraseñas de los {leaks_n} email(s) comprometido(s). Activa 2FA en TODAS las cuentas críticas (email, banca, ERP).")
+
+    if not recom:
+        body("Sin acciones urgentes detectadas. Mantén el plan de vigilancia regular.")
+    else:
+        for i, r in enumerate(recom, 1):
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_text_color(*BRAND_GREEN)
+            pdf.cell(10, 6, f"{i}.")
+            pdf.set_font("Helvetica", "", 9.5)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.multi_cell(170, 5, sanitizar(r))
+            pdf.ln(1.5)
+
+    pdf.ln(4)
+    # Caja de marca / CTA
+    plan = current_user.plan_efectivo
+    if plan == 'free':
+        pdf.set_fill_color(240, 253, 244)
+        pdf.set_draw_color(*BRAND_GREEN_LIGHT)
+        y0 = pdf.get_y()
+        pdf.rect(15, y0, 180, 28, "DF")
+        pdf.set_xy(20, y0 + 4)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.set_text_color(*BRAND_GREEN)
+        pdf.cell(0, 5, sanitizar("Plan Pro - Vigilancia continua y sin marca de agua"), ln=1)
+        pdf.set_x(20)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.multi_cell(170, 4.5, sanitizar("Escaneos ilimitados, monitorización 24/7, alertas automáticas, integración Slack/webhook, hasta 10 dominios y reports PDF mensuales sin marca."))
+        pdf.set_x(20)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(*BRAND_GREEN)
+        pdf.cell(0, 5, sanitizar(">> Activa Pro en reconbase.es/pricing - 29 EUR/mes, sin permanencia"), ln=1)
+    else:
+        pdf.set_fill_color(*BG_SOFT)
+        pdf.set_draw_color(*BORDER)
+        y0 = pdf.get_y()
+        pdf.rect(15, y0, 180, 20, "DF")
+        pdf.set_xy(20, y0 + 5)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.set_text_color(*BRAND_GREEN)
+        pdf.cell(0, 5, sanitizar("¿Necesitas ayuda implementando estas recomendaciones?"), ln=1)
+        pdf.set_x(20)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.cell(0, 5, sanitizar("Escríbenos a hola@reconbase.es y te orientamos sin coste."), ln=1)
+
+    draw_footer()
 
     buf = io.BytesIO()
     pdf.output(buf)
