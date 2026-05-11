@@ -4737,6 +4737,132 @@ _BLOG_SEEDS = [
 <p>Configurar SPF, DKIM y DMARC es la mejor inversión de seguridad por hora invertida que puede hacer una PYME. <a href="/comprobar-dmarc-spf">Comprueba tu dominio gratis aquí</a> y arregla lo que falte hoy mismo.</p>
 """.strip()
     },
+    {
+        "slug": "auditoria-wordpress-12-checks-2026",
+        "titulo": "Auditoría WordPress: 12 checks de seguridad que tu web debería pasar (guía 2026)",
+        "excerpt": "El 43% de los sitios web del mundo usa WordPress, y por eso es el CMS más atacado. Te enseño los 12 checks esenciales que toda web WordPress debería pasar — con ejemplos y herramientas gratuitas para validarlos.",
+        "tags": "wordpress,seguridad,auditoria,plugins,cve",
+        "contenido": """
+<h2>Por qué WordPress es el objetivo número 1</h2>
+<p>WordPress mueve el <strong>43&nbsp;% de internet</strong> según W3Techs. Eso lo convierte en el objetivo más rentable para atacantes: con un solo exploit pueden vulnerar miles de webs. En 2024 se reportaron más de <strong>5.000 vulnerabilidades conocidas</strong> en plugins de WordPress (datos de WPScan).</p>
+<p>Y la mayoría son <strong>fáciles de explotar</strong>: solo necesitan que tu admin no haya actualizado un plugin en 3 meses. Por eso los pentesters profesionales empiezan SIEMPRE por WordPress cuando auditan una pyme.</p>
+
+<h2>Los 12 checks que toda auditoría WordPress debería incluir</h2>
+
+<h3>1. Versión de WordPress core actualizada</h3>
+<p>Comprueba en <code>/readme.html</code> o el meta generator. Si estás más de <strong>una versión menor por detrás</strong> (ej. tienes 6.5 y existe 6.7), actualiza ya. Cada release corrige vulnerabilidades.</p>
+
+<h3>2. Plugins instalados al día</h3>
+<p>Ve a <strong>Plugins → Plugins instalados</strong>. Cualquier plugin con "actualización disponible" es un riesgo. Si ves plugins con label "no probado con tu versión de WordPress" — más alarma todavía.</p>
+
+<h3>3. Plugins desactivados (¡borrar!)</h3>
+<p>Un plugin <strong>desactivado pero instalado</strong> sigue siendo accesible vía URL directa y puede ejecutarse. Bórralos siempre.</p>
+
+<h3>4. xmlrpc.php deshabilitado</h3>
+<p>Es un protocolo legacy que se usa principalmente para amplificar ataques DDoS y para hacer brute-force masivo sin captcha. Si no usas Jetpack, deshabilítalo con esta regla en tu <code>.htaccess</code>:</p>
+<pre><code>&lt;Files xmlrpc.php&gt;
+  Order Allow,Deny
+  Deny from all
+&lt;/Files&gt;</code></pre>
+
+<h3>5. Enumeración de usuarios bloqueada</h3>
+<p>Prueba en tu navegador: <code>https://tudominio.com/wp-json/wp/v2/users</code>. ¿Te lista los usuarios admin? Si sí, cualquiera tiene el primer paso para un ataque de brute-force con tu username real. Instala el plugin <strong>"Stop User Enumeration"</strong> o bloquea esa ruta vía nginx/Apache.</p>
+
+<h3>6. Login con 2FA</h3>
+<p>Plugin <strong>"Two Factor"</strong> (oficial WP) o Wordfence Login Security. Sin 2FA, una contraseña filtrada = web hackeada.</p>
+
+<h3>7. Límite de intentos de login</h3>
+<p>WordPress por defecto deja intentar contraseñas <em>infinitamente</em>. Plugin <strong>"Limit Login Attempts Reloaded"</strong> bloquea IPs tras 3-5 fallos.</p>
+
+<h3>8. Archivos backup expuestos</h3>
+<p>Comprueba estas URLs en tu navegador. Si te devuelven contenido, BORRA esos archivos:</p>
+<ul>
+  <li><code>/wp-config.php.bak</code></li>
+  <li><code>/wp-config.php~</code></li>
+  <li><code>/wp-content/debug.log</code></li>
+  <li><code>/wp-admin/install.php</code> (debe decir "ya instalado")</li>
+</ul>
+
+<h3>9. HTTPS forzado</h3>
+<p>WordPress por defecto NO redirige HTTP → HTTPS. Añade en <code>wp-config.php</code>:</p>
+<pre><code>define('FORCE_SSL_ADMIN', true);</code></pre>
+<p>Y un redirect 301 a nivel servidor.</p>
+
+<h3>10. Tema y plugins de fuentes confiables</h3>
+<p>NO instales temas/plugins "premium gratis" de webs piratas. Vienen <strong>siempre con malware</strong>. Usa repositorio oficial de WordPress, ThemeForest, CodeCanyon o webs reconocidas (Yoast, WP Rocket, etc.).</p>
+
+<h3>11. Backups automáticos</h3>
+<p>Plugin <strong>UpdraftPlus</strong> (gratis) → configura backup semanal a Google Drive/Dropbox. Si te hackean, restauras en 5&nbsp;min en lugar de perder todo.</p>
+
+<h3>12. Monitor de seguridad continua</h3>
+<p><strong>Wordfence</strong> (gratis) o <strong>Sucuri</strong> escanean tu WordPress cada noche en busca de archivos modificados/malware. Es la red de seguridad final.</p>
+
+<h2>Cómo automatizar esta auditoría</h2>
+<p>Hacer estos 12 checks manualmente tarda 1-2 horas. <a href="/">ReconBase</a> los pasa automáticamente en 2 minutos analizando solo tu dominio — sin acceso a tu WordPress. Detecta versión, plugins visibles, archivos sensibles expuestos y mucho más. <strong>Gratis, sin tarjeta</strong>.</p>
+
+<h2>Conclusión</h2>
+<p>WordPress es seguro <em>cuando se mantiene</em>. La mayoría de hackeos a pymes españolas vienen de un plugin desactualizado durante 3 meses, no de un atacante sofisticado. Estos 12 checks cubren el 90&nbsp;% de los vectores de ataque comunes. <a href="/">Analiza tu WordPress aquí</a> y arregla lo que detecte hoy.</p>
+""".strip()
+    },
+    {
+        "slug": "ataques-bec-business-email-compromise-pymes-espana",
+        "titulo": "Ataques BEC (Business Email Compromise): la estafa silenciosa que se lleva miles de euros de pymes españolas",
+        "excerpt": "BEC es el tipo de ataque que más dinero roba a pymes en España según el INCIBE. No usa malware ni hackeo técnico: solo un email bien escrito. Te enseño cómo funciona, casos reales y cómo blindarte en 30 minutos.",
+        "tags": "BEC,phishing,suplantacion,SPF,DMARC,pyme",
+        "contenido": """
+<h2>¿Qué es un ataque BEC y por qué deberías preocuparte?</h2>
+<p><strong>BEC = Business Email Compromise</strong>. El atacante envía un email haciéndose pasar por una persona de confianza (el CEO, un proveedor, el banco) y consigue que alguien de tu empresa <strong>transfiera dinero</strong> a una cuenta controlada por él.</p>
+<p>No usa malware. No usa exploits. No necesita "hackear" nada. Solo necesita:</p>
+<ul>
+  <li>Un email convincente</li>
+  <li>Que tu dominio <strong>no tenga SPF/DMARC</strong> bien configurados</li>
+</ul>
+<p>Según el <a href="https://www.incibe.es" target="_blank" rel="noopener">INCIBE</a>, BEC es el tipo de ciberataque que <strong>más dinero roba</strong> en España, por encima del ransomware. Las pymes son su objetivo favorito porque no tienen procesos formales de verificación de transferencias.</p>
+
+<h2>3 casos reales (sucedidos a pymes españolas)</h2>
+
+<h3>Caso 1: La asesoría de Madrid (12.500&nbsp;€)</h3>
+<p>Una asesoría fiscal recibió un email "del gerente" pidiendo a la administrativa que transfiriera 12.500&nbsp;€ a un nuevo proveedor por una "urgencia". El email venía de <code>gerente@asesoria-X.com</code> — exactamente el dominio real. La administrativa lo hizo. El gerente nunca había mandado ese email.</p>
+<p><strong>Causa raíz</strong>: el dominio no tenía DMARC configurado. Cualquier atacante podía enviar emails como <code>gerente@asesoria-X.com</code> desde un servidor externo y pasar el filtro.</p>
+
+<h3>Caso 2: La empresa de logística (40.000&nbsp;€)</h3>
+<p>Una pyme de logística recibió un email "de su banco" pidiendo confirmar una operación. La factura adjunta venía de un dominio MUY parecido al banco real. La pyme tenía las credenciales bancarias del director financiero comprometidas (filtración antigua, no cambió la contraseña). El atacante hizo la transferencia desde la web del banco — para el banco, era una operación legítima.</p>
+<p><strong>Causa raíz</strong>: credenciales filtradas + sin 2FA en banca online.</p>
+
+<h3>Caso 3: La clínica dental (8.700&nbsp;€)</h3>
+<p>Un email "del proveedor de material" pedía actualizar el IBAN de cobro porque "había cambiado de banco". La gestoría actualizó el IBAN en su programa de gestión sin verificar telefónicamente. La siguiente transferencia (8.700&nbsp;€) fue a la cuenta del atacante.</p>
+<p><strong>Causa raíz</strong>: cero proceso de verificación de cambios de IBAN.</p>
+
+<h2>Cómo blindar tu pyme contra BEC (30 minutos)</h2>
+
+<h3>1. Configura SPF, DKIM y DMARC (10 min)</h3>
+<p>Es el bloqueo técnico número 1. Sin esto, cualquiera puede suplantar tu dominio. Tenemos una <a href="/blog/configurar-spf-dkim-dmarc-paso-a-paso">guía paso a paso</a> y una <a href="/comprobar-dmarc-spf">herramienta gratuita</a> para validar tu configuración.</p>
+
+<h3>2. Política interna de "doble verificación" en transferencias (10 min)</h3>
+<p>Establece por escrito y comunica al equipo: <strong>cualquier transferencia &gt;1.000&nbsp;€ o cambio de IBAN debe verificarse telefónicamente con un número conocido</strong> (no el que aparezca en el email). Esta política sola previene el 80&nbsp;% de los BEC.</p>
+
+<h3>3. 2FA en todas las cuentas críticas (5 min)</h3>
+<p>Banca online, email, ERP, CRM. Sin 2FA, una credencial filtrada = atacante dentro. Usa Google Authenticator o Authy.</p>
+
+<h3>4. Filtros antiphishing en el email (5 min)</h3>
+<p>Si usas Google Workspace o Microsoft 365, ambos tienen filtros automáticos avanzados — actívalos. Si usas un email "raro" (hosting compartido), pásate a un proveedor profesional.</p>
+
+<h3>5. Monitoriza filtraciones de tus emails corporativos</h3>
+<p>Comprueba periódicamente si tus emails de empresa aparecen en filtraciones conocidas (HaveIBeenPwned). Con cuenta gratuita en <a href="/">ReconBase</a> te monitorizamos esto automáticamente.</p>
+
+<h2>Señales de alerta para detectar un BEC</h2>
+<ul>
+  <li>⚠️ "Necesito que hagas esto ahora, estoy en una reunión y no puedo hablar" → urgencia artificial</li>
+  <li>⚠️ "No me respondas a este mail, contactaré yo" → bloquea la verificación</li>
+  <li>⚠️ El IBAN/cuenta de cobro cambia de repente, sin explicación</li>
+  <li>⚠️ El remitente es <code>jefe@empresa-x.com</code> en lugar del habitual <code>jefe@empresa.com</code> (typosquatting)</li>
+  <li>⚠️ Email enviado fuera del horario laboral o desde un sitio raro</li>
+</ul>
+
+<h2>Conclusión</h2>
+<p>BEC es el ataque <em>más rentable</em> contra pymes españolas porque no requiere habilidad técnica del atacante — solo aprovecha procesos descuidados de la empresa. Las medidas son baratas (DMARC, 2FA, política de doble verificación) y reducen un 90&nbsp;% el riesgo. <a href="/">Empieza por analizar gratis tu dominio</a> y ver si tu empresa ya está expuesta.</p>
+""".strip()
+    },
 ]
 
 with app.app_context():
