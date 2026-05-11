@@ -3878,6 +3878,98 @@ def admin_panel():
         recent_users=recent_users, recent_scans=recent_scans,
         now=now)
 
+@app.route("/admin/metricas")
+@login_required
+@admin_required
+def admin_metricas():
+    """Dashboard de métricas: usuarios, leads, escaneos, facturación.
+    Snapshot rápido del negocio en una sola pantalla."""
+    from sqlalchemy import func, extract, desc
+    now = datetime.utcnow()
+    hoy_start = datetime(now.year, now.month, now.day)
+    semana_start = now - timedelta(days=7)
+    mes_start = datetime(now.year, now.month, 1)
+
+    # ── USUARIOS ──
+    total_users   = User.query.count()
+    users_free    = User.query.filter_by(plan='free').count()
+    users_pro     = User.query.filter_by(plan='pro').count()
+    users_trial   = User.query.filter(User.trial_end.isnot(None), User.trial_end > now, User.plan == 'free').count()
+    users_verified= User.query.filter_by(email_verified=True).count()
+    users_hoy     = User.query.filter(User.created_at >= hoy_start).count()
+    users_semana  = User.query.filter(User.created_at >= semana_start).count()
+    users_mes     = User.query.filter(User.created_at >= mes_start).count()
+    ultimos_users = User.query.order_by(User.created_at.desc()).limit(10).all()
+
+    # ── LEADS (capturados via email magnet, sin registro) ──
+    leads_total   = Lead.query.count()
+    try:
+        leads_no_conv = Lead.query.filter_by(convertido=False).count()
+    except Exception:
+        leads_no_conv = 0
+        db.session.rollback()
+    try:
+        leads_unsub = Lead.query.filter(getattr(Lead, 'unsubscribed', None) == True).count() if hasattr(Lead, 'unsubscribed') else 0
+    except Exception:
+        leads_unsub = 0
+        db.session.rollback()
+    try:
+        leads_recientes = Lead.query.filter_by(convertido=False).order_by(Lead.created_at.desc()).limit(15).all()
+    except Exception:
+        leads_recientes = []
+        db.session.rollback()
+    conv_rate = (Lead.query.filter_by(convertido=True).count() / max(leads_total, 1)) * 100 if leads_total else 0
+
+    # ── ESCANEOS ──
+    scans_total   = Scan.query.count()
+    scans_hoy     = Scan.query.filter(Scan.timestamp >= hoy_start).count()
+    scans_semana  = Scan.query.filter(Scan.timestamp >= semana_start).count()
+    scans_mes     = Scan.query.filter(extract('month', Scan.timestamp) == now.month,
+                                      extract('year',  Scan.timestamp) == now.year).count()
+
+    # ── FACTURACIÓN ──
+    try:
+        invoices_pagadas = Invoice.query.filter_by(estado='pagada').all()
+        revenue_total = sum(float(inv.importe or 0) for inv in invoices_pagadas)
+        # MRR: contar suscripciones Pro activas × 29 (asumiendo mensual)
+        mrr = User.query.filter_by(plan='pro').count() * 29.0
+        ultimas_facturas = Invoice.query.order_by(Invoice.created_at.desc()).limit(10).all()
+    except Exception:
+        revenue_total = 0
+        mrr = 0
+        ultimas_facturas = []
+        db.session.rollback()
+
+    # ── ESCANEOS POR DÍA (últimos 7 días) ──
+    scans_por_dia = []
+    for i in range(6, -1, -1):
+        dia = (now - timedelta(days=i)).date()
+        siguiente = dia + timedelta(days=1)
+        c = Scan.query.filter(Scan.timestamp >= dia,
+                              Scan.timestamp < siguiente).count()
+        scans_por_dia.append({'fecha': dia.strftime('%d/%m'), 'count': c})
+
+    # ── TOP DOMINIOS ESCANEADOS ──
+    try:
+        top_dominios = db.session.query(Scan.dominio, func.count(Scan.id).label('n')).\
+            group_by(Scan.dominio).order_by(desc('n')).limit(10).all()
+    except Exception:
+        top_dominios = []
+        db.session.rollback()
+
+    return render_template("admin_metricas.html",
+        total_users=total_users, users_free=users_free, users_pro=users_pro,
+        users_trial=users_trial, users_verified=users_verified,
+        users_hoy=users_hoy, users_semana=users_semana, users_mes=users_mes,
+        ultimos_users=ultimos_users,
+        leads_total=leads_total, leads_no_conv=leads_no_conv, leads_unsub=leads_unsub,
+        leads_recientes=leads_recientes, conv_rate=round(conv_rate, 1),
+        scans_total=scans_total, scans_hoy=scans_hoy, scans_semana=scans_semana,
+        scans_mes=scans_mes, scans_por_dia=scans_por_dia,
+        revenue_total=revenue_total, mrr=mrr, ultimas_facturas=ultimas_facturas,
+        top_dominios=top_dominios, now=now)
+
+
 @app.route("/api/admin/user/<int:uid>/plan", methods=["POST"])
 @login_required
 @admin_required

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Métricas — ReconBase Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060D09;--surface:#0A1410;--surface-2:#0F1B14;--border:#152B1E;
+  --text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--dim:#475569;
+  --green:#22C55E;--green-dk:#15803D;--green-glow:rgba(34,197,94,.18);
+  --amber:#F59E0B;--red:#EF4444;--blue:#3B82F6;--purple:#A855F7;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.5;min-height:100vh}
+a{color:inherit;text-decoration:none}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 6%;border-bottom:1px solid var(--border);background:rgba(8,12,20,.85);backdrop-filter:blur(8px);position:sticky;top:0;z-index:10}
+nav .logo{font-family:'Arial Black',sans-serif;font-size:1.2rem;font-weight:900;letter-spacing:-.03em}
+nav .logo span{color:var(--green)}
+nav .right{display:flex;gap:1.25rem;align-items:center;font-size:.82rem;color:var(--muted-2)}
+nav .right a:hover{color:var(--green)}
+nav .pill{background:rgba(168,85,247,.15);color:#C4B5FD;padding:.2rem .6rem;border-radius:20px;font-size:.7rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em;border:1px solid rgba(168,85,247,.3)}
+
+.wrap{max-width:1280px;margin:0 auto;padding:2rem 6%}
+.page-title{font-size:1.75rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.3rem}
+.page-sub{color:var(--muted-2);font-size:.88rem;margin-bottom:2rem;font-family:'JetBrains Mono',monospace}
+
+/* Grid + Cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-bottom:2rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.4rem;position:relative;overflow:hidden}
+.card::after{content:'';position:absolute;top:0;right:0;width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--green-glow))}
+.card-label{font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:.5rem}
+.card-value{font-size:2.25rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:.3rem}
+.card-value.green{color:var(--green)}
+.card-value.amber{color:var(--amber)}
+.card-value.red{color:var(--red)}
+.card-value.blue{color:var(--blue)}
+.card-value.purple{color:var(--purple)}
+.card-sub{font-size:.78rem;color:var(--muted-2);line-height:1.5}
+.card-sub strong{color:var(--text)}
+
+/* Sub-stat rows */
+.row{display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.row:last-child{border:none}
+.row .lbl{color:var(--muted-2)}
+.row .val{font-weight:700;font-family:'JetBrains Mono',monospace}
+
+/* Section */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.4rem 1.5rem;margin-bottom:1.5rem}
+.section h2{font-size:1.05rem;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:var(--text)}
+.section h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;padding:.55rem .6rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
+td{padding:.65rem .6rem;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:var(--surface-2)}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:.15rem .55rem;border-radius:20px;font-size:.65rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.04em}
+.badge.pro{background:rgba(34,197,94,.18);color:#4ADE80;border:1px solid rgba(34,197,94,.3)}
+.badge.free{background:rgba(100,116,139,.15);color:#94A3B8;border:1px solid rgba(100,116,139,.3)}
+.badge.trial{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.3)}
+.badge.ok{background:rgba(34,197,94,.12);color:#86EFAC}
+.badge.warn{background:rgba(239,68,68,.12);color:#FCA5A5}
+
+/* Bar chart */
+.bars{display:flex;align-items:flex-end;gap:.5rem;height:120px;padding:.5rem 0;border-bottom:1px solid var(--border);margin-bottom:.5rem}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:.3rem}
+.bar .b{width:100%;background:linear-gradient(180deg,var(--green),var(--green-dk));border-radius:4px 4px 0 0;min-height:2px;transition:all .3s}
+.bar .lbl{font-size:.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.bar .num{font-size:.7rem;font-weight:700;color:var(--text)}
+
+@media(max-width:700px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  table{font-size:.74rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/admin" class="logo">RECON<span>BASE</span></a>
+  <div class="right">
+    <span class="pill">ADMIN · MÉTRICAS</span>
+    <a href="/admin">← Panel users</a>
+    <a href="/">Volver al sitio</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="page-title">Métricas en tiempo real</div>
+  <div class="page-sub">// snapshot {{ now.strftime('%d/%m/%Y %H:%M') }} UTC</div>
+
+  <!-- KPIs PRINCIPALES -->
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Usuarios totales</div>
+      <div class="card-value green">{{ total_users }}</div>
+      <div class="card-sub"><strong>+{{ users_hoy }}</strong> hoy · <strong>+{{ users_semana }}</strong> semana · <strong>+{{ users_mes }}</strong> mes</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Cuentas Pro</div>
+      <div class="card-value purple">{{ users_pro }}</div>
+      <div class="card-sub"><strong>{{ users_trial }}</strong> en trial · {{ users_free }} en free</div>
+    </div>
+    <div class="card">
+      <div class="card-label">MRR estimado</div>
+      <div class="card-value green">{{ '%.0f'|format(mrr) }}€</div>
+      <div class="card-sub">Total facturado: <strong>{{ '%.2f'|format(revenue_total) }}€</strong></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Leads capturados</div>
+      <div class="card-value blue">{{ leads_total }}</div>
+      <div class="card-sub"><strong>{{ leads_no_conv }}</strong> sin convertir · <strong>{{ conv_rate }}%</strong> conversión{% if leads_unsub %} · {{ leads_unsub }} unsub{% endif %}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Escaneos hoy</div>
+      <div class="card-value amber">{{ scans_hoy }}</div>
+      <div class="card-sub"><strong>{{ scans_semana }}</strong> esta semana · <strong>{{ scans_total }}</strong> totales</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Email verificados</div>
+      <div class="card-value">{{ users_verified }}/{{ total_users }}</div>
+      <div class="card-sub">{{ ((users_verified / total_users * 100) if total_users else 0)|round(0)|int }}% del total ha verificado email</div>
+    </div>
+  </div>
+
+  <!-- CHART: ESCANEOS DIARIOS -->
+  <div class="section">
+    <h2><span class="dot"></span> Escaneos diarios — últimos 7 días</h2>
+    {% set max_count = scans_por_dia|map(attribute='count')|max %}
+    {% if not max_count %}{% set max_count = 1 %}{% endif %}
+    <div class="bars">
+      {% for d in scans_por_dia %}
+      <div class="bar">
+        <div class="num">{{ d.count }}</div>
+        <div class="b" style="height: {{ (d.count / max_count * 100)|round(0)|int if max_count else 0 }}%"></div>
+        <div class="lbl">{{ d.fecha }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="font-size:.75rem;color:var(--muted);text-align:center;margin-top:.5rem">
+      Total semana: <strong style="color:var(--text)">{{ scans_semana }}</strong> · Total mes: <strong style="color:var(--text)">{{ scans_mes }}</strong>
+    </div>
+  </div>
+
+  <!-- LEADS NO CONVERTIDOS (oportunidades de venta) -->
+  <div class="section">
+    <h2><span class="dot" style="background:var(--blue)"></span> Leads pendientes de conversión ({{ leads_no_conv }}) — oportunidades en frío</h2>
+    {% if leads_recientes %}
+    <table>
+      <thead>
+        <tr><th>Email</th><th>Dominio</th><th>Riesgo</th><th>Capturado</th><th>Stage</th></tr>
+      </thead>
+      <tbody>
+      {% for l in leads_recientes %}
+      <tr>
+        <td>{{ l.email }}</td>
+        <td style="color:var(--muted-2);font-family:'JetBrains Mono',monospace;font-size:.78rem">{{ l.dominio }}</td>
+        <td><span class="badge {% if l.riesgo >= 70 %}warn{% elif l.riesgo >= 40 %}trial{% else %}ok{% endif %}">{{ l.riesgo }}%</span></td>
+        <td style="font-size:.78rem;color:var(--muted-2)">{{ l.created_at.strftime('%d/%m %H:%M') if l.created_at else '—' }}</td>
+        <td><span class="badge {% if l.followup_stage == 3 %}warn{% elif l.followup_stage >= 1 %}trial{% else %}free{% endif %}">{% if l.followup_stage == 0 %}sin contactar{% elif l.followup_stage == 1 %}48h{% elif l.followup_stage == 2 %}día 7{% else %}día 14{% endif %}</span></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="color:var(--muted);padding:1rem 0;font-size:.85rem;text-align:center">Aún no hay leads capturados.</div>
+    {% endif %}
+  </div>
+
+  <!-- ÚLTIMOS REGISTROS -->
+  <div class="section">
+    <h2><span class="dot"></span> Últimos registros</h2>
+    {% if ultimos_users %}
+    <table>
+      <thead>
+        <tr><th>Email</th><th>Empresa</th><th>Plan</th><th>Verificado</th><th>Registro</th></tr>
+      </thead>
+      <tbody>
+      {% for u in ultimos_users %}
+      <tr>
+        <td>{{ u.email }}</td>
+        <td style="color:var(--muted-2)">{{ u.empresa or '—' }}</td>
+        <td>
+          {% if u.plan == 'pro' %}<span class="badge pro">PRO</span>
+          {% elif u.trial_end and u.trial_end > now %}<span class="badge trial">TRIAL</span>
+          {% else %}<span class="badge free">FREE</span>{% endif %}
+        </td>
+        <td>{% if u.email_verified %}<span class="badge ok">✓</span>{% else %}<span class="badge warn">✗</span>{% endif %}</td>
+        <td style="font-size:.78rem;color:var(--muted-2)">{{ u.created_at.strftime('%d/%m %H:%M') if u.created_at else '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="color:var(--muted);padding:1rem 0;font-size:.85rem;text-align:center">Aún no hay registros.</div>
+    {% endif %}
+  </div>
+
+  <!-- ÚLTIMAS FACTURAS -->
+  <div class="section">
+    <h2><span class="dot" style="background:var(--green)"></span> Últimas facturas</h2>
+    {% if ultimas_facturas %}
+    <table>
+      <thead>
+        <tr><th>Nº</th><th>Concepto</th><th>Importe</th><th>Estado</th><th>Fecha</th></tr>
+      </thead>
+      <tbody>
+      {% for f in ultimas_facturas %}
+      <tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted-2)">{{ f.numero }}</td>
+        <td>{{ f.concepto }}</td>
+        <td style="font-weight:700;color:var(--green)">{{ '%.2f'|format(f.importe) }} {{ f.moneda }}</td>
+        <td><span class="badge {% if f.estado == 'pagada' %}ok{% else %}warn{% endif %}">{{ f.estado }}</span></td>
+        <td style="font-size:.78rem;color:var(--muted-2)">{{ f.created_at.strftime('%d/%m/%Y') if f.created_at else '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="color:var(--muted);padding:1rem 0;font-size:.85rem;text-align:center">Aún no hay facturas.</div>
+    {% endif %}
+  </div>
+
+  <!-- TOP DOMINIOS ESCANEADOS -->
+  {% if top_dominios %}
+  <div class="section">
+    <h2><span class="dot" style="background:var(--amber)"></span> Top 10 dominios escaneados</h2>
+    <table>
+      <thead><tr><th>#</th><th>Dominio</th><th>Escaneos</th></tr></thead>
+      <tbody>
+      {% for d in top_dominios %}
+      <tr>
+        <td style="color:var(--muted)">{{ loop.index }}</td>
+        <td style="font-family:'JetBrains Mono',monospace">{{ d[0] }}</td>
+        <td style="font-weight:700;color:var(--amber)">{{ d[1] }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div style="text-align:center;color:var(--dim);font-size:.72rem;font-family:'JetBrains Mono',monospace;padding:2rem 0 1rem">
+    Datos en vivo desde Postgres · ReconBase Admin
+  </div>
+
+</div>
+
+<script>
+// Auto-refresh cada 60s (opcional)
+setTimeout(function(){ window.location.reload(); }, 60000);
+</script>
+
+</body>
+</html>
