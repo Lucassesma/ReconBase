@@ -296,6 +296,197 @@ def detect_cms(domain, timeout=7):
     return result
 
 # ─────────────────────────────────────────────────────────────
+# MÓDULO 6b: AUDITORÍA WORDPRESS DEDICADA
+# ─────────────────────────────────────────────────────────────
+# Versión de referencia (latest stable). Actualizar manualmente cada release.
+_WP_LATEST_VERSION = "6.7"
+
+# Plugins WordPress con vulnerabilidades conocidas (ejemplos comunes 2024-2026).
+# Cuando detectamos uno de estos, lo marcamos como riesgo crítico.
+_WP_VULNERABLE_PLUGINS = {
+    # plugin_slug: (vuln descripcion, severidad)
+    "wp-file-manager":     ("RCE pre-auth conocido (CVE-2020-25213) — actualizar urgente", "critical"),
+    "wp-statistics":       ("SQLi y XSS en versiones <14.x", "high"),
+    "elementor":           ("Verifica versión <3.20 — XSS conocidos", "medium"),
+    "duplicator":          ("RCE en versiones <1.5.4 — actualizar", "critical"),
+    "all-in-one-seo-pack": ("XSS reflejado en versiones antiguas", "medium"),
+    "advanced-custom-fields": ("Verifica versión <6.2 — escalation conocida", "high"),
+    "woocommerce":         ("Mantener al día — vector típico de skimmers", "medium"),
+    "contact-form-7":      ("Versiones <5.7 con upload vulnerable", "high"),
+    "really-simple-ssl":   ("Versiones <7.1 con escalation de privilegios", "high"),
+    "wpforms-lite":        ("XSS en versiones antiguas", "medium"),
+}
+
+
+def _safe_get(url, timeout=5, headers=None):
+    """GET defensivo. Devuelve response o None."""
+    try:
+        h = headers or {"User-Agent": "Mozilla/5.0 (compatible; ReconBase-WP/2.0)"}
+        return requests.get(url, timeout=timeout, allow_redirects=True, headers=h)
+    except Exception:
+        return None
+
+
+def _wp_version_outdated(version):
+    """Compara versión detectada con _WP_LATEST_VERSION. Devuelve bool y diff approx."""
+    if not version:
+        return False, None
+    try:
+        cur_parts = [int(x) for x in version.split(".")[:2]]
+        latest_parts = [int(x) for x in _WP_LATEST_VERSION.split(".")[:2]]
+        while len(cur_parts) < 2: cur_parts.append(0)
+        while len(latest_parts) < 2: latest_parts.append(0)
+        # Mayor o menor
+        if cur_parts[0] < latest_parts[0]:
+            return True, f"{latest_parts[0]-cur_parts[0]} versiones mayores por detrás"
+        if cur_parts[0] == latest_parts[0] and cur_parts[1] < latest_parts[1]:
+            return True, f"{latest_parts[1]-cur_parts[1]} minor versions por detrás"
+        return False, None
+    except Exception:
+        return False, None
+
+
+def wordpress_audit(domain, timeout=6):
+    """Auditoría WordPress completa: versión, plugins, xmlrpc, wp-json,
+    enumeración de usuarios, archivos sensibles. Solo se llama si detect_cms()
+    confirma WordPress."""
+    result = {
+        "is_wordpress": False,
+        "version": None,
+        "version_outdated": False,
+        "version_diff": None,
+        "xmlrpc_exposed": False,
+        "users_enumerable": False,
+        "users_found": [],
+        "plugins": [],
+        "vulnerable_plugins": [],
+        "theme": None,
+        "sensitive_files": [],
+        "checks_count": 0,  # total de checks realizados
+        "issues_count": 0,  # total de issues encontrados
+    }
+
+    base = None
+    # Encontrar scheme + base
+    for scheme in ["https", "http"]:
+        r = _safe_get(f"{scheme}://{domain}", timeout=timeout)
+        if r and r.status_code < 500:
+            base = f"{scheme}://{domain}"
+            html = r.text
+            break
+    if not base:
+        return result
+
+    # 1) Detectar versión via meta generator
+    import re
+    m = re.search(r'<meta\s+name=["\']generator["\']\s+content=["\']WordPress\s+([\d.]+)', html, re.I)
+    if m:
+        result["is_wordpress"] = True
+        result["version"] = m.group(1)
+    # Fallback: feed RSS
+    if not result["version"]:
+        rss = _safe_get(f"{base}/feed/", timeout=4)
+        if rss and rss.status_code == 200:
+            mm = re.search(r'<generator>https?://wordpress\.org/\?v=([\d.]+)</generator>', rss.text, re.I)
+            if mm:
+                result["is_wordpress"] = True
+                result["version"] = mm.group(1)
+    # Fallback: wp-json
+    if not result["version"]:
+        wpj = _safe_get(f"{base}/wp-json/", timeout=4)
+        if wpj and wpj.status_code == 200:
+            try:
+                data = wpj.json()
+                if data.get("namespaces") or data.get("routes"):
+                    result["is_wordpress"] = True
+                if "wp/v2" in (data.get("namespaces") or []):
+                    pass  # confirmed but no version exposed
+            except Exception:
+                pass
+    # Heurística final: /wp-login.php o /wp-content/ accesibles
+    if not result["is_wordpress"]:
+        wpl = _safe_get(f"{base}/wp-login.php", timeout=3)
+        if wpl and wpl.status_code in (200, 302) and ("wp-submit" in (wpl.text or "") or "wordpress" in (wpl.text or "").lower()):
+            result["is_wordpress"] = True
+
+    if not result["is_wordpress"]:
+        return result
+
+    # 2) Versión obsoleta
+    if result["version"]:
+        outdated, diff = _wp_version_outdated(result["version"])
+        result["version_outdated"] = outdated
+        result["version_diff"] = diff
+        result["checks_count"] += 1
+        if outdated:
+            result["issues_count"] += 1
+
+    # 3) xmlrpc.php expuesto
+    result["checks_count"] += 1
+    xr = _safe_get(f"{base}/xmlrpc.php", timeout=3)
+    if xr and xr.status_code == 200 and "XML-RPC" in (xr.text or "")[:500]:
+        result["xmlrpc_exposed"] = True
+        result["issues_count"] += 1
+
+    # 4) Enumeración de usuarios via wp-json/wp/v2/users
+    result["checks_count"] += 1
+    users_resp = _safe_get(f"{base}/wp-json/wp/v2/users", timeout=4)
+    if users_resp and users_resp.status_code == 200:
+        try:
+            users = users_resp.json()
+            if isinstance(users, list) and users:
+                result["users_enumerable"] = True
+                result["issues_count"] += 1
+                # Capturar primeros 5 usernames (sin email/datos sensibles)
+                for u in users[:5]:
+                    if isinstance(u, dict):
+                        name = u.get("name") or u.get("slug")
+                        if name:
+                            result["users_found"].append(str(name)[:50])
+        except Exception:
+            pass
+
+    # 5) Plugins visibles en HTML (URLs /wp-content/plugins/PLUGIN_SLUG/)
+    result["checks_count"] += 1
+    plugin_matches = re.findall(r'/wp-content/plugins/([a-z0-9\-_]+)/', html or "", re.I)
+    plugins_unique = list({p.lower() for p in plugin_matches})[:15]
+    result["plugins"] = plugins_unique
+    # Cruzar con lista vulnerable
+    for p in plugins_unique:
+        if p in _WP_VULNERABLE_PLUGINS:
+            desc, sev = _WP_VULNERABLE_PLUGINS[p]
+            result["vulnerable_plugins"].append({"name": p, "desc": desc, "severity": sev})
+            result["issues_count"] += 1
+
+    # 6) Theme visible en HTML
+    result["checks_count"] += 1
+    theme_match = re.search(r'/wp-content/themes/([a-z0-9\-_]+)/', html or "", re.I)
+    if theme_match:
+        result["theme"] = theme_match.group(1).lower()
+
+    # 7) Archivos sensibles típicos
+    sensitive_paths = [
+        ("/wp-config.php.bak", "backup wp-config.php expuesto"),
+        ("/wp-config.php~",    "backup wp-config.php (tilde) expuesto"),
+        ("/.wp-config.php.swp","swap file wp-config.php expuesto"),
+        ("/wp-admin/install.php", "install.php accesible (re-instalación posible)"),
+        ("/readme.html",       "readme.html con versión WP filtrada"),
+        ("/wp-content/debug.log", "debug.log público"),
+    ]
+    for path, desc in sensitive_paths:
+        result["checks_count"] += 1
+        sf = _safe_get(f"{base}{path}", timeout=3)
+        if sf and sf.status_code == 200 and len(sf.text or "") > 50:
+            # Filtrar: install.php redirige a /wp-admin/ tras instalar, OK
+            if path == "/wp-admin/install.php" and "already installed" in (sf.text or "").lower():
+                continue
+            result["sensitive_files"].append({"path": path, "desc": desc})
+            result["issues_count"] += 1
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
 # MÓDULO 7: VIGILANCIA NOCTURNA
 # ─────────────────────────────────────────────────────────────
 def enviar_alerta(mensaje):

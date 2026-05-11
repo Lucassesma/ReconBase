@@ -161,6 +161,31 @@ function scRenderCards(d) {
     else html += scCard('ok', 'SSL/TLS válido', 'Caduca en ' + (d.ssl.dias_restantes || '?') + ' días.');
   }
 
+  // CARD WORDPRESS DEDICADA
+  if (d.wp && d.wp.is_wordpress) {
+    var wpHallazgos = [];
+    if (d.wp.version_outdated) wpHallazgos.push('versión obsoleta (' + (d.wp.version || '?') + ')');
+    if (d.wp.xmlrpc_exposed) wpHallazgos.push('xmlrpc.php expuesto');
+    if (d.wp.users_enumerable) {
+      var nU = (d.wp.users_found || []).length;
+      wpHallazgos.push((nU || '') + ' usuario' + (nU !== 1 ? 's' : '') + ' enumerable' + (nU !== 1 ? 's' : '') + ' via wp-json');
+    }
+    var vp = (d.wp.vulnerable_plugins || []);
+    if (vp.length) wpHallazgos.push(vp.length + ' plugin' + (vp.length>1?'s':'') + ' con CVE conocido');
+    var sf = (d.wp.sensitive_files || []);
+    if (sf.length) wpHallazgos.push(sf.length + ' archivo' + (sf.length>1?'s':'') + ' sensible' + (sf.length>1?'s':'') + ' expuesto' + (sf.length>1?'s':''));
+
+    if (wpHallazgos.length === 0) {
+      html += scCard('ok', 'WordPress ' + (d.wp.version || '') + ' detectado', 'Sin hallazgos críticos. Detectados ' + (d.wp.plugins||[]).length + ' plugins, tema: ' + (d.wp.theme || 'desconocido') + '.');
+    } else {
+      var sev = vp.length > 0 || sf.length > 0 ? 'crit' : 'warn';
+      var titulo = 'WordPress ' + (d.wp.version || '') + ' — ' + wpHallazgos.length + ' hallazgo' + (wpHallazgos.length>1?'s':'');
+      var desc = wpHallazgos.slice(0,4).join(' · ');
+      if (vp.length) desc += '. Plugins: ' + vp.slice(0,2).map(function(p){return p.name;}).join(', ') + (vp.length>2?'...':'');
+      html += scCard(sev, titulo, desc, 'wordpress');
+    }
+  }
+
   if ((d.leaks || 0) > 0) {
     html += scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' detectada' + (d.leaks > 1 ? 's' : ''), (d.leaks_raw||[]).slice(0,3).map(function(f){return f.fuente||f;}).join(', ') || 'Credenciales comprometidas encontradas.', 'leaks');
   } else {
@@ -176,7 +201,8 @@ var SC_REMEDIATION = {
   'dmarc':    ['1. Accede al panel DNS de tu dominio.', '2. Crea un registro TXT en _dmarc.tudominio.com con: v=DMARC1; p=quarantine; rua=mailto:dmarc@tudominio.com', '3. Empieza con p=none para monitorizar antes de bloquear.', '4. Verifica con: dig TXT _dmarc.tudominio.com'],
   'headers':  ['1. Accede a la configuración de tu servidor web (nginx/Apache) o panel de hosting.', '2. Añade las cabeceras faltantes en la configuración HTTP.', '3. Ejemplo nginx: add_header X-Frame-Options "SAMEORIGIN";', '4. Recarga la configuración del servidor y vuelve a escanear.'],
   'ssl':      ['1. Accede al panel de tu proveedor de hosting.', '2. Busca la sección "SSL/TLS" o "Certificados".', '3. Si usas Let\'s Encrypt, ejecuta: sudo certbot renew', '4. Activa la renovación automática para evitar que caduque de nuevo.'],
-  'leaks':    ['1. Identifica qué contraseñas están comprometidas en el informe detallado.', '2. Cámbia esas contraseñas INMEDIATAMENTE en todos los servicios afectados.', '3. Activa la autenticación en dos factores (2FA) en los servicios críticos.', '4. Notifica a los empleados afectados y registra el incidente (obligatorio en RGPD).']
+  'leaks':    ['1. Identifica qué contraseñas están comprometidas en el informe detallado.', '2. Cámbia esas contraseñas INMEDIATAMENTE en todos los servicios afectados.', '3. Activa la autenticación en dos factores (2FA) en los servicios críticos.', '4. Notifica a los empleados afectados y registra el incidente (obligatorio en RGPD).'],
+  'wordpress':['1. ACTUALIZA WordPress a la última versión desde Escritorio → Actualizaciones (¡haz backup antes!).', '2. Deshabilita xmlrpc.php si no usas Jetpack: en .htaccess añade <Files xmlrpc.php> Order Allow,Deny Deny from all </Files>.', '3. Bloquea la enumeración de usuarios: añade plugin "Stop User Enumeration" o regla nginx que bloquee /wp-json/wp/v2/users.', '4. ACTUALIZA TODOS los plugins desde Plugins → Actualizaciones. Elimina los que no uses.', '5. Borra archivos .bak, ~ , wp-admin/install.php y debug.log accesibles desde el navegador.', '6. Instala Wordfence o Sucuri para monitorización continua.']
 };
 
 function scCard(type, title, desc, remedKey) {

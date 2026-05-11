@@ -1249,6 +1249,11 @@ def scan_demo():
     except Exception: subs = []
     try: cms = {"cms": None, "version": None, "riesgo": False, "detalle": ""} if es_ip_flag else engine.detect_cms(dominio)
     except Exception: cms = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
+    # Auditoría WordPress dedicada (solo si CMS detectado es WP)
+    wp_audit = {"is_wordpress": False}
+    if cms.get("cms") == "WordPress" and not es_ip_flag:
+        try: wp_audit = engine.wordpress_audit(dominio)
+        except Exception: wp_audit = {"is_wordpress": False}
     leaks = []
     es_email = "@" in objetivo
     if es_email and API_KEY:
@@ -1258,6 +1263,22 @@ def scan_demo():
     riesgo, desglose = calcular_riesgo(puertos, dns, leaks, headers)
     if cms.get("riesgo"):
         riesgo = min(100, riesgo + 10); desglose["CMS desactualizable"] = 10
+    # Penalizaciones específicas WordPress
+    if wp_audit.get("is_wordpress"):
+        if wp_audit.get("version_outdated"):
+            riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
+        if wp_audit.get("xmlrpc_exposed"):
+            riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
+        if wp_audit.get("users_enumerable"):
+            riesgo = min(100, riesgo + 10); desglose["Usuarios WP enumerables"] = 10
+        vp = len(wp_audit.get("vulnerable_plugins") or [])
+        if vp:
+            pts = min(20, vp * 8)
+            riesgo = min(100, riesgo + pts); desglose[f"{vp} plugin(s) vulnerable(s)"] = pts
+        sf = len(wp_audit.get("sensitive_files") or [])
+        if sf:
+            pts = min(15, sf * 5)
+            riesgo = min(100, riesgo + pts); desglose[f"{sf} archivo(s) sensible(s) WP"] = pts
     if ssl_info.get("caducado"):
         riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
     elif ssl_info.get("pronto_a_caducar"):
@@ -1270,7 +1291,7 @@ def scan_demo():
         "headers": {k: bool(v) for k, v in headers.items()},
         "subs": subs, "leaks": len(leaks), "leaks_raw": leaks,
         "riesgo": riesgo, "label": label, "color": color,
-        "desglose": desglose, "cms": cms, "ssl": ssl_info,
+        "desglose": desglose, "cms": cms, "wp": wp_audit, "ssl": ssl_info,
         "banners": banners, "os": os_det,
         "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
         "demo": True, "locked": False
@@ -2368,11 +2389,16 @@ def scan():
     os_det   = engine.detect_os_from_banners(banners)
 
     # Módulos solo para dominios (no IPs)
+    wp_audit = {"is_wordpress": False}
     if not es_ip:
         dns     = engine.check_email_spoofing(dominio)
         headers = engine.check_security_headers(dominio)
         subs    = engine.scan_subdomains(dominio)
         cms     = engine.detect_cms(dominio)
+        # Auditoría WordPress dedicada si CMS = WordPress
+        if cms.get("cms") == "WordPress":
+            try: wp_audit = engine.wordpress_audit(dominio)
+            except Exception: wp_audit = {"is_wordpress": False}
     else:
         dns     = {"SPF": None, "DMARC": None, "SPF_raw": "", "DMARC_raw": ""}
         headers = {}
@@ -2387,6 +2413,22 @@ def scan():
     if cms.get("riesgo"):
         riesgo = min(100, riesgo + 10)
         desglose["CMS desactualizable"] = 10
+    # Penalizaciones específicas WordPress
+    if wp_audit.get("is_wordpress"):
+        if wp_audit.get("version_outdated"):
+            riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
+        if wp_audit.get("xmlrpc_exposed"):
+            riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
+        if wp_audit.get("users_enumerable"):
+            riesgo = min(100, riesgo + 10); desglose["Usuarios WP enumerables"] = 10
+        vp = len(wp_audit.get("vulnerable_plugins") or [])
+        if vp:
+            pts = min(20, vp * 8)
+            riesgo = min(100, riesgo + pts); desglose[f"{vp} plugin(s) vulnerable(s)"] = pts
+        sf = len(wp_audit.get("sensitive_files") or [])
+        if sf:
+            pts = min(15, sf * 5)
+            riesgo = min(100, riesgo + pts); desglose[f"{sf} archivo(s) sensible(s) WP"] = pts
     # Penalización SSL
     if ssl_info.get("caducado"):
         riesgo = min(100, riesgo + 20)
@@ -2411,6 +2453,7 @@ def scan():
         "color":     color,
         "desglose":  desglose,
         "cms":       cms,
+        "wp":        wp_audit,
         "ssl":       ssl_info,
         "banners":   banners,
         "os":        os_det,

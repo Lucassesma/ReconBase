@@ -2026,6 +2026,26 @@ function renderDemoResult(d){
     else html+=demoCard('ok','SSL/TLS válido','Certificado activo, caduca en '+(d.ssl.dias_restantes||'?')+' días.');
   }
 
+  // CARD WORDPRESS — solo si se detecta WP
+  if (d.wp && d.wp.is_wordpress) {
+    var wpIssues = [];
+    if (d.wp.version_outdated) wpIssues.push('versión obsoleta (' + (d.wp.version || '?') + ')');
+    if (d.wp.xmlrpc_exposed) wpIssues.push('xmlrpc.php expuesto');
+    if (d.wp.users_enumerable) wpIssues.push((d.wp.users_found && d.wp.users_found.length ? d.wp.users_found.length : '') + ' usuarios enumerables');
+    var vpC = (d.wp.vulnerable_plugins || []).length;
+    if (vpC) wpIssues.push(vpC + ' plugin' + (vpC>1?'s':'') + ' con vulnerabilidad conocida');
+    var sfC = (d.wp.sensitive_files || []).length;
+    if (sfC) wpIssues.push(sfC + ' archivo' + (sfC>1?'s':'') + ' sensible' + (sfC>1?'s':'') + ' expuesto' + (sfC>1?'s':''));
+
+    if (wpIssues.length === 0) {
+      html += demoCard('ok', 'WordPress detectado (' + (d.wp.version || 'versión desconocida') + ')', 'Sin hallazgos críticos. ' + (d.wp.plugins||[]).length + ' plugins visibles.');
+    } else {
+      var sev = (d.wp.vulnerable_plugins||[]).length > 0 || (d.wp.sensitive_files||[]).length > 0 ? 'crit' : 'warn';
+      html += demoCard(sev, 'WordPress vulnerable: ' + wpIssues.length + ' hallazgo' + (wpIssues.length>1?'s':''),
+        'WordPress ' + (d.wp.version || '?') + ' — ' + wpIssues.slice(0,3).join(' · ') + (wpIssues.length>3?'...':''));
+    }
+  }
+
   if(d.os) html+=demoCard('ok','Sistema detectado: '+d.os,'Información obtenida por análisis de banners de servicio.');
 
   html+='<div class="dr-card" style="border-color:#1E1B4B;border-left:3px solid #818CF8"><span class="dr-badge" style="background:rgba(129,140,248,.12);color:#818CF8">REQUIERE CUENTA</span><div class="dr-card-title">Filtraciones en bases de datos</div><div class="dr-card-desc">Crea una cuenta gratis para comprobar si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).</div></div>';
