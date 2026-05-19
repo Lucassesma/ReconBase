@@ -8,7 +8,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from models import (db, User, Scan, Domain, BlogPost,
                     SSLCheck, UptimeCheck, Notification, DNSRecord,
                     TechDetection, IPReputation, AuditLog, Invoice, Lead,
-                    ProcessedWebhook, AnonymousScan)
+                    ProcessedWebhook, AnonymousScan, LoginAttempt)
 import reconbase_engine as engine
 import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
 import ssl as _ssl_mod, socket, time, re
@@ -942,6 +942,41 @@ def pricing_page():
     return render_template("pricing.html", user=current_user if current_user.is_authenticated else None)
 
 # ── AUTH API ──
+def _track_login_attempt(email, exito, razon):
+    """Guarda un intento de login (éxito o fallo) en la tabla login_attempts.
+    Silencioso ante errores — nunca debe romper el login."""
+    try:
+        ip_real = (request.headers.get("CF-Connecting-IP")
+                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                   or request.remote_addr or "")
+        ua = (request.headers.get("User-Agent") or "")[:255]
+        db.session.add(LoginAttempt(
+            email=(email or "")[:120],
+            ip=ip_real[:45] or None,
+            user_agent=ua or None,
+            exito=bool(exito),
+            razon=(razon or "")[:50]
+        ))
+        db.session.commit()
+    except Exception as _e:
+        db.session.rollback()
+        logger.warning(f"[LoginAttempt] no se pudo guardar: {_e}")
+
+def _marcar_login_exitoso(user):
+    """Actualiza last_login + login_count del usuario tras login OK."""
+    try:
+        ip_real = (request.headers.get("CF-Connecting-IP")
+                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                   or request.remote_addr or "")
+        user.last_login = datetime.utcnow()
+        user.last_login_ip = ip_real[:45] or None
+        user.login_count = (user.login_count or 0) + 1
+        db.session.commit()
+    except Exception as _e:
+        db.session.rollback()
+        logger.warning(f"[LoginOK] no se pudo actualizar usuario: {_e}")
+
+
 @app.route("/api/login", methods=["POST"])
 @limiter.limit("10 per minute; 30 per hour")
 def api_login():
@@ -949,10 +984,15 @@ def api_login():
     email    = data.get("email", "").strip().lower()
     password = data.get("password", "")
     user     = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password):
+    if not user:
+        _track_login_attempt(email, exito=False, razon="no_user")
+        return jsonify({"ok": False, "error": "Email o contraseña incorrectos"}), 401
+    if not user.check_password(password):
+        _track_login_attempt(email, exito=False, razon="wrong_pass")
         return jsonify({"ok": False, "error": "Email o contraseña incorrectos"}), 401
     # Bloquear login si el email no está verificado todavía
     if not user.email_verified:
+        _track_login_attempt(email, exito=False, razon="unverified")
         # Reenviar el email de verificación automáticamente (idempotente, regenera token si hace falta)
         try:
             if not user.verify_token:
@@ -971,6 +1011,8 @@ def api_login():
         session["2fa_pending_user"] = user.id
         return jsonify({"ok": True, "requires_2fa": True})
     login_user(user)
+    _marcar_login_exitoso(user)
+    _track_login_attempt(email, exito=True, razon="ok")
     _registrar_audit(user.id, 'login', f"Login exitoso desde {request.remote_addr}")
     return jsonify({"ok": True})
 
@@ -2501,6 +2543,11 @@ def scan():
         resultado= resultado
     )
     db.session.add(scan)
+    # Marcar timestamp del último escaneo en el usuario (para ver actividad reciente)
+    try:
+        current_user.last_scan_at = datetime.utcnow()
+    except Exception:
+        pass
     db.session.commit()
     resultado["scan_id"]      = scan.id
     resultado["pdf_unlocked"] = scan.pdf_unlocked
@@ -3678,9 +3725,12 @@ def totp_verify_login():
         return jsonify({"ok": False, "error": "Usuario no encontrado"}), 400
     totp = pyotp.TOTP(user.totp_secret)
     if not totp.verify(code, valid_window=1):
+        _track_login_attempt(user.email, exito=False, razon="2fa_fail")
         return jsonify({"ok": False, "error": "Código 2FA incorrecto"}), 400
     session.pop("2fa_pending_user", None)
     login_user(user)
+    _marcar_login_exitoso(user)
+    _track_login_attempt(user.email, exito=True, razon="ok_2fa")
     return jsonify({"ok": True})
 
 # ── BLOG / CENTRO DE RECURSOS ──
@@ -4001,6 +4051,47 @@ def admin_metricas():
         top_dominios = []
         db.session.rollback()
 
+    # ── ACTIVIDAD DE USUARIOS (logins + escaneos) ──
+    # Top 30 usuarios por actividad reciente: orden por last_login DESC
+    try:
+        actividad_users_raw = db.session.query(
+            User,
+            func.count(Scan.id).label('n_scans')
+        ).outerjoin(Scan, Scan.user_id == User.id).\
+            group_by(User.id).\
+            order_by(desc(func.coalesce(User.last_login, User.created_at))).\
+            limit(30).all()
+        actividad_users = [
+            {
+                'id': u.id, 'email': u.email, 'empresa': u.empresa,
+                'plan': u.plan, 'trial_end': u.trial_end,
+                'created_at': u.created_at,
+                'last_login': u.last_login,
+                'login_count': u.login_count or 0,
+                'last_scan_at': u.last_scan_at,
+                'n_scans': n_scans or 0,
+                'email_verified': u.email_verified,
+            }
+            for (u, n_scans) in actividad_users_raw
+        ]
+        # Logins en la última semana / hoy (agregado)
+        logins_hoy_count = db.session.query(func.count(LoginAttempt.id)).\
+            filter(LoginAttempt.exito == True, LoginAttempt.created_at >= hoy_start).scalar() or 0
+        logins_semana_count = db.session.query(func.count(LoginAttempt.id)).\
+            filter(LoginAttempt.exito == True, LoginAttempt.created_at >= semana_start).scalar() or 0
+        logins_fallidos_hoy = db.session.query(func.count(LoginAttempt.id)).\
+            filter(LoginAttempt.exito == False, LoginAttempt.created_at >= hoy_start).scalar() or 0
+        # Últimos intentos fallidos
+        logins_fallidos_recientes = LoginAttempt.query.\
+            filter(LoginAttempt.exito == False).\
+            order_by(LoginAttempt.created_at.desc()).limit(20).all()
+    except Exception as _e:
+        logger.warning(f"[admin_metricas] tablas actividad no disponibles: {_e}")
+        db.session.rollback()
+        actividad_users = []
+        logins_hoy_count = logins_semana_count = logins_fallidos_hoy = 0
+        logins_fallidos_recientes = []
+
     return render_template("admin_metricas.html",
         total_users=total_users, users_free=users_free, users_pro=users_pro,
         users_trial=users_trial, users_verified=users_verified,
@@ -4014,7 +4105,13 @@ def admin_metricas():
         anon_unicos_hoy=anon_unicos_hoy,
         top_anon_dominios=top_anon_dominios, anon_recientes=anon_recientes,
         revenue_total=revenue_total, mrr=mrr, ultimas_facturas=ultimas_facturas,
-        top_dominios=top_dominios, now=now)
+        top_dominios=top_dominios,
+        actividad_users=actividad_users,
+        logins_hoy_count=logins_hoy_count,
+        logins_semana_count=logins_semana_count,
+        logins_fallidos_hoy=logins_fallidos_hoy,
+        logins_fallidos_recientes=logins_fallidos_recientes,
+        now=now)
 
 
 @app.route("/api/admin/user/<int:uid>/plan", methods=["POST"])
@@ -5212,6 +5309,17 @@ with app.app_context():
         "CREATE INDEX IF NOT EXISTS idx_anon_scans_created ON anonymous_scans(created_at)",
         "CREATE INDEX IF NOT EXISTS idx_anon_scans_dominio ON anonymous_scans(dominio)",
         "CREATE INDEX IF NOT EXISTS idx_processed_webhooks_event_id ON processed_webhooks(event_id)",
+        # ── Actividad de usuarios (last_login + login_count + last_scan_at) ──
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(45)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0 NOT NULL",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_scan_at TIMESTAMP",
+        # ── Tracking de logins (éxitos y fallos) ──
+        "CREATE TABLE IF NOT EXISTS login_attempts (id SERIAL PRIMARY KEY, email VARCHAR(120) NOT NULL, ip VARCHAR(45), user_agent VARCHAR(255), exito BOOLEAN DEFAULT FALSE NOT NULL, razon VARCHAR(50), created_at TIMESTAMP DEFAULT NOW())",
+        "CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email)",
+        "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip)",
+        "CREATE INDEX IF NOT EXISTS idx_login_attempts_exito ON login_attempts(exito)",
+        "CREATE INDEX IF NOT EXISTS idx_login_attempts_created ON login_attempts(created_at)",
     ]:
         try:
             db.session.execute(text(col_sql))

@@ -23,6 +23,9 @@ function scSwitch(tab, el) {
 function scLanzar() {
   var v = (document.getElementById('sc-objetivo').value || '').trim();
   if (!v) { document.getElementById('sc-objetivo').focus(); return; }
+  // Tracking: clic en el botón escanear (independiente de si termina el escaneo)
+  try { if(window.gtag) gtag('event', 'scan_button_clicked', {domain: v, logged: isLoggedIn}); } catch(_){}
+  try { if(window.plausible) plausible('Scan Click', {props:{domain: v}}); } catch(_){}
   var btn = document.getElementById('sc-btn');
   btn.textContent = 'Analizando...'; btn.disabled = true;
   document.getElementById('sc-loading').style.display = 'block';

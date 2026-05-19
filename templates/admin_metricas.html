@@ -133,6 +133,11 @@ tr:last-child td{border-bottom:none}
       <div class="card-value">{{ users_verified }}/{{ total_users }}</div>
       <div class="card-sub">{{ ((users_verified / total_users * 100) if total_users else 0)|round(0)|int }}% del total ha verificado email</div>
     </div>
+    <div class="card">
+      <div class="card-label">Logins hoy</div>
+      <div class="card-value green">{{ logins_hoy_count }}</div>
+      <div class="card-sub"><strong>{{ logins_semana_count }}</strong> esta semana · <strong style="color:#FCA5A5">{{ logins_fallidos_hoy }}</strong> fallos hoy</div>
+    </div>
   </div>
 
   <!-- CHART: ESCANEOS DIARIOS -->
@@ -252,6 +257,88 @@ tr:last-child td{border-bottom:none}
     <div style="color:var(--muted);padding:1rem 0;font-size:.85rem;text-align:center">Aún no hay registros.</div>
     {% endif %}
   </div>
+
+  <!-- ACTIVIDAD DE USUARIOS (quién entra y quién escanea de verdad) -->
+  <div class="section">
+    <h2><span class="dot" style="background:var(--purple)"></span> Actividad de usuarios — quién está usando la app de verdad</h2>
+    {% if actividad_users %}
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Plan</th>
+          <th>Logins</th>
+          <th>Último login</th>
+          <th>Escaneos</th>
+          <th>Último escaneo</th>
+          <th>Registro</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in actividad_users %}
+      <tr>
+        <td>
+          {{ u.email }}
+          {% if not u.email_verified %}<span class="badge warn" style="margin-left:.3rem">no verif</span>{% endif %}
+          {% if u.empresa %}<div style="font-size:.7rem;color:var(--muted)">{{ u.empresa }}</div>{% endif %}
+        </td>
+        <td>
+          {% if u.plan == 'pro' %}<span class="badge pro">PRO</span>
+          {% elif u.trial_end and u.trial_end > now %}<span class="badge trial">TRIAL</span>
+          {% else %}<span class="badge free">FREE</span>{% endif %}
+        </td>
+        <td style="font-weight:700;font-family:'JetBrains Mono',monospace;color:{% if u.login_count >= 5 %}var(--green){% elif u.login_count >= 1 %}var(--text){% else %}var(--muted){% endif %}">
+          {{ u.login_count }}
+        </td>
+        <td style="font-size:.78rem;color:var(--muted-2)">
+          {% if u.last_login %}{{ u.last_login.strftime('%d/%m %H:%M') }}{% else %}<span style="color:var(--dim)">nunca</span>{% endif %}
+        </td>
+        <td style="font-weight:700;font-family:'JetBrains Mono',monospace;color:{% if u.n_scans >= 3 %}var(--amber){% elif u.n_scans >= 1 %}var(--text){% else %}var(--muted){% endif %}">
+          {{ u.n_scans }}
+        </td>
+        <td style="font-size:.78rem;color:var(--muted-2)">
+          {% if u.last_scan_at %}{{ u.last_scan_at.strftime('%d/%m %H:%M') }}{% else %}<span style="color:var(--dim)">—</span>{% endif %}
+        </td>
+        <td style="font-size:.78rem;color:var(--muted-2)">{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:.8rem;text-align:center">
+      Ordenado por último login. Los datos de actividad empiezan a contar desde este deploy (logins/escaneos previos no se reflejan).
+    </div>
+    {% else %}
+    <div style="color:var(--muted);padding:1rem 0;font-size:.85rem;text-align:center">Aún no hay actividad registrada.</div>
+    {% endif %}
+  </div>
+
+  <!-- INTENTOS DE LOGIN FALLIDOS (detección de fuerza bruta) -->
+  {% if logins_fallidos_recientes %}
+  <div class="section">
+    <h2><span class="dot" style="background:var(--red)"></span> Intentos de login fallidos recientes</h2>
+    <table>
+      <thead>
+        <tr><th>Email intentado</th><th>Motivo</th><th>IP</th><th>Cuándo</th></tr>
+      </thead>
+      <tbody>
+      {% for a in logins_fallidos_recientes %}
+      <tr>
+        <td>{{ a.email }}</td>
+        <td><span class="badge warn">
+          {% if a.razon == 'wrong_pass' %}password incorrecta
+          {% elif a.razon == 'no_user' %}email inexistente
+          {% elif a.razon == 'unverified' %}email sin verificar
+          {% elif a.razon == '2fa_fail' %}código 2FA mal
+          {% else %}{{ a.razon or '—' }}{% endif %}
+        </span></td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--muted-2)">{{ a.ip or '—' }}</td>
+        <td style="font-size:.78rem;color:var(--muted-2)">{{ a.created_at.strftime('%d/%m %H:%M') if a.created_at else '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
 
   <!-- ÚLTIMAS FACTURAS -->
   <div class="section">

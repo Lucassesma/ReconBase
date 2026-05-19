@@ -148,8 +148,11 @@ function handleLogin(e) {
       document.getElementById('totp-card').style.display = 'block';
       setTimeout(function(){ document.getElementById('totp-code').focus(); }, 100);
     } else if(data.ok) {
+      try { if(window.gtag) gtag('event', 'login_success', {method: 'email'}); } catch(_){}
+      try { if(window.plausible) plausible('Login'); } catch(_){}
       window.location.href = '/';
     } else {
+      try { if(window.gtag) gtag('event', 'login_failed', {reason: 'bad_credentials'}); } catch(_){}
       var el = document.getElementById('error-msg');
       el.textContent = data.error || 'Email o contraseña incorrectos';
       el.classList.add('show');
@@ -173,8 +176,11 @@ function handle2FA(e) {
   .then(function(r){ return r.json(); })
   .then(function(data) {
     if(data.ok) {
+      try { if(window.gtag) gtag('event', 'login_success', {method: '2fa'}); } catch(_){}
+      try { if(window.plausible) plausible('Login 2FA'); } catch(_){}
       window.location.href = '/';
     } else {
+      try { if(window.gtag) gtag('event', 'login_failed', {reason: '2fa_bad'}); } catch(_){}
       var el = document.getElementById('totp-error');
       el.textContent = data.error || 'Código incorrecto';
       el.classList.add('show');

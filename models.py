@@ -40,6 +40,11 @@ class User(UserMixin, db.Model):
     informe_pdf_activo  = db.Column(db.Boolean, default=False, nullable=False)
     informe_pdf_frecuencia = db.Column(db.String(20), default='semanal')   # semanal | mensual
     informe_pdf_dia     = db.Column(db.Integer, default=1)                 # weekday 0-6 (semanal) o día 1-28 (mensual)
+    # Actividad — cuándo entró y cuántas veces / cuándo escaneó por última vez
+    last_login          = db.Column(db.DateTime, nullable=True)
+    last_login_ip       = db.Column(db.String(45), nullable=True)
+    login_count         = db.Column(db.Integer, default=0, nullable=False)
+    last_scan_at        = db.Column(db.DateTime, nullable=True)
 
     scans   = db.relationship('Scan',   backref='user', lazy=True)
     domains = db.relationship('Domain', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -259,6 +264,19 @@ class AnonymousScan(db.Model):
     user_agent   = db.Column(db.String(100), nullable=True)
     es_logged    = db.Column(db.Boolean, default=False)  # true si el visitante estaba logueado
     created_at   = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class LoginAttempt(db.Model):
+    """Intentos de login (sobre todo los fallidos) para detectar fuerza bruta
+    y auditar accesos. Se guarda email, IP, motivo y timestamp."""
+    __tablename__ = 'login_attempts'
+    id         = db.Column(db.Integer, primary_key=True)
+    email      = db.Column(db.String(120), nullable=False, index=True)
+    ip         = db.Column(db.String(45), nullable=True, index=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    exito      = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    razon      = db.Column(db.String(50), nullable=True)   # wrong_pass | no_user | unverified | 2fa_fail | ok
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
 
 class ProcessedWebhook(db.Model):

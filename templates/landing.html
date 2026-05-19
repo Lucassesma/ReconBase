@@ -1800,6 +1800,9 @@ async function pagarPlan(plan){
 function heroScan(){
   var v=(document.getElementById('hero-domain').value||'').trim();
   if(!v){document.getElementById('hero-domain').focus();return;}
+  // Tracking: clic en escanear desde la landing (visitante anónimo)
+  try { if(window.gtag) gtag('event', 'scan_button_clicked', {domain: v, source: 'landing_hero'}); } catch(_){}
+  try { if(window.plausible) plausible('Scan Click Landing', {props:{domain: v}}); } catch(_){}
   var btn=document.querySelector('.hsf-btn');
   var inp=document.getElementById('hero-domain');
   btn.textContent='Analizando...';btn.disabled=true;inp.disabled=true;
