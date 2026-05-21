@@ -157,7 +157,7 @@ limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     default_limits=[],
-    storage_uri="memory://"
+    storage_uri=os.getenv("REDIS_URL", "memory://")
 )
 
 # ─── CSRF protection ───
@@ -262,7 +262,7 @@ login_manager.login_view = 'login_page'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 API_KEY        = os.getenv("RECONBASE_API_KEY", "")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
@@ -1149,6 +1149,8 @@ def stripe_portal():
 @login_required
 def debug_mail():
     """Diagnostico: verifica si el servidor puede enviar emails (Resend HTTPS o SMTP)."""
+    if not current_user.is_admin:
+        abort(403)
     import smtplib
     mail_user = app.config.get('MAIL_USERNAME') or ''
     mail_pass = app.config.get('MAIL_PASSWORD') or ''
@@ -1498,7 +1500,7 @@ def checkout_informe():
         scan_id = int(scan_id)
     except (TypeError, ValueError):
         return jsonify({"error": "scan_id inválido"}), 400
-    scan_obj = Scan.query.get(scan_id)
+    scan_obj = db.session.get(Scan, scan_id)
     if not scan_obj or scan_obj.user_id != current_user.id:
         return jsonify({"error": "Escaneo no encontrado"}), 404
     try:
@@ -1533,7 +1535,7 @@ def verificar_informe():
     try:
         stripe_session = stripe.checkout.Session.retrieve(session_id)
         if stripe_session.payment_status == "paid":
-            scan_obj = Scan.query.get(int(scan_id))
+            scan_obj = db.session.get(Scan, int(scan_id))
             if scan_obj and scan_obj.user_id == current_user.id:
                 scan_obj.pdf_unlocked = True
                 db.session.commit()
@@ -1549,7 +1551,7 @@ def _resolve_user_from_obj(obj):
     ref = getattr(obj, "client_reference_id", None)
     if ref:
         try:
-            u = User.query.get(int(ref))
+            u = db.session.get(User, int(ref))
             if u:
                 return u
         except Exception:
@@ -1559,7 +1561,7 @@ def _resolve_user_from_obj(obj):
     try:
         uid = meta.get("user_id") if hasattr(meta, "get") else None
         if uid:
-            u = User.query.get(int(uid))
+            u = db.session.get(User, int(uid))
             if u:
                 return u
     except Exception:
@@ -1636,7 +1638,7 @@ def stripe_webhook():
                 scan_id = meta.get("scan_id") if hasattr(meta, "get") else None
                 if scan_id:
                     try:
-                        scan_obj = Scan.query.get(int(scan_id))
+                        scan_obj = db.session.get(Scan, int(scan_id))
                         if scan_obj:
                             scan_obj.pdf_unlocked = True
                             db.session.commit()
@@ -3492,7 +3494,8 @@ scheduler.add_job(cron_resumen_mensual, 'cron', hour=8,  minute=0)
 scheduler.add_job(cron_trial_expiring,  'cron', hour=9,  minute=30)
 scheduler.add_job(cron_reengagement,    'cron', hour=11, minute=0)
 scheduler.add_job(cron_lead_followup,   'cron', hour=10, minute=30)
-scheduler.start()
+if os.environ.get("WERKZEUG_RUN_MAIN") != "true" or not app.debug:
+    scheduler.start()
 
 @app.route("/api/horario", methods=["POST"])
 @login_required
