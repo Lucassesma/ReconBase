@@ -5560,6 +5560,159 @@ _BLOG_SEEDS = [
 <p>BEC es el ataque <em>más rentable</em> contra pymes españolas porque no requiere habilidad técnica del atacante — solo aprovecha procesos descuidados de la empresa. Las medidas son baratas (DMARC, 2FA, política de doble verificación) y reducen un 90&nbsp;% el riesgo. <a href="/">Empieza por analizar gratis tu dominio</a> y ver si tu empresa ya está expuesta.</p>
 """.strip()
     },
+    {
+        "slug": "ransomware-pymes-espana-como-prevenirlo-2026",
+        "titulo": "Ransomware en PYMEs españolas: cómo funciona, cuánto cuesta y cómo prevenirlo en 2026",
+        "excerpt": "El ransomware paralizó a más de 1.500 pymes españolas en 2024. Te explicamos cómo entra, qué hace, cuánto cuesta el rescate (spoiler: pagar no sirve) y los 7 pasos concretos para no ser la próxima víctima.",
+        "tags": "ransomware,pyme,backup,seguridad,INCIBE,2026",
+        "contenido": """
+<h2>¿Qué es el ransomware y por qué las pymes son el objetivo favorito?</h2>
+<p>El <strong>ransomware</strong> es un tipo de malware que cifra todos los archivos de tu empresa y exige un rescate (ransom) en criptomonedas para devolverte el acceso. En 2024, el INCIBE gestionó más de 1.500 incidentes de ransomware en empresas españolas, con pérdidas medias de <strong>45.000&nbsp;€ por empresa</strong> entre rescate, tiempo de parada y recuperación.</p>
+<p>Las pymes son el objetivo favorito porque:</p>
+<ul>
+  <li>No tienen backups automatizados y verificados.</li>
+  <li>Usan software desactualizado (Windows 7, Office 2010, etc.).</li>
+  <li>Un solo empleado con malos hábitos puede comprometer toda la red.</li>
+  <li>Pagan con más frecuencia que las grandes empresas porque no tienen alternativas.</li>
+</ul>
+
+<h2>Cómo entra el ransomware en tu empresa</h2>
+<p>En el 90&nbsp;% de los casos, uno de estos tres vectores:</p>
+<ol>
+  <li><strong>Phishing por email:</strong> un empleado abre un adjunto (PDF, Word, ZIP) o hace clic en un enlace. El malware se instala silenciosamente y se propaga por la red.</li>
+  <li><strong>RDP expuesto a internet:</strong> si tienes el puerto 3389 (Escritorio Remoto) abierto con contraseñas débiles, los atacantes lo encuentran con herramientas automáticas y entran por fuerza bruta.</li>
+  <li><strong>Software sin parchear:</strong> vulnerabilidades conocidas en VPNs, servidores web o sistemas operativos sin actualizar. EternalBlue (WannaCry) sigue activo 7 años después.</li>
+</ol>
+
+<h2>¿Pagar el rescate funciona?</h2>
+<p>El <strong>40&nbsp;% de las empresas que pagan no recuperan todos sus archivos</strong> (Sophos, 2024). Además:</p>
+<ul>
+  <li>Pagas en criptomonedas no rastreables: no hay garantías.</li>
+  <li>Apareces en las listas de "pagadores" y recibirás más ataques.</li>
+  <li>En España puede ser ilegal si el grupo atacante está sancionado por la UE.</li>
+  <li>El tiempo medio de recuperación tras pagar es de 16&nbsp;días igualmente.</li>
+</ul>
+<p><strong>Conclusión: la única defensa real es no llegar a necesitar pagar.</strong></p>
+
+<h2>Los 7 pasos para proteger tu pyme del ransomware</h2>
+
+<h3>1. Backups 3-2-1 verificados (el más importante)</h3>
+<p>La regla <strong>3-2-1</strong>: 3 copias de los datos, en 2 medios distintos, con 1 copia offline (desconectada de internet). Un ransomware que llega a tu red cifrará también los discos conectados — la copia offline es la que te salva.</p>
+<p>Además, <strong>verifica los backups cada mes</strong>: restaura un fichero aleatorio para confirmar que el backup funciona.</p>
+
+<h3>2. Cierra el puerto RDP o ponlo detrás de VPN</h3>
+<p>Si necesitas acceso remoto, usa una VPN con 2FA. El RDP directo a internet es una invitación abierta. Con <a href="/">ReconBase</a> puedes comprobar si el puerto 3389 está expuesto en tu dominio.</p>
+
+<h3>3. Actualiza todo, siempre</h3>
+<p>Windows Update, Office, Adobe, Java, el firmware del router. El 60&nbsp;% de los ransomwares explotan vulnerabilidades con parche disponible que nadie instaló.</p>
+
+<h3>4. Formación anti-phishing para el equipo</h3>
+<p>Un empleado formado es mejor que cualquier antivirus. Simula ataques de phishing con herramientas como <strong>GoPhish</strong> (gratuito) para medir y mejorar.</p>
+
+<h3>5. Segmentación de red</h3>
+<p>Si el ordenador del recepcionista se infecta, no debería poder alcanzar el servidor contable. VLANs básicas evitan la propagación lateral.</p>
+
+<h3>6. Principio de mínimo privilegio</h3>
+<p>Nadie debería tener permisos de administrador para el trabajo del día a día. Si el malware corre como usuario sin privilegios, su impacto es mucho menor.</p>
+
+<h3>7. Plan de respuesta a incidentes escrito</h3>
+<p>Decide HOY: si mañana te cifran los servidores, ¿quién llama a quién? ¿Cuándo involucras al INCIBE (017)? ¿Tienes el contacto de tu proveedor de IT? Tener el plan escrito antes del incidente vale más que cualquier herramienta.</p>
+
+<h2>Si ya estás infectado: pasos inmediatos</h2>
+<ol>
+  <li><strong>Desconecta</strong> los equipos afectados de la red (sin apagarlos).</li>
+  <li><strong>Llama al INCIBE:</strong> línea gratuita <strong>017</strong>, disponible 24/7 para empresas.</li>
+  <li><strong>No pagues</strong> sin consultar antes con un experto.</li>
+  <li><strong>Denuncia</strong> a la Guardia Civil (GDT) o Policía Nacional (UDEF) — en algunos casos recuperan fondos.</li>
+  <li>Restaura desde el backup offline verificado.</li>
+</ol>
+
+<h2>Conclusión</h2>
+<p>El ransomware no es una amenaza futura — está pasando ahora mismo en pymes españolas de todos los sectores. Las defensas básicas (backups, RDP cerrado, parches) cuestan poco y son la diferencia entre volver a funcionar en horas o en semanas. <a href="/">Analiza gratis tu exposición aquí</a> — si tienes el puerto RDP abierto, lo sabrás en 2 minutos.</p>
+""".strip()
+    },
+    {
+        "slug": "gestion-contrasenas-empresa-politica-gestores-2fa",
+        "titulo": "Gestión de contraseñas en tu empresa: política, gestores y 2FA (guía práctica 2026)",
+        "excerpt": "El 81% de las brechas de seguridad en empresas involucran contraseñas débiles o robadas. Te damos la política de contraseñas que deberías tener, los mejores gestores para equipos y cómo implantar 2FA sin que el equipo proteste.",
+        "tags": "contraseñas,2FA,gestion,seguridad,pyme,passwords",
+        "contenido": """
+<h2>El problema con las contraseñas en las pymes</h2>
+<p>Según el informe <em>Data Breach Investigations Report</em> de Verizon, el <strong>81&nbsp;% de las brechas de seguridad en empresas</strong> involucran contraseñas débiles, reutilizadas o robadas. Y en las pymes la situación es peor: la misma contraseña en el email, el ERP y el banco; post-its con credenciales pegados al monitor; contraseñas compartidas por WhatsApp.</p>
+<p>La buena noticia: esto tiene solución sin necesitar conocimientos técnicos, con herramientas gratuitas o de bajo coste.</p>
+
+<h2>La política de contraseñas que deberías tener</h2>
+<p>Olvida las reglas antiguas de "mayúscula + número + símbolo cada 90 días". El NIST (el estándar de facto global) cambió sus recomendaciones en 2024:</p>
+<ul>
+  <li><strong>Longitud mínima: 12 caracteres</strong> (no 8). La longitud es más importante que la complejidad.</li>
+  <li><strong>Sin caducidad periódica obligatoria</strong> salvo que haya evidencia de compromiso. Cambiar contraseñas cada 90 días genera contraseñas peores (<code>Empresa2024!</code> → <code>Empresa2025!</code>).</li>
+  <li><strong>No reutilizar contraseñas</strong> entre servicios. Si filtran LinkedIn y usas la misma en el email de empresa, tienes un problema.</li>
+  <li><strong>Verificar contra listas de contraseñas filtradas</strong>: servicios como HaveIBeenPwned tienen APIs para esto.</li>
+</ul>
+<p>Escribe esta política en un documento de una página y comunícala al equipo. No necesita ser más complicada.</p>
+
+<h2>Gestores de contraseñas para equipos: comparativa</h2>
+<p>Un gestor de contraseñas genera y almacena contraseñas únicas por servicio. El empleado solo memoriza una contraseña maestra.</p>
+
+<h3>Bitwarden (recomendado para pymes)</h3>
+<ul>
+  <li>Plan Teams: <strong>4&nbsp;€/usuario/mes</strong>. Plan gratuito individual ilimitado.</li>
+  <li>Open source, auditorías de seguridad públicas.</li>
+  <li>Compartir contraseñas entre departamentos con permisos granulares.</li>
+  <li>Extensiones para Chrome, Firefox, Safari, app móvil.</li>
+</ul>
+
+<h3>1Password Business</h3>
+<ul>
+  <li><strong>7,99&nbsp;€/usuario/mes</strong>. Más caro, mejor UX.</li>
+  <li>Travel Mode (oculta bóvedas sensibles al cruzar fronteras).</li>
+  <li>Integración con SSO corporativo (Okta, Azure AD).</li>
+</ul>
+
+<h3>KeePass (gratuito, on-premise)</h3>
+<ul>
+  <li>Gratuito y open source. La base de datos se guarda en tu servidor.</li>
+  <li>Más complejo de gestionar. Adecuado si tienes sysadmin interno.</li>
+</ul>
+
+<h2>Autenticación en dos pasos (2FA): cómo implantarla sin fricciones</h2>
+<p>El 2FA añade una segunda verificación (código de 6 dígitos que cambia cada 30 segundos) después de la contraseña. Incluso si la contraseña está filtrada, el atacante no puede entrar.</p>
+
+<h3>¿Qué servicios deben tener 2FA sí o sí?</h3>
+<ol>
+  <li>Email corporativo (Gmail Workspace, Microsoft 365)</li>
+  <li>Banca online</li>
+  <li>ERP / CRM</li>
+  <li>Panel de hosting y DNS (si alguien entra aquí, controla toda tu web)</li>
+  <li>Gestor de contraseñas</li>
+  <li>Acceso remoto / VPN</li>
+</ol>
+
+<h3>Tipos de 2FA ordenados de mejor a peor</h3>
+<ol>
+  <li><strong>Llaves físicas (YubiKey):</strong> lo más seguro. Resistente a phishing. Coste ~50&nbsp;€/unidad.</li>
+  <li><strong>App TOTP (Google Authenticator, Authy, Aegis):</strong> muy seguro, gratuito. Recomendado para la mayoría.</li>
+  <li><strong>Push notification (Duo, Microsoft Authenticator):</strong> cómodo, pero vulnerable a "MFA fatigue" (el atacante envía 50 notificaciones hasta que el usuario acepta una).</li>
+  <li><strong>SMS:</strong> funciona pero es el más débil (SIM swapping). Mejor que nada, pero evitar si hay alternativa.</li>
+</ol>
+
+<h3>Cómo convencer al equipo</h3>
+<p>La resistencia habitual: "es un paso más, me ralentiza". La respuesta: Authy y Google Authenticator toman <strong>3 segundos por login</strong>. El tiempo perdido en un año es inferior al tiempo perdido en un solo incidente de seguridad.</p>
+<p>Implántalo gradualmente: primero los accesos más críticos (email, banca), luego el resto. Da una semana de margen para que el equipo configure las apps.</p>
+
+<h2>Checklist rápido</h2>
+<ul>
+  <li>☐ Política de contraseñas documentada y comunicada</li>
+  <li>☐ Gestor de contraseñas implantado para todo el equipo</li>
+  <li>☐ 2FA activado en email, banca y ERP</li>
+  <li>☐ Emails corporativos comprobados en HaveIBeenPwned</li>
+  <li>☐ Contraseñas de router/WiFi cambiadas (no dejar las de fábrica)</li>
+</ul>
+
+<h2>Conclusión</h2>
+<p>Las contraseñas débiles son el vector de entrada más común en ciberataques a pymes — y el más fácil de cerrar. Con Bitwarden gratuito y Google Authenticator ya cubres el 80&nbsp;% del riesgo. <a href="/">Comprueba gratis si los emails de tu empresa han aparecido en filtraciones</a> y empieza a actuar hoy.</p>
+""".strip()
+    },
 ]
 
 with app.app_context():
