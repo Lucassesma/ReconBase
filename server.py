@@ -169,6 +169,15 @@ app.config['WTF_CSRF_TIME_LIMIT'] = 3600 * 24  # token válido 24h
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = os.getenv("RAILWAY_ENVIRONMENT_NAME") is not None  # True en Railway
+# ─── Sesiones persistentes (30 días) ───
+# Por defecto Flask usa "session cookies" que se borran al cerrar el navegador.
+# Con esto la sesión sobrevive al cerrar pestaña/navegador hasta 30 días.
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+# Flask-Login "remember me" cookie (sobrevive incluso si la session se invalida)
+app.config['REMEMBER_COOKIE_DURATION']  = timedelta(days=30)
+app.config['REMEMBER_COOKIE_HTTPONLY']  = True
+app.config['REMEMBER_COOKIE_SAMESITE']  = 'Lax'
+app.config['REMEMBER_COOKIE_SECURE']    = os.getenv("RAILWAY_ENVIRONMENT_NAME") is not None  # True en Railway
 
 @app.context_processor
 def inject_csrf():
@@ -1010,7 +1019,9 @@ def api_login():
     if getattr(user, 'totp_enabled', False) and user.totp_secret:
         session["2fa_pending_user"] = user.id
         return jsonify({"ok": True, "requires_2fa": True})
-    login_user(user)
+    # Sesión persistente: sobrevive a cerrar el navegador hasta 30 días
+    session.permanent = True
+    login_user(user, remember=True, duration=timedelta(days=30))
     _marcar_login_exitoso(user)
     _track_login_attempt(email, exito=True, razon="ok")
     _registrar_audit(user.id, 'login', f"Login exitoso desde {request.remote_addr}")
@@ -1101,7 +1112,9 @@ def api_register():
     user.generate_verify_token()
     db.session.add(user)
     db.session.commit()
-    login_user(user)
+    # Sesión persistente: sobrevive a cerrar el navegador hasta 30 días
+    session.permanent = True
+    login_user(user, remember=True, duration=timedelta(days=30))
     enviar_email_verificacion(user)
     enviar_email_bienvenida(user)
     # Marcar como conversos los leads previos de este email
@@ -3668,7 +3681,7 @@ def totp_setup():
     # Generar QR como PNG en base64
     img = qrcode.make(uri)
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="PNG")  # type: ignore
     buf.seek(0)
     b64 = base64.b64encode(buf.getvalue()).decode("ascii")
     return jsonify({"ok": True, "qr": f"data:image/png;base64,{b64}", "secret": secret})
@@ -3731,7 +3744,9 @@ def totp_verify_login():
         _track_login_attempt(user.email, exito=False, razon="2fa_fail")
         return jsonify({"ok": False, "error": "Código 2FA incorrecto"}), 400
     session.pop("2fa_pending_user", None)
-    login_user(user)
+    # Sesión persistente: sobrevive a cerrar el navegador hasta 30 días
+    session.permanent = True
+    login_user(user, remember=True, duration=timedelta(days=30))
     _marcar_login_exitoso(user)
     _track_login_attempt(user.email, exito=True, razon="ok_2fa")
     return jsonify({"ok": True})
