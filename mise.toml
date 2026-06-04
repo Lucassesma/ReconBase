@@ -1,0 +1,8 @@
+[tools]
+python = "3.11.9"
+
+[settings]
+# Workaround: mise falla intentando verificar attestations de GitHub para Python
+# cuando la API de attestations devuelve vacío (bug intermitente, mayo 2026).
+# Sin esto el build de Railway/Nixpacks rompe con "No GitHub artifact attestations found".
+python.github_attestations = false
