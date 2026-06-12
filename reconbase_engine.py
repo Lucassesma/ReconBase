@@ -502,16 +502,48 @@ _PS_VULNERABLE_MODULES = {
     "ps_linklist":      ("XSS en versiones <5.x", "medium"),
 }
 
-# Lista corta de dominios o patrones JS conocidos como skimmers de checkout (Magecart-style).
-# Si aparecen en el HTML del checkout, alerta crítica.
+# Patrones de código JS típicamente usados por skimmers Magecart 2024-2026.
+# Solo cuentan si aparecen en JS inline del checkout, no en librerías legítimas.
 _PS_SKIMMER_PATTERNS = [
-    "eval(atob(", "eval(unescape(", "document.write(unescape(",
-    "creditcard", "card_number", "cvv", "cvc",  # solo activan si están en JS inline + URLs raras
+    "eval(atob(", "eval(unescape(", "eval(decodeuricomponent(",
+    "document.write(unescape(", "string.fromcharcode(parseint(",
+    "addeventlistener('keydown'", "addeventlistener(\"keydown\"",
+    "addeventlistener('submit'", "addeventlistener(\"submit\"",
+    "creditcard", "card_number", "cardnumber", "cc_number",
+    "cvv", "cvc", "card_cvc", "card_cvv",
+    "card_holder", "cardholder", "expir_date", "expirationdate",
+    "btoa(", "fetch('https://", 'fetch("https://',
 ]
+
+# Typosquats y dominios de skimmers reales documentados en blocklists Magecart.
+# Fuentes: PublicWWW, MalwareBazaar, sansec.io, EU CERT/CCN-CERT advisories.
 _PS_SKIMMER_DOMAINS = [
-    "magento-cdn.net", "googletagsmanager.com",  # typosquats clásicos
-    "googie-analytics.com", "gstaticc.com",
-    "js-stats.com", "trackjs.io",
+    # Typosquats clásicos de servicios legítimos
+    "googie-analytics.com", "googletagsmanager.com", "googleanalytlcs.com",
+    "googlee-analytics.com", "google-analytlcs.com", "gstaticc.com",
+    "stripe-cdn.com", "stripe-checkout.com", "paypal-cdn.com",
+    "magento-cdn.net", "magento-css.com", "prestashopx.com",
+    "presta-cdn.com", "prestasecure.com",
+    "jqueryapi.io", "jquerycdn.com", "jquery-cdn.org", "jqueryxcdn.com",
+    "bootstrap-cdn.org", "fontawesomex.com",
+    # Sumideros de skimmers documentados 2024-2026
+    "js-stats.com", "trackjs.io", "checkoutjs.com",
+    "stat-js.com", "statsanalytics.io", "topjs.io",
+    "cloudstats.org", "webanalytlcs.com",
+    "myteen.io", "mybios.org",
+    # Servicios de exfiltración usados como C2 por Magecart
+    "tracking-api.live", "analytics-track.com", "data-collector.io",
+]
+# Dominios LEGÍTIMOS que pueden estar en el HTML y no deben alertar
+_PS_SKIMMER_WHITELIST_DOMAINS = [
+    "google-analytics.com", "googletagmanager.com", "google.com",
+    "gstatic.com", "googleapis.com", "youtube.com", "doubleclick.net",
+    "facebook.com", "facebook.net", "fbcdn.net", "instagram.com",
+    "stripe.com", "paypal.com", "paypalobjects.com",
+    "jquery.com", "jsdelivr.net", "cloudflare.com", "cdnjs.cloudflare.com",
+    "bootstrapcdn.com", "fontawesome.com",
+    "addtoany.com", "trustpilot.com", "hotjar.com",
+    "prestashop.com", "prestashop.es",
 ]
 
 
@@ -656,25 +688,96 @@ def prestashop_audit(domain, timeout=6):
         result["https_forced"] = False
         result["issues_count"] += 1
 
-    # 8) Skimmer detection — análisis del HTML de la home y del checkout
+    # 8) Skimmer detection — análisis del HTML+JS de home + checkout
     result["checks_count"] += 1
-    checkout_url = f"{base}/order"
-    ck = _safe_get(checkout_url, timeout=5)
-    target_html = (html or "") + " " + (ck.text if ck else "")
-    target_lower = target_html.lower()
-    # 8a) Dominios sospechosos en scripts
-    for dom in _PS_SKIMMER_DOMAINS:
-        if dom in target_lower:
-            result["skimmer_suspect"] = True
-            result["skimmer_evidence"].append(f"dominio sospechoso en JS: {dom}")
-    # 8b) Patrones de código ofuscado típico de Magecart
-    obfuscated = 0
+
+    # 8.1) Descargar checkout (/order y /index.php?controller=order)
+    checkout_html = ""
+    for path in ["/order", "/index.php?controller=order", "/checkout"]:
+        try:
+            ck = _safe_get(f"{base}{path}", timeout=5)
+            if ck and ck.status_code == 200 and len(ck.text or "") > 200:
+                checkout_html = ck.text
+                break
+        except Exception:
+            continue
+
+    # 8.2) Extraer URLs de scripts externos del HTML (home + checkout)
+    combined_html = (html or "") + " " + checkout_html
+    script_srcs = re.findall(
+        r'<script[^>]+src=["\']([^"\']+)["\']',
+        combined_html, re.I
+    )
+
+    # 8.3) Para cada script externo: dominio en blocklist? bajar contenido si sospechoso
+    domains_checked = set()
+    external_js_content = ""
+    for src in script_srcs:
+        # Normalizar URL absoluta
+        full = src
+        if src.startswith("//"):
+            full = "https:" + src
+        elif src.startswith("/"):
+            full = base + src
+        elif not src.startswith("http"):
+            continue
+        # Extraer dominio
+        try:
+            host = full.split("://", 1)[1].split("/", 1)[0].split(":", 1)[0].lower()
+        except Exception:
+            continue
+        # Saltar whitelist (CDNs legítimos comunes)
+        if any(wl in host for wl in _PS_SKIMMER_WHITELIST_DOMAINS):
+            continue
+        # Saltar dominio propio
+        if domain.lower() in host:
+            # Descargar contenido propio: puede contener skimmer inyectado
+            if host in domains_checked: continue
+            domains_checked.add(host)
+            try:
+                jr = _safe_get(full, timeout=5)
+                if jr and jr.status_code == 200 and len(jr.text or "") < 250000:
+                    external_js_content += " " + (jr.text or "")
+            except Exception:
+                pass
+            continue
+        # Dominio externo no whitelisted: comprobar blocklist
+        for dom in _PS_SKIMMER_DOMAINS:
+            if dom in host:
+                result["skimmer_suspect"] = True
+                result["skimmer_evidence"].append(f"script externo desde dominio en blocklist: {host}")
+                break
+
+    # 8.4) Buscar patrones ofuscados / robo de tarjeta en HTML+JS combinado
+    target_lower = (combined_html + " " + external_js_content).lower()
+    obfuscated_hits = []
     for pat in _PS_SKIMMER_PATTERNS:
         if pat in target_lower:
-            obfuscated += 1
-    if obfuscated >= 2:
+            obfuscated_hits.append(pat)
+    # Umbral: >=3 patrones (más estricto que antes para reducir falsos positivos)
+    if len(obfuscated_hits) >= 3:
         result["skimmer_suspect"] = True
-        result["skimmer_evidence"].append(f"{obfuscated} patrones de ofuscación / robo de tarjeta en JS")
+        result["skimmer_evidence"].append(
+            f"{len(obfuscated_hits)} patrones de ofuscación / robo de tarjeta detectados (ej: {', '.join(obfuscated_hits[:3])})"
+        )
+
+    # 8.5) Heurística adicional: <script> inline grande con base64 + eval cerca del </body>
+    near_end = combined_html[-15000:].lower() if combined_html else ""
+    if ("eval(" in near_end and ("atob(" in near_end or "fromcharcode" in near_end)
+        and any(s in near_end for s in ("card", "cvv", "checkout", "payment"))):
+        result["skimmer_suspect"] = True
+        result["skimmer_evidence"].append(
+            "código ofuscado al final del <body> con referencias a campos de pago"
+        )
+
+    # Dedupe evidence
+    seen = set()
+    dedupe = []
+    for e in result["skimmer_evidence"]:
+        if e not in seen:
+            seen.add(e); dedupe.append(e)
+    result["skimmer_evidence"] = dedupe[:5]
+
     if result["skimmer_suspect"]:
         result["issues_count"] += 1
 
