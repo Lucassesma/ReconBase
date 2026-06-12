@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');if(v==='accepted'){gtag('consent','update',{'ad_storage':'granted','analytics_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(_){}
+</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Auditoría WordPress gratuita en 60 segundos — Plugins, versión y vulnerabilidades · ReconBase</title>
+<meta name="description" content="Escanea tu WordPress gratis: versión obsoleta, plugins vulnerables, xmlrpc.php, enumeración de usuarios y archivos sensibles. Sin registro, sin instalar nada. Resultados en 1 minuto.">
+<meta name="keywords" content="auditoria wordpress, escaner wordpress, wordpress vulnerabilidades, comprobar wordpress seguridad, wp-scan online, escanear wp gratis">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase.es/auditoria-wordpress">
+<meta property="og:title" content="Auditoría WordPress gratuita en 60 segundos — ReconBase">
+<meta property="og:description" content="Detecta versión obsoleta, plugins vulnerables, xmlrpc expuesto y archivos sensibles. Gratis, sin registro.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase.es/auditoria-wordpress">
+<meta property="og:image" content="https://reconbase.es/og/home.png">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Auditoría WordPress ReconBase","description":"Escáner gratuito de seguridad para sitios WordPress: versión, plugins vulnerables, xmlrpc.php, usuarios enumerables, archivos sensibles.","url":"https://reconbase.es/auditoria-wordpress","applicationCategory":"SecurityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"es-ES"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"¿Es seguro escanear mi WordPress con ReconBase?","acceptedAnswer":{"@type":"Answer","text":"Sí. Solo hacemos peticiones HTTP públicas a tu dominio (las mismas que cualquier visitante). No nos conectamos a tu wp-admin, no requerimos credenciales y no modificamos nada. Es pasivo y RGPD-compliant."}},
+{"@type":"Question","name":"¿Qué versión de WordPress detectáis?","acceptedAnswer":{"@type":"Answer","text":"Detectamos la versión por 4 vías: meta generator del HTML, feed RSS, API wp-json y readme.html. Si la versión es inferior a la actual, te avisamos del riesgo."}},
+{"@type":"Question","name":"¿Detectáis plugins vulnerables?","acceptedAnswer":{"@type":"Answer","text":"Sí. Identificamos los plugins activos vía URL /wp-content/plugins/ y los cruzamos con una lista de plugins con CVEs conocidos (WP File Manager, Duplicator, Elementor antigua, etc.). No detectamos plugins ocultos pero la mayoría de instalaciones revelan los activos en el HTML."}},
+{"@type":"Question","name":"¿Necesito instalar algo en mi WordPress?","acceptedAnswer":{"@type":"Answer","text":"Nada. La auditoría es 100% externa. No instalas plugins, no añades código, no compartes credenciales. Funciona en 60 segundos desde tu navegador."}}
+]}
+</script>
+
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
+<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--surface2:#0D1B13;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--green:#22C55E;--green-dk:#15803D;--red:#EF4444;--amber:#F59E0B;--blue:#3B82F6}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.6}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:1.5rem;font-size:.85rem}
+.nav-links a{color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff !important;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem}
+
+.hero{background:linear-gradient(160deg,#021a0a 0%,#052e16 45%,#063a1c 100%);padding:4rem 6% 3rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 80%,rgba(22,163,74,.14) 0%,transparent 55%),radial-gradient(ellipse at 80% 20%,rgba(22,163,74,.08) 0%,transparent 45%)}
+.hero-inner{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:.35rem .85rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;margin-bottom:1.25rem}
+.dot{width:6px;height:6px;border-radius:50%;background:#22C55E;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+h1{font-size:clamp(1.9rem,4vw,2.7rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-bottom:1rem}
+h1 em{font-style:normal;color:#4ADE80}
+.hero-sub{font-size:clamp(.95rem,1.4vw,1.05rem);color:#86EFAC;max-width:600px;margin:0 auto 2rem;opacity:.92}
+.trust-row{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:1.25rem;font-size:.78rem;color:rgba(134,239,172,.7)}
+.trust-row span{display:inline-flex;align-items:center;gap:.35rem}
+
+.scan-form{max-width:560px;margin:0 auto;display:flex;gap:.5rem;flex-wrap:wrap}
+.scan-input{flex:1;min-width:220px;background:rgba(6,13,9,.7);border:1px solid rgba(22,163,74,.4);color:#F0FDF4;padding:.85rem 1.1rem;border-radius:8px;font-size:.95rem;outline:none;font-family:'Inter',sans-serif}
+.scan-input:focus{border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.scan-btn{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.6rem;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.scan-btn:disabled{opacity:.65;cursor:not-allowed}
+
+.steps{display:none;max-width:560px;margin:1.5rem auto 0;text-align:left;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:rgba(134,239,172,.7)}
+.steps.show{display:block}
+.steps span{display:block;opacity:0;transition:opacity .4s}
+.steps span.show{opacity:1}
+
+.results{max-width:780px;margin:2rem auto 0;padding:0 6%;display:none}
+.results.show{display:block}
+.summary-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.sr-domain{font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--muted-2)}
+.sr-risk{font-size:1.75rem;font-weight:800;letter-spacing:-.04em}
+.sr-risk-low{color:var(--green)}
+.sr-risk-med{color:var(--amber)}
+.sr-risk-high{color:var(--red)}
+.cards{display:grid;grid-template-columns:1fr;gap:.85rem;margin-bottom:1.25rem}
+.dr-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid;border-radius:8px;padding:1rem 1.25rem}
+.dr-card-crit{border-left-color:var(--red);background:rgba(239,68,68,.04)}
+.dr-card-warn{border-left-color:var(--amber);background:rgba(245,158,11,.04)}
+.dr-card-ok{border-left-color:var(--green)}
+.dr-badge{display:inline-block;padding:.12rem .5rem;border-radius:4px;font-size:.62rem;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.08em;margin-bottom:.45rem}
+.dr-badge-crit{background:rgba(239,68,68,.12);color:#F87171}
+.dr-badge-warn{background:rgba(245,158,11,.12);color:#FCD34D}
+.dr-badge-ok{background:rgba(34,197,94,.12);color:#86EFAC}
+.dr-card-title{font-size:.95rem;font-weight:700;margin-bottom:.25rem}
+.dr-card-desc{font-size:.82rem;color:var(--muted-2);line-height:1.5}
+
+.cta-box{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.16));border:1px solid rgba(34,197,94,.35);border-radius:12px;padding:1.75rem;margin-top:2rem;text-align:center}
+.cta-title{font-size:1.15rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem}
+.cta-sub{font-size:.87rem;color:#86EFAC;margin-bottom:1.25rem;line-height:1.6}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.9rem}
+
+.content{max-width:760px;margin:4rem auto 3rem;padding:0 6%}
+.content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin:2.5rem 0 1rem;color:#F0FDF4}
+.content h2:first-child{margin-top:0}
+.content p{color:var(--muted-2);margin-bottom:1rem;font-size:.95rem}
+.checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;margin:1.25rem 0}
+.check-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;display:flex;align-items:start;gap:.6rem;font-size:.85rem}
+.check-item strong{color:#F0FDF4;display:block;margin-bottom:.15rem;font-size:.88rem}
+.check-item span{color:var(--muted-2);font-size:.78rem;line-height:1.45}
+.check-icon{width:24px;height:24px;flex-shrink:0;border-radius:50%;background:rgba(34,197,94,.15);color:#4ADE80;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem}
+
+.faq{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:.75rem}
+.faq-q{font-weight:700;font-size:1rem;margin-bottom:.5rem;color:#F0FDF4}
+.faq-a{font-size:.9rem;color:var(--muted-2);line-height:1.6}
+
+footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.82rem;color:var(--muted);margin-top:3rem}
+footer a{color:var(--muted-2);margin:0 .6rem}
+
+@media (max-width: 720px){
+  nav{padding:.9rem 5%}
+  .nav-links{display:none}
+  .hero{padding:2.5rem 5% 2rem}
+  .scan-form{flex-direction:column}
+  .scan-btn{width:100%}
+  .results{padding:0 5%}
+  .trust-row{gap:.85rem}
+}
+</style>
+<link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
+</head>
+<body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<nav>
+  <a href="/" class="nav-logo">RECON<span style="color:var(--green)">BASE</span></a>
+  <div class="nav-links">
+    <a href="/auditoria-prestashop">PrestaShop</a>
+    <a href="/blog">Blog</a>
+    <a href="/pricing">Precios</a>
+    <a href="/login">Entrar</a>
+    <a href="/register" class="btn-primary">Empezar</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="badge"><span class="dot"></span>auditoría gratuita · sin registro</div>
+    <h1>Auditoría <em>WordPress</em> gratuita en 60 segundos</h1>
+    <p class="hero-sub">Detectamos versión obsoleta, plugins con CVE, xmlrpc expuesto, usuarios enumerables y archivos sensibles. Sin instalar nada en tu WordPress.</p>
+    <form class="scan-form" onsubmit="event.preventDefault();scanWP();">
+      <input type="text" id="wp-domain" class="scan-input" placeholder="tudominio.com" autocomplete="off" required>
+      <button type="submit" class="scan-btn" id="wp-btn">Auditar mi WordPress</button>
+    </form>
+    <div class="trust-row">
+      <span>✓ sin registro</span>
+      <span>✓ RGPD</span>
+      <span>✓ análisis externo, no tocamos tu wp-admin</span>
+    </div>
+    <div class="steps" id="wp-steps"></div>
+  </div>
+</section>
+
+<section class="results" id="wp-results">
+  <div class="summary-row">
+    <div>
+      <div style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em">Dominio analizado</div>
+      <div class="sr-domain" id="wp-summary-domain">—</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em">Riesgo global</div>
+      <div class="sr-risk" id="wp-summary-risk">—</div>
+    </div>
+  </div>
+  <div class="cards" id="wp-cards"></div>
+  <div class="cta-box">
+    <div class="cta-title">¿Quieres el informe completo y monitorización?</div>
+    <p class="cta-sub">Crea tu cuenta gratis y recibe el PDF ejecutivo, vigilancia 24/7, alertas por email y seguimiento histórico.</p>
+    <a href="/register" class="cta-btn">Crear cuenta gratis →</a>
+  </div>
+</section>
+
+<section class="content">
+  <h2>Qué comprueba esta auditoría</h2>
+  <p>ReconBase analiza tu WordPress desde fuera, como lo haría un atacante. En 60 segundos te entrega el siguiente desglose:</p>
+  <div class="checklist">
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Versión del core</strong><span>Detección por meta, RSS, wp-json y readme.html. Comparación con la última versión estable.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Plugins vulnerables</strong><span>Cruce contra lista de plugins con CVE conocidos: WP File Manager, Duplicator, Elementor antigua, etc.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>xmlrpc.php expuesto</strong><span>Vector clásico de fuerza bruta y pingback DDoS. Comprobamos si responde con XML-RPC.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Usuarios enumerables</strong><span>Comprobamos /wp-json/wp/v2/users — si está abierto, cualquiera ve los nombres de admins.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Archivos sensibles</strong><span>Backups expuestos (wp-config.php.bak, ~), install.php accesible, debug.log público.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Tema activo</strong><span>Identificamos el theme para detectar versiones desactualizadas con problemas conocidos.</span></div></div>
+  </div>
+
+  <h2>Por qué importa</h2>
+  <p>El 43% de WordPress hackeados es por plugins desactualizados (Sucuri Security Report 2025). La mayoría de pymes españolas usan WordPress sin nadie que lo mantenga: instalación inicial, abandono y descubrimiento del problema solo cuando ya es tarde — emails de Google avisando de malware, hosting que cierra la cuenta, clientes que dejan de entrar porque el navegador marca tu web como insegura.</p>
+  <p>La auditoría gratuita de ReconBase no resuelve el problema por ti, pero te da el mapa: <strong>qué hay roto, qué nivel de urgencia tiene y por dónde empezar</strong>. Si te asusta lo que ves, créate cuenta y recibe el informe ejecutivo en PDF con el plan de acción priorizado.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq"><div class="faq-q">¿Es seguro escanear mi WordPress?</div><div class="faq-a">Sí. Solo hacemos peticiones HTTP públicas, las mismas que cualquier visitante de tu web. No nos conectamos a tu wp-admin, no requerimos credenciales y no modificamos nada. Es análisis pasivo y RGPD-compliant.</div></div>
+  <div class="faq"><div class="faq-q">¿Cuántos chequeos lanzáis?</div><div class="faq-a">Más de 20 entre el escáner web general y el módulo WordPress: puertos, SSL, DNS, cabeceras, plugins, archivos sensibles, filtraciones de credenciales asociadas al dominio, etc.</div></div>
+  <div class="faq"><div class="faq-q">¿Detectáis malware en mi WordPress?</div><div class="faq-a">Comprobamos si tu dominio aparece en blocklists de Google Safe Browsing y Norton Safe Web (la señal definitiva de malware activo). Para escaneo profundo de archivos PHP internos, usa Wordfence o Sucuri SiteCheck además de ReconBase.</div></div>
+  <div class="faq"><div class="faq-q">¿Y si mi WordPress está bien protegido?</div><div class="faq-a">Mejor — la auditoría te lo confirma con un informe limpio que puedes usar como evidencia de "due diligence" (útil para RGPD y NIS2).</div></div>
+</section>
+
+<footer>
+  <a href="/blog">Blog</a><a href="/pricing">Precios</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/privacy">Privacidad</a><a href="/terms">Términos</a>
+  <div style="margin-top:1rem;font-size:.72rem;color:var(--muted)">© ReconBase · Auditoría de seguridad para PYMEs españolas</div>
+</footer>
+
+<script>
+function scanWP(){
+  var v=(document.getElementById('wp-domain').value||'').trim();
+  if(!v){document.getElementById('wp-domain').focus();return;}
+  try{if(window.gtag)gtag('event','scan_button_clicked',{domain:v,source:'landing_wordpress'});}catch(_){}
+  try{if(window.plausible)plausible('Scan Click WP',{props:{domain:v}});}catch(_){}
+  var btn=document.getElementById('wp-btn');btn.textContent='Auditando...';btn.disabled=true;
+  var steps=['→ Comprobando puertos y SSL...','→ Detectando versión de WordPress...','→ Cruzando plugins con CVE...','→ Buscando archivos sensibles...'];
+  var s=document.getElementById('wp-steps');s.innerHTML=steps.map(function(t,i){return'<span id="ws'+i+'">'+t+'</span>';}).join('');s.classList.add('show');
+  steps.forEach(function(_,i){setTimeout(function(){var el=document.getElementById('ws'+i);if(el)el.classList.add('show');},i*1300);});
+
+  fetch('/api/scan-demo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({objetivo:v})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    btn.textContent='Auditar mi WordPress';btn.disabled=false;
+    if(d.error){toast(d.error,'err');return;}
+    renderResults(d);
+  })
+  .catch(function(){btn.textContent='Auditar mi WordPress';btn.disabled=false;toast('Error de conexión','err');});
+}
+
+function renderResults(d){
+  document.getElementById('wp-results').classList.add('show');
+  document.getElementById('wp-summary-domain').textContent=d.dominio||'—';
+  var riskEl=document.getElementById('wp-summary-risk');
+  riskEl.textContent=(d.riesgo||0)+'%';
+  riskEl.className='sr-risk '+(d.riesgo>=70?'sr-risk-high':d.riesgo>=40?'sr-risk-med':'sr-risk-low');
+  document.getElementById('wp-results').scrollIntoView({behavior:'smooth',block:'start'});
+
+  var html='';
+  function card(type,title,desc){
+    var b=type==='crit'?'dr-badge-crit':type==='warn'?'dr-badge-warn':'dr-badge-ok';
+    var c=type==='crit'?'dr-card-crit':type==='warn'?'dr-card-warn':'dr-card-ok';
+    var lbl=type==='crit'?'CRÍTICO':type==='warn'?'ADVERTENCIA':'OK';
+    return '<div class="dr-card '+c+'"><span class="dr-badge '+b+'">'+lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div></div>';
+  }
+
+  if(!d.wp||!d.wp.is_wordpress){
+    html+=card('warn','No se detectó WordPress en '+d.dominio,'Este dominio no parece usar WordPress. Si crees que sí, comprueba que no esté detrás de un cache (Cloudflare, etc.) que oculte las pistas. Para análisis web general usa la <a href="/" style="color:#86EFAC">auditoría completa</a>.');
+  } else {
+    var v=d.wp.version||'?';
+    var issues=[];
+    if(d.wp.version_outdated) issues.push(card('crit','WordPress '+v+' está obsoleto','Hay versiones más recientes disponibles. Las versiones antiguas suelen tener vulnerabilidades públicas explotables.'));
+    else issues.push(card('ok','WordPress '+v+' (versión actual)','Tu WordPress está en una versión reciente. Buen punto de partida.'));
+    if(d.wp.xmlrpc_exposed) issues.push(card('crit','xmlrpc.php expuesto','Permite fuerza bruta acelerada y ataques de amplificación pingback. Bloquéalo si no usas Jetpack.'));
+    if(d.wp.users_enumerable){var u=(d.wp.users_found||[]).slice(0,3).join(', ');issues.push(card('warn','Usuarios enumerables vía wp-json','Detectados: '+u+(d.wp.users_found&&d.wp.users_found.length>3?'...':'')+'. Cualquiera puede ver los logins y atacarlos.'));}
+    var vp=d.wp.vulnerable_plugins||[];
+    if(vp.length) issues.push(card('crit',vp.length+' plugin'+(vp.length>1?'s':'')+' vulnerable'+(vp.length>1?'s':''),vp.slice(0,3).map(function(p){return p.name+' ('+p.severity+')';}).join(' · ')+(vp.length>3?'...':'')));
+    var sf=d.wp.sensitive_files||[];
+    if(sf.length) issues.push(card('crit',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':')')+' accesible'+(sf.length>1?'s':''),sf.slice(0,3).map(function(f){return f.path;}).join(' · ')));
+    html+=issues.join('');
+  }
+
+  // Tarjetas complementarias: SSL + puertos críticos + filtraciones
+  if(d.ssl){
+    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. Migra a Let\'s Encrypt gratis.');
+    else if(d.ssl.caducado) html+=card('crit','SSL caducado','Expiró el '+(d.ssl.expira||'?')+'. Renuévalo urgente.');
+    else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de la expiración.');
+  }
+  var puertos_riesgo=(d.puertos||[]).filter(function(p){return ['MySQL','RDP','Redis','MongoDB','MSSQL','PostgreSQL'].indexOf(p.servicio)>=0;});
+  if(puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':'')+' expuesto'+(puertos_riesgo.length>1?'s':''),puertos_riesgo.map(function(p){return p.puerto+'/'+p.servicio;}).join(' · '));
+
+  document.getElementById('wp-cards').innerHTML=html;
+}
+</script>
+</body>
+</html>

@@ -304,6 +304,8 @@ def sitemap():
         {"loc": base + "/cookies", "priority": "0.3",  "changefreq": "yearly",  "lastmod": today},
         {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly",  "lastmod": today},
         {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/auditoria-wordpress",  "priority": "0.9", "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/auditoria-prestashop", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/status",  "priority": "0.5",  "changefreq": "daily",   "lastmod": today},
     ]
     # Añadir posts del blog con su lastmod real
@@ -431,6 +433,17 @@ def proxy_plausible_event():
 @app.route("/comprobar-dmarc-spf")
 def tool_dmarc_spf():
     return render_template("tool_dmarc_spf.html")
+
+@app.route("/auditoria-wordpress")
+def landing_wordpress():
+    """Landing especializada para auditoría WordPress. SEO-first."""
+    return render_template("landing_wordpress.html")
+
+@app.route("/auditoria-prestashop")
+def landing_prestashop():
+    """Landing especializada para auditoría PrestaShop. SEO-first.
+    Incluye detector de skimmers digitales (diferenciador 2026)."""
+    return render_template("landing_prestashop.html")
 
 @app.route("/api/check-dmarc-spf", methods=["POST"])
 @limiter.limit("30 per hour")
