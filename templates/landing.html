@@ -2009,6 +2009,25 @@ function renderDemoResult(d){
 
   // Cards
   var html='';
+
+  // ALERTA SUPERIOR: si se detectó skimmer en PrestaShop, banner crítico arriba del todo
+  if(d.ps && d.ps.skimmer_suspect){
+    var skEvidence=(d.ps.skimmer_evidence||[]).slice(0,4);
+    var skEvList=skEvidence.length
+      ? '<ul style="margin:.5rem 0 0 1.2rem;padding:0;font-size:.78rem;color:#FCA5A5;line-height:1.55">'+skEvidence.map(function(e){return '<li>'+e+'</li>';}).join('')+'</ul>'
+      : '';
+    html+='<div style="background:#7F1D1D;border:2px solid #DC2626;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem;color:#FEE2E2">'+
+      '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">'+
+        '<span style="font-size:1.4rem;line-height:1">⚠️</span>'+
+        '<span style="font-size:.7rem;font-family:\'JetBrains Mono\',monospace;font-weight:700;letter-spacing:.14em;background:#DC2626;color:#fff;padding:.18rem .55rem;border-radius:4px">SKIMMER · ALERTA CRÍTICA</span>'+
+      '</div>'+
+      '<div style="font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:.3rem">Posible robo de datos de tarjeta en tu checkout</div>'+
+      '<div style="font-size:.85rem;color:#FCA5A5;line-height:1.6">Detectados patrones característicos de skimmers digitales (Magecart) en el JavaScript de tu tienda. No toques nada, haz copia forense y notifica AEPD en 72h si confirmas exfiltración.</div>'+
+      skEvList+
+      '<div style="margin-top:.7rem"><a href="/blog/skimmers-digitales-prestashop-magecart-2026" target="_blank" style="background:#fff;color:#7F1D1D;padding:.4rem .8rem;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none">Ver protocolo de respuesta →</a></div>'+
+    '</div>';
+  }
+
   var critPorts=(d.puertos||[]).filter(function(p){return[3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443].indexOf(p)!==-1;});
   if(critPorts.length) html+=demoCard('crit',critPorts.length+' puerto'+(critPorts.length>1?'s críticos':' crítico')+' expuesto'+(critPorts.length>1?'s':''),'Accesibles desde internet: '+critPorts.join(', ')+'. Ciérralos en el firewall.');
   else if((d.puertos||[]).length===0) html+=demoCard('ok','Sin puertos críticos expuestos','No se detectaron servicios sensibles accesibles desde internet.');

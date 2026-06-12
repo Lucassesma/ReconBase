@@ -134,6 +134,27 @@ function scRenderGauge(pct, lbl) {
 
 function scRenderCards(d) {
   var html = '';
+
+  // ALERTA SUPERIOR: si se detectó skimmer en PrestaShop, banner crítico arriba del todo
+  if (d.ps && d.ps.skimmer_suspect) {
+    var evidence = (d.ps.skimmer_evidence || []).slice(0, 4);
+    var evList = evidence.length
+      ? '<ul style="margin:.5rem 0 0 1.2rem;padding:0;font-size:.78rem;color:#FCA5A5;line-height:1.55">' + evidence.map(function(e){return '<li>'+e+'</li>';}).join('') + '</ul>'
+      : '';
+    html += '<div style="background:#7F1D1D;border:2px solid #DC2626;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem;color:#FEE2E2">' +
+      '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">' +
+        '<span style="font-size:1.4rem;line-height:1">⚠️</span>' +
+        '<span style="font-size:.7rem;font-family:\'JetBrains Mono\',monospace;font-weight:700;letter-spacing:.14em;background:#DC2626;color:#fff;padding:.18rem .55rem;border-radius:4px">SKIMMER · ALERTA CRÍTICA</span>' +
+      '</div>' +
+      '<div style="font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:.3rem">Posible robo de datos de tarjeta en tu checkout</div>' +
+      '<div style="font-size:.85rem;color:#FCA5A5;line-height:1.6">Hemos detectado patrones característicos de skimmers digitales (Magecart) en el JavaScript de tu tienda. Sigue el protocolo URGENTE: no toques nada, haz copia forense, cambia credenciales y notifica AEPD en 72h si confirmas exfiltración.</div>' +
+      evList +
+      '<div style="margin-top:.7rem;display:flex;gap:.6rem;flex-wrap:wrap">' +
+        '<a href="/blog/skimmers-digitales-prestashop-magecart-2026" target="_blank" style="background:#fff;color:#7F1D1D;padding:.4rem .8rem;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none">Ver protocolo de respuesta →</a>' +
+      '</div>' +
+    '</div>';
+  }
+
   var serviciosCrit = ["RDP","Telnet","MySQL","MongoDB","Redis","PostgreSQL","MSSQL","Docker API","Elasticsearch","VNC"];
   var critPorts = (d.puertos || []).filter(function(p){ return serviciosCrit.indexOf(p.servicio) !== -1; });
   if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles: ' + critPorts.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '. Ciérralos en el firewall.', 'puerto');
