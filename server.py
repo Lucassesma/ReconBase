@@ -5728,6 +5728,155 @@ _BLOG_SEEDS = [
 <p>Las contraseñas débiles son el vector de entrada más común en ciberataques a pymes — y el más fácil de cerrar. Con Bitwarden gratuito y Google Authenticator ya cubres el 80&nbsp;% del riesgo. <a href="/">Comprueba gratis si los emails de tu empresa han aparecido en filtraciones</a> y empieza a actuar hoy.</p>
 """.strip()
     },
+    {
+        "slug": "nis2-espana-empresas-obligadas-como-cumplir-2026",
+        "titulo": "NIS2 en España: qué empresas están obligadas y cómo cumplir (guía práctica 2026)",
+        "excerpt": "La directiva NIS2 ya es de obligado cumplimiento en España. Te explicamos qué empresas están dentro del ámbito, qué obligaciones reales tienen y cómo empezar a cumplir sin volverte loco.",
+        "tags": "NIS2,normativa,ciberseguridad,pyme,RGPD,INCIBE,2026",
+        "contenido": """
+<h2>NIS2: la normativa que muchas pymes ignoran y les va a costar caro</h2>
+<p>La Directiva (UE) 2022/2555, más conocida como <strong>NIS2</strong>, es la nueva normativa europea de ciberseguridad. Reemplaza a la antigua NIS y amplía MUCHO el número de empresas obligadas a cumplir. En España se transpuso mediante el Real Decreto-ley aprobado en 2025 y desde entonces es legalmente exigible.</p>
+<p>El problema: <strong>el 70&nbsp;% de las pymes españolas afectadas no saben que están afectadas</strong>. Y los reguladores (INCIBE-CERT y CCN-CERT) ya pueden imponer multas de hasta <strong>10 millones de euros o el 2&nbsp;% de la facturación global</strong>, lo que sea mayor.</p>
+
+<h2>¿Qué empresas están obligadas a cumplir NIS2?</h2>
+<p>NIS2 distingue dos categorías:</p>
+
+<h3>Entidades esenciales (las grandes)</h3>
+<ul>
+  <li>Empresas con <strong>más de 250 empleados</strong> o <strong>50 M€ de facturación</strong> que operen en sectores críticos.</li>
+  <li>Sectores: energía, transporte, banca, salud, agua potable, infraestructuras digitales, administración pública.</li>
+</ul>
+
+<h3>Entidades importantes (donde caen MUCHAS pymes)</h3>
+<ul>
+  <li>Empresas con <strong>más de 50 empleados</strong> o <strong>10 M€ de facturación</strong> en sectores ampliados.</li>
+  <li>Sectores: <strong>servicios postales y mensajería, gestión de residuos, química, alimentación, fabricación industrial, proveedores digitales (SaaS, marketplaces, redes sociales), investigación.</strong></li>
+</ul>
+
+<p>👉 Si eres un <strong>SaaS, una empresa de logística, una fábrica con más de 50 empleados o un proveedor de servicios digitales</strong>, lo más probable es que NIS2 te aplique aunque no te lo hayan dicho.</p>
+
+<h2>Las 4 obligaciones reales que tienes que cumplir</h2>
+
+<h3>1. Gestión de riesgos de ciberseguridad</h3>
+<p>Tener una <strong>política de seguridad documentada</strong> que cubra: análisis de riesgos, política de control de accesos, gestión de incidentes, continuidad de negocio, cifrado, formación al personal y seguridad en la cadena de suministro.</p>
+<p><em>En pyme:</em> un documento de 8-15 páginas firmado por dirección. No hace falta una novela.</p>
+
+<h3>2. Notificación de incidentes en 24h</h3>
+<p>Si sufres un incidente significativo (ransomware, exfiltración de datos, indisponibilidad de servicios), <strong>tienes 24h para notificar al INCIBE-CERT</strong>, 72h para un informe inicial y 1 mes para el informe final. Saltarte este plazo es lo que más multas está generando.</p>
+
+<h3>3. Responsabilidad directa de la dirección</h3>
+<p>NIS2 introduce una novedad importante: <strong>los administradores y directivos pueden ser personalmente responsables</strong> de las multas si no han aprobado e implementado las medidas. No vale con "es cosa de IT". El consejo / gerencia tiene que recibir formación en ciberseguridad y aprobar formalmente el plan.</p>
+
+<h3>4. Auditorías y supervisión</h3>
+<p>El regulador puede pedirte una <strong>auditoría externa de ciberseguridad</strong> en cualquier momento. Si no la tienes y no puedes demostrar tu cumplimiento, multa al canto.</p>
+
+<h2>Cómo empezar a cumplir NIS2 sin volverte loco</h2>
+<p>Plan de 90 días realista para una pyme de 50-200 empleados:</p>
+
+<ol>
+  <li><strong>Días 1-15 — Diagnóstico:</strong> haz un inventario de activos (servidores, SaaS, dominios, datos personales) y una <strong>auditoría externa de tu superficie de exposición</strong>. <a href="/">Con ReconBase tienes un análisis inicial gratis</a> que cubre puertos abiertos, certificados SSL, configuración DNS/email y filtraciones de credenciales — los hallazgos te valen como evidencia inicial de "due diligence".</li>
+  <li><strong>Días 16-30 — Política de seguridad:</strong> redacta el documento marco con plantillas. INCIBE publica un kit gratis en su web para pymes.</li>
+  <li><strong>Días 31-60 — Implementación técnica:</strong> 2FA en todo, gestor de contraseñas, copias de seguridad cifradas y offline, parches al día, formación obligatoria al personal.</li>
+  <li><strong>Días 61-75 — Plan de respuesta a incidentes:</strong> protocolo de qué hacer si te atacan, con teléfonos del INCIBE-CERT (017) y de tu asesoría legal.</li>
+  <li><strong>Días 76-90 — Aprobación formal:</strong> el plan se eleva a dirección, se firma en acta y se programa una revisión cada 6 meses.</li>
+</ol>
+
+<h2>Cuánto cuesta cumplir NIS2 en una pyme</h2>
+<p>Rangos reales del mercado en España (2026):</p>
+<ul>
+  <li><strong>DIY con kit de INCIBE + herramientas gratuitas:</strong> 0&nbsp;€ + 80-120 horas de trabajo interno.</li>
+  <li><strong>Consultoría externa para redacción de la política:</strong> 3.000-8.000 €.</li>
+  <li><strong>Auditoría técnica externa anual:</strong> 5.000-15.000 € según tamaño.</li>
+  <li><strong>SOC gestionado / monitorización 24/7:</strong> desde 1.500 €/mes (pyme).</li>
+</ul>
+<p>Es una inversión, pero <strong>las multas son de 5 a 6 cifras</strong>. Y los ataques que NIS2 quiere evitar cuestan, en media, <strong>105.000 €</strong> a una pyme española (datos del Observatorio del INCIBE 2025).</p>
+
+<h2>Errores típicos que cometen las pymes con NIS2</h2>
+<ul>
+  <li>❌ Pensar que "como soy pequeño no me aplica". Si estás en un sector ampliado y pasas de 50 empleados, te aplica.</li>
+  <li>❌ Comprar un seguro de ciberriesgo y pensar que ya estás cubierto. El seguro paga el daño, pero no te exime de las multas regulatorias.</li>
+  <li>❌ Delegar todo al departamento de IT sin involucrar a dirección. NIS2 obliga a la dirección a aprobar y formarse.</li>
+  <li>❌ No formar a empleados. El 80% de los incidentes empiezan por un click humano en un phishing.</li>
+  <li>❌ Dejar la cadena de suministro fuera. Si tu proveedor de cloud / software cae, tu obligación de notificar sigue siendo tuya.</li>
+</ul>
+
+<h2>Conclusión</h2>
+<p>NIS2 no es una recomendación: es ley vigente en España y los inspectores del INCIBE ya están actuando. Si tu pyme está en alguno de los sectores ampliados (SaaS, logística, fabricación, alimentación, gestión de residuos, química) y supera los 50 empleados, <strong>tienes que actuar ya</strong>.</p>
+<p>Lo primero — y más barato — es saber qué tienes expuesto. <a href="/">Lanza una auditoría gratuita de tu dominio en 2 minutos</a> y empieza a documentar tu postura de seguridad. Es el primer paso de cualquier plan de cumplimiento serio.</p>
+""".strip()
+    },
+    {
+        "slug": "como-detectar-web-hackeada-7-senales-2026",
+        "titulo": "Cómo detectar si tu web ha sido hackeada: 7 señales claras (guía 2026)",
+        "excerpt": "Si sospechas que tu web está comprometida pero no sabes por dónde empezar, estos 7 indicadores te lo confirmarán en 10 minutos. Incluye comandos copy-paste y qué hacer si confirmas el ataque.",
+        "tags": "hackeo,web,seguridad,wordpress,malware,SEO spam,2026",
+        "contenido": """
+<h2>Tu web va lenta, recibes emails raros y Google te ha avisado. ¿Estás hackeado?</h2>
+<p>Muchas pymes descubren que su web está comprometida <strong>cuando ya es demasiado tarde</strong>: aparecen en la lista negra de Google, los clientes reciben emails fraudulentos en su nombre o el hosting les cierra la cuenta. La realidad es que la mayoría de ataques son detectables en una hora si sabes qué buscar.</p>
+<p>Esta guía te da las <strong>7 señales más claras</strong> de que tu web ha sido hackeada, con los comandos exactos para verificarlas. Si ves alguna de ellas, actúa hoy.</p>
+
+<h2>Señal 1: Google Search Console te ha enviado un aviso</h2>
+<p>Es el indicador más fiable. Google escanea tu web constantemente y, si detecta malware, contenido pirateado o redirecciones sospechosas, te envía un email desde <code>noreply@google.com</code> con el asunto "Detectados problemas de seguridad" o "Hackeo de sitio web".</p>
+<p><strong>Verificar ahora:</strong> entra en <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Google Search Console</a> → menú "Seguridad y acciones manuales" → "Problemas de seguridad". Si pone "No hay problemas detectados" en verde, este punto está OK. Si hay aviso, lee el detalle y sigue las instrucciones.</p>
+
+<h2>Señal 2: Páginas extrañas en los resultados de Google</h2>
+<p>Una técnica muy común se llama <strong>SEO spam</strong>: el atacante inyecta cientos de páginas con contenido de farmacia online, casinos, o productos falsos. Estas páginas posicionan en Google bajo tu dominio.</p>
+<p><strong>Verificar ahora:</strong> abre Google y busca:</p>
+<pre><code>site:tudominio.com viagra OR casino OR cialis OR "rolex replica"</code></pre>
+<p>Si te aparecen resultados con URLs raras tipo <code>tudominio.com/wp-content/uploads/2024/01/cheap-meds-here.html</code>, estás hackeado. Variantes para probar: cambia las palabras por idioma o producto que no vendas.</p>
+
+<h2>Señal 3: Modificaciones recientes que tú no has hecho</h2>
+<p>Si gestionas tu web por FTP/SSH, conéctate y mira qué archivos se han modificado en las últimas 48h:</p>
+<pre><code>find /var/www/tudominio -type f -mtime -2 -ls</code></pre>
+<p>Si ves archivos modificados en directorios como <code>wp-content/uploads/</code>, <code>wp-includes/</code> o <code>wp-admin/</code> y tú no has tocado nada esos días, hay 90&nbsp;% de probabilidad de que sea una backdoor.</p>
+
+<h2>Señal 4: Usuarios admin que no creaste</h2>
+<p>El primer movimiento de un atacante en WordPress es crearse un usuario administrador propio. Comprueba en <code>Usuarios → Todos los usuarios</code> en tu wp-admin. Cualquier nombre tipo <code>admin2</code>, <code>support</code>, <code>wpsystem</code>, <code>1qaz2wsx</code> o un email random con dominio raro es señal clara de compromiso.</p>
+<p><strong>Bonus:</strong> nuestra <a href="/">auditoría gratuita</a> detecta si tu instalación de WordPress expone usuarios públicamente vía la API REST (<code>/wp-json/wp/v2/users</code>). Si es así, los atacantes ya tienen una lista priorizada de cuentas a atacar.</p>
+
+<h2>Señal 5: Tráfico súbito en horas raras</h2>
+<p>Si miras Google Analytics o tu panel de hosting y ves picos de tráfico desde países donde no operas (Rusia, China, Indonesia, Brasil) o a horas en las que no debería haber nadie (3 AM), es porque tu web está siendo usada como:</p>
+<ul>
+  <li><strong>Servidor de phishing</strong> alojando páginas falsas de bancos.</li>
+  <li><strong>Proxy de spam</strong> enviando correos en masa.</li>
+  <li><strong>Servidor de mando y control (C2)</strong> coordinando otros malware.</li>
+</ul>
+<p>En todos los casos: hostings serios cierran la cuenta en cuanto detectan el patrón.</p>
+
+<h2>Señal 6: Tu web redirige a sitios extraños desde móvil pero no desde escritorio</h2>
+<p>Ataque clásico llamado <strong>cloaking</strong>: el código malicioso detecta si entras desde Google + móvil y, solo en ese caso, te redirige a un sitio de spam. Desde tu PC en la oficina parece todo normal.</p>
+<p><strong>Verificar ahora:</strong> abre Chrome → F12 → modo dispositivo móvil → entra a tu web desde una búsqueda de Google (no escribiéndola directamente). Si te redirige a algo raro, estás comprometido.</p>
+
+<h2>Señal 7: El antivirus o el navegador bloquean tu web</h2>
+<p>Si tus clientes te dicen <em>"me sale una pantalla roja al entrar"</em>, tu dominio ha entrado en alguna blocklist (Google Safe Browsing, Norton Safe Web, etc.). En este momento estás <strong>perdiendo el 70&nbsp;% del tráfico</strong> porque ningún navegador deja entrar.</p>
+<p><strong>Verificar ahora:</strong> tu dominio en <a href="https://transparencyreport.google.com/safe-browsing/search" target="_blank" rel="noopener">Google Safe Browsing</a>. Si sale "No safe" o "Some pages are dangerous", tienes confirmación oficial.</p>
+
+<h2>Comprobación en 2 minutos: la versión rápida</h2>
+<p>Si quieres una comprobación rápida y profesional sin tocar nada, lanza un <a href="/">escaneo gratuito en ReconBase</a>. En 90 segundos te dice:</p>
+<ul>
+  <li>Si tu certificado SSL está caducado o mal configurado.</li>
+  <li>Si tu WordPress tiene una versión vulnerable o plugins inseguros.</li>
+  <li>Si la API REST está expuesta y filtra usuarios.</li>
+  <li>Si tu dominio aparece en listas negras de spam.</li>
+  <li>Si tu DNS permite suplantación por email.</li>
+</ul>
+
+<h2>Qué hacer si confirmas el hackeo</h2>
+<p>Paso a paso, en este orden:</p>
+<ol>
+  <li><strong>NO borres nada todavía.</strong> Hacer una copia forense antes te permitirá entender cómo entraron.</li>
+  <li><strong>Cambia todas las contraseñas</strong> desde un equipo limpio: hosting, wp-admin, FTP, base de datos, email asociado al dominio.</li>
+  <li><strong>Restaura desde una copia de seguridad anterior al hackeo.</strong> Si no tienes backup, contrata un servicio de limpieza profesional (Sucuri, Wordfence, o un MSSP español como S2 Grupo).</li>
+  <li><strong>Aplica todas las actualizaciones</strong>: WordPress core, todos los plugins, todos los themes. Borra los que no uses.</li>
+  <li><strong>Solicita revisión en Google Search Console</strong> una vez limpia la web, para que te quiten de la lista negra.</li>
+  <li><strong>Audita la causa raíz</strong>: ¿entraron por una contraseña filtrada? ¿por un plugin vulnerable? ¿por una contraseña FTP por defecto del hosting? Sin saber la causa, te volverán a hackear en semanas.</li>
+  <li><strong>Notifica si es necesario.</strong> Si hubo exfiltración de datos personales, tienes 72h para notificar a la AEPD (RGPD). Si estás bajo NIS2, también al INCIBE-CERT en 24h.</li>
+</ol>
+
+<h2>Conclusión</h2>
+<p>Detectar un hackeo a tiempo puede ahorrarte miles de euros en multas, recuperación y pérdida de reputación. Las 7 señales de esta guía las puedes comprobar tú mismo en menos de una hora. Y si quieres una segunda opinión profesional sin tocar tu web, <a href="/">lanza un escaneo gratuito en ReconBase</a> y consulta el informe.</p>
+""".strip()
+    },
 ]
 
 with app.app_context():
