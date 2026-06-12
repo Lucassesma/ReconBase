@@ -1342,6 +1342,11 @@ def scan_demo():
     if cms.get("cms") == "WordPress" and not es_ip_flag:
         try: wp_audit = engine.wordpress_audit(dominio)
         except Exception: wp_audit = {"is_wordpress": False}
+    # Auditoría PrestaShop dedicada (solo si CMS detectado es PS)
+    ps_audit = {"is_prestashop": False}
+    if cms.get("cms") == "PrestaShop" and not es_ip_flag:
+        try: ps_audit = engine.prestashop_audit(dominio)
+        except Exception: ps_audit = {"is_prestashop": False}
     leaks = []
     es_email = "@" in objetivo
     if es_email and API_KEY:
@@ -1367,6 +1372,26 @@ def scan_demo():
         if sf:
             pts = min(15, sf * 5)
             riesgo = min(100, riesgo + pts); desglose[f"{sf} archivo(s) sensible(s) WP"] = pts
+    # Penalizaciones específicas PrestaShop
+    if ps_audit.get("is_prestashop"):
+        if ps_audit.get("version_outdated"):
+            riesgo = min(100, riesgo + 10); desglose["PrestaShop obsoleto"] = 10
+        if ps_audit.get("admin_path_default"):
+            riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
+        if ps_audit.get("install_dir_exposed"):
+            riesgo = min(100, riesgo + 18); desglose["/install/ PrestaShop accesible"] = 18
+        vm = len(ps_audit.get("vulnerable_modules") or [])
+        if vm:
+            pts = min(20, vm * 8)
+            riesgo = min(100, riesgo + pts); desglose[f"{vm} módulo(s) PS vulnerable(s)"] = pts
+        sfp = len(ps_audit.get("sensitive_files") or [])
+        if sfp:
+            pts = min(15, sfp * 5)
+            riesgo = min(100, riesgo + pts); desglose[f"{sfp} archivo(s) sensible(s) PS"] = pts
+        if not ps_audit.get("https_forced"):
+            riesgo = min(100, riesgo + 10); desglose["HTTPS no forzado (checkout)"] = 10
+        if ps_audit.get("skimmer_suspect"):
+            riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
     if ssl_info.get("caducado"):
         riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
     elif ssl_info.get("pronto_a_caducar"):
@@ -1380,7 +1405,7 @@ def scan_demo():
         "headers": {k: bool(v) for k, v in headers.items()},
         "subs": subs, "leaks": len(leaks), "leaks_raw": leaks,
         "riesgo": riesgo, "label": label, "color": color,
-        "desglose": desglose, "cms": cms, "wp": wp_audit, "ssl": ssl_info,
+        "desglose": desglose, "cms": cms, "wp": wp_audit, "ps": ps_audit, "ssl": ssl_info,
         "banners": banners, "os": os_det,
         "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
         "demo": True, "locked": False
@@ -2479,6 +2504,7 @@ def scan():
 
     # Módulos solo para dominios (no IPs)
     wp_audit = {"is_wordpress": False}
+    ps_audit = {"is_prestashop": False}
     if not es_ip:
         dns     = engine.check_email_spoofing(dominio)
         headers = engine.check_security_headers(dominio)
@@ -2488,6 +2514,10 @@ def scan():
         if cms.get("cms") == "WordPress":
             try: wp_audit = engine.wordpress_audit(dominio)
             except Exception: wp_audit = {"is_wordpress": False}
+        # Auditoría PrestaShop dedicada si CMS = PrestaShop
+        if cms.get("cms") == "PrestaShop":
+            try: ps_audit = engine.prestashop_audit(dominio)
+            except Exception: ps_audit = {"is_prestashop": False}
     else:
         dns     = {"SPF": None, "DMARC": None, "SPF_raw": "", "DMARC_raw": ""}
         headers = {}
@@ -2518,6 +2548,26 @@ def scan():
         if sf:
             pts = min(15, sf * 5)
             riesgo = min(100, riesgo + pts); desglose[f"{sf} archivo(s) sensible(s) WP"] = pts
+    # Penalizaciones específicas PrestaShop
+    if ps_audit.get("is_prestashop"):
+        if ps_audit.get("version_outdated"):
+            riesgo = min(100, riesgo + 10); desglose["PrestaShop obsoleto"] = 10
+        if ps_audit.get("admin_path_default"):
+            riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
+        if ps_audit.get("install_dir_exposed"):
+            riesgo = min(100, riesgo + 18); desglose["/install/ PrestaShop accesible"] = 18
+        vm = len(ps_audit.get("vulnerable_modules") or [])
+        if vm:
+            pts = min(20, vm * 8)
+            riesgo = min(100, riesgo + pts); desglose[f"{vm} módulo(s) PS vulnerable(s)"] = pts
+        sfp = len(ps_audit.get("sensitive_files") or [])
+        if sfp:
+            pts = min(15, sfp * 5)
+            riesgo = min(100, riesgo + pts); desglose[f"{sfp} archivo(s) sensible(s) PS"] = pts
+        if not ps_audit.get("https_forced"):
+            riesgo = min(100, riesgo + 10); desglose["HTTPS no forzado (checkout)"] = 10
+        if ps_audit.get("skimmer_suspect"):
+            riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
     # Penalización SSL
     if ssl_info.get("caducado"):
         riesgo = min(100, riesgo + 20)
@@ -2543,6 +2593,7 @@ def scan():
         "desglose":  desglose,
         "cms":       cms,
         "wp":        wp_audit,
+        "ps":        ps_audit,
         "ssl":       ssl_info,
         "banners":   banners,
         "os":        os_det,

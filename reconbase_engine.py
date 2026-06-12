@@ -487,6 +487,308 @@ def wordpress_audit(domain, timeout=6):
 
 
 # ─────────────────────────────────────────────────────────────
+# MÓDULO 6b: PRESTASHOP AUDIT
+# ─────────────────────────────────────────────────────────────
+_PS_LATEST_VERSION = "8.2"
+
+# Módulos PrestaShop con vulnerabilidades conocidas o vectores comunes 2024-2026.
+_PS_VULNERABLE_MODULES = {
+    "blockwishlist":    ("SQLi conocido en versiones <2.x — actualizar", "high"),
+    "ps_facetedsearch": ("SSRF en versiones <3.13 — actualizar", "high"),
+    "contactform":      ("Spam / abuso de formulario sin captcha", "medium"),
+    "gamification":     ("RCE histórico en versiones antiguas — recomendado desinstalar si no se usa", "high"),
+    "ps_emailsubscription": ("XSS reflejado en versiones antiguas", "medium"),
+    "productcomments":  ("XSS persistente en comentarios sin sanitizar", "medium"),
+    "ps_linklist":      ("XSS en versiones <5.x", "medium"),
+}
+
+# Lista corta de dominios o patrones JS conocidos como skimmers de checkout (Magecart-style).
+# Si aparecen en el HTML del checkout, alerta crítica.
+_PS_SKIMMER_PATTERNS = [
+    "eval(atob(", "eval(unescape(", "document.write(unescape(",
+    "creditcard", "card_number", "cvv", "cvc",  # solo activan si están en JS inline + URLs raras
+]
+_PS_SKIMMER_DOMAINS = [
+    "magento-cdn.net", "googletagsmanager.com",  # typosquats clásicos
+    "googie-analytics.com", "gstaticc.com",
+    "js-stats.com", "trackjs.io",
+]
+
+
+def _ps_version_outdated(version):
+    """Compara versión detectada con _PS_LATEST_VERSION."""
+    if not version:
+        return False, None
+    try:
+        cur = [int(x) for x in version.split(".")[:2]]
+        latest = [int(x) for x in _PS_LATEST_VERSION.split(".")[:2]]
+        while len(cur) < 2: cur.append(0)
+        while len(latest) < 2: latest.append(0)
+        if cur[0] < latest[0]:
+            return True, f"{latest[0]-cur[0]} versiones mayores por detrás"
+        if cur[0] == latest[0] and cur[1] < latest[1]:
+            return True, f"{latest[1]-cur[1]} minor versions por detrás"
+        return False, None
+    except Exception:
+        return False, None
+
+
+def prestashop_audit(domain, timeout=6):
+    """Auditoría PrestaShop: versión, /install/, /admin sin renombrar,
+    módulos vulnerables, archivos sensibles, HTTPS checkout, skimmers.
+    Solo se llama si detect_cms() confirma PrestaShop."""
+    import re
+    result = {
+        "is_prestashop":     False,
+        "version":           None,
+        "version_outdated":  False,
+        "version_diff":      None,
+        "admin_path_default":  False,   # /admin/ accesible (mala práctica)
+        "admin_path_found":    None,    # ruta detectada si existe
+        "install_dir_exposed": False,
+        "sensitive_files":     [],
+        "modules_detected":    [],
+        "vulnerable_modules":  [],
+        "https_forced":        True,
+        "skimmer_suspect":     False,
+        "skimmer_evidence":    [],
+        "checks_count":        0,
+        "issues_count":        0,
+    }
+
+    base = None
+    html = ""
+    for scheme in ["https", "http"]:
+        r = _safe_get(f"{scheme}://{domain}", timeout=timeout)
+        if r and r.status_code < 500:
+            base = f"{scheme}://{domain}"
+            html = r.text or ""
+            break
+    if not base:
+        return result
+
+    # 1) Confirmar PrestaShop + versión
+    # Heurísticas: meta generator, /themes/, header Powered-By, /modules/, var prestashop
+    if re.search(r'<meta\s+name=["\']generator["\']\s+content=["\']PrestaShop\s*([\d.]*)', html, re.I):
+        result["is_prestashop"] = True
+        m = re.search(r'PrestaShop\s+([\d.]+)', html, re.I)
+        if m: result["version"] = m.group(1)
+    if "/themes/classic/" in html or "var prestashop" in html.lower() or "/modules/" in html:
+        result["is_prestashop"] = True
+    # Fallback: /modules/ps_emailsubscription/
+    if not result["version"]:
+        readme = _safe_get(f"{base}/INSTALL.txt", timeout=3)
+        if readme and readme.status_code == 200:
+            mm = re.search(r'PrestaShop\s+([\d.]+)', readme.text or "", re.I)
+            if mm:
+                result["is_prestashop"] = True
+                result["version"] = mm.group(1)
+                result["sensitive_files"].append({"path": "/INSTALL.txt", "desc": "fichero INSTALL.txt filtra versión PrestaShop"})
+                result["issues_count"] += 1
+    if not result["is_prestashop"]:
+        return result
+
+    # 2) Versión obsoleta
+    if result["version"]:
+        outdated, diff = _ps_version_outdated(result["version"])
+        result["version_outdated"] = outdated
+        result["version_diff"] = diff
+        result["checks_count"] += 1
+        if outdated:
+            result["issues_count"] += 1
+
+    # 3) Panel /admin/ sin renombrar (mala práctica clásica de PrestaShop)
+    result["checks_count"] += 1
+    for path in ["/admin/", "/administracion/", "/administrator/", "/back-office/", "/bo/"]:
+        adm = _safe_get(f"{base}{path}", timeout=3)
+        if adm and adm.status_code in (200, 302) and ("prestashop" in (adm.text or "").lower() or "back office" in (adm.text or "").lower()):
+            result["admin_path_default"] = True
+            result["admin_path_found"] = path
+            result["issues_count"] += 1
+            break
+
+    # 4) Directorio /install/ accesible (DEBE eliminarse tras instalar)
+    result["checks_count"] += 1
+    inst = _safe_get(f"{base}/install/", timeout=3)
+    if inst and inst.status_code == 200 and ("install" in (inst.text or "").lower() or "prestashop" in (inst.text or "").lower()):
+        result["install_dir_exposed"] = True
+        result["issues_count"] += 1
+
+    # 5) Archivos sensibles típicos
+    sensitive_paths = [
+        ("/README.md",                  "README.md público — filtra estructura"),
+        ("/CONTRIBUTING.md",            "CONTRIBUTING.md filtra detalles del repo"),
+        ("/composer.lock",              "composer.lock expuesto — revela dependencias y versiones"),
+        ("/var/logs/prod.log",          "logs de producción accesibles"),
+        ("/app/config/parameters.php",  "fichero de configuración expuesto"),
+        ("/.git/config",                "directorio .git accesible — código fuente comprometido"),
+        ("/.env",                       "fichero .env público — credenciales filtradas"),
+    ]
+    for path, desc in sensitive_paths:
+        result["checks_count"] += 1
+        sf = _safe_get(f"{base}{path}", timeout=3)
+        if sf and sf.status_code == 200 and len(sf.text or "") > 30:
+            ct = (sf.headers.get("Content-Type") or "").lower()
+            if "text/html" in ct and "<html" in (sf.text or "")[:300].lower():
+                continue  # es la home, ignorar (catch-all del CMS)
+            result["sensitive_files"].append({"path": path, "desc": desc})
+            result["issues_count"] += 1
+
+    # 6) Módulos detectados desde HTML y módulos vulnerables conocidos
+    result["checks_count"] += 1
+    mod_matches = re.findall(r'/modules/([a-z0-9_]+)/', html, re.I)
+    mods_unique = list({m.lower() for m in mod_matches})[:20]
+    result["modules_detected"] = mods_unique
+    for m in mods_unique:
+        if m in _PS_VULNERABLE_MODULES:
+            desc, sev = _PS_VULNERABLE_MODULES[m]
+            result["vulnerable_modules"].append({"name": m, "desc": desc, "severity": sev})
+            result["issues_count"] += 1
+
+    # 7) HTTPS forzado (si http:// devuelve 200 sin redirigir a https → mal)
+    result["checks_count"] += 1
+    if base.startswith("https://"):
+        rh = _safe_get(f"http://{domain}/", timeout=4)
+        if rh and rh.status_code == 200 and not (rh.url or "").startswith("https://"):
+            result["https_forced"] = False
+            result["issues_count"] += 1
+    else:
+        result["https_forced"] = False
+        result["issues_count"] += 1
+
+    # 8) Skimmer detection — análisis del HTML de la home y del checkout
+    result["checks_count"] += 1
+    checkout_url = f"{base}/order"
+    ck = _safe_get(checkout_url, timeout=5)
+    target_html = (html or "") + " " + (ck.text if ck else "")
+    target_lower = target_html.lower()
+    # 8a) Dominios sospechosos en scripts
+    for dom in _PS_SKIMMER_DOMAINS:
+        if dom in target_lower:
+            result["skimmer_suspect"] = True
+            result["skimmer_evidence"].append(f"dominio sospechoso en JS: {dom}")
+    # 8b) Patrones de código ofuscado típico de Magecart
+    obfuscated = 0
+    for pat in _PS_SKIMMER_PATTERNS:
+        if pat in target_lower:
+            obfuscated += 1
+    if obfuscated >= 2:
+        result["skimmer_suspect"] = True
+        result["skimmer_evidence"].append(f"{obfuscated} patrones de ofuscación / robo de tarjeta en JS")
+    if result["skimmer_suspect"]:
+        result["issues_count"] += 1
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
+# ROUTER: cms_audit — punto único de entrada
+# ─────────────────────────────────────────────────────────────
+def cms_audit(domain, timeout=6, cms_hint=None):
+    """Router unificado de auditoría CMS.
+
+    Detecta el CMS (o lo recibe en cms_hint para evitar doble detección) y
+    devuelve un objeto homogéneo con:
+        cms, version, is_audited, findings[], score_penalty, raw
+
+    'findings' es una lista de dicts {severity, title, evidence} normalizada
+    para que la UI / PDF / dashboard la consuman sin ramificar por tipo de CMS.
+    """
+    if cms_hint:
+        cms_name = cms_hint
+    else:
+        cms_info = detect_cms(domain, timeout=timeout)
+        cms_name = (cms_info or {}).get("cms")
+
+    out = {
+        "cms":            cms_name,
+        "version":        None,
+        "is_audited":     False,
+        "findings":       [],
+        "score_penalty":  0,
+        "raw":            {},
+    }
+
+    if not cms_name:
+        return out
+
+    # ── WordPress ──
+    if cms_name == "WordPress":
+        wp = wordpress_audit(domain, timeout=timeout)
+        out["raw"] = wp
+        if not wp.get("is_wordpress"):
+            return out
+        out["is_audited"] = True
+        out["version"]    = wp.get("version")
+
+        if wp.get("version_outdated"):
+            out["findings"].append({"severity": "high",   "title": "WordPress desactualizado",
+                                    "evidence": wp.get("version_diff") or ""})
+            out["score_penalty"] += 10
+        if wp.get("xmlrpc_exposed"):
+            out["findings"].append({"severity": "high",   "title": "xmlrpc.php expuesto",
+                                    "evidence": "vector clásico de fuerza bruta y pingback DDoS"})
+            out["score_penalty"] += 10
+        if wp.get("users_enumerable"):
+            out["findings"].append({"severity": "high",   "title": "Usuarios enumerables vía wp-json",
+                                    "evidence": ", ".join(wp.get("users_found", [])[:5])})
+            out["score_penalty"] += 10
+        for v in wp.get("vulnerable_plugins", []):
+            sev = v.get("severity", "medium")
+            out["findings"].append({"severity": sev, "title": f"Plugin vulnerable: {v.get('name')}",
+                                    "evidence": v.get("desc", "")})
+            out["score_penalty"] += {"critical": 15, "high": 10, "medium": 5}.get(sev, 3)
+        for sf in wp.get("sensitive_files", []):
+            out["findings"].append({"severity": "high", "title": f"Fichero sensible expuesto: {sf.get('path')}",
+                                    "evidence": sf.get("desc", "")})
+            out["score_penalty"] += 8
+        return out
+
+    # ── PrestaShop ──
+    if cms_name == "PrestaShop":
+        ps = prestashop_audit(domain, timeout=timeout)
+        out["raw"] = ps
+        if not ps.get("is_prestashop"):
+            return out
+        out["is_audited"] = True
+        out["version"]    = ps.get("version")
+
+        if ps.get("version_outdated"):
+            out["findings"].append({"severity": "high",     "title": "PrestaShop desactualizado",
+                                    "evidence": ps.get("version_diff") or ""})
+            out["score_penalty"] += 10
+        if ps.get("admin_path_default"):
+            out["findings"].append({"severity": "critical", "title": "Panel admin sin renombrar",
+                                    "evidence": f"ruta detectada: {ps.get('admin_path_found')}"})
+            out["score_penalty"] += 15
+        if ps.get("install_dir_exposed"):
+            out["findings"].append({"severity": "critical", "title": "/install/ accesible",
+                                    "evidence": "permite reinstalación maliciosa de la tienda"})
+            out["score_penalty"] += 18
+        for v in ps.get("vulnerable_modules", []):
+            sev = v.get("severity", "medium")
+            out["findings"].append({"severity": sev, "title": f"Módulo vulnerable: {v.get('name')}",
+                                    "evidence": v.get("desc", "")})
+            out["score_penalty"] += {"critical": 15, "high": 10, "medium": 5}.get(sev, 3)
+        for sf in ps.get("sensitive_files", []):
+            out["findings"].append({"severity": "high", "title": f"Fichero sensible expuesto: {sf.get('path')}",
+                                    "evidence": sf.get("desc", "")})
+            out["score_penalty"] += 8
+        if not ps.get("https_forced"):
+            out["findings"].append({"severity": "high", "title": "HTTPS no forzado",
+                                    "evidence": "checkout vulnerable a sniffing — riesgo PCI-DSS"})
+            out["score_penalty"] += 10
+        if ps.get("skimmer_suspect"):
+            out["findings"].append({"severity": "critical", "title": "Posible skimmer digital detectado",
+                                    "evidence": "; ".join(ps.get("skimmer_evidence", [])) or "patrón sospechoso en JS del checkout"})
+            out["score_penalty"] += 25
+        return out
+
+    # CMS detectado pero sin auditor específico aún (Joomla, Drupal, etc.)
+    return out
+
+
+# ─────────────────────────────────────────────────────────────
 # MÓDULO 7: VIGILANCIA NOCTURNA
 # ─────────────────────────────────────────────────────────────
 def enviar_alerta(mensaje):
