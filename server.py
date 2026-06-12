@@ -2830,6 +2830,7 @@ def generar_pdf():
     headers = datos.get('headers', {}) or {}
     ssl_i   = datos.get('ssl', {}) or {}
     wp      = datos.get('wp', {}) or {}
+    ps      = datos.get('ps', {}) or {}
     cms     = datos.get('cms', {}) or {}
     subs    = datos.get('subs', []) or []
     leaks_n = datos.get('leaks', 0) or 0
@@ -2864,6 +2865,18 @@ def generar_pdf():
         if wp.get('sensitive_files'):   wp_issues.append(f"{len(wp['sensitive_files'])} archivos sensibles expuestos")
         if wp_issues:
             findings.append(('crit', f"WordPress {wp.get('version','')} con {len(wp_issues)} hallazgos", ' · '.join(wp_issues[:3])))
+    if ps.get('is_prestashop'):
+        ps_issues = []
+        if ps.get('skimmer_suspect'):     ps_issues.append("posible SKIMMER en checkout")
+        if ps.get('install_dir_exposed'): ps_issues.append("/install/ accesible")
+        if ps.get('admin_path_default'):  ps_issues.append(f"admin en {ps.get('admin_path_found','/admin')}")
+        if ps.get('version_outdated'):    ps_issues.append(f"versión {ps.get('version','?')} obsoleta")
+        if ps.get('vulnerable_modules'):  ps_issues.append(f"{len(ps['vulnerable_modules'])} módulos vulnerables")
+        if ps.get('sensitive_files'):     ps_issues.append(f"{len(ps['sensitive_files'])} archivos sensibles")
+        if not ps.get('https_forced'):    ps_issues.append("HTTPS no forzado")
+        if ps_issues:
+            sev = 'crit' if (ps.get('skimmer_suspect') or ps.get('install_dir_exposed') or ps.get('admin_path_default')) else 'warn'
+            findings.append((sev, f"PrestaShop {ps.get('version','')} con {len(ps_issues)} hallazgos", ' · '.join(ps_issues[:3])))
     if leaks_n:
         findings.append(('crit', f"{leaks_n} filtración(es) de datos detectada(s)", "Credenciales comprometidas en brechas"))
 
@@ -3064,6 +3077,61 @@ def generar_pdf():
                     pdf.set_font("Helvetica", "", 8)
                     pdf.set_text_color(*TEXT_DARK)
                     pdf.cell(0, 4, sanitizar(f"  • {f.get('path','')} - {f.get('desc','')}"), ln=1)
+
+        # ── Detalle PrestaShop (si aplica) ──
+        if ps.get('is_prestashop'):
+            pdf.ln(1)
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.set_text_color(*TEXT_DARK)
+            pdf.cell(0, 6, sanitizar("Auditoría PrestaShop detallada"), ln=1)
+            kv("Versión instalada", ps.get('version','?'),
+               WARN_AMBER if ps.get('version_outdated') else OK_GREEN)
+            if ps.get('version_outdated') and ps.get('version_diff'):
+                kv("Análisis de versión", ps.get('version_diff',''), WARN_AMBER)
+            # Skimmer detection — lo MÁS importante, va arriba
+            if ps.get('skimmer_suspect'):
+                kv("Detector de skimmers", "ALERTA - patrones sospechosos en checkout", CRIT_RED)
+                ev = ps.get('skimmer_evidence') or []
+                for e in ev[:3]:
+                    pdf.set_font("Helvetica", "", 8)
+                    pdf.set_text_color(*TEXT_MUTED)
+                    pdf.multi_cell(0, 4, sanitizar(f"  - {e}"))
+            else:
+                kv("Detector de skimmers", "Sin patrones sospechosos detectados", OK_GREEN)
+            # Admin / install dir
+            kv("Panel admin", f"SIN RENOMBRAR ({ps.get('admin_path_found','/admin')})" if ps.get('admin_path_default') else "Renombrado o protegido",
+               CRIT_RED if ps.get('admin_path_default') else OK_GREEN)
+            kv("Directorio /install/", "ACCESIBLE - permite reinstalación maliciosa" if ps.get('install_dir_exposed') else "Eliminado o protegido",
+               CRIT_RED if ps.get('install_dir_exposed') else OK_GREEN)
+            kv("HTTPS forzado", "No - checkout vulnerable a sniffing" if not ps.get('https_forced') else "Sí - cumple PCI-DSS",
+               CRIT_RED if not ps.get('https_forced') else OK_GREEN)
+            # Módulos
+            mods = ps.get('modules_detected') or []
+            if mods:
+                kv("Módulos detectados", f"{len(mods)}: " + ', '.join(mods[:8]) + ("..." if len(mods)>8 else ""))
+            vm = ps.get('vulnerable_modules') or []
+            if vm:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.set_text_color(*CRIT_RED)
+                pdf.cell(0, 5, sanitizar(f"Módulos con vulnerabilidades conocidas: {len(vm)}"), ln=1)
+                for m in vm[:5]:
+                    pdf.set_font("Helvetica", "B", 9)
+                    pdf.set_text_color(*TEXT_DARK)
+                    pdf.cell(0, 5, sanitizar(f"  • {m.get('name','')}"), ln=1)
+                    pdf.set_font("Helvetica", "", 8)
+                    pdf.set_text_color(*TEXT_MUTED)
+                    pdf.multi_cell(0, 4, sanitizar(f"    {m.get('desc','')} [{m.get('severity','').upper()}]"))
+            sfp = ps.get('sensitive_files') or []
+            if sfp:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.set_text_color(*CRIT_RED)
+                pdf.cell(0, 5, sanitizar(f"Archivos sensibles expuestos: {len(sfp)}"), ln=1)
+                for f in sfp[:6]:
+                    pdf.set_font("Helvetica", "", 8)
+                    pdf.set_text_color(*TEXT_DARK)
+                    pdf.cell(0, 4, sanitizar(f"  • {f.get('path','')} - {f.get('desc','')}"), ln=1)
         pdf.ln(2)
 
     # ─── 6. Filtraciones ───
@@ -3159,6 +3227,18 @@ def generar_pdf():
         if wp.get('sensitive_files'): wpr.append("borrar archivos .bak, install.php, debug.log accesibles")
         if wpr:
             recom.append("WordPress: " + "; ".join(wpr) + ". Instala Wordfence o Sucuri para monitorización continua.")
+    if ps.get('is_prestashop'):
+        psr = []
+        if ps.get('skimmer_suspect'):
+            psr.append("URGENTE inspeccionar JavaScript del checkout, hacer backup forense, restaurar versión limpia y notificar AEPD en 72h si hubo robo de datos de tarjeta")
+        if ps.get('install_dir_exposed'): psr.append("eliminar /install/ del servidor")
+        if ps.get('admin_path_default'):  psr.append("renombrar el panel admin a una ruta aleatoria")
+        if ps.get('version_outdated'):    psr.append("actualizar PrestaShop a la última versión estable (backup BD antes)")
+        if ps.get('vulnerable_modules'):  psr.append(f"actualizar/desinstalar {len(ps['vulnerable_modules'])} módulo(s) con CVE")
+        if ps.get('sensitive_files'):     psr.append("bloquear archivos sensibles vía .htaccess (composer.lock, .env, /var/logs/, /.git/)")
+        if not ps.get('https_forced'):    psr.append("activar SSL forzado en Parámetros → General (obligatorio PCI-DSS)")
+        if psr:
+            recom.append("PrestaShop: " + "; ".join(psr) + ". Más detalle en reconbase.es/blog/skimmers-digitales-prestashop-magecart-2026")
     if leaks_n:
         recom.append(f"Cambia inmediatamente las contraseñas de los {leaks_n} email(s) comprometido(s). Activa 2FA en TODAS las cuentas críticas (email, banca, ERP).")
 
@@ -5939,6 +6019,176 @@ _BLOG_SEEDS = [
 
 <h2>Conclusión</h2>
 <p>Detectar un hackeo a tiempo puede ahorrarte miles de euros en multas, recuperación y pérdida de reputación. Las 7 señales de esta guía las puedes comprobar tú mismo en menos de una hora. Y si quieres una segunda opinión profesional sin tocar tu web, <a href="/">lanza un escaneo gratuito en ReconBase</a> y consulta el informe.</p>
+""".strip()
+    },
+    {
+        "slug": "skimmers-digitales-prestashop-magecart-2026",
+        "titulo": "Skimmers digitales en PrestaShop: qué son, cómo detectarlos y cómo limpiarlos (guía 2026)",
+        "excerpt": "Los skimmers digitales (Magecart) son la amenaza número uno contra tiendas online en 2026. Te explico cómo funcionan, cómo detectarlos en tu PrestaShop y qué hacer si encuentras uno.",
+        "tags": "prestashop,skimmer,magecart,ecommerce,seguridad,checkout,PCI-DSS,2026",
+        "contenido": """
+<h2>El robo silencioso que está vaciando tiendas PrestaShop en España</h2>
+<p>En 2025, el CCN-CERT registró un <strong>aumento del 340%</strong> en incidentes de robo de datos de tarjeta en tiendas online españolas (vs 2024). El vector dominante: <strong>skimmers digitales</strong>, también conocidos como <em>Magecart</em>, <em>web skimmers</em> o <em>e-skimmers</em>. Y PrestaShop está entre los CMS más afectados.</p>
+<p>Lo más peligroso es que <strong>no tienes ni idea de que estás afectado hasta semanas después</strong>. Tu tienda funciona normal, tus clientes pagan normal, tú vendes normal. Y mientras tanto, los datos de tarjeta de cada compra llegan al servidor de un atacante en Rusia, Ucrania o Vietnam.</p>
+
+<h2>¿Qué es exactamente un skimmer digital?</h2>
+<p>Un skimmer digital es <strong>código JavaScript malicioso</strong> que un atacante inyecta en la página de checkout de tu tienda. Cuando un cliente rellena el formulario de pago (número de tarjeta, fecha, CVV), el JavaScript captura esos datos antes de que se envíen a la pasarela legítima y los envía también al servidor del atacante.</p>
+<p>Es la versión digital del skimmer físico de los cajeros: un dispositivo invisible que copia tu tarjeta mientras la usas con normalidad. La diferencia es que aquí cada visita al checkout es un robo, y nadie nota nada.</p>
+
+<h2>Cómo entran en tu PrestaShop</h2>
+<p>Los 5 vectores más comunes en 2026:</p>
+<ol>
+  <li><strong>Módulos vulnerables sin actualizar.</strong> CVEs públicos en módulos populares (blockwishlist, ps_facetedsearch, gamification antiguos). El atacante explota la vulnerabilidad y obtiene acceso al back office.</li>
+  <li><strong>Panel admin sin renombrar.</strong> Si tu URL de admin sigue siendo /admin/, fuerza bruta automatizada con listas de contraseñas filtradas → entrada en pocos días.</li>
+  <li><strong>Credenciales filtradas en HaveIBeenPwned.</strong> El email de tu admin aparece en alguna brecha (LinkedIn 2021, Adobe 2013, etc.). La gente reusa contraseñas. Login en el back office.</li>
+  <li><strong>Hosting compartido comprometido.</strong> Otro cliente del mismo hosting está infectado y la infección se mueve lateralmente a través de directorios mal aislados.</li>
+  <li><strong>Cadena de suministro.</strong> Un módulo de terceros pirateado en el propio mercado de PrestaShop Addons o descargado de sitios "nulled". El skimmer viene preinstalado.</li>
+</ol>
+
+<h2>Las 6 señales claras de que tienes un skimmer</h2>
+
+<h3>1. JavaScript en el HTML del checkout que no pusiste tú</h3>
+<p>Abre tu tienda en Chrome → F12 → pestaña Sources → archivo de la página /order. Si ves un bloque grande de código JavaScript con eval(), atob() o unescape() y no recuerdas haberlo puesto, sospecha.</p>
+
+<h3>2. Llamadas a dominios externos extraños</h3>
+<p>En F12 → Network → recarga el checkout → filtra por "JS". Mira los dominios. ¿Hay alguno que no reconozcas? Especialmente sospechosos: <code>googie-analytics.com</code> (con i en vez de l), <code>stripe-cdn.com</code>, <code>jqueryxcdn.com</code>, dominios .io o .live nuevos.</p>
+
+<h3>3. Quejas de clientes con cargos fraudulentos</h3>
+<p>Si recibes 2-3 emails en una semana de clientes diciendo que les llegaron cargos fraudulentos después de comprar en tu tienda, no es coincidencia. <strong>Es la pista más fiable</strong>.</p>
+
+<h3>4. Aumento de chargebacks de tu pasarela</h3>
+<p>Mira el panel de Redsys, Stripe o tu banco. Si los chargebacks suben un 20-30% sin explicación, podrías tener un skimmer activo desde hace meses.</p>
+
+<h3>5. Archivos PHP modificados en /modules/ o /themes/</h3>
+<p>Conéctate por SSH/FTP y mira los timestamps:</p>
+<pre><code>find /var/www/tutienda/modules -type f -name "*.php" -mtime -30 -ls
+find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
+<p>Archivos modificados en los últimos 30 días que tú no has tocado = probable backdoor o skimmer.</p>
+
+<h3>6. ReconBase te alerta de patrón sospechoso</h3>
+<p>El <a href="/auditoria-prestashop">escáner gratuito de PrestaShop</a> analiza el JavaScript del checkout y te avisa si encuentra dominios en blocklists Magecart, código ofuscado o referencias a campos de tarjeta sospechosas. Es la primera línea de defensa para detectar el problema antes de que se prolongue.</p>
+
+<h2>Cómo limpiar tu PrestaShop si encuentras un skimmer</h2>
+<p>El orden importa. Cualquier paso fuera de orden puede destruir evidencia o avisar al atacante.</p>
+
+<ol>
+  <li><strong>NO toques nada en producción todavía.</strong> Haz una copia forense completa: snapshot del servidor (filesystem), dump de la base de datos, HTML completo del checkout actual. Esto te servirá como evidencia si hay denuncia.</li>
+  <li><strong>Cambia las contraseñas desde un equipo limpio</strong>, no desde el infectado: admin PrestaShop, FTP/SSH, panel del hosting, MySQL, email asociado.</li>
+  <li><strong>Identifica el archivo infectado.</strong> Compara los archivos modificados con un backup limpio anterior. Foco en /modules/[nombre]/[nombre].php, /themes/[tema]/templates/checkout/, /classes/PaymentModule.php.</li>
+  <li><strong>Restaura desde un backup anterior al ataque</strong> si lo tienes. Si no, contrata un servicio profesional (Sucuri, Sansec, S2 Grupo).</li>
+  <li><strong>Actualiza TODO</strong>: core PrestaShop, todos los módulos, theme. Elimina módulos que no uses.</li>
+  <li><strong>Renombra el panel de administración</strong> a algo aleatorio: /admin-x7K9pQ por ejemplo.</li>
+  <li><strong>Elimina /install/</strong> si sigue ahí.</li>
+  <li><strong>Activa autenticación en dos factores</strong> para todos los usuarios admin.</li>
+  <li><strong>Notifica a la AEPD en 72h</strong> (obligatorio RGPD art. 33). Si estás bajo NIS2 también al INCIBE-CERT en 24h.</li>
+  <li><strong>Avisa a tu pasarela de pago.</strong> Pueden ayudarte a identificar el rango de fechas afectado y notificar a las tarjetas comprometidas.</li>
+  <li><strong>Si has perdido la certificación PCI-DSS</strong>: contacta con tu QSA (Qualified Security Assessor) para recertificación. Sin esto no puedes vender online.</li>
+</ol>
+
+<h2>Cómo prevenir nuevos skimmers</h2>
+<ul>
+  <li><strong>Mantén PrestaShop y módulos al día.</strong> El 80% de skimmers entran por vulnerabilidades conocidas que tienen parche.</li>
+  <li><strong>Audita mensualmente con ReconBase</strong> o herramientas equivalentes. El coste de la suscripción Pro es 50x más barato que limpiar un incidente.</li>
+  <li><strong>Activa CSP (Content Security Policy)</strong> con allowlist de dominios. Impide que JavaScript externo cargue desde dominios no autorizados — el ataque Magecart deja de funcionar.</li>
+  <li><strong>Subresource Integrity (SRI)</strong> en los scripts externos. Garantiza que el JS no haya sido modificado en tránsito.</li>
+  <li><strong>Logs centralizados</strong> con alerta automática si cambian archivos PHP en producción.</li>
+  <li><strong>Auditoría manual del checkout</strong> después de cualquier actualización de módulos, theme o PrestaShop.</li>
+  <li><strong>Hosting dedicado</strong> en lugar de shared, si tu volumen lo permite. Menos vectores laterales.</li>
+</ul>
+
+<h2>Conclusión</h2>
+<p>Los skimmers digitales son la amenaza nº1 contra tiendas PrestaShop en 2026 y la mayoría de propietarios no saben que están infectados. La detección temprana ahorra multas RGPD, chargebacks y pérdida del sello PCI-DSS. <a href="/auditoria-prestashop">Lanza una auditoría gratuita de tu PrestaShop ahora</a> y comprueba si el detector de skimmers de ReconBase encuentra algo sospechoso. Si lo encuentra, sigue el protocolo de esta guía.</p>
+""".strip()
+    },
+    {
+        "slug": "auditoria-wordpress-12-checks-reconbase",
+        "titulo": "Auditoría WordPress: los 12 checks de seguridad que hace ReconBase gratis en 60 segundos",
+        "excerpt": "Repasamos uno a uno los 12 chequeos técnicos que ReconBase ejecuta en cualquier WordPress: qué busca, por qué importa, qué hacer si falla. Sin instalar plugins, sin compartir credenciales.",
+        "tags": "wordpress,auditoria,seguridad,wp-scan,plugins,xmlrpc,wp-json,2026",
+        "contenido": """
+<h2>Por qué necesitas auditar tu WordPress (aunque tu web vaya bien)</h2>
+<p>WordPress es el CMS más usado del mundo: el 43% de toda Internet corre sobre él. Eso lo convierte también en el <strong>objetivo más atacado</strong>. El 90% de los hackeos a webs WordPress se producen por tres causas: <strong>versión obsoleta, plugin vulnerable o credenciales filtradas</strong>. Las tres son detectables sin tocar el sitio, simplemente analizando lo que se ve desde fuera.</p>
+<p>Esa es exactamente la idea de la <a href="/auditoria-wordpress">auditoría gratuita de ReconBase</a>: 12 chequeos en 60 segundos, sin instalar nada, sin compartir el wp-admin. Te explico qué hace cada uno.</p>
+
+<h2>1. Detección de la versión del core</h2>
+<p>Buscamos la versión de WordPress por cuatro caminos: <code>&lt;meta name="generator"&gt;</code> en el HTML de la home, generator del feed RSS (<code>/feed/</code>), API JSON (<code>/wp-json/</code>) y el archivo <code>/readme.html</code>. Si todos coinciden con la última versión estable, OK. Si detectamos una versión inferior, te marcamos cuántas minor o major versiones llevas de retraso.</p>
+<p><strong>Por qué importa:</strong> el equipo de WordPress publica parches de seguridad cada pocas semanas. Versiones >12 meses antiguas suelen tener al menos 1-2 CVEs públicos explotables.</p>
+
+<h2>2. xmlrpc.php expuesto</h2>
+<p>Comprobamos si <code>/xmlrpc.php</code> responde 200 con cabecera XML-RPC. Si responde, está abierto.</p>
+<p><strong>Por qué importa:</strong> xmlrpc.php permite hacer login con una única petición HTTP (en vez de pasar por el formulario de wp-login.php) y, peor aún, soporta el método <code>system.multicall</code> que ejecuta cientos de logins en una sola petición. Resultado: fuerza bruta acelerada 100x. Además es un vector clásico de amplificación pingback DDoS.</p>
+<p><strong>Cómo arreglarlo:</strong> si no usas Jetpack ni edición móvil remota, bloquéalo en .htaccess o nginx. Una sola línea.</p>
+
+<h2>3. Enumeración de usuarios vía wp-json</h2>
+<p>Hacemos GET a <code>/wp-json/wp/v2/users</code>. Si responde con una lista de usuarios, los enumeramos (hasta los 5 primeros, sin recoger emails ni datos sensibles).</p>
+<p><strong>Por qué importa:</strong> cualquier atacante puede leer los nombres de usuario reales de tus administradores sin necesidad de adivinar. Combinado con xmlrpc abierto o con un wp-login.php sin captcha = fuerza bruta dirigida en horas.</p>
+<p><strong>Cómo arreglarlo:</strong> plugin "Stop User Enumeration" o regla nginx que bloquee la ruta. Lleva 5 minutos.</p>
+
+<h2>4. Plugins activos y cruce con CVEs conocidos</h2>
+<p>Extraemos los slugs de plugin de las URLs <code>/wp-content/plugins/[slug]/</code> presentes en el HTML. Cruzamos con nuestra lista interna de plugins con vulnerabilidades públicas conocidas (WP File Manager RCE pre-auth, Duplicator antiguos, Elementor con XSS, Contact Form 7 con upload vulnerable, etc.).</p>
+<p><strong>Por qué importa:</strong> el plugin obsoleto es el vector #1 de hackeo de WordPress en 2026. Algunos CVEs son tan graves que permiten ejecución remota de código sin autenticación.</p>
+<p><strong>Limitación:</strong> solo detectamos plugins que dejan rastro en el HTML público. Los plugins de admin-only no los vemos (es esperado).</p>
+
+<h2>5. Theme activo y versión</h2>
+<p>Identificamos el theme por la ruta <code>/wp-content/themes/[slug]/</code>. Conocer el theme ayuda a detectar themes premium descontinuados o themes nulled (piratas) con backdoors preinstaladas.</p>
+
+<h2>6. Archivos sensibles expuestos</h2>
+<p>Probamos seis rutas típicas que <strong>nunca deberían estar accesibles desde el navegador</strong>:</p>
+<ul>
+  <li><code>/wp-config.php.bak</code> y <code>/wp-config.php~</code>: backups con credenciales DB en claro.</li>
+  <li><code>/.wp-config.php.swp</code>: archivo swap de vim — credenciales DB recuperables.</li>
+  <li><code>/wp-admin/install.php</code>: permite reinstalar la web con credenciales del atacante.</li>
+  <li><code>/readme.html</code>: filtra versión exacta de WordPress.</li>
+  <li><code>/wp-content/debug.log</code>: errores y paths internos.</li>
+</ul>
+<p><strong>Cómo arreglarlo:</strong> borrar los archivos. Si no puedes borrarlos, bloquearlos por .htaccess.</p>
+
+<h2>7. SSL/TLS y caducidad del certificado</h2>
+<p>Comprobamos si tu dominio tiene HTTPS, si el certificado es válido y cuántos días faltan para que expire. Si caduca en <30 días, te avisamos. Si ya caducó, alerta crítica.</p>
+
+<h2>8. Puertos críticos abiertos</h2>
+<p>Escaneo de puertos críticos (MySQL, RDP, MongoDB, Redis, PostgreSQL, MSSQL). Tu hosting nunca debería exponer estos puertos al exterior — si responden, hay un riesgo real de robo de base de datos.</p>
+
+<h2>9. Configuración DNS (SPF + DMARC)</h2>
+<p>Comprobamos SPF y DMARC de tu dominio. Si faltan, cualquiera puede enviar emails haciéndose pasar por tu empresa — vector clásico de Business Email Compromise.</p>
+
+<h2>10. Cabeceras HTTP de seguridad</h2>
+<p>Verificamos las cabeceras críticas: <code>Content-Security-Policy</code>, <code>X-Frame-Options</code>, <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code>. Configurarlas no requiere tocar WordPress, solo tu nginx/Apache.</p>
+
+<h2>11. Subdominios visibles</h2>
+<p>Análisis pasivo de subdominios. Te mostramos los detectados. Útil para encontrar entornos de staging, paneles internos o servicios olvidados que también deberían auditarse.</p>
+
+<h2>12. Filtraciones de credenciales asociadas al dominio</h2>
+<p>Cuando proporcionas un email empresarial, cruzamos con HaveIBeenPwned para ver si las credenciales asociadas han aparecido en alguna brecha pública (LinkedIn 2021, Adobe, Dropbox, etc.). Si tu admin reusa contraseña, esta es la entrada que un atacante encontrará primero.</p>
+
+<h2>Cómo se ve el resultado</h2>
+<p>El informe que recibes tiene:</p>
+<ul>
+  <li><strong>Riesgo global (0-100%)</strong> con código de color: verde si <40, ámbar si 40-69, rojo si ≥70.</li>
+  <li><strong>Tarjetas por categoría</strong>: una por cada uno de los 12 checks, con severidad y descripción del hallazgo.</li>
+  <li><strong>Desglose de penalizaciones</strong>: cuánto pesa cada hallazgo en el riesgo total.</li>
+  <li><strong>Plan de remediación</strong> con pasos concretos por cada problema detectado.</li>
+</ul>
+<p>Y, si te registras gratis, también recibes:</p>
+<ul>
+  <li>PDF ejecutivo profesional para mandar a dirección o cumplir RGPD/NIS2.</li>
+  <li>Monitorización 24/7: reescaneo automático y alerta inmediata si aparece un problema nuevo.</li>
+  <li>Histórico de escaneos para ver evolución.</li>
+  <li>Verificación de filtraciones de email contra HaveIBeenPwned ilimitada.</li>
+</ul>
+
+<h2>Limitaciones honestas</h2>
+<p>Esta auditoría externa cubre el 80% del riesgo común de WordPress, pero <strong>no es un pentest</strong>. No detecta:</p>
+<ul>
+  <li>Plugins instalados sin rastro en HTML público (raros).</li>
+  <li>Vulnerabilidades específicas de tu código personalizado (custom plugins/themes).</li>
+  <li>Backdoors que se camuflen perfectamente en archivos PHP del core.</li>
+  <li>Configuraciones inseguras del wp-admin (capacidades de roles, etc.).</li>
+</ul>
+<p>Para eso necesitas un escáner interno como Wordfence o Sucuri, o una auditoría manual por un pentester. Pero <strong>la mayoría de hackeos detectables se previenen con esta capa externa</strong> — porque la mayoría de atacantes usan exactamente los mismos vectores que nuestros 12 checks miran.</p>
+
+<h2>Conclusión</h2>
+<p>La auditoría WordPress de ReconBase es lo que harías tú mismo si fueras pentester y tuvieras 60 segundos. <a href="/auditoria-wordpress">Pásala ahora a tu dominio</a> y mira el informe. Si todo sale en verde, perfecto — tienes evidencia de "due diligence" para auditorías de cumplimiento. Si sale algo en rojo, mejor lo arreglas antes de que un atacante lo encuentre.</p>
 """.strip()
     },
 ]
