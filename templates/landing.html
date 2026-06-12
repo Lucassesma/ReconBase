@@ -2049,6 +2049,28 @@ function renderDemoResult(d){
     }
   }
 
+  // CARD PRESTASHOP — solo si se detecta PS
+  if (d.ps && d.ps.is_prestashop) {
+    var psIssues = [];
+    if (d.ps.version_outdated) psIssues.push('versión obsoleta (' + (d.ps.version || '?') + ')');
+    if (d.ps.admin_path_default) psIssues.push('panel admin sin renombrar');
+    if (d.ps.install_dir_exposed) psIssues.push('/install/ accesible');
+    var vmC = (d.ps.vulnerable_modules || []).length;
+    if (vmC) psIssues.push(vmC + ' módulo' + (vmC>1?'s':'') + ' vulnerable' + (vmC>1?'s':''));
+    var sfpC = (d.ps.sensitive_files || []).length;
+    if (sfpC) psIssues.push(sfpC + ' archivo' + (sfpC>1?'s':'') + ' sensible' + (sfpC>1?'s':''));
+    if (!d.ps.https_forced) psIssues.push('HTTPS no forzado en checkout');
+    if (d.ps.skimmer_suspect) psIssues.push('posible SKIMMER en checkout');
+
+    if (psIssues.length === 0) {
+      html += demoCard('ok', 'PrestaShop detectado (' + (d.ps.version || 'versión desconocida') + ')', 'Sin hallazgos críticos. ' + (d.ps.modules_detected||[]).length + ' módulos cargados.');
+    } else {
+      var sevPs = (d.ps.skimmer_suspect || d.ps.install_dir_exposed || d.ps.admin_path_default || (d.ps.vulnerable_modules||[]).length > 0) ? 'crit' : 'warn';
+      html += demoCard(sevPs, 'PrestaShop vulnerable: ' + psIssues.length + ' hallazgo' + (psIssues.length>1?'s':''),
+        'PrestaShop ' + (d.ps.version || '?') + ' — ' + psIssues.slice(0,3).join(' · ') + (psIssues.length>3?'...':''));
+    }
+  }
+
   if(d.os) html+=demoCard('ok','Sistema detectado: '+d.os,'Información obtenida por análisis de banners de servicio.');
 
   html+='<div class="dr-card" style="border-color:#1E1B4B;border-left:3px solid #818CF8"><span class="dr-badge" style="background:rgba(129,140,248,.12);color:#818CF8">REQUIERE CUENTA</span><div class="dr-card-title">Filtraciones en bases de datos</div><div class="dr-card-desc">Crea una cuenta gratis para comprobar si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).</div></div>';

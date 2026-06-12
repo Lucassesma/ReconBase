@@ -189,6 +189,30 @@ function scRenderCards(d) {
     }
   }
 
+  // CARD PRESTASHOP DEDICADA
+  if (d.ps && d.ps.is_prestashop) {
+    var psHallazgos = [];
+    if (d.ps.version_outdated) psHallazgos.push('versión obsoleta (' + (d.ps.version || '?') + ')');
+    if (d.ps.admin_path_default) psHallazgos.push('panel admin sin renombrar (' + (d.ps.admin_path_found || '/admin') + ')');
+    if (d.ps.install_dir_exposed) psHallazgos.push('/install/ accesible');
+    var vmps = (d.ps.vulnerable_modules || []);
+    if (vmps.length) psHallazgos.push(vmps.length + ' módulo' + (vmps.length>1?'s':'') + ' vulnerable' + (vmps.length>1?'s':''));
+    var sfps = (d.ps.sensitive_files || []);
+    if (sfps.length) psHallazgos.push(sfps.length + ' archivo' + (sfps.length>1?'s':'') + ' sensible' + (sfps.length>1?'s':''));
+    if (!d.ps.https_forced) psHallazgos.push('HTTPS no forzado en checkout');
+    if (d.ps.skimmer_suspect) psHallazgos.push('posible SKIMMER en checkout');
+
+    if (psHallazgos.length === 0) {
+      html += scCard('ok', 'PrestaShop ' + (d.ps.version || '') + ' detectado', 'Sin hallazgos críticos. Módulos cargados: ' + (d.ps.modules_detected || []).length + '.');
+    } else {
+      var sevPs = (d.ps.skimmer_suspect || d.ps.install_dir_exposed || d.ps.admin_path_default || vmps.length > 0) ? 'crit' : 'warn';
+      var tituloPs = 'PrestaShop ' + (d.ps.version || '') + ' — ' + psHallazgos.length + ' hallazgo' + (psHallazgos.length>1?'s':'');
+      var descPs = psHallazgos.slice(0,4).join(' · ');
+      if (vmps.length) descPs += '. Módulos: ' + vmps.slice(0,2).map(function(p){return p.name;}).join(', ') + (vmps.length>2?'...':'');
+      html += scCard(sevPs, tituloPs, descPs, 'prestashop');
+    }
+  }
+
   if ((d.leaks || 0) > 0) {
     html += scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' detectada' + (d.leaks > 1 ? 's' : ''), (d.leaks_raw||[]).slice(0,3).map(function(f){return f.fuente||f;}).join(', ') || 'Credenciales comprometidas encontradas.', 'leaks');
   } else {
@@ -205,7 +229,8 @@ var SC_REMEDIATION = {
   'headers':  ['1. Accede a la configuración de tu servidor web (nginx/Apache) o panel de hosting.', '2. Añade las cabeceras faltantes en la configuración HTTP.', '3. Ejemplo nginx: add_header X-Frame-Options "SAMEORIGIN";', '4. Recarga la configuración del servidor y vuelve a escanear.'],
   'ssl':      ['1. Accede al panel de tu proveedor de hosting.', '2. Busca la sección "SSL/TLS" o "Certificados".', '3. Si usas Let\'s Encrypt, ejecuta: sudo certbot renew', '4. Activa la renovación automática para evitar que caduque de nuevo.'],
   'leaks':    ['1. Identifica qué contraseñas están comprometidas en el informe detallado.', '2. Cámbia esas contraseñas INMEDIATAMENTE en todos los servicios afectados.', '3. Activa la autenticación en dos factores (2FA) en los servicios críticos.', '4. Notifica a los empleados afectados y registra el incidente (obligatorio en RGPD).'],
-  'wordpress':['1. ACTUALIZA WordPress a la última versión desde Escritorio → Actualizaciones (¡haz backup antes!).', '2. Deshabilita xmlrpc.php si no usas Jetpack: en .htaccess añade <Files xmlrpc.php> Order Allow,Deny Deny from all </Files>.', '3. Bloquea la enumeración de usuarios: añade plugin "Stop User Enumeration" o regla nginx que bloquee /wp-json/wp/v2/users.', '4. ACTUALIZA TODOS los plugins desde Plugins → Actualizaciones. Elimina los que no uses.', '5. Borra archivos .bak, ~ , wp-admin/install.php y debug.log accesibles desde el navegador.', '6. Instala Wordfence o Sucuri para monitorización continua.']
+  'wordpress':['1. ACTUALIZA WordPress a la última versión desde Escritorio → Actualizaciones (¡haz backup antes!).', '2. Deshabilita xmlrpc.php si no usas Jetpack: en .htaccess añade <Files xmlrpc.php> Order Allow,Deny Deny from all </Files>.', '3. Bloquea la enumeración de usuarios: añade plugin "Stop User Enumeration" o regla nginx que bloquee /wp-json/wp/v2/users.', '4. ACTUALIZA TODOS los plugins desde Plugins → Actualizaciones. Elimina los que no uses.', '5. Borra archivos .bak, ~ , wp-admin/install.php y debug.log accesibles desde el navegador.', '6. Instala Wordfence o Sucuri para monitorización continua.'],
+  'prestashop':['1. Renombra el panel de administración: en SSH/FTP, cambia /admin a algo aleatorio como /admin-x7K9pQ. Actualiza el enlace en la URL del back-office.', '2. ELIMINA la carpeta /install/ inmediatamente — solo se usa durante la instalación inicial. Acceso público a esta carpeta permite reinstalar tu tienda.', '3. Actualiza PrestaShop a la última versión estable desde Mejoras → Actualizar (haz backup completo de la BD y archivos antes).', '4. Revisa el listado de módulos y actualiza/desinstala los marcados como vulnerables. Comprueba en addons.prestashop.com.', '5. Borra archivos sensibles expuestos: README.md, composer.lock, .env, /var/logs/. Configura .htaccess para bloquear acceso a estos paths.', '6. Activa HTTPS forzado en toda la tienda: Parámetros de la tienda → General → Activar SSL. Especialmente crítico en el checkout (RGPD + PCI-DSS).', '7. Si se detectó posible SKIMMER: inspecciona urgentemente el JavaScript de /order y /checkout. Compara con backup limpio. Cambia TODAS las contraseñas de admin y FTP. Notifica a la AEPD si hubo exfiltración de datos de tarjeta (72h).']
 };
 
 function scCard(type, title, desc, remedKey) {
