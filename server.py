@@ -3379,7 +3379,31 @@ def escaneo_automatico():
                     dns     = engine.check_email_spoofing(dominio)
                     headers = engine.check_security_headers(dominio)
                     subs    = engine.scan_subdomains(dominio)
+                    # CMS detection + auditoría específica WP/PS para detectar skimmers
+                    try:
+                        cms = engine.detect_cms(dominio)
+                    except Exception:
+                        cms = {"cms": None, "version": None}
+                    wp_audit = {"is_wordpress": False}
+                    ps_audit = {"is_prestashop": False}
+                    if cms.get("cms") == "WordPress":
+                        try: wp_audit = engine.wordpress_audit(dominio)
+                        except Exception: pass
+                    if cms.get("cms") == "PrestaShop":
+                        try: ps_audit = engine.prestashop_audit(dominio)
+                        except Exception: pass
+
                     riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+                    # Penalizaciones de WP/PS para que el riesgo refleje los hallazgos del CMS
+                    if wp_audit.get("is_wordpress"):
+                        if wp_audit.get("version_outdated"):  riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
+                        if wp_audit.get("xmlrpc_exposed"):    riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
+                        if wp_audit.get("vulnerable_plugins"): riesgo = min(100, riesgo + 10); desglose["Plugins WP vulnerables"] = 10
+                    if ps_audit.get("is_prestashop"):
+                        if ps_audit.get("skimmer_suspect"):     riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
+                        if ps_audit.get("install_dir_exposed"): riesgo = min(100, riesgo + 18); desglose["/install/ PrestaShop accesible"] = 18
+                        if ps_audit.get("admin_path_default"):  riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
+
                     label, color     = label_riesgo(riesgo)
                     resultado = {
                         "objetivo": objetivo, "dominio": dominio,
@@ -3388,6 +3412,7 @@ def escaneo_automatico():
                         "subs": subs, "leaks": 0, "leaks_raw": [],
                         "riesgo": riesgo, "label": label, "color": color,
                         "desglose": desglose,
+                        "cms": cms, "wp": wp_audit, "ps": ps_audit,
                         "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
                         "automatico": True
                     }
@@ -3395,6 +3420,37 @@ def escaneo_automatico():
                                 riesgo=riesgo, label=label, resultado=resultado)
                     db.session.add(scan)
                     db.session.commit()
+
+                    # ── NOTIFICACIÓN CRÍTICA: skimmer detectado en escaneo automático ──
+                    if ps_audit.get("is_prestashop") and ps_audit.get("skimmer_suspect"):
+                        try:
+                            ev = "; ".join((ps_audit.get("skimmer_evidence") or [])[:3])
+                            _crear_notificacion(
+                                user.id, 'scan',
+                                f"⚠️ ALERTA CRÍTICA: posible skimmer en {dominio}",
+                                f"La vigilancia ha detectado patrones de robo de tarjeta (Magecart) en el checkout de {dominio}. "
+                                f"Evidencia: {ev}. Revisa URGENTE y sigue el protocolo: copia forense, cambio de credenciales, "
+                                f"AEPD en 72h si confirmas exfiltración.",
+                                url=f"/scan/{scan.id}"
+                            )
+                            # Email aparte con sello de urgencia (no usa la plantilla normal de informe)
+                            try:
+                                with app.app_context():
+                                    send_html_email(
+                                        user.email,
+                                        f"[URGENTE] Posible skimmer detectado en {dominio}",
+                                        "⚠️ Alerta crítica: posible robo de tarjetas en tu checkout",
+                                        f"<p>La vigilancia nocturna ha detectado patrones característicos de skimmers digitales (Magecart) en el JavaScript de <strong>{dominio}</strong>.</p>"
+                                        f"<p><strong>Evidencia detectada:</strong><br>{ev}</p>"
+                                        f"<p>Esto NO es una confirmación forense, pero sí una alerta preliminar muy seria. Si tu tienda procesa pagos con tarjeta, sigue el protocolo de respuesta inmediatamente.</p>",
+                                        BASE_URL + f"/scan/{scan.id}",
+                                        "Ver informe completo"
+                                    )
+                            except Exception as ee:
+                                logger.warning(f"[Cron skimmer] email fallido: {ee}")
+                        except Exception as en:
+                            logger.warning(f"[Cron skimmer] notif fallida: {en}")
+
                     enviar_informe_automatico(user.email, dominio, riesgo, label, desglose, puertos, len(subs))
                     notificar_integraciones(user, resultado)
                     print(f"[Cron] Escaneado {dominio} para {user.email}")
