@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');if(v==='accepted'){gtag('consent','update',{'ad_storage':'granted','analytics_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(_){}
+</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprobar skimmer Magecart en tu tienda — Detector gratis · ReconBase</title>
+<meta name="description" content="Detecta si tu tienda online tiene un skimmer digital (Magecart) robando datos de tarjeta de tus clientes. Comprobación gratuita en 20 segundos. PrestaShop, sin registro.">
+<meta name="keywords" content="comprobar skimmer, magecart scanner, detectar skimmer prestashop, web skimmer, e-skimmer, robo datos tarjeta, checkout malware">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase.es/skimmer-check">
+<meta property="og:title" content="Detector de skimmers Magecart gratis — ReconBase">
+<meta property="og:description" content="Comprueba en 20 segundos si tu checkout tiene un skimmer digital robando tarjetas. Sin registro.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase.es/skimmer-check">
+<meta property="og:image" content="https://reconbase.es/og/home.png">
+<meta property="og:locale" content="es_ES">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Detector de skimmers Magecart","description":"Herramienta gratuita para comprobar si un dominio PrestaShop tiene un skimmer digital tipo Magecart en el JavaScript del checkout.","url":"https://reconbase.es/skimmer-check","applicationCategory":"SecurityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"es-ES"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"¿Qué es un skimmer digital?","acceptedAnswer":{"@type":"Answer","text":"JavaScript malicioso inyectado en el checkout de una tienda online que captura los datos de tarjeta de cada cliente que paga y los envía al servidor de un atacante. El cliente paga normalmente, su tarjeta queda comprometida y nadie nota nada hasta que llegan los cargos fraudulentos semanas después."}},
+{"@type":"Question","name":"¿Cómo detectáis skimmers?","acceptedAnswer":{"@type":"Answer","text":"Descargamos el HTML de tu home y de /order (checkout). Analizamos el JavaScript en busca de: dominios conocidos en blocklists Magecart, patrones de ofuscación (eval+atob, eval+unescape), addEventListener sobre keydown/submit, referencias a campos de tarjeta (cvv, card_number, cardholder). Si encontramos 3 o más patrones, alertamos."}},
+{"@type":"Question","name":"¿Es 100% fiable?","acceptedAnswer":{"@type":"Answer","text":"No. Es análisis pasivo externo: detecta lo más común pero un atacante avanzado con ofuscación a medida puede pasar desapercibido. Es la primera línea de defensa. Para certidumbre absoluta usa análisis forense con un proveedor especializado (Sansec, Sucuri, S2 Grupo)."}},
+{"@type":"Question","name":"¿Funciona con WooCommerce, Shopify o Magento?","acceptedAnswer":{"@type":"Answer","text":"Esta herramienta está optimizada para PrestaShop. Para Magento próximamente lanzaremos detector dedicado. Para WooCommerce/Shopify, el detector puede ejecutarse pero no entrega resultado garantizado."}}
+]}
+</script>
+
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
+<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--green:#22C55E;--green-dk:#15803D;--red:#EF4444;--amber:#F59E0B}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.6}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:1.5rem;font-size:.85rem}
+.nav-links a{color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff !important;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem}
+.hero{background:linear-gradient(160deg,#1a0a0e 0%,#241015 45%,#0d0f0a 100%);padding:4rem 6% 3rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 80%,rgba(239,68,68,.12) 0%,transparent 55%),radial-gradient(ellipse at 80% 20%,rgba(245,158,11,.08) 0%,transparent 45%)}
+.hero-inner{max-width:780px;margin:0 auto;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);padding:.35rem .85rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#FCA5A5;margin-bottom:1.25rem}
+.dot{width:6px;height:6px;border-radius:50%;background:#EF4444;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+h1{font-size:clamp(1.9rem,4vw,2.6rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-bottom:1rem}
+h1 em{font-style:normal;color:#FCA5A5}
+.hero-sub{font-size:clamp(.95rem,1.4vw,1.05rem);color:#FCD34D;max-width:580px;margin:0 auto 2rem;opacity:.95}
+.scan-form{max-width:560px;margin:0 auto;display:flex;gap:.5rem;flex-wrap:wrap}
+.scan-input{flex:1;min-width:220px;background:rgba(13,7,9,.7);border:1px solid rgba(239,68,68,.4);color:#F0FDF4;padding:.85rem 1.1rem;border-radius:8px;font-size:.95rem;outline:none;font-family:'Inter',sans-serif}
+.scan-input:focus{border-color:#EF4444;box-shadow:0 0 0 3px rgba(239,68,68,.15)}
+.scan-btn{background:linear-gradient(135deg,#B91C1C,#DC2626);color:#fff;border:none;padding:.85rem 1.6rem;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.scan-btn:disabled{opacity:.65;cursor:not-allowed}
+.trust-row{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:1.25rem;font-size:.78rem;color:rgba(252,211,77,.7)}
+.trust-row span{display:inline-flex;align-items:center;gap:.35rem}
+
+.results{max-width:780px;margin:2rem auto 0;padding:0 6%;display:none}
+.results.show{display:block}
+.verdict{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:10px;padding:1.5rem 1.75rem;margin-bottom:1.25rem}
+.verdict-crit{border-left-color:var(--red);background:rgba(239,68,68,.04)}
+.verdict-warn{border-left-color:var(--amber);background:rgba(245,158,11,.04)}
+.verdict-ok{border-left-color:var(--green);background:rgba(34,197,94,.04)}
+.verdict-info{border-left-color:#64748B}
+.verdict-label{font-size:.7rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem}
+.verdict-title{font-size:1.2rem;font-weight:800;margin-bottom:.5rem;color:#F0FDF4}
+.verdict-desc{font-size:.92rem;color:var(--muted-2);line-height:1.6}
+.evidence-list{margin-top:.85rem;background:#060D09;border:1px solid var(--border);border-radius:6px;padding:.85rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#FCA5A5;line-height:1.55}
+.evidence-list ul{margin:0;padding-left:1.1rem;list-style:disc}
+.cta-box{background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(245,158,11,.12));border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:1.5rem;margin-top:1.5rem;text-align:center}
+.cta-title{font-size:1.05rem;font-weight:800;color:#F0FDF4;margin-bottom:.4rem}
+.cta-sub{font-size:.85rem;color:#FCD34D;margin-bottom:1rem;line-height:1.55}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-weight:700;font-size:.85rem}
+
+.content{max-width:760px;margin:4rem auto 3rem;padding:0 6%}
+.content h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin:2.5rem 0 1rem;color:#F0FDF4}
+.content h2:first-child{margin-top:0}
+.content p{color:var(--muted-2);margin-bottom:1rem;font-size:.95rem}
+.content strong{color:#F0FDF4}
+.content code{background:var(--surface);border:1px solid var(--border);padding:.12rem .45rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#86EFAC}
+.faq{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.15rem 1.4rem;margin-bottom:.7rem}
+.faq-q{font-weight:700;font-size:.98rem;margin-bottom:.4rem;color:#F0FDF4}
+.faq-a{font-size:.88rem;color:var(--muted-2);line-height:1.6}
+footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.82rem;color:var(--muted);margin-top:3rem}
+footer a{color:var(--muted-2);margin:0 .6rem}
+@media(max-width:720px){nav{padding:.9rem 5%}.nav-links{display:none}.hero{padding:2.5rem 5% 2rem}.scan-form{flex-direction:column}.scan-btn{width:100%}.results{padding:0 5%}}
+</style>
+<link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
+</head>
+<body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<nav>
+  <a href="/" class="nav-logo">RECON<span style="color:var(--green)">BASE</span></a>
+  <div class="nav-links">
+    <a href="/auditoria-prestashop">PrestaShop</a>
+    <a href="/auditoria-wordpress">WordPress</a>
+    <a href="/blog">Blog</a>
+    <a href="/login">Entrar</a>
+    <a href="/register" class="btn-primary">Empezar</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="badge"><span class="dot"></span>detector Magecart · gratuito</div>
+    <h1>¿Tu tienda tiene un <em>skimmer</em> robando tarjetas?</h1>
+    <p class="hero-sub">Detector gratuito de skimmers digitales (Magecart) en el checkout de tu PrestaShop. <strong style="color:#FECACA">En 20 segundos sabrás si el JS de tu /order está limpio</strong> o si hay patrones sospechosos.</p>
+    <form class="scan-form" onsubmit="event.preventDefault();checkSkimmer();">
+      <input type="text" id="sk-domain" class="scan-input" placeholder="mitienda.com" autocomplete="off" required>
+      <button type="submit" class="scan-btn" id="sk-btn">Comprobar ahora</button>
+    </form>
+    <div class="trust-row">
+      <span>✓ sin registro</span>
+      <span>✓ no tocamos tu admin</span>
+      <span>✓ 20 segundos</span>
+    </div>
+  </div>
+</section>
+
+<section class="results" id="sk-results"></section>
+
+<section class="content">
+  <h2>¿Cómo funciona la detección?</h2>
+  <p>Cuando introduces un dominio, ReconBase hace 4 cosas en paralelo (sin tocar nada de tu tienda):</p>
+  <ol style="color:var(--muted-2);font-size:.95rem;margin:.5rem 0 1.5rem 1.5rem;line-height:1.7">
+    <li>Descarga el HTML de tu home y de tu <code>/order</code> (checkout).</li>
+    <li>Extrae todos los <code>&lt;script src="..."&gt;</code> y comprueba sus dominios contra blocklists Magecart públicas (sansec.io, PublicWWW, CCN-CERT).</li>
+    <li>Descarga el contenido de scripts del propio dominio y busca patrones típicos: <code>eval(atob(...))</code>, <code>document.write(unescape(...))</code>, <code>addEventListener('keydown'/'submit')</code> sobre formularios de pago, referencias a <code>card_number</code>, <code>cvv</code>, <code>cardholder</code>.</li>
+    <li>Si encuentra <strong>3 o más patrones</strong> o <strong>un dominio en blocklist</strong> o <strong>código ofuscado al final del &lt;body&gt; con referencias a campos de pago</strong>, te alerta.</li>
+  </ol>
+
+  <h2>Si te sale alerta, qué hacer</h2>
+  <p>La alerta es preliminar, no es confirmación forense. Pero hay que actuar como si lo fuera:</p>
+  <ol style="color:var(--muted-2);font-size:.95rem;margin:.5rem 0 1.5rem 1.5rem;line-height:1.75">
+    <li><strong>No toques nada en producción todavía.</strong> Haz copia forense completa: snapshot del servidor, dump de BD, HTML actual del checkout. Es prueba si denuncias.</li>
+    <li><strong>Cambia todas las contraseñas</strong> desde un equipo limpio: admin PrestaShop, FTP, hosting, base de datos, email.</li>
+    <li><strong>Compara archivos modificados</strong> con un backup anterior. Foco en <code>/modules/[nombre]/</code> y <code>/themes/[tema]/templates/checkout/</code>.</li>
+    <li><strong>Restaura desde backup limpio</strong> o contrata un servicio profesional (Sucuri, Sansec, S2 Grupo).</li>
+    <li><strong>Notifica a la AEPD en 72h</strong> si hubo exfiltración de datos personales (obligatorio RGPD art. 33).</li>
+    <li><strong>Avisa a tu pasarela de pago</strong>. Pueden identificar tarjetas comprometidas y notificar a las víctimas.</li>
+  </ol>
+  <p>Guía completa con casos reales y prevención: <a href="/blog/skimmers-digitales-prestashop-magecart-2026">Skimmers digitales en PrestaShop (guía 2026)</a>.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq"><div class="faq-q">¿Qué es un skimmer digital?</div><div class="faq-a">JavaScript malicioso inyectado en el checkout de una tienda online que captura los datos de tarjeta de cada cliente que paga y los envía al servidor de un atacante. El cliente paga normalmente, su tarjeta queda comprometida y nadie nota nada hasta que llegan los cargos fraudulentos semanas después.</div></div>
+  <div class="faq"><div class="faq-q">¿Es 100% fiable?</div><div class="faq-a">No. Es análisis pasivo externo: detecta lo más común pero un atacante avanzado con ofuscación a medida puede pasar desapercibido. Es la primera línea de defensa. Para certidumbre absoluta usa análisis forense con un proveedor especializado.</div></div>
+  <div class="faq"><div class="faq-q">¿Funciona con WooCommerce, Shopify o Magento?</div><div class="faq-a">Esta herramienta está optimizada para PrestaShop. Para Magento próximamente lanzaremos detector dedicado. Para otros CMS, el detector puede ejecutarse pero no entrega resultado garantizado.</div></div>
+  <div class="faq"><div class="faq-q">¿Por qué hacéis esto gratis?</div><div class="faq-a">Porque el cliente típico que descubre que está afectado se convierte en cuenta Pro: necesita monitorización 24/7 del checkout, alertas inmediatas y el informe ejecutivo para notificar a la AEPD. Nuestro objetivo es que descubras el problema con nuestra herramienta gratuita y luego decidas si quieres que vigilemos por ti.</div></div>
+</section>
+
+<footer>
+  <a href="/auditoria-prestashop">Auditoría PrestaShop completa</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a>
+  <div style="margin-top:1rem;font-size:.72rem;color:var(--muted)">© ReconBase · Detector Magecart para tiendas online</div>
+</footer>
+
+<script>
+function checkSkimmer(){
+  var v=(document.getElementById('sk-domain').value||'').trim();
+  if(!v){document.getElementById('sk-domain').focus();return;}
+  try{if(window.gtag)gtag('event','skimmer_check_started',{domain:v});}catch(_){}
+  try{if(window.plausible)plausible('Skimmer Check',{props:{domain:v}});}catch(_){}
+  var btn=document.getElementById('sk-btn');btn.textContent='Comprobando...';btn.disabled=true;
+  var res=document.getElementById('sk-results');
+  res.classList.add('show');
+  res.innerHTML='<div class="verdict verdict-info"><div class="verdict-label">Analizando</div><div class="verdict-title">Descargando JavaScript de '+v+'</div><div class="verdict-desc">Esto suele tardar 10-20 segundos. Estamos descargando home + /order y analizando los scripts.</div></div>';
+
+  fetch('/api/skimmer-check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dominio:v})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    btn.textContent='Comprobar ahora';btn.disabled=false;
+    if(d.error){
+      res.innerHTML='<div class="verdict verdict-warn"><div class="verdict-label">Error</div><div class="verdict-title">'+d.error+'</div><div class="verdict-desc">Comprueba el dominio e inténtalo de nuevo.</div></div>';
+      return;
+    }
+    var html='';
+    if(d.skimmer_suspect){
+      var evList=(d.skimmer_evidence||[]).map(function(e){return '<li>'+e+'</li>';}).join('');
+      html+='<div class="verdict verdict-crit"><div class="verdict-label">⚠ Alerta crítica</div><div class="verdict-title">Posible skimmer detectado en '+d.dominio+'</div><div class="verdict-desc">Detectados patrones característicos de Magecart en el JavaScript del checkout. Esto NO es una confirmación forense, pero sí una alerta preliminar muy seria. Si tu tienda procesa pagos con tarjeta, sigue el protocolo de respuesta URGENTE.</div>'+(evList?'<div class="evidence-list"><ul>'+evList+'</ul></div>':'')+'</div>';
+      html+='<div class="cta-box"><div class="cta-title">Quiero vigilancia 24/7 del checkout</div><div class="cta-sub">Con la cuenta Pro tienes monitorización continua: reescaneo cada hora, alerta inmediata por email + in-app cuando aparece un skimmer y PDF ejecutivo para notificar AEPD.</div><a href="/register" class="cta-btn">Crear cuenta gratis →</a></div>';
+    } else if(d.is_prestashop){
+      html+='<div class="verdict verdict-ok"><div class="verdict-label">✓ Sin patrones sospechosos</div><div class="verdict-title">PrestaShop '+(d.version||'')+' — JavaScript del checkout limpio</div><div class="verdict-desc">No hemos detectado patrones Magecart en el JS analizado. Esto es buena señal, pero recuerda que la detección externa tiene límites: los skimmers avanzados pueden pasar desapercibidos. Para certidumbre máxima activa monitorización continua.</div></div>';
+      html+='<div class="cta-box"><div class="cta-title">¿Quieres vigilancia continua?</div><div class="cta-sub">Hoy salió limpio, pero mañana puede no estarlo. Cuenta Pro = reescaneo automático y alerta inmediata si aparece un skimmer.</div><a href="/register" class="cta-btn">Activar vigilancia gratis →</a></div>';
+    } else {
+      html+='<div class="verdict verdict-info"><div class="verdict-label">Información</div><div class="verdict-title">No se detectó PrestaShop en '+d.dominio+'</div><div class="verdict-desc">'+(d.note||'Este detector está optimizado para PrestaShop. Para análisis general usa nuestra auditoría completa.')+'</div></div>';
+      html+='<div class="cta-box"><div class="cta-title">Auditoría completa (cualquier web)</div><div class="cta-sub">Si quieres un análisis de seguridad genérico que cubre cualquier dominio (puertos, SSL, DNS, cabeceras, filtraciones), prueba el escáner principal de ReconBase.</div><a href="/" class="cta-btn">Probar escáner completo →</a></div>';
+    }
+    res.innerHTML=html;
+    res.scrollIntoView({behavior:'smooth',block:'start'});
+  })
+  .catch(function(){btn.textContent='Comprobar ahora';btn.disabled=false;toast('Error de conexión','err');});
+}
+</script>
+</body>
+</html>

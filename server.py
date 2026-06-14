@@ -306,6 +306,7 @@ def sitemap():
         {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-wordpress",  "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-prestashop", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/skimmer-check",        "priority": "0.85","changefreq": "monthly", "lastmod": today},
         {"loc": base + "/status",  "priority": "0.5",  "changefreq": "daily",   "lastmod": today},
     ]
     # Añadir posts del blog con su lastmod real
@@ -444,6 +445,65 @@ def landing_prestashop():
     """Landing especializada para auditoría PrestaShop. SEO-first.
     Incluye detector de skimmers digitales (diferenciador 2026)."""
     return render_template("landing_prestashop.html")
+
+@app.route("/skimmer-check")
+def tool_skimmer_check():
+    """Herramienta gratuita standalone: solo detector de skimmers Magecart.
+    SEO ultra-específico ('comprobar skimmer prestashop', 'magecart scanner')."""
+    return render_template("tool_skimmer_check.html")
+
+@app.route("/api/skimmer-check", methods=["POST"])
+@limiter.limit("20 per hour")
+def api_skimmer_check():
+    """Endpoint público que ejecuta SOLO el check de skimmer sobre un dominio.
+    No requiere registro. Devuelve si hay sospecha + evidencia + ruta de checkout."""
+    import re as _re
+    data = request.get_json(silent=True) or {}
+    raw  = (data.get("dominio") or "").strip()[:255]
+    if not raw:
+        return jsonify({"error": "Introduce un dominio"}), 400
+    dominio = _re.sub(r'^https?://', '', raw, flags=_re.IGNORECASE)
+    dominio = dominio.replace("www.", "").split("/")[0].strip().lower()
+    if not dominio or "." not in dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+
+    try:
+        ps = engine.prestashop_audit(dominio)
+    except Exception as e:
+        logger.warning(f"[skimmer-check] error en {dominio}: {e}")
+        return jsonify({"error": "No se pudo escanear el dominio (timeout o respuesta inválida)"}), 500
+
+    response = {
+        "dominio": dominio,
+        "is_prestashop": ps.get("is_prestashop", False),
+        "version": ps.get("version"),
+        "skimmer_suspect": ps.get("skimmer_suspect", False),
+        "skimmer_evidence": ps.get("skimmer_evidence", []),
+        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+    }
+    # Si NO es PrestaShop, devolvemos respuesta correcta pero sin análisis (la heurística PS solo aplica a PS)
+    if not ps.get("is_prestashop"):
+        response["note"] = ("No se detectó PrestaShop en este dominio. El detector de skimmers de ReconBase "
+                            "está optimizado para tiendas PrestaShop. Para análisis genérico usa la auditoría completa.")
+    # Tracking ligero: guardar en AnonymousScan para verlo en /admin/metricas
+    try:
+        ip_real = (request.headers.get("CF-Connecting-IP")
+                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                   or request.remote_addr or "")
+        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
+        label = "SKIMMER" if ps.get("skimmer_suspect") else ("PS-OK" if ps.get("is_prestashop") else "NO-PS")
+        db.session.add(AnonymousScan(
+            dominio=dominio[:255],
+            riesgo=100 if ps.get("skimmer_suspect") else 0,
+            label=label[:20], ip_hash=ip_h,
+            referer=(request.headers.get("Referer") or "")[:255],
+            user_agent=(request.headers.get("User-Agent") or "")[:100],
+            es_logged=bool(getattr(current_user, "is_authenticated", False))
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return jsonify(response)
 
 @app.route("/api/check-dmarc-spf", methods=["POST"])
 @limiter.limit("30 per hour")
