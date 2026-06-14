@@ -304,9 +304,11 @@ def sitemap():
         {"loc": base + "/cookies", "priority": "0.3",  "changefreq": "yearly",  "lastmod": today},
         {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly",  "lastmod": today},
         {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/herramientas",         "priority": "0.9", "changefreq": "weekly",  "lastmod": today},
         {"loc": base + "/auditoria-wordpress",  "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-prestashop", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/skimmer-check",        "priority": "0.85","changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/comprobar-cabeceras-http", "priority": "0.85","changefreq": "monthly", "lastmod": today},
         {"loc": base + "/status",  "priority": "0.5",  "changefreq": "daily",   "lastmod": today},
     ]
     # Añadir posts del blog con su lastmod real
@@ -451,6 +453,77 @@ def tool_skimmer_check():
     """Herramienta gratuita standalone: solo detector de skimmers Magecart.
     SEO ultra-específico ('comprobar skimmer prestashop', 'magecart scanner')."""
     return render_template("tool_skimmer_check.html")
+
+@app.route("/herramientas")
+def hub_herramientas():
+    """Hub SEO que agrupa todas las herramientas gratuitas. Mejora el
+    interlinking interno y capta búsquedas tipo 'herramientas seguridad web gratis'."""
+    return render_template("herramientas.html")
+
+@app.route("/comprobar-cabeceras-http")
+def tool_headers():
+    """Herramienta gratuita: comprobar cabeceras de seguridad HTTP.
+    SEO: 'comprobar cabeceras seguridad', 'security headers test español'."""
+    return render_template("tool_headers.html")
+
+@app.route("/api/check-headers", methods=["POST"])
+@limiter.limit("30 per hour")
+def api_check_headers():
+    """Comprueba las cabeceras de seguridad HTTP de un dominio. Público, sin login."""
+    import re as _re
+    data = request.get_json(silent=True) or {}
+    raw  = (data.get("dominio") or "").strip()[:255]
+    if not raw:
+        return jsonify({"error": "Introduce un dominio"}), 400
+    dominio = raw.split("@")[-1] if "@" in raw else raw
+    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
+    if not dominio or "." not in dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+    try:
+        headers = engine.check_security_headers(dominio)
+    except Exception as e:
+        logger.warning(f"[check-headers] error {dominio}: {e}")
+        return jsonify({"error": "No se pudo conectar con el dominio"}), 500
+    # headers es {nombre_amigable: bool}. Calcular nota A-F.
+    total = len(headers) if headers else 6
+    presentes = sum(1 for v in headers.values() if v)
+    pct = round(presentes / total * 100) if total else 0
+    if   pct >= 95: nota = "A"
+    elif pct >= 80: nota = "B"
+    elif pct >= 60: nota = "C"
+    elif pct >= 40: nota = "D"
+    elif pct >= 20: nota = "E"
+    else:           nota = "F"
+    # Mapa de explicaciones por cabecera
+    explica = {
+        "HSTS": "Fuerza HTTPS en todas las conexiones. Sin ella, un atacante puede degradar a HTTP y espiar.",
+        "Anti-Clickjacking": "Impide que tu web se cargue dentro de un iframe malicioso (clickjacking).",
+        "MIME-Sniffing": "Evita que el navegador interprete archivos como un tipo distinto al declarado.",
+        "CSP": "La defensa más potente contra XSS e inyección de scripts. Define qué recursos pueden cargarse.",
+        "Referrer-Policy": "Controla cuánta información de tu URL se envía al navegar a otros sitios.",
+        "Permissions-Policy": "Limita el acceso a cámara, micrófono, geolocalización, etc. desde tu web.",
+    }
+    detalle = [{"nombre": k, "presente": bool(v), "explica": explica.get(k, "")} for k, v in headers.items()]
+    # Tracking ligero
+    try:
+        ip_real = (request.headers.get("CF-Connecting-IP")
+                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                   or request.remote_addr or "")
+        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
+        db.session.add(AnonymousScan(
+            dominio=dominio[:255], riesgo=100 - pct, label=f"HDR-{nota}"[:20], ip_hash=ip_h,
+            referer=(request.headers.get("Referer") or "")[:255],
+            user_agent=(request.headers.get("User-Agent") or "")[:100],
+            es_logged=bool(getattr(current_user, "is_authenticated", False))
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return jsonify({
+        "dominio": dominio, "nota": nota, "porcentaje": pct,
+        "presentes": presentes, "total": total, "detalle": detalle,
+        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+    })
 
 @app.route("/api/skimmer-check", methods=["POST"])
 @limiter.limit("20 per hour")

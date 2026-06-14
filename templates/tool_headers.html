@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');if(v==='accepted'){gtag('consent','update',{'ad_storage':'granted','analytics_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(_){}
+</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprobar cabeceras de seguridad HTTP gratis — Test HSTS, CSP, X-Frame · ReconBase</title>
+<meta name="description" content="Analiza gratis las cabeceras de seguridad HTTP de tu web y obtén una nota A-F. Comprueba HSTS, CSP, X-Frame-Options, X-Content-Type-Options y más. Con guía para arreglarlas.">
+<meta name="keywords" content="comprobar cabeceras seguridad, security headers test, test HSTS, comprobar CSP, cabeceras HTTP seguridad, analizar headers web">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase.es/comprobar-cabeceras-http">
+<meta property="og:title" content="Comprobar cabeceras de seguridad HTTP — Test gratis con nota A-F">
+<meta property="og:description" content="Analiza las cabeceras de seguridad de tu web en 5 segundos. Nota A-F + guía para arreglar cada una. Gratis, sin registro.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase.es/comprobar-cabeceras-http">
+<meta property="og:image" content="https://reconbase.es/og/home.png">
+<meta property="og:locale" content="es_ES">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Comprobador de cabeceras HTTP","description":"Herramienta gratuita para analizar las cabeceras de seguridad HTTP de un sitio web y obtener una nota de la A a la F.","url":"https://reconbase.es/comprobar-cabeceras-http","applicationCategory":"SecurityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"es-ES"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"¿Qué son las cabeceras de seguridad HTTP?","acceptedAnswer":{"@type":"Answer","text":"Son instrucciones que tu servidor envía al navegador del visitante para reforzar la seguridad: forzar HTTPS (HSTS), impedir que tu web se cargue en un iframe malicioso (X-Frame-Options), bloquear scripts no autorizados (CSP), etc. Configurarlas no requiere tocar tu aplicación, solo la configuración del servidor web."}},
+{"@type":"Question","name":"¿Qué cabeceras analizáis?","acceptedAnswer":{"@type":"Answer","text":"HSTS (Strict-Transport-Security), CSP (Content-Security-Policy), X-Frame-Options, X-Content-Type-Options, Referrer-Policy y Permissions-Policy. Son las seis cabeceras de seguridad recomendadas por OWASP."}},
+{"@type":"Question","name":"¿Cómo se calcula la nota?","acceptedAnswer":{"@type":"Answer","text":"Otorgamos una nota de la A a la F según el porcentaje de cabeceras de seguridad presentes. A = todas configuradas, F = ninguna. La mayoría de webs españolas sin mantenimiento sacan entre D y F."}}
+]}
+</script>
+
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
+<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--green:#22C55E;--green-dk:#15803D;--red:#EF4444;--amber:#F59E0B}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.6}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:1.5rem;font-size:.85rem}
+.nav-links a{color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff !important;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem}
+.hero{background:linear-gradient(160deg,#021a0a 0%,#052e16 45%,#063a1c 100%);padding:3.5rem 6% 2.5rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 80%,rgba(22,163,74,.14) 0%,transparent 55%)}
+.hero-inner{max-width:760px;margin:0 auto;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:.35rem .85rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;margin-bottom:1.25rem}
+.dot{width:6px;height:6px;border-radius:50%;background:#22C55E}
+h1{font-size:clamp(1.8rem,3.6vw,2.5rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-bottom:.85rem}
+h1 em{font-style:normal;color:#4ADE80}
+.hero-sub{font-size:clamp(.95rem,1.4vw,1.05rem);color:#86EFAC;max-width:560px;margin:0 auto 2rem;opacity:.92}
+.scan-form{max-width:560px;margin:0 auto;display:flex;gap:.5rem;flex-wrap:wrap}
+.scan-input{flex:1;min-width:220px;background:rgba(6,13,9,.7);border:1px solid rgba(22,163,74,.4);color:#F0FDF4;padding:.85rem 1.1rem;border-radius:8px;font-size:.95rem;outline:none;font-family:'Inter',sans-serif}
+.scan-input:focus{border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.scan-btn{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.6rem;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.scan-btn:disabled{opacity:.65;cursor:not-allowed}
+.results{max-width:760px;margin:2rem auto 0;padding:0 6%;display:none}
+.results.show{display:block}
+.grade-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.grade{font-size:3.5rem;font-weight:800;line-height:1;width:90px;height:90px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.grade-A,.grade-B{background:rgba(34,197,94,.15);color:#4ADE80}
+.grade-C,.grade-D{background:rgba(245,158,11,.15);color:#FCD34D}
+.grade-E,.grade-F{background:rgba(239,68,68,.15);color:#FCA5A5}
+.grade-info{flex:1;min-width:200px}
+.grade-info .dom{font-family:'JetBrains Mono',monospace;font-size:.9rem;color:var(--muted-2)}
+.grade-info .score{font-size:1.3rem;font-weight:700;color:#F0FDF4;margin:.2rem 0}
+.grade-info .sub{font-size:.85rem;color:var(--muted)}
+.hdr-row{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;margin-bottom:.6rem;display:flex;align-items:start;gap:.75rem}
+.hdr-status{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;margin-top:.1rem}
+.hdr-ok{background:rgba(34,197,94,.18);color:#4ADE80}
+.hdr-no{background:rgba(239,68,68,.18);color:#FCA5A5}
+.hdr-body .name{font-size:.9rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+.hdr-body .name.ok{color:#86EFAC}
+.hdr-body .name.no{color:#FCA5A5}
+.hdr-body .exp{font-size:.8rem;color:var(--muted-2);line-height:1.5;margin-top:.15rem}
+.cta-box{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.16));border:1px solid rgba(34,197,94,.35);border-radius:12px;padding:1.5rem;margin-top:1.5rem;text-align:center}
+.cta-title{font-size:1.05rem;font-weight:800;color:#F0FDF4;margin-bottom:.4rem}
+.cta-sub{font-size:.85rem;color:#86EFAC;margin-bottom:1rem;line-height:1.55}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-weight:700;font-size:.85rem}
+.content{max-width:760px;margin:4rem auto 3rem;padding:0 6%}
+.content h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin:2.5rem 0 1rem;color:#F0FDF4}
+.content h2:first-child{margin-top:0}
+.content p{color:var(--muted-2);margin-bottom:1rem;font-size:.95rem}
+.content code{background:var(--surface);border:1px solid var(--border);padding:.12rem .45rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:#86EFAC}
+.content pre{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#86EFAC;margin:.75rem 0 1.25rem;line-height:1.7}
+.faq{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.15rem 1.4rem;margin-bottom:.7rem}
+.faq-q{font-weight:700;font-size:.98rem;margin-bottom:.4rem;color:#F0FDF4}
+.faq-a{font-size:.88rem;color:var(--muted-2);line-height:1.6}
+footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.82rem;color:var(--muted);margin-top:3rem}
+footer a{color:var(--muted-2);margin:0 .6rem}
+@media(max-width:720px){nav{padding:.9rem 5%}.nav-links{display:none}.hero{padding:2.5rem 5% 2rem}.scan-form{flex-direction:column}.scan-btn{width:100%}.results{padding:0 5%}}
+</style>
+<link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
+</head>
+<body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<nav>
+  <a href="/" class="nav-logo">RECON<span style="color:var(--green)">BASE</span></a>
+  <div class="nav-links">
+    <a href="/herramientas">Herramientas</a>
+    <a href="/blog">Blog</a>
+    <a href="/pricing">Precios</a>
+    <a href="/register" class="btn-primary">Empezar gratis</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="badge"><span class="dot"></span>test gratis · nota A-F</div>
+    <h1>Comprobar <em>cabeceras de seguridad</em> HTTP</h1>
+    <p class="hero-sub">Analiza las 6 cabeceras de seguridad recomendadas por OWASP y obtén una nota de la A a la F, con explicación de cada una y cómo arreglarlas.</p>
+    <form class="scan-form" onsubmit="event.preventDefault();checkHeaders();">
+      <input type="text" id="hd-domain" class="scan-input" placeholder="tudominio.com" autocomplete="off" required>
+      <button type="submit" class="scan-btn" id="hd-btn">Analizar cabeceras</button>
+    </form>
+  </div>
+</section>
+
+<section class="results" id="hd-results"></section>
+
+<section class="content">
+  <h2>¿Qué son las cabeceras de seguridad HTTP?</h2>
+  <p>Son instrucciones que tu servidor envía al navegador del visitante para reforzar la seguridad. No cambian el contenido de tu web, pero le dicen al navegador cómo comportarse de forma más segura: forzar HTTPS, impedir que tu web se cargue en un iframe malicioso, bloquear scripts no autorizados, etc.</p>
+  <p>Lo mejor: <strong style="color:#F0FDF4">configurarlas no requiere tocar tu aplicación</strong>, solo la configuración de tu servidor web (nginx, Apache) o tu CDN (Cloudflare). Son una de las mejoras de seguridad con mejor relación esfuerzo/impacto que existen.</p>
+
+  <h2>Las 6 cabeceras que analizamos</h2>
+  <p><strong style="color:#F0FDF4">Strict-Transport-Security (HSTS)</strong> — fuerza que todas las conexiones sean por HTTPS. Sin ella, un atacante en la misma red puede degradar la conexión a HTTP y espiar el tráfico.</p>
+  <p><strong style="color:#F0FDF4">Content-Security-Policy (CSP)</strong> — la defensa más potente contra XSS. Define qué orígenes pueden cargar scripts, estilos e imágenes. Es la cabecera que mejor protege contra inyección de código (y contra skimmers Magecart en tiendas online).</p>
+  <p><strong style="color:#F0FDF4">X-Frame-Options</strong> — impide que tu web se cargue dentro de un iframe en otro sitio (ataques de clickjacking).</p>
+  <p><strong style="color:#F0FDF4">X-Content-Type-Options</strong> — evita que el navegador "adivine" el tipo de un archivo y lo ejecute como algo distinto a lo declarado.</p>
+  <p><strong style="color:#F0FDF4">Referrer-Policy</strong> — controla cuánta información de tu URL se filtra al navegar a otros sitios.</p>
+  <p><strong style="color:#F0FDF4">Permissions-Policy</strong> — limita qué APIs del navegador (cámara, micrófono, geolocalización) puede usar tu web.</p>
+
+  <h2>Cómo añadirlas en nginx</h2>
+  <pre><code>add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Content-Security-Policy "default-src 'self'" always;
+add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;</code></pre>
+  <p>Tras añadirlas, recarga la configuración (<code>nginx -s reload</code>) y vuelve a analizar tu dominio aquí para confirmar que la nota subió.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq"><div class="faq-q">¿Cómo se calcula la nota?</div><div class="faq-a">Otorgamos una nota de la A a la F según el porcentaje de cabeceras de seguridad presentes. A = todas configuradas, F = ninguna. La mayoría de webs españolas sin mantenimiento sacan entre D y F.</div></div>
+  <div class="faq"><div class="faq-q">¿Configurar CSP puede romper mi web?</div><div class="faq-a">Sí, CSP es la más delicada: si la pones demasiado estricta puede bloquear scripts legítimos. Empieza con una política permisiva en modo Report-Only, revisa los informes y endurécela gradualmente.</div></div>
+  <div class="faq"><div class="faq-q">¿Y si uso Cloudflare?</div><div class="faq-a">Puedes añadir las cabeceras desde Cloudflare → Rules → Transform Rules → Modify Response Header, sin tocar tu servidor de origen. Es la forma más rápida.</div></div>
+</section>
+
+<footer>
+  <a href="/herramientas">Todas las herramientas</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a>
+  <div style="margin-top:1rem;font-size:.72rem;color:var(--muted)">© ReconBase · Herramientas de seguridad para PYMEs españolas</div>
+</footer>
+
+<script>
+function checkHeaders(){
+  var v=(document.getElementById('hd-domain').value||'').trim();
+  if(!v){document.getElementById('hd-domain').focus();return;}
+  try{if(window.gtag)gtag('event','headers_check_started',{domain:v});}catch(_){}
+  try{if(window.plausible)plausible('Headers Check',{props:{domain:v}});}catch(_){}
+  var btn=document.getElementById('hd-btn');btn.textContent='Analizando...';btn.disabled=true;
+  var res=document.getElementById('hd-results');res.classList.add('show');
+  res.innerHTML='<div class="grade-card"><div style="color:var(--muted)">Conectando con '+v+' y leyendo cabeceras...</div></div>';
+
+  fetch('/api/check-headers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dominio:v})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    btn.textContent='Analizar cabeceras';btn.disabled=false;
+    if(d.error){res.innerHTML='<div class="grade-card"><div style="color:#FCA5A5">'+d.error+'</div></div>';return;}
+    var html='';
+    var subTxt=d.presentes+' de '+d.total+' cabeceras de seguridad presentes';
+    html+='<div class="grade-card"><div class="grade grade-'+d.nota+'">'+d.nota+'</div><div class="grade-info"><div class="dom">'+d.dominio+'</div><div class="score">Nota '+d.nota+' · '+d.porcentaje+'%</div><div class="sub">'+subTxt+'</div></div></div>';
+    (d.detalle||[]).forEach(function(h){
+      var ok=h.presente;
+      html+='<div class="hdr-row"><div class="hdr-status '+(ok?'hdr-ok':'hdr-no')+'">'+(ok?'✓':'✕')+'</div><div class="hdr-body"><div class="name '+(ok?'ok':'no')+'">'+h.nombre+(ok?' — presente':' — ausente')+'</div><div class="exp">'+h.explica+'</div></div></div>';
+    });
+    if(d.nota!=='A'){
+      html+='<div class="cta-box"><div class="cta-title">¿Quieres el análisis completo de seguridad?</div><div class="cta-sub">Las cabeceras son solo una parte. El escáner completo de ReconBase revisa también puertos, SSL, DNS, filtraciones y vulnerabilidades de tu CMS — gratis.</div><a href="/" class="cta-btn">Escaneo completo gratis →</a></div>';
+    } else {
+      html+='<div class="cta-box"><div class="cta-title">¡Cabeceras perfectas! ¿Y el resto?</div><div class="cta-sub">Tus cabeceras están impecables. Comprueba el resto de tu superficie: puertos, SSL, DNS y filtraciones con el escáner completo.</div><a href="/" class="cta-btn">Escaneo completo gratis →</a></div>';
+    }
+    res.innerHTML=html;
+    res.scrollIntoView({behavior:'smooth',block:'start'});
+  })
+  .catch(function(){btn.textContent='Analizar cabeceras';btn.disabled=false;toast('Error de conexión','err');});
+}
+</script>
+</body>
+</html>

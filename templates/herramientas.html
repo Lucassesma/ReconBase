@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');if(v==='accepted'){gtag('consent','update',{'ad_storage':'granted','analytics_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(_){}
+</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Herramientas de seguridad web gratis — Escáner, DMARC, cabeceras, skimmers · ReconBase</title>
+<meta name="description" content="Colección de herramientas gratuitas de ciberseguridad para tu web: escáner completo, auditoría WordPress y PrestaShop, detector de skimmers, comprobador DMARC/SPF y cabeceras HTTP. Sin registro.">
+<meta name="keywords" content="herramientas seguridad web gratis, escaner seguridad online, comprobar seguridad web, auditoria web gratis, test seguridad sitio web">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase.es/herramientas">
+<meta property="og:title" content="Herramientas de seguridad web gratis — ReconBase">
+<meta property="og:description" content="Escáner completo, auditoría WordPress/PrestaShop, detector de skimmers, DMARC/SPF y cabeceras HTTP. Todo gratis y sin registro.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase.es/herramientas">
+<meta property="og:image" content="https://reconbase.es/og/home.png">
+<meta property="og:locale" content="es_ES">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Herramientas de seguridad web gratuitas","description":"Colección de herramientas gratuitas de ciberseguridad de ReconBase.","url":"https://reconbase.es/herramientas","inLanguage":"es-ES"}
+</script>
+
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
+<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--green:#22C55E;--green-dk:#15803D;--amber:#F59E0B;--red:#EF4444}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.6}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:1.5rem;font-size:.85rem}
+.nav-links a{color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff !important;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem}
+.hero{background:linear-gradient(160deg,#021a0a 0%,#052e16 45%,#063a1c 100%);padding:3.5rem 6% 2.5rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 80%,rgba(22,163,74,.14) 0%,transparent 55%)}
+.hero-inner{max-width:760px;margin:0 auto;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:.35rem .85rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;margin-bottom:1.25rem}
+h1{font-size:clamp(1.8rem,3.6vw,2.5rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-bottom:.85rem}
+h1 em{font-style:normal;color:#4ADE80}
+.hero-sub{font-size:clamp(.95rem,1.4vw,1.05rem);color:#86EFAC;max-width:560px;margin:0 auto;opacity:.92}
+.grid{max-width:1000px;margin:3rem auto;padding:0 6%;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
+.tool{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem 1.4rem;display:flex;flex-direction:column;transition:border-color .2s,transform .2s;position:relative}
+.tool:hover{border-color:rgba(34,197,94,.4);transform:translateY(-2px)}
+.tool-ico{font-size:1.8rem;margin-bottom:.75rem}
+.tool-badge{position:absolute;top:1rem;right:1.1rem;font-size:.6rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.1em;padding:.18rem .5rem;border-radius:4px}
+.tool-badge.new{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid rgba(245,158,11,.3)}
+.tool-badge.star{background:rgba(239,68,68,.15);color:#FCA5A5;border:1px solid rgba(239,68,68,.3)}
+.tool-title{font-size:1.05rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem}
+.tool-desc{font-size:.84rem;color:var(--muted-2);line-height:1.55;margin-bottom:1rem;flex:1}
+.tool-cta{font-size:.8rem;color:#4ADE80;font-weight:700}
+.content{max-width:760px;margin:2rem auto 3rem;padding:0 6%}
+.content h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin:2rem 0 1rem;color:#F0FDF4}
+.content p{color:var(--muted-2);margin-bottom:1rem;font-size:.95rem}
+.cta-band{max-width:760px;margin:2rem auto;padding:2rem;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.16));border:1px solid rgba(34,197,94,.35);border-radius:12px;text-align:center}
+.cta-band h2{font-size:1.3rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem}
+.cta-band p{color:#86EFAC;margin-bottom:1.25rem;font-size:.9rem}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.8rem 1.6rem;border-radius:8px;font-weight:700;font-size:.88rem}
+footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.82rem;color:var(--muted);margin-top:2rem}
+footer a{color:var(--muted-2);margin:0 .6rem}
+@media(max-width:720px){nav{padding:.9rem 5%}.nav-links{display:none}.hero{padding:2.5rem 5% 2rem}}
+</style>
+</head>
+<body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<nav>
+  <a href="/" class="nav-logo">RECON<span style="color:var(--green)">BASE</span></a>
+  <div class="nav-links">
+    <a href="/blog">Blog</a>
+    <a href="/pricing">Precios</a>
+    <a href="/login">Entrar</a>
+    <a href="/register" class="btn-primary">Empezar gratis</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="badge">🛠️ todas gratis · sin registro</div>
+    <h1>Herramientas de <em>seguridad web</em> gratuitas</h1>
+    <p class="hero-sub">Comprueba la seguridad de tu web, tu tienda online o tu correo en menos de un minuto. Sin instalar nada y sin compartir credenciales.</p>
+  </div>
+</section>
+
+<div class="grid">
+  <a href="/" class="tool">
+    <div class="tool-ico">🛡️</div>
+    <div class="tool-title">Escáner de seguridad completo</div>
+    <div class="tool-desc">Analiza 47 puntos: puertos expuestos, SSL/TLS, DNS, cabeceras HTTP, subdominios y filtraciones de datos. El análisis más completo, para cualquier dominio.</div>
+    <div class="tool-cta">Escanear mi web →</div>
+  </a>
+
+  <a href="/auditoria-prestashop" class="tool">
+    <span class="tool-badge star">SKIMMERS</span>
+    <div class="tool-ico">🛒</div>
+    <div class="tool-title">Auditoría PrestaShop</div>
+    <div class="tool-desc">Detector de skimmers digitales (Magecart) en tu checkout, módulos vulnerables, /install/ expuesto y HTTPS no forzado. Imprescindible si vendes online.</div>
+    <div class="tool-cta">Auditar mi tienda →</div>
+  </a>
+
+  <a href="/auditoria-wordpress" class="tool">
+    <div class="tool-ico">📝</div>
+    <div class="tool-title">Auditoría WordPress</div>
+    <div class="tool-desc">12 chequeos: versión obsoleta, plugins con CVE, xmlrpc.php, usuarios enumerables vía wp-json y archivos sensibles expuestos.</div>
+    <div class="tool-cta">Auditar mi WordPress →</div>
+  </a>
+
+  <a href="/skimmer-check" class="tool">
+    <span class="tool-badge star">MAGECART</span>
+    <div class="tool-ico">💳</div>
+    <div class="tool-title">Detector de skimmers</div>
+    <div class="tool-desc">¿Hay JavaScript robando tarjetas en tu checkout? Comprobación ultra-rápida del /order de tu tienda contra blocklists Magecart.</div>
+    <div class="tool-cta">Comprobar checkout →</div>
+  </a>
+
+  <a href="/comprobar-cabeceras-http" class="tool">
+    <span class="tool-badge new">NUEVO</span>
+    <div class="tool-ico">📋</div>
+    <div class="tool-title">Comprobar cabeceras HTTP</div>
+    <div class="tool-desc">Nota A-F de las cabeceras de seguridad de tu web: HSTS, CSP, X-Frame-Options, etc. Con explicación de cada una y cómo arreglarlas.</div>
+    <div class="tool-cta">Analizar cabeceras →</div>
+  </a>
+
+  <a href="/comprobar-dmarc-spf" class="tool">
+    <div class="tool-ico">📧</div>
+    <div class="tool-title">Comprobar DMARC y SPF</div>
+    <div class="tool-desc">¿Pueden suplantar el correo de tu empresa? Verifica en 5 segundos si tu dominio tiene SPF y DMARC configurados contra el phishing.</div>
+    <div class="tool-cta">Comprobar mi dominio →</div>
+  </a>
+</div>
+
+<section class="content">
+  <h2>¿Por qué usar estas herramientas?</h2>
+  <p>El 43% de los ciberataques en España afectan a pymes (INCIBE). La mayoría son evitables: una cabecera mal configurada, un certificado caducado, un plugin sin actualizar o un correo suplantable. Estas herramientas te permiten detectar esos problemas tú mismo, gratis y en minutos, sin necesidad de contratar a un consultor.</p>
+  <p>Todas funcionan de forma <strong style="color:#F0FDF4">externa y pasiva</strong>: solo hacen las mismas peticiones públicas que cualquier visitante de tu web. No requieren credenciales, no instalan nada y cumplen el RGPD.</p>
+  <h2>¿Y si encuentro problemas?</h2>
+  <p>Cada herramienta te explica qué significa cada hallazgo y cómo solucionarlo paso a paso. Si quieres ir más allá — monitorización continua, alertas automáticas cuando algo cambia, informe ejecutivo en PDF — puedes <a href="/register">crear una cuenta gratuita</a> y activar la vigilancia 24/7 de tu dominio.</p>
+</section>
+
+<div class="cta-band">
+  <h2>Vigila tu seguridad de forma continua</h2>
+  <p>Una herramienta te da una foto. La cuenta gratuita te da la película: reescaneo automático y alerta cuando algo cambia.</p>
+  <a href="/register" class="cta-btn">Crear cuenta gratis →</a>
+</div>
+
+<footer>
+  <a href="/">Escáner</a><a href="/blog">Blog</a><a href="/pricing">Precios</a><a href="/auditoria-prestashop">PrestaShop</a><a href="/auditoria-wordpress">WordPress</a><a href="/privacy">Privacidad</a>
+  <div style="margin-top:1rem;font-size:.72rem;color:var(--muted)">© ReconBase · Herramientas de seguridad para PYMEs españolas</div>
+</footer>
+</body>
+</html>
