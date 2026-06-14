@@ -151,13 +151,13 @@ a{text-decoration:none;color:inherit}
           <span style="font-size:.83rem;color:var(--muted)">Tu empresa no está siendo vigilada automáticamente cada noche</span>
           <div style="display:flex;align-items:center;gap:.6rem">
             <div style="height:5px;width:130px;background:#1E2D4A;border-radius:3px;overflow:hidden">
-              <div style="height:100%;width:{{ (scans_mes / 10 * 100)|int }}%;background:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#16A34A{% endif %};border-radius:3px"></div>
+              <div style="height:100%;width:{{ (scans_mes / 30 * 100)|int }}%;background:{% if scans_mes >= 25 %}#EF4444{% elif scans_mes >= 15 %}#F59E0B{% else %}#16A34A{% endif %};border-radius:3px"></div>
             </div>
-            <span style="font-size:.74rem;color:{% if scans_mes >= 8 %}#EF4444{% elif scans_mes >= 5 %}#F59E0B{% else %}#64748B{% endif %}">{{ scans_mes }}/10 escaneos este mes</span>
+            <span style="font-size:.74rem;color:{% if scans_mes >= 25 %}#EF4444{% elif scans_mes >= 15 %}#F59E0B{% else %}#64748B{% endif %}">{{ scans_mes }}/30 escaneos este mes</span>
           </div>
         </div>
       </div>
-      <a href="/#precios"><button style="background:#16A34A;color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button></a>
+      <a href="/#precios"><button style="background:#16A34A;color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 9€/mes</button></a>
     </div>
     {% endif %}
 
@@ -251,7 +251,7 @@ a{text-decoration:none;color:inherit}
           <div class="export-title">Informe PDF Ejecutivo</div>
           <div class="export-desc" id="pdf-free-desc">Ejecuta un escaneo para obtener el informe completo.</div>
           <div id="pdf-free-btn">
-            <a href="/#precios"><button class="btn-export primary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
+            <a href="/#precios"><button class="btn-export primary" style="cursor:not-allowed" disabled>Requiere plan Pro — 9€/mes</button></a>
           </div>
         </div>
         <div class="export-card" style="opacity:.5;position:relative">
@@ -259,7 +259,7 @@ a{text-decoration:none;color:inherit}
           <div class="export-icon">*</div>
           <div class="export-title">Datos Raw (JSON) <span style="font-size:.65rem;color:var(--amber);font-family:'JetBrains Mono',monospace;margin-left:6px">PRO</span></div>
           <div class="export-desc">Exporta todos los datos del analisis en formato JSON. Disponible en el plan Pro.</div>
-          <a href="/#precios"><button class="btn-export secondary" style="cursor:not-allowed" disabled>Requiere plan Pro — 29€/mes</button></a>
+          <a href="/#precios"><button class="btn-export secondary" style="cursor:not-allowed" disabled>Requiere plan Pro — 9€/mes</button></a>
         </div>
       </div>
       {% endif %}
@@ -391,7 +391,7 @@ function lanzarScan() {
     clearInterval(stepInterval);
     if(data.error) {
       if(data.error === 'limite_free') {
-        toast('Has alcanzado el límite de 10 escaneos este mes.\nPásate a Pro para escaneos ilimitados y vigilancia nocturna automática.', 'err');
+        toast('Has alcanzado el límite de 30 escaneos este mes.\nPásate a Pro para escaneos ilimitados y vigilancia nocturna automática.', 'err');
       } else {
         toast('Error: ' + data.error, 'err');
       }

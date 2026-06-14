@@ -350,7 +350,7 @@ function scUpdatePdfFreeCard(d) {
   if (d && d.riesgo !== undefined) {
     desc.textContent = 'Informe listo para: ' + d.objetivo + ' (' + d.riesgo + '% riesgo). Requiere plan Pro.';
     if (icon) icon.textContent = '🔒';
-    if (btn) btn.innerHTML = '<button class="sc-btn-exp p" onclick="scComprarInforme()" style="cursor:pointer">Desbloquear PDF — Pro 29€/mes</button>';
+    if (btn) btn.innerHTML = '<button class="sc-btn-exp p" onclick="scComprarInforme()" style="cursor:pointer">Desbloquear PDF — Pro 9€/mes</button>';
   }
 }
 
@@ -762,17 +762,17 @@ function toggleBilling() {
     if (toggle) toggle.style.background = '#166534';
     if (lblM) lblM.style.color = '#64748B';
     if (lblA) lblA.style.color = '#E2EDF8';
-    if (price) price.textContent = '24';
+    if (price) price.textContent = '7,5';
     if (note) note.style.display = 'block';
-    if (btn) btn.textContent = 'Suscribirse — 290€/año';
+    if (btn) btn.textContent = 'Suscribirse — 90€/año';
   } else {
     if (knob) knob.style.left = '3px';
     if (toggle) toggle.style.background = '#152B1E';
     if (lblM) lblM.style.color = '#E2EDF8';
     if (lblA) lblA.style.color = '#64748B';
-    if (price) price.textContent = '29';
+    if (price) price.textContent = '9';
     if (note) note.style.display = 'none';
-    if (btn) btn.textContent = 'Suscribirse — 29€/mes';
+    if (btn) btn.textContent = 'Suscribirse — 9€/mes';
   }
 }
 function pagarPlanActual() {

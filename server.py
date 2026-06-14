@@ -732,7 +732,7 @@ def og_image(page):
         "pricing": {
             "title": "RECONBASE",
             "sub": "Planes desde 0\u20ac \u2014 Ciberseguridad para PYMEs",
-            "features": ["Plan Gratis: 10 escaneos/mes", "Plan Pro: 29\u20ac/mes ilimitado", "Sin permanencia"],
+            "features": ["Plan Gratis: 30 escaneos/mes", "Plan Pro: 9\u20ac/mes ilimitado", "Sin permanencia"],
         },
         "terms": {
             "title": "RECONBASE",
@@ -2333,7 +2333,7 @@ def enviar_email_trial_expirando(user, dias_restantes):
                     f"Cuando expire perderás acceso a: vigilancia nocturna, alertas, filtraciones y PDFs.<br><br>"
                     f"Suscríbete ahora para mantener la protección completa.",
                     cta_url=f"{base_url}/#precios",
-                    cta_text="Suscribirme a Pro — 29€/mes"
+                    cta_text="Suscribirme a Pro — 9€/mes"
                 )
                 logger.info(f"[Trial] Aviso HTML a {email} ({dias}d)")
         except Exception as e:
@@ -2375,11 +2375,11 @@ def enviar_email_limite_free(destinatario):
                     "Has alcanzado el límite gratuito",
                     "Has usado todos tus escaneos gratuitos de este mes.<br><br>"
                     "Tu empresa puede seguir expuesta a amenazas que no puedes revisar ahora.<br><br>"
-                    "Con <strong>Pro a 29€/mes</strong>:<br>"
+                    "Con <strong>Pro a 9€/mes</strong>:<br>"
                     "✅ Escaneos ilimitados<br>✅ Vigilancia nocturna 24/7<br>"
                     "✅ Alertas automáticas<br>✅ Informes PDF completos",
                     cta_url=f"{base_url}/#precios",
-                    cta_text="Activar Pro — 29€/mes"
+                    cta_text="Activar Pro — 9€/mes"
                 )
                 logger.info(f"[Limite] Email HTML enviado a {destinatario}")
         except Exception as e:
@@ -2644,7 +2644,7 @@ def scan():
             extract('month', Scan.timestamp) == now.month,
             extract('year',  Scan.timestamp) == now.year
         ).count()
-        if scans_mes >= 10:
+        if scans_mes >= 30:
             return jsonify({"error": "limite_free"}), 403
 
     data     = request.get_json()
@@ -2798,7 +2798,7 @@ def scan():
             _ext('month', Scan.timestamp) == _now.month,
             _ext('year',  Scan.timestamp) == _now.year
         ).count()
-        if _total >= 10:
+        if _total >= 30:
             enviar_email_limite_free(current_user.email)
 
     # Enviar alerta solo si el riesgo subió respecto al escaneo anterior del mismo dominio
@@ -3426,7 +3426,7 @@ def generar_pdf():
         pdf.set_x(20)
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_text_color(*BRAND_GREEN)
-        pdf.cell(0, 5, sanitizar(">> Activa Pro en reconbase.es/pricing - 29 EUR/mes, sin permanencia"), ln=1)
+        pdf.cell(0, 5, sanitizar(">> Activa Pro en reconbase.es/pricing - 9 EUR/mes, sin permanencia"), ln=1)
     else:
         pdf.set_fill_color(*BG_SOFT)
         pdf.set_draw_color(*BORDER)
@@ -4534,8 +4534,8 @@ def anadir_dominio():
     dominio = _re3.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
     if not dominio or len(dominio) < 3:
         return jsonify({"ok": False, "error": "Dominio no válido"}), 400
-    # Limites: free=5, pro=50
-    max_doms = 5 if current_user.plan_efectivo == 'free' else 50
+    # Limites: free=10, pro=50
+    max_doms = 10 if current_user.plan_efectivo == 'free' else 50
     count = Domain.query.filter_by(user_id=current_user.id).count()
     if count >= max_doms:
         plan_txt = f"{max_doms} dominios en plan Gratis" if current_user.plan_efectivo == 'free' else f"{max_doms} dominios en plan Pro"

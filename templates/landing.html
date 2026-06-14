@@ -86,7 +86,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           "name": "Plan Free",
           "price": "0",
           "priceCurrency": "EUR",
-          "description": "10 análisis al mes, informe básico"
+          "description": "30 análisis al mes, 10 dominios, informe básico"
         },
         {
           "@type": "Offer",
@@ -626,7 +626,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
     <a href="/perfil" class="btn-login">Mi perfil</a>
     {% if plan == 'free' %}
-    <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 29€/mes</button>
+    <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 9€/mes</button>
     {% else %}
     <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .7rem;border-radius:20px;font-weight:700">PRO</span>
     {% endif %}
@@ -694,8 +694,8 @@ function rbDismissPSBanner(){
     <div>
       <div style="font-size:.83rem;color:#374151">Tu empresa no está siendo vigilada automáticamente cada noche</div>
       <div style="display:flex;align-items:center;gap:.6rem;margin-top:.3rem">
-        <div style="height:5px;width:120px;background:#BBF7D0;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ (scans_mes/10*100)|int }}%;background:{% if scans_mes>=8 %}#DC2626{% elif scans_mes>=5 %}#D97706{% else %}#16A34A{% endif %};border-radius:3px"></div></div>
-        <span style="font-size:.74rem;color:{% if scans_mes>=8 %}#DC2626{% elif scans_mes>=5 %}#D97706{% else %}#64748B{% endif %}">{{ scans_mes }}/10 escaneos este mes</span>
+        <div style="height:5px;width:120px;background:#BBF7D0;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ (scans_mes/30*100)|int }}%;background:{% if scans_mes>=25 %}#DC2626{% elif scans_mes>=15 %}#D97706{% else %}#16A34A{% endif %};border-radius:3px"></div></div>
+        <span style="font-size:.74rem;color:{% if scans_mes>=25 %}#DC2626{% elif scans_mes>=15 %}#D97706{% else %}#64748B{% endif %}">{{ scans_mes }}/30 escaneos este mes</span>
       </div>
     </div>
   </div>
@@ -703,7 +703,7 @@ function rbDismissPSBanner(){
     {% if not user.trial_end %}
     <button onclick="activarTrial()" id="btn-trial" style="background:transparent;color:#22C55E;border:1px solid #166534;padding:.6rem 1.1rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;white-space:nowrap">14 días Pro gratis →</button>
     {% endif %}
-    <button onclick="pagarPlanLanding('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 29€/mes</button>
+    <button onclick="pagarPlanLanding('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 9€/mes</button>
   </div>
 </div>
 {% endif %}
@@ -827,7 +827,7 @@ function rbDismissPSBanner(){
         <div class="sc-export-desc" id="sc-pdf-desc">Descarga el informe completo de este escaneo en PDF.</div>
         <div id="sc-pdf-btn">
           <button class="sc-btn-exp p" style="opacity:.45;cursor:not-allowed" disabled id="sc-pdf-btn-buy">Escanea primero para desbloquear</button>
-          <div style="text-align:center;margin-top:.5rem;font-size:.72rem;color:var(--muted)">o <span onclick="pagarPlanLanding('pro')" style="color:#22C55E;cursor:pointer;font-weight:600">suscríbete a Pro (29€/mes)</span> para PDF ilimitados</div>
+          <div style="text-align:center;margin-top:.5rem;font-size:.72rem;color:var(--muted)">o <span onclick="pagarPlanLanding('pro')" style="color:#22C55E;cursor:pointer;font-weight:600">suscríbete a Pro (9€/mes)</span> para PDF ilimitados</div>
         </div>
       </div>
       <div class="sc-export-card" style="opacity:.4">
@@ -852,7 +852,7 @@ function rbDismissPSBanner(){
 
   <!-- HISTORIAL -->
   <div class="sc-panel" id="sc-historial">
-    {% if plan == 'free' %}<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap"><span style="font-size:.82rem;color:#15803D">Plan Free: últimos 10 escaneos.</span><span onclick="pagarPlanLanding('pro')" style="font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer">Historial ilimitado con Pro →</span></div>{% endif %}
+    {% if plan == 'free' %}<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap"><span style="font-size:.82rem;color:#15803D">Plan Free: historial de los últimos 7 días.</span><span onclick="pagarPlanLanding('pro')" style="font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer">Historial ilimitado con Pro →</span></div>{% endif %}
     <div class="sc-empty" id="sc-hist-empty"><h3>Sin escaneos recientes</h3><p>El historial aparecerá aquí.</p></div>
     <div id="sc-hist-content" style="display:none">
       <table class="sc-hist-tbl"><thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th><th></th></tr></thead><tbody id="sc-hist-body"></tbody></table>
@@ -1622,8 +1622,8 @@ function rbDismissPSBanner(){
       <div class="plan hot">
         <div class="plan-badge">MÁS POPULAR</div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price"><span id="pro-price">29</span> <span>/ mes</span></div>
-        <div id="pro-anual-note" style="display:none;font-size:.72rem;color:#22C55E;margin-top:-.5rem;margin-bottom:.25rem">290€/año · ahorras 58€</div>
+        <div class="plan-price"><span id="pro-price">9</span> <span>/ mes</span></div>
+        <div id="pro-anual-note" style="display:none;font-size:.72rem;color:#22C55E;margin-top:-.5rem;margin-bottom:.25rem">90€/año · ahorras 18€</div>
         <div style="font-size:.72rem;background:rgba(34,197,94,.12);color:#22C55E;border:1px solid #14532D;border-radius:20px;padding:.2rem .75rem;display:inline-block;margin-bottom:.6rem;font-family:'JetBrains Mono',monospace;font-weight:700">La multa media por brecha RGPD: 20.000€</div>
         <div class="plan-desc">Protección continua por menos de 1€ al día. Sin permanencia.</div>
         <div class="plan-div"></div>
@@ -1636,25 +1636,8 @@ function rbDismissPSBanner(){
         <div class="pf"><span class="ck">v</span>API pública para integrar en CI/CD</div>
         <div class="pf"><span class="ck">v</span>Soporte prioritario</div>
         <div class="plan-div" style="margin-top:1.2rem"></div>
-        <button class="btn-plan sl" id="btn-pro-subscribe" onclick="pagarPlanActual()">Proteger mi empresa — 29€/mes</button>
+        <button class="btn-plan sl" id="btn-pro-subscribe" onclick="pagarPlanActual()">Proteger mi empresa — 9€/mes</button>
         <div style="text-align:center;font-size:.7rem;color:var(--muted);margin-top:.6rem">Sin permanencia · Cancela cuando quieras</div>
-      </div>
-
-      <!-- ENTERPRISE — señuelo para hacer Pro parecer ganga -->
-      <div class="plan" style="opacity:.85">
-        <div class="plan-name" style="color:var(--muted)">Enterprise</div>
-        <div class="plan-price" style="font-size:1.6rem">149 <span>/ mes</span></div>
-        <div class="plan-desc">Para empresas que necesitan auditoría manual y SLA garantizado.</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>Todo lo del plan Pro</div>
-        <div class="pf"><span class="ck">v</span>Auditoría manual mensual por experto</div>
-        <div class="pf"><span class="ck">v</span>Informe técnico + ejecutivo firmado</div>
-        <div class="pf"><span class="ck">v</span>SLA 99.9% · Soporte 24/7</div>
-        <div class="pf"><span class="ck">v</span>Marca blanca (white-label PDF)</div>
-        <div class="pf"><span class="ck">v</span>Hasta 50 dominios monitorizados</div>
-        <div class="pf"><span class="ck">v</span>Onboarding dedicado</div>
-        <div class="plan-div" style="margin-top:1.2rem"></div>
-        <a href="mailto:hola@reconbase.es?subject=Consulta%20Enterprise" class="btn-plan ol" style="display:block;text-align:center;border-color:var(--muted);color:var(--muted)">Contactar con ventas →</a>
       </div>
 
     </div>
@@ -1697,19 +1680,18 @@ function rbDismissPSBanner(){
             <th style="text-align:left;padding:.7rem 1rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Característica</th>
             <th style="text-align:center;padding:.7rem 1rem;color:var(--text);font-weight:700;border-bottom:1px solid var(--border)">Gratuito</th>
             <th style="text-align:center;padding:.7rem 1rem;color:#22C55E;font-weight:700;border-bottom:1px solid var(--border)">Pro</th>
-            <th style="text-align:center;padding:.7rem 1rem;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border)">Enterprise</th>
           </tr>
         </thead>
         <tbody>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Análisis al mes</td><td style="text-align:center;color:var(--text)">3</td><td style="text-align:center;color:#22C55E;font-weight:700">Ilimitados</td><td style="text-align:center;color:var(--muted)">Ilimitados</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Puertos · DNS · SPF · DMARC</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Filtraciones Deep Web</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">SSL · Uptime · DNS en tiempo real</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Vigilancia nocturna 24/7</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Reputación IP · Tech Detection</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td><td style="text-align:center;color:var(--muted)">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Informe PDF ejecutivo</td><td style="text-align:center;color:var(--muted)">9€/informe</td><td style="text-align:center;color:#22C55E">Incluido</td><td style="text-align:center;color:var(--muted)">Incluido</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Auditoría manual por experto</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:var(--muted)">✓ mensual</td></tr>
-          <tr><td style="padding:.65rem 1rem;color:var(--muted)">Precio mensual</td><td style="text-align:center;color:var(--text)">0€</td><td style="text-align:center;color:#22C55E;font-weight:700">29€</td><td style="text-align:center;color:var(--muted)">149€</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Análisis al mes</td><td style="text-align:center;color:var(--text)">30</td><td style="text-align:center;color:#22C55E;font-weight:700">Ilimitados</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Dominios monitorizables</td><td style="text-align:center;color:var(--text)">10</td><td style="text-align:center;color:#22C55E;font-weight:700">50</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Puertos · DNS · SPF · DMARC</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Auditoría WordPress · PrestaShop · skimmers</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Filtraciones Deep Web</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">SSL · Uptime · DNS en tiempo real</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Vigilancia nocturna 24/7</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Informe PDF ejecutivo</td><td style="text-align:center;color:var(--muted)">9€/informe</td><td style="text-align:center;color:#22C55E">Incluido</td></tr>
+          <tr><td style="padding:.65rem 1rem;color:var(--muted)">Precio mensual</td><td style="text-align:center;color:var(--text)">0€</td><td style="text-align:center;color:#22C55E;font-weight:700">9€</td></tr>
         </tbody>
       </table>
     </div>
