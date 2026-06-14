@@ -32,7 +32,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Precios — ReconBase | Ciberseguridad para PYMEs desde 0€</title>
-<meta name="description" content="Planes de ReconBase: Gratis con 5 dominios y 10 escaneos/mes o Pro con vigilancia 24/7, alertas automáticas, Slack y filtraciones Deep Web. Sin permanencia, cancela cuando quieras.">
+<meta name="description" content="Planes de ReconBase: Gratis con 5 dominios, Pro con vigilancia 24/7 desde 29€/mes, y plan Agencia para gestionar muchos clientes con informes white-label. Sin permanencia, cancela cuando quieras.">
 <meta name="robots" content="index,follow">
 <link rel="canonical" href="{{ base_url }}/pricing">
 <meta property="og:title" content="Precios — ReconBase | Desde 0€">
@@ -69,7 +69,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "offers": [
     {"@type": "Offer", "name": "Gratis", "price": "0", "priceCurrency": "EUR"},
     {"@type": "Offer", "name": "Pro mensual", "price": "29", "priceCurrency": "EUR"},
-    {"@type": "Offer", "name": "Pro anual", "price": "290", "priceCurrency": "EUR"}
+    {"@type": "Offer", "name": "Pro anual", "price": "290", "priceCurrency": "EUR"},
+    {"@type": "Offer", "name": "Agencia", "price": "99", "priceCurrency": "EUR"}
   ]
 }
 </script>
@@ -100,7 +101,7 @@ h1{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.035em;line-he
 .toggle.annual .toggle-knob{left:23px}
 .save{font-size:.7rem;background:rgba(34,197,94,.15);color:#86EFAC;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.25rem;border:1px solid rgba(34,197,94,.3)}
 
-.plans{max-width:800px;margin:0 auto;padding:0 6%;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
+.plans{max-width:1080px;margin:0 auto;padding:0 6%;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem}
 .plan{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem 1.75rem;position:relative;transition:transform .2s,box-shadow .2s}
 .plan:hover{transform:translateY(-2px);box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
 .plan.hot{border-color:var(--accent);box-shadow:0 10px 40px -10px rgba(22,163,74,.4)}
@@ -229,28 +230,43 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <a href="/register" class="btn-plan sl">Prueba 7 días gratis →</a>
     {% endif %}
   </div>
+
+  <div class="plan">
+    <div class="plan-name">Agencia</div>
+    <div class="plan-price"><span style="font-size:1.4rem;vertical-align:middle">Desde </span>99<span>/ mes</span></div>
+    <div class="plan-desc">Para agencias y freelancers que gestionan la seguridad de muchos clientes (WordPress, PrestaShop, hosting).</div>
+    <div class="plan-div"></div>
+    <div class="pf"><span class="ck"></span>Todo lo del plan Pro</div>
+    <div class="pf"><span class="ck"></span><strong>Dominios ilimitados</strong></div>
+    <div class="pf"><span class="ck"></span>Vista multi-cliente</div>
+    <div class="pf"><span class="ck"></span><strong>Informes PDF white-label</strong> (con tu marca)</div>
+    <div class="pf"><span class="ck"></span>Vigilancia de skimmers en todas las tiendas</div>
+    <div class="pf"><span class="ck"></span>Alertas centralizadas Slack · webhooks</div>
+    <div class="pf"><span class="ck"></span>Onboarding y gestor de cuenta dedicado</div>
+    <div class="pf"><span class="ck"></span>Facturación única mensual</div>
+    <a href="mailto:hola@reconbase.es?subject=Plan%20Agencia%20-%20ReconBase&body=Hola,%20gestiono%20la%20seguridad%20de%20varios%20clientes%20y%20me%20interesa%20el%20plan%20Agencia.%20Tengo%20aproximadamente%20___%20dominios." class="btn-plan ol">Hablemos →</a>
+  </div>
 </div>
 
 <div class="table-wrap">
   <h2>Comparativa detallada</h2>
   <table class="cmp">
-    <thead><tr><th>Característica</th><th class="free">Gratis</th><th class="pro">Pro</th></tr></thead>
+    <thead><tr><th>Característica</th><th class="free">Gratis</th><th class="pro">Pro</th><th class="pro">Agencia</th></tr></thead>
     <tbody>
-      <tr><td>Dominios monitorizables</td><td class="c">5</td><td class="pro">50</td></tr>
-      <tr><td>Escaneos al mes</td><td class="c">10</td><td class="pro">Ilimitados</td></tr>
-      <tr><td>Puertos expuestos</td><td class="c">✓</td><td class="pro">✓</td></tr>
-      <tr><td>DNS / SPF / DMARC</td><td class="c">✓</td><td class="pro">✓</td></tr>
-      <tr><td>Cabeceras HTTP</td><td class="c">✓</td><td class="pro">✓</td></tr>
-      <tr><td>Certificado SSL/TLS</td><td class="c">✓</td><td class="pro">✓</td></tr>
-      <tr><td>Subdominios</td><td class="c">✓</td><td class="pro">✓</td></tr>
-      <tr><td>Filtraciones Deep Web</td><td class="c">—</td><td class="pro">✓</td></tr>
-      <tr><td>Vigilancia nocturna 24/7</td><td class="c">—</td><td class="pro">✓</td></tr>
-      <tr><td>Alertas por email automáticas</td><td class="c">—</td><td class="pro">✓</td></tr>
-      <tr><td>Integración Slack · webhooks</td><td class="c">—</td><td class="pro">✓</td></tr>
-      <tr><td>Historial de escaneos</td><td class="c">7 días</td><td class="pro">Ilimitado</td></tr>
-      <tr><td>Informe PDF ejecutivo</td><td class="c">9€/informe</td><td class="pro">Incluido</td></tr>
-      <tr><td>Guías de remediación paso a paso</td><td class="c">✓</td><td class="pro">✓</td></tr>
-      <tr><td>Soporte prioritario</td><td class="c">—</td><td class="pro">✓</td></tr>
+      <tr><td>Dominios monitorizables</td><td class="c">5</td><td class="pro">50</td><td class="pro">Ilimitados</td></tr>
+      <tr><td>Escaneos al mes</td><td class="c">10</td><td class="pro">Ilimitados</td><td class="pro">Ilimitados</td></tr>
+      <tr><td>Auditoría WordPress / PrestaShop</td><td class="c">✓</td><td class="pro">✓</td><td class="pro">✓</td></tr>
+      <tr><td>Detector de skimmers Magecart</td><td class="c">✓</td><td class="pro">✓</td><td class="pro">✓</td></tr>
+      <tr><td>DNS / SPF / DMARC · Cabeceras · SSL</td><td class="c">✓</td><td class="pro">✓</td><td class="pro">✓</td></tr>
+      <tr><td>Filtraciones Deep Web</td><td class="c">—</td><td class="pro">✓</td><td class="pro">✓</td></tr>
+      <tr><td>Vigilancia nocturna 24/7</td><td class="c">—</td><td class="pro">✓</td><td class="pro">✓</td></tr>
+      <tr><td>Alertas por email automáticas</td><td class="c">—</td><td class="pro">✓</td><td class="pro">✓</td></tr>
+      <tr><td>Integración Slack · webhooks</td><td class="c">—</td><td class="pro">✓</td><td class="pro">Centralizado</td></tr>
+      <tr><td>Historial de escaneos</td><td class="c">7 días</td><td class="pro">Ilimitado</td><td class="pro">Ilimitado</td></tr>
+      <tr><td>Informe PDF ejecutivo</td><td class="c">9€/informe</td><td class="pro">Incluido</td><td class="pro">White-label</td></tr>
+      <tr><td>Vista multi-cliente</td><td class="c">—</td><td class="c">—</td><td class="pro">✓</td></tr>
+      <tr><td>Gestor de cuenta dedicado</td><td class="c">—</td><td class="c">—</td><td class="pro">✓</td></tr>
+      <tr><td>Soporte prioritario</td><td class="c">—</td><td class="pro">✓</td><td class="pro">✓</td></tr>
     </tbody>
   </table>
 </div>
@@ -263,6 +279,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="faq-item"><div class="faq-q">¿Qué es la "vigilancia nocturna 24/7"?</div><div class="faq-a">Cada noche reescaneamos tu dominio automáticamente. Si detectamos un puerto nuevo abierto, un certificado por caducar, una cabecera que dejó de estar o una nueva filtración, recibes un aviso por email.</div></div>
   <div class="faq-item"><div class="faq-q">¿Qué pasa con mis datos si cancelo?</div><div class="faq-a">Conservas tu cuenta gratis con el historial de los últimos 7 días. Puedes solicitar el borrado total escribiéndonos según el RGPD.</div></div>
   <div class="faq-item"><div class="faq-q">¿Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente. Solo puedes analizar dominios que tú introduces. El motor usa técnicas pasivas sobre infraestructura pública.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Para quién es el plan Agencia?</div><div class="faq-a">Para agencias de desarrollo web, freelancers y empresas de mantenimiento que gestionan muchos sitios de clientes. Incluye dominios ilimitados, vista multi-cliente, informes PDF con tu propia marca (white-label) para entregar a tus clientes, y un gestor de cuenta dedicado. Escríbenos a hola@reconbase.es contándonos cuántos dominios gestionas y te preparamos un presupuesto a medida.</div></div>
 </div>
 
 <div class="cta-band">
