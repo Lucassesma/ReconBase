@@ -4528,51 +4528,85 @@ def notificar_integraciones(user, resultado):
     riesgo  = resultado.get("riesgo", 0)
     label   = resultado.get("label", "")
     puertos = resultado.get("puertos", [])
+    ps_audit = resultado.get("ps") or {}
+    skimmer_alert = bool(ps_audit.get("is_prestashop") and ps_audit.get("skimmer_suspect"))
+    skimmer_evidence = (ps_audit.get("skimmer_evidence") or [])[:3]
     base_url = BASE_URL
 
     # Slack
     if slack_url:
         try:
-            emoji = ":red_circle:" if riesgo >= 70 else ":large_orange_circle:" if riesgo >= 40 else ":large_green_circle:"
-            slack_msg = {
-                "text": f"{emoji} *ReconBase — Escaneo completado*",
-                "blocks": [
-                    {"type": "header", "text": {"type": "plain_text", "text": f"ReconBase — Escaneo de {dominio}"}},
-                    {"type": "section", "fields": [
-                        {"type": "mrkdwn", "text": f"*Riesgo:* {riesgo}% ({label})"},
-                        {"type": "mrkdwn", "text": f"*Puertos expuestos:* {len(puertos)}"},
-                    ]},
-                    {"type": "actions", "elements": [
-                        {"type": "button", "text": {"type": "plain_text", "text": "Ver en ReconBase"}, "url": base_url}
-                    ]}
-                ]
-            }
+            if skimmer_alert:
+                slack_msg = {
+                    "text": f":rotating_light: *RECONBASE — POSIBLE SKIMMER DETECTADO en {dominio}*",
+                    "blocks": [
+                        {"type": "header", "text": {"type": "plain_text", "text": f"🚨 SKIMMER · {dominio}"}},
+                        {"type": "section", "text": {"type": "mrkdwn",
+                            "text": f"*Alerta crítica de Magecart en tu checkout PrestaShop.*\nLa vigilancia ha detectado patrones característicos de robo de tarjeta en el JS del checkout."}},
+                        {"type": "section", "fields": [
+                            {"type": "mrkdwn", "text": f"*Riesgo:* {riesgo}% ({label})"},
+                            {"type": "mrkdwn", "text": f"*PrestaShop:* {ps_audit.get('version','?')}"},
+                        ]},
+                        {"type": "section", "text": {"type": "mrkdwn",
+                            "text": "*Evidencia:*\n" + "\n".join(f"• {e}" for e in skimmer_evidence) if skimmer_evidence else "*Evidencia:* patrones de ofuscación + referencias a campos de tarjeta"}},
+                        {"type": "section", "text": {"type": "mrkdwn",
+                            "text": "*Acción inmediata:* no toques nada, haz copia forense, cambia credenciales y notifica AEPD en 72h si confirmas exfiltración."}},
+                        {"type": "actions", "elements": [
+                            {"type": "button", "text": {"type": "plain_text", "text": "Ver informe completo"}, "url": base_url, "style": "danger"},
+                            {"type": "button", "text": {"type": "plain_text", "text": "Protocolo de respuesta"}, "url": f"{base_url}/blog/skimmers-digitales-prestashop-magecart-2026"}
+                        ]}
+                    ]
+                }
+            else:
+                emoji = ":red_circle:" if riesgo >= 70 else ":large_orange_circle:" if riesgo >= 40 else ":large_green_circle:"
+                slack_msg = {
+                    "text": f"{emoji} *ReconBase — Escaneo completado*",
+                    "blocks": [
+                        {"type": "header", "text": {"type": "plain_text", "text": f"ReconBase — Escaneo de {dominio}"}},
+                        {"type": "section", "fields": [
+                            {"type": "mrkdwn", "text": f"*Riesgo:* {riesgo}% ({label})"},
+                            {"type": "mrkdwn", "text": f"*Puertos expuestos:* {len(puertos)}"},
+                        ]},
+                        {"type": "actions", "elements": [
+                            {"type": "button", "text": {"type": "plain_text", "text": "Ver en ReconBase"}, "url": base_url}
+                        ]}
+                    ]
+                }
             payload = json.dumps(slack_msg).encode("utf-8")
             req = urllib.request.Request(slack_url, data=payload,
                                         headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
                                         method="POST")
             urllib.request.urlopen(req, timeout=10)
-            logger.info(f"[Slack] Notificación enviada a {user_email}")
+            logger.info(f"[Slack] Notificación enviada a {user_email}{' (SKIMMER)' if skimmer_alert else ''}")
         except Exception as e:
             logger.warning(f"[Slack] Error para {user_email}: {e}")
 
     # Custom webhook
     if custom_url:
         try:
-            webhook_payload = json.dumps({
-                "event": "scan_completed",
+            webhook_payload_dict = {
+                "event": "skimmer_detected" if skimmer_alert else "scan_completed",
                 "dominio": dominio,
                 "riesgo": riesgo,
                 "label": label,
                 "puertos": len(puertos),
                 "timestamp": resultado.get("timestamp", ""),
                 "url": base_url,
-            }).encode("utf-8")
+            }
+            if skimmer_alert:
+                webhook_payload_dict["severity"] = "critical"
+                webhook_payload_dict["skimmer"] = {
+                    "detected": True,
+                    "version_prestashop": ps_audit.get("version"),
+                    "evidence": skimmer_evidence,
+                    "action_url": f"{base_url}/blog/skimmers-digitales-prestashop-magecart-2026",
+                }
+            webhook_payload = json.dumps(webhook_payload_dict).encode("utf-8")
             req = urllib.request.Request(custom_url, data=webhook_payload,
                                         headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
                                         method="POST")
             urllib.request.urlopen(req, timeout=10)
-            logger.info(f"[Webhook] Notificación enviada a {user_email}")
+            logger.info(f"[Webhook] Notificación enviada a {user_email}{' (SKIMMER)' if skimmer_alert else ''}")
         except Exception as e:
             logger.warning(f"[Webhook] Error para {user_email}: {e}")
 
