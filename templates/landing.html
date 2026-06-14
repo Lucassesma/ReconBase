@@ -642,6 +642,38 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 ════════════════════════════════════════ -->
 <section id="escaner" style="display:none">
 
+{% if user and user.is_authenticated and tiene_ps_sin_vigilancia %}
+<div id="rb-ps-vigilancia-banner" style="background:linear-gradient(135deg,#2D1408,#3D1A0B);border:1px solid #B45309;border-radius:10px;padding:1.1rem 1.4rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+  <div style="font-size:1.4rem;line-height:1;margin-top:.1rem">🛒</div>
+  <div style="flex:1;min-width:200px">
+    <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:#FCD34D;text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:.3rem">PrestaShop detectado · vigilancia inactiva</div>
+    <div style="font-size:.9rem;font-weight:700;color:#FEF3C7;margin-bottom:.3rem">Activa la vigilancia del checkout para detectar skimmers</div>
+    <div style="font-size:.82rem;color:#FCD34D;line-height:1.6">Has escaneado {% if ps_dominios_sample %}<strong style="color:#FEF3C7;font-family:'JetBrains Mono',monospace">{{ ps_dominios_sample[0] }}</strong>{% if ps_dominios_sample|length > 1 %} y {{ ps_dominios_sample|length - 1 }} tienda{% if ps_dominios_sample|length > 2 %}s{% endif %} más{% endif %}{% else %}una tienda PrestaShop{% endif %} pero <strong>no tienes monitorización automática activa</strong>. Activa la vigilancia nocturna y recibirás email + Slack inmediato si aparece un skimmer Magecart en tu checkout.</div>
+    <div style="margin-top:.7rem;display:flex;gap:.6rem;flex-wrap:wrap">
+      <a href="/perfil#vigilancia" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.45rem 1rem;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none">Activar vigilancia →</a>
+      <a href="/blog/skimmers-digitales-prestashop-magecart-2026" style="background:transparent;border:1px solid rgba(252,211,77,.4);color:#FCD34D;padding:.45rem 1rem;border-radius:6px;font-size:.78rem;font-weight:600;text-decoration:none">Por qué importa</a>
+    </div>
+  </div>
+  <button onclick="rbDismissPSBanner()" style="background:none;border:none;color:#B45309;font-size:1.1rem;cursor:pointer;padding:.1rem .3rem;line-height:1;align-self:flex-start" title="Ocultar 30 días">✕</button>
+</div>
+<script>
+function rbDismissPSBanner(){
+  document.getElementById('rb-ps-vigilancia-banner').remove();
+  try{
+    var d=new Date();d.setDate(d.getDate()+30);
+    document.cookie='rb_ps_dismiss=1; expires='+d.toUTCString()+'; path=/; SameSite=Lax';
+  }catch(_){}
+}
+// Si ya está marcado el dismiss en cookie, ocultar al cargar
+(function(){
+  if(/(?:^|;\s*)rb_ps_dismiss=1/.test(document.cookie||'')){
+    var el=document.getElementById('rb-ps-vigilancia-banner');
+    if(el)el.style.display='none';
+  }
+})();
+</script>
+{% endif %}
+
 {% if user and user.is_authenticated and not user.onboarding_done %}
 <div id="rb-welcome-banner" style="background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
   <div style="font-size:1.5rem;line-height:1;margin-top:.1rem">👋</div>

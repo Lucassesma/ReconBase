@@ -753,6 +753,24 @@ def index():
         plan      = current_user.plan_efectivo
         scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
         scan_dias = current_user.scan_dias.split(',') if current_user.scan_dias else []
+    # ── Detectar si el usuario tiene tiendas PrestaShop sin vigilancia automática ──
+    # El sentido: si tiene PS detectado en algún escaneo previo + NO tiene vigilancia
+    # activa, mostrarle un banner que le invite a activar la monitorización (skimmers).
+    tiene_ps_sin_vigilancia = False
+    ps_dominios_sample = []
+    if current_user.is_authenticated and not scan_dias:
+        try:
+            ps_scans = db.session.query(Scan.dominio).filter(
+                Scan.user_id == current_user.id,
+                Scan.resultado.op('->')('ps').op('->>')('is_prestashop') == 'true'
+            ).distinct().limit(3).all()
+            if ps_scans:
+                tiene_ps_sin_vigilancia = True
+                ps_dominios_sample = [r[0] for r in ps_scans if r[0]]
+        except Exception as e:
+            # Si la query JSON falla por bad data, no romper la home
+            db.session.rollback()
+            logger.warning(f"[Index] query ps_scans falló: {e}")
     stats_scans   = Scan.query.count()
     stats_vulns   = max(int(stats_scans * 2.3), 12)
     stats_breaches = User.query.count()
@@ -767,6 +785,8 @@ def index():
                            stats_scans=stats_scans,
                            stats_vulns=stats_vulns,
                            stats_breaches=stats_breaches,
+                           tiene_ps_sin_vigilancia=tiene_ps_sin_vigilancia,
+                           ps_dominios_sample=ps_dominios_sample,
                            show_cookie_banner=show_cookie_banner))
     # Evitar que el navegador cachee el HTML (para que los fixes lleguen al instante)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
