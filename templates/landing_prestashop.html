@@ -230,7 +230,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
   <p>El detector marca como sospechoso cualquier dominio cuyo JavaScript contenga patrones típicos de Magecart. <strong>Es una alerta preliminar, no una confirmación forense</strong>. Si te aparece esa señal, sigue este protocolo:</p>
   <ol style="color:var(--muted-2);font-size:.92rem;margin:.75rem 0 1rem 1.5rem">
     <li style="margin-bottom:.45rem">No toques nada hasta hacer una <strong>copia forense</strong> (snapshot del servidor + base de datos + DOM de la página de checkout). Es prueba si hay denuncia.</li>
-    <li style="margin-bottom:.45rem">Compara el HTML actual del checkout con un backup limpio anterior. El skimmer suele estar como `<script>` inline al final de `</body>` o como nuevo dominio en un `<script src="">`.</li>
+    <li style="margin-bottom:.45rem">Compara el HTML actual del checkout con un backup limpio anterior. El skimmer suele estar como <code>&lt;script&gt;</code> inline al final de <code>&lt;/body&gt;</code> o como nuevo dominio en un <code>&lt;script src=""&gt;</code>.</li>
     <li style="margin-bottom:.45rem">Cambia <strong>todas las contraseñas</strong>: admin PrestaShop, FTP, panel hosting, base de datos.</li>
     <li style="margin-bottom:.45rem">Restaura desde un backup anterior al ataque (si tienes). Si no, contrata un servicio de limpieza profesional.</li>
     <li style="margin-bottom:.45rem">Notifica a la <strong>AEPD en 72h</strong> si hubo exfiltración de datos personales (obligatorio RGPD art. 33).</li>
