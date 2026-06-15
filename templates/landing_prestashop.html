@@ -95,6 +95,16 @@ h1 em{font-style:normal;color:#FCA5A5}
 .dr-badge-ok{background:rgba(34,197,94,.12);color:#86EFAC}
 .dr-card-title{font-size:.95rem;font-weight:700;margin-bottom:.25rem}
 .dr-card-desc{font-size:.82rem;color:var(--muted-2);line-height:1.5}
+.dr-fix{margin-top:.7rem;border-top:1px solid rgba(148,163,184,.12);padding-top:.5rem}
+.dr-fix summary{cursor:pointer;font-size:.78rem;font-weight:700;color:#86EFAC;list-style:none;display:flex;align-items:center;gap:.4rem;user-select:none}
+.dr-fix summary::-webkit-details-marker{display:none}
+.dr-fix summary::before{content:'▸';transition:transform .2s;font-size:.7rem}
+.dr-fix[open] summary::before{transform:rotate(90deg)}
+.dr-fix-body{margin-top:.6rem;font-size:.8rem;color:var(--muted-2);line-height:1.6}
+.dr-fix-body ol{margin:0;padding-left:1.1rem}
+.dr-fix-body li{margin-bottom:.4rem}
+.dr-fix-body code{background:rgba(6,13,9,.6);border:1px solid var(--border);border-radius:4px;padding:.05rem .35rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;color:#86EFAC}
+.dr-fix-body strong{color:#FCD34D}
 
 .cta-box{background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(245,158,11,.12));border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:1.75rem;margin-top:2rem;text-align:center}
 .cta-title{font-size:1.15rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem}
@@ -270,11 +280,28 @@ function renderResults(d){
   document.getElementById('ps-results').scrollIntoView({behavior:'smooth',block:'start'});
 
   var html='';
-  function card(type,title,desc){
+  // Mapa de remediaciones: por cada tipo de hallazgo, un titulo de info + pasos para arreglarlo
+  var FIX={
+    skimmer:['<strong>No toques nada en producción todavía.</strong> Haz una copia forense: snapshot del servidor + dump de la base de datos + guarda el HTML actual del checkout. Es tu prueba si hay denuncia.','Compara el archivo del checkout con un backup limpio anterior. El skimmer suele estar como <code>&lt;script&gt;</code> al final de <code>&lt;/body&gt;</code> o como un <code>&lt;script src&gt;</code> de un dominio raro.','Cambia TODAS las contraseñas desde un equipo limpio: admin PrestaShop, FTP, hosting, base de datos.','Restaura desde un backup anterior al ataque, o contrata limpieza profesional (Sucuri, Sansec).','Notifica a la <strong>AEPD en 72h</strong> si hubo robo de datos de tarjeta (obligatorio RGPD art. 33) y avisa a tu pasarela de pago.'],
+    install:['Conéctate por FTP o SSH a tu servidor.','Localiza y <strong>elimina la carpeta <code>/install/</code></strong> de la raíz de PrestaShop. Solo se usa durante la instalación inicial.','Comprueba que <code>tutienda.com/install/</code> ya devuelve 404.','Si tienes <code>/install/</code> renombrada (ej. install-dev), bórrala también.'],
+    admin:['Por FTP/SSH, renombra la carpeta <code>/admin</code> a algo aleatorio, ej. <code>admin-7xK9pQ</code>.','Accede de nuevo al back office por la nueva URL (PrestaShop la actualiza sola).','Activa un límite de intentos de login y, si puedes, 2FA para administradores.','Nunca dejes la ruta <code>/admin</code> por defecto: es lo primero que prueban los bots.'],
+    version:['Haz un <strong>backup completo</strong> (base de datos + archivos) antes de nada.','Entra en el back office → <strong>Parámetros avanzados → Mejoras → Actualizar PrestaShop</strong>.','Sigue el asistente hasta la última versión 8.x estable.','Prueba el checkout y el catálogo tras actualizar. Si algo falla, restaura el backup.'],
+    modules:['Entra en <strong>Módulos → Gestor de módulos</strong> en el back office.','Actualiza los módulos marcados. Si alguno no tiene actualización y es vulnerable, desinstálalo.','Descarga módulos solo desde <code>addons.prestashop.com</code> — nunca versiones "nulled" (suelen traer backdoors).','Elimina los módulos que no uses: cada módulo es superficie de ataque.'],
+    files:['Por FTP/SSH, bloquea o elimina los archivos sensibles listados.','En el <code>.htaccess</code> de la raíz, deniega el acceso a esas rutas. Ejemplo para <code>.git</code>: <code>RedirectMatch 404 /\\.git</code>.','Mueve <code>composer.lock</code>, logs y configs fuera de la carpeta pública si es posible.','Comprueba que cada ruta ya devuelve 403 o 404.'],
+    https:['Entra en <strong>Parámetros de la tienda → General</strong>.','Activa <strong>"Activar SSL"</strong> y <strong>"Activar SSL en todas las páginas"</strong>.','Asegúrate de tener un certificado válido (Let\'s Encrypt es gratis, casi todos los hostings lo incluyen).','Esto es obligatorio para cumplir PCI-DSS: sin HTTPS forzado, los datos de tarjeta viajan sin cifrar.'],
+    ssl_none:['Contrata o activa un certificado SSL — la mayoría de hostings ofrecen <strong>Let\'s Encrypt gratis</strong>.','Actívalo desde el panel de tu hosting (cPanel, Plesk) en un par de clics.','Después, fuerza HTTPS en PrestaShop (Parámetros de la tienda → General).'],
+    ssl_exp:['Renueva el certificado desde tu hosting. Si usas Let\'s Encrypt, ejecuta <code>certbot renew</code>.','Activa la <strong>renovación automática</strong> para que no vuelva a caducar.','Comprueba la nueva fecha de expiración recargando la tienda.'],
+    puertos:['Accede al firewall de tu hosting o servidor.','Bloquea el acceso externo a esos puertos. Bases de datos (MySQL, Redis, etc.) deben escuchar solo en <code>127.0.0.1</code>.','Si necesitas acceso remoto, hazlo por VPN o restringe por IP, nunca abierto a internet.','Vuelve a escanear para confirmar que están cerrados.']
+  };
+  function card(type,title,desc,fixKey){
     var b=type==='crit'?'dr-badge-crit':type==='warn'?'dr-badge-warn':'dr-badge-ok';
     var c=type==='crit'?'dr-card-crit':type==='warn'?'dr-card-warn':'dr-card-ok';
     var lbl=type==='crit'?'CRÍTICO':type==='warn'?'ADVERTENCIA':'OK';
-    return '<div class="dr-card '+c+'"><span class="dr-badge '+b+'">'+lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div></div>';
+    var fix='';
+    if(fixKey&&FIX[fixKey]){
+      fix='<details class="dr-fix"><summary>Cómo solucionarlo</summary><div class="dr-fix-body"><ol>'+FIX[fixKey].map(function(s){return '<li>'+s+'</li>';}).join('')+'</ol></div></details>';
+    }
+    return '<div class="dr-card '+c+'"><span class="dr-badge '+b+'">'+lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div>'+fix+'</div>';
   }
 
   if(!d.ps||!d.ps.is_prestashop){
@@ -283,27 +310,27 @@ function renderResults(d){
     var v=d.ps.version||'?';
     if(d.ps.skimmer_suspect){
       var ev=(d.ps.skimmer_evidence||[]).slice(0,2).join(' · ');
-      html+=card('crit','★ Posible SKIMMER detectado en checkout',(ev||'Patrones de robo de tarjeta o dominios sospechosos en el JavaScript')+'. Revísalo URGENTE siguiendo el protocolo de la guía.');
+      html+=card('crit','★ Posible SKIMMER detectado en checkout','Un skimmer es código JavaScript que roba los datos de tarjeta de tus clientes en el momento del pago. '+(ev?'<br><strong>Evidencia:</strong> '+ev+'. ':'')+'No es una confirmación forense, pero es una alerta muy seria: actúa como si lo fuera.','skimmer');
     }
-    if(d.ps.install_dir_exposed) html+=card('crit','/install/ accesible — RIESGO CRÍTICO','Permite reinstalación maliciosa. Bórralo del servidor inmediatamente.');
-    if(d.ps.admin_path_default) html+=card('crit','Panel admin sin renombrar','Detectado en '+(d.ps.admin_path_found||'/admin/')+'. Es la primera puerta de fuerza bruta — renómbralo a algo aleatorio.');
-    if(d.ps.version_outdated) html+=card('warn','PrestaShop '+v+' obsoleto','Versiones antiguas tienen RCE públicos. Actualiza desde el back office (haz backup antes).');
-    else html+=card('ok','PrestaShop '+v+' detectado','Versión actual o reciente. Buen punto de partida.');
+    if(d.ps.install_dir_exposed) html+=card('crit','/install/ accesible — RIESGO CRÍTICO','La carpeta de instalación sigue accesible desde internet. Permite que un atacante reinstale tu tienda con sus propias credenciales y tome el control total. Debe eliminarse siempre tras instalar.','install');
+    if(d.ps.admin_path_default) html+=card('crit','Panel admin sin renombrar','Tu back office está en '+(d.ps.admin_path_found||'/admin/')+', una ruta por defecto que los bots prueban automáticamente para fuerza bruta. PrestaShop recomienda renombrarla a algo impredecible.','admin');
+    if(d.ps.version_outdated) html+=card('warn','PrestaShop '+v+' obsoleto','Estás varias versiones por detrás. Las versiones antiguas acumulan vulnerabilidades públicas (algunas permiten ejecución remota de código) que los atacantes explotan en masa.','version');
+    else html+=card('ok','PrestaShop '+v+' detectado','Versión actual o reciente. Buen punto de partida — mantén también los módulos al día.');
     var vm=d.ps.vulnerable_modules||[];
-    if(vm.length) html+=card('crit',vm.length+' módulo'+(vm.length>1?'s':'')+' vulnerable'+(vm.length>1?'s':''),vm.slice(0,3).map(function(m){return m.name+' ('+m.severity+')';}).join(' · ')+(vm.length>3?'...':''));
+    if(vm.length) html+=card('crit',vm.length+' módulo'+(vm.length>1?'s':'')+' vulnerable'+(vm.length>1?'s':''),'Detectados módulos con vulnerabilidades conocidas: '+vm.slice(0,3).map(function(m){return '<code>'+m.name+'</code> ('+m.severity+')';}).join(', ')+(vm.length>3?'...':'')+'. Los módulos desactualizados son el vector de entrada más común en PrestaShop.','modules');
     var sf=d.ps.sensitive_files||[];
-    if(sf.length) html+=card('warn',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':''),sf.slice(0,3).map(function(f){return f.path;}).join(' · '));
-    if(!d.ps.https_forced) html+=card('crit','HTTPS no forzado en checkout','Riesgo PCI-DSS. Los datos de tarjeta pueden viajar sin cifrar. Activa SSL forzado en Parámetros → General.');
+    if(sf.length) html+=card('warn',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':'')+' expuesto'+(sf.length>1?'s':''),'Accesibles desde el navegador: '+sf.slice(0,3).map(function(f){return '<code>'+f.path+'</code>';}).join(', ')+(sf.length>3?'...':'')+'. Filtran versión, rutas internas o credenciales que ayudan a un atacante.','files');
+    if(!d.ps.https_forced) html+=card('crit','HTTPS no forzado en el checkout','Tu tienda no obliga a usar HTTPS, así que los datos de pago de tus clientes pueden viajar sin cifrar y ser interceptados. Incumple PCI-DSS y el RGPD.','https');
   }
 
   // Tarjetas complementarias: SSL + puertos
   if(d.ssl){
-    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS — imposible vender online de forma legal. Migra a Let\'s Encrypt gratis.');
-    else if(d.ssl.caducado) html+=card('crit','SSL caducado','Expiró el '+(d.ssl.expira||'?')+'. Renuévalo urgente o perderás ventas.');
-    else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes para no interrumpir el checkout.');
+    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. Los navegadores marcan la web como "No segura" y es ilegal procesar pagos así. Es lo primero que debes resolver.','ssl_none');
+    else if(d.ssl.caducado) html+=card('crit','SSL caducado','El certificado expiró el '+(d.ssl.expira||'?')+'. Los navegadores muestran una pantalla de error a tus visitantes y dejas de vender.','ssl_exp');
+    else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de la fecha para no interrumpir el checkout ni asustar a tus clientes.','ssl_exp');
   }
   var puertos_riesgo=(d.puertos||[]).filter(function(p){return ['MySQL','RDP','Redis','MongoDB','MSSQL','PostgreSQL'].indexOf(p.servicio)>=0;});
-  if(puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':''),puertos_riesgo.map(function(p){return p.puerto+'/'+p.servicio;}).join(' · '));
+  if(puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':'')+' expuesto'+(puertos_riesgo.length>1?'s':''),'Servicios accesibles desde internet: '+puertos_riesgo.map(function(p){return '<code>'+p.puerto+'/'+p.servicio+'</code>';}).join(', ')+'. Una base de datos abierta al exterior es una invitación al robo de datos.','puertos');
 
   document.getElementById('ps-cards').innerHTML=html;
 }

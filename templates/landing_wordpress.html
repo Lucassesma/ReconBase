@@ -94,6 +94,16 @@ h1 em{font-style:normal;color:#4ADE80}
 .dr-badge-ok{background:rgba(34,197,94,.12);color:#86EFAC}
 .dr-card-title{font-size:.95rem;font-weight:700;margin-bottom:.25rem}
 .dr-card-desc{font-size:.82rem;color:var(--muted-2);line-height:1.5}
+.dr-fix{margin-top:.7rem;border-top:1px solid rgba(148,163,184,.12);padding-top:.5rem}
+.dr-fix summary{cursor:pointer;font-size:.78rem;font-weight:700;color:#86EFAC;list-style:none;display:flex;align-items:center;gap:.4rem;user-select:none}
+.dr-fix summary::-webkit-details-marker{display:none}
+.dr-fix summary::before{content:'▸';transition:transform .2s;font-size:.7rem}
+.dr-fix[open] summary::before{transform:rotate(90deg)}
+.dr-fix-body{margin-top:.6rem;font-size:.8rem;color:var(--muted-2);line-height:1.6}
+.dr-fix-body ol{margin:0;padding-left:1.1rem}
+.dr-fix-body li{margin-bottom:.4rem}
+.dr-fix-body code{background:rgba(6,13,9,.6);border:1px solid var(--border);border-radius:4px;padding:.05rem .35rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;color:#86EFAC}
+.dr-fix-body strong{color:#FCD34D}
 
 .cta-box{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.16));border:1px solid rgba(34,197,94,.35);border-radius:12px;padding:1.75rem;margin-top:2rem;text-align:center}
 .cta-title{font-size:1.15rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem}
@@ -244,11 +254,25 @@ function renderResults(d){
   document.getElementById('wp-results').scrollIntoView({behavior:'smooth',block:'start'});
 
   var html='';
-  function card(type,title,desc){
+  var FIX={
+    version:['Haz un <strong>backup completo</strong> (base de datos + archivos) antes de actualizar.','Entra en <strong>Escritorio → Actualizaciones</strong> en tu wp-admin y actualiza el núcleo a la última versión.','Revisa que la web funciona tras actualizar. Si algo se rompe, restaura el backup.','Activa las actualizaciones automáticas del núcleo para no volver a quedarte atrás.'],
+    xmlrpc:['Si no usas Jetpack ni la app móvil, deshabilita <code>xmlrpc.php</code>.','En el <code>.htaccess</code> de la raíz añade: <code>&lt;Files xmlrpc.php&gt; Order Allow,Deny Deny from all &lt;/Files&gt;</code>.','Alternativa: instala un plugin de seguridad como Wordfence que lo bloquea con un clic.','Comprueba que <code>tudominio.com/xmlrpc.php</code> ya devuelve 403.'],
+    users:['Instala el plugin <strong>"Stop User Enumeration"</strong> o equivalente.','Si usas nginx, bloquea la ruta: <code>location ~ ^/wp-json/wp/v2/users { deny all; }</code>.','Evita que el nombre de usuario coincida con el "nicename" público.','Pon contraseñas fuertes + 2FA en todas las cuentas admin, ya que sus logins son visibles.'],
+    plugins:['Entra en <strong>Plugins → Plugins instalados</strong> y actualiza los marcados.','Si un plugin vulnerable no tiene actualización, desinstálalo y busca una alternativa mantenida.','Elimina los plugins desactivados que no uses: siguen siendo explotables.','Instala Wordfence o Sucuri para vigilar nuevas vulnerabilidades de tus plugins.'],
+    files:['Por FTP/SSH, elimina los archivos sensibles (backups <code>.bak</code>, <code>.swp</code>, <code>debug.log</code>).','Borra <code>wp-admin/install.php</code> si ya instalaste WordPress.','En <code>wp-config.php</code> desactiva el debug público: <code>define(\'WP_DEBUG\', false);</code>.','Bloquea por <code>.htaccess</code> el acceso directo a archivos de configuración.'],
+    ssl_none:['Activa un certificado SSL gratuito (Let\'s Encrypt) desde el panel de tu hosting.','En <strong>Ajustes → Generales</strong> cambia la URL del sitio a <code>https://</code>.','Instala el plugin "Really Simple SSL" para forzar HTTPS en toda la web sin romper enlaces.'],
+    ssl_exp:['Renueva el certificado desde tu hosting. Con Let\'s Encrypt: <code>certbot renew</code>.','Activa la renovación automática para que no caduque de nuevo.','Recarga la web y comprueba el candado en el navegador.'],
+    puertos:['Accede al firewall de tu hosting o servidor.','Bloquea el acceso externo a esos puertos. Las bases de datos deben escuchar solo en <code>127.0.0.1</code>.','Para acceso remoto usa VPN o restringe por IP, nunca abierto a internet.','Reescanea para confirmar que están cerrados.']
+  };
+  function card(type,title,desc,fixKey){
     var b=type==='crit'?'dr-badge-crit':type==='warn'?'dr-badge-warn':'dr-badge-ok';
     var c=type==='crit'?'dr-card-crit':type==='warn'?'dr-card-warn':'dr-card-ok';
     var lbl=type==='crit'?'CRÍTICO':type==='warn'?'ADVERTENCIA':'OK';
-    return '<div class="dr-card '+c+'"><span class="dr-badge '+b+'">'+lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div></div>';
+    var fix='';
+    if(fixKey&&FIX[fixKey]){
+      fix='<details class="dr-fix"><summary>Cómo solucionarlo</summary><div class="dr-fix-body"><ol>'+FIX[fixKey].map(function(s){return '<li>'+s+'</li>';}).join('')+'</ol></div></details>';
+    }
+    return '<div class="dr-card '+c+'"><span class="dr-badge '+b+'">'+lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div>'+fix+'</div>';
   }
 
   if(!d.wp||!d.wp.is_wordpress){
@@ -256,25 +280,25 @@ function renderResults(d){
   } else {
     var v=d.wp.version||'?';
     var issues=[];
-    if(d.wp.version_outdated) issues.push(card('crit','WordPress '+v+' está obsoleto','Hay versiones más recientes disponibles. Las versiones antiguas suelen tener vulnerabilidades públicas explotables.'));
-    else issues.push(card('ok','WordPress '+v+' (versión actual)','Tu WordPress está en una versión reciente. Buen punto de partida.'));
-    if(d.wp.xmlrpc_exposed) issues.push(card('crit','xmlrpc.php expuesto','Permite fuerza bruta acelerada y ataques de amplificación pingback. Bloquéalo si no usas Jetpack.'));
-    if(d.wp.users_enumerable){var u=(d.wp.users_found||[]).slice(0,3).join(', ');issues.push(card('warn','Usuarios enumerables vía wp-json','Detectados: '+u+(d.wp.users_found&&d.wp.users_found.length>3?'...':'')+'. Cualquiera puede ver los logins y atacarlos.'));}
+    if(d.wp.version_outdated) issues.push(card('crit','WordPress '+v+' está obsoleto','Hay versiones más recientes disponibles. Las versiones antiguas acumulan vulnerabilidades públicas que las botnets explotan en cuestión de horas tras publicarse.','version'));
+    else issues.push(card('ok','WordPress '+v+' (versión actual)','Tu WordPress está en una versión reciente. Buen punto de partida — mantén también los plugins al día.'));
+    if(d.wp.xmlrpc_exposed) issues.push(card('crit','xmlrpc.php expuesto','Este archivo permite hacer cientos de intentos de login en una sola petición (fuerza bruta acelerada) y ataques de amplificación pingback para tumbar otras webs.','xmlrpc'));
+    if(d.wp.users_enumerable){var u=(d.wp.users_found||[]).slice(0,3).join(', ');issues.push(card('warn','Usuarios enumerables vía wp-json','Cualquiera puede listar tus nombres de usuario reales'+(u?' (detectados: '+u+(d.wp.users_found&&d.wp.users_found.length>3?'...':'')+')':'')+'. Con la lista de logins, la fuerza bruta es mucho más fácil.','users'));}
     var vp=d.wp.vulnerable_plugins||[];
-    if(vp.length) issues.push(card('crit',vp.length+' plugin'+(vp.length>1?'s':'')+' vulnerable'+(vp.length>1?'s':''),vp.slice(0,3).map(function(p){return p.name+' ('+p.severity+')';}).join(' · ')+(vp.length>3?'...':'')));
+    if(vp.length) issues.push(card('crit',vp.length+' plugin'+(vp.length>1?'s':'')+' vulnerable'+(vp.length>1?'s':''),'Detectados plugins con vulnerabilidades conocidas: '+vp.slice(0,3).map(function(p){return '<code>'+p.name+'</code> ('+p.severity+')';}).join(', ')+(vp.length>3?'...':'')+'. El plugin desactualizado es el vector de ataque nº1 en WordPress.','plugins'));
     var sf=d.wp.sensitive_files||[];
-    if(sf.length) issues.push(card('crit',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':')')+' accesible'+(sf.length>1?'s':''),sf.slice(0,3).map(function(f){return f.path;}).join(' · ')));
+    if(sf.length) issues.push(card('crit',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':'')+' accesible'+(sf.length>1?'s':''),'Accesibles desde el navegador: '+sf.slice(0,3).map(function(f){return '<code>'+f.path+'</code>';}).join(', ')+(sf.length>3?'...':'')+'. Pueden filtrar credenciales de la base de datos o permitir reinstalar el sitio.','files'));
     html+=issues.join('');
   }
 
   // Tarjetas complementarias: SSL + puertos críticos + filtraciones
   if(d.ssl){
-    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. Migra a Let\'s Encrypt gratis.');
-    else if(d.ssl.caducado) html+=card('crit','SSL caducado','Expiró el '+(d.ssl.expira||'?')+'. Renuévalo urgente.');
-    else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de la expiración.');
+    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. Los navegadores marcan la web como "No segura" y Google penaliza tu posicionamiento.','ssl_none');
+    else if(d.ssl.caducado) html+=card('crit','SSL caducado','El certificado expiró el '+(d.ssl.expira||'?')+'. Los visitantes ven una pantalla de error al entrar.','ssl_exp');
+    else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de la fecha para evitar la interrupción.','ssl_exp');
   }
   var puertos_riesgo=(d.puertos||[]).filter(function(p){return ['MySQL','RDP','Redis','MongoDB','MSSQL','PostgreSQL'].indexOf(p.servicio)>=0;});
-  if(puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':'')+' expuesto'+(puertos_riesgo.length>1?'s':''),puertos_riesgo.map(function(p){return p.puerto+'/'+p.servicio;}).join(' · '));
+  if(puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':'')+' expuesto'+(puertos_riesgo.length>1?'s':''),'Servicios accesibles desde internet: '+puertos_riesgo.map(function(p){return '<code>'+p.puerto+'/'+p.servicio+'</code>';}).join(', ')+'. Una base de datos abierta al exterior es un riesgo directo de robo de datos.','puertos');
 
   document.getElementById('wp-cards').innerHTML=html;
 }
