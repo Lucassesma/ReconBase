@@ -1624,6 +1624,98 @@ def scan_demo():
         "demo": True, "locked": False
     })
 
+
+@app.route("/api/auditar-cms", methods=["POST"])
+@limiter.limit("20 per hour")
+def auditar_cms():
+    """Auditoría CMS pública para las landings /auditoria-wordpress y
+    /auditoria-prestashop. A DIFERENCIA de /api/scan-demo, esta SÍ ejecuta
+    la auditoría de CMS (WordPress/PrestaShop) también para visitantes
+    anónimos — son páginas SEO cuyo objetivo es dar valor antes del registro.
+    Devuelve puertos + SSL + la tarjeta del CMS detectado, sin bloquear."""
+    import re as _re
+    data     = request.get_json() or {}
+    objetivo = (data.get("objetivo") or "").strip()[:200]
+    if not objetivo:
+        return jsonify({"error": "Introduce un dominio"}), 400
+    dominio = objetivo.split("@")[-1] if "@" in objetivo else objetivo
+    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
+    if not dominio or "." not in dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+
+    es_ip_flag = engine.es_ip(dominio)
+
+    try: puertos = engine.scan_critical_ports_fast(dominio)
+    except Exception: puertos = []
+    try: ssl_info = engine.ssl_scan(dominio)
+    except Exception: ssl_info = {}
+    try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
+    except Exception: dns = {}
+    try: headers = engine.check_security_headers(dominio)
+    except Exception: headers = {}
+    try: cms = {"cms": None, "version": None} if es_ip_flag else engine.detect_cms(dominio)
+    except Exception: cms = {"cms": None, "version": None}
+
+    wp_audit = {"is_wordpress": False}
+    ps_audit = {"is_prestashop": False}
+    if not es_ip_flag:
+        if cms.get("cms") == "WordPress":
+            try: wp_audit = engine.wordpress_audit(dominio)
+            except Exception: wp_audit = {"is_wordpress": False}
+        if cms.get("cms") == "PrestaShop":
+            try: ps_audit = engine.prestashop_audit(dominio)
+            except Exception: ps_audit = {"is_prestashop": False}
+
+    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
+    if wp_audit.get("is_wordpress"):
+        if wp_audit.get("version_outdated"):  riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
+        if wp_audit.get("xmlrpc_exposed"):    riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
+        if wp_audit.get("users_enumerable"):  riesgo = min(100, riesgo + 10); desglose["Usuarios WP enumerables"] = 10
+        vp = len(wp_audit.get("vulnerable_plugins") or [])
+        if vp: riesgo = min(100, riesgo + min(20, vp*8)); desglose[f"{vp} plugin(s) vulnerable(s)"] = min(20, vp*8)
+        sf = len(wp_audit.get("sensitive_files") or [])
+        if sf: riesgo = min(100, riesgo + min(15, sf*5)); desglose[f"{sf} archivo(s) sensible(s) WP"] = min(15, sf*5)
+    if ps_audit.get("is_prestashop"):
+        if ps_audit.get("version_outdated"):    riesgo = min(100, riesgo + 10); desglose["PrestaShop obsoleto"] = 10
+        if ps_audit.get("admin_path_default"):  riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
+        if ps_audit.get("install_dir_exposed"): riesgo = min(100, riesgo + 18); desglose["/install/ accesible"] = 18
+        vm = len(ps_audit.get("vulnerable_modules") or [])
+        if vm: riesgo = min(100, riesgo + min(20, vm*8)); desglose[f"{vm} módulo(s) vulnerable(s)"] = min(20, vm*8)
+        sfp = len(ps_audit.get("sensitive_files") or [])
+        if sfp: riesgo = min(100, riesgo + min(15, sfp*5)); desglose[f"{sfp} archivo(s) sensible(s) PS"] = min(15, sfp*5)
+        if not ps_audit.get("https_forced"): riesgo = min(100, riesgo + 10); desglose["HTTPS no forzado (checkout)"] = 10
+        if ps_audit.get("skimmer_suspect"):  riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
+    if ssl_info.get("caducado"):          riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
+    elif ssl_info.get("pronto_a_caducar"): riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
+    label, color = label_riesgo(riesgo)
+
+    # Tracking anónimo (sin PII)
+    try:
+        ip_real = (request.headers.get("CF-Connecting-IP")
+                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                   or request.remote_addr or "")
+        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
+        db.session.add(AnonymousScan(
+            dominio=dominio[:255], riesgo=int(riesgo or 0), label=(label or "")[:20], ip_hash=ip_h,
+            referer=(request.headers.get("Referer") or "")[:255],
+            user_agent=(request.headers.get("User-Agent") or "")[:100],
+            es_logged=bool(current_user.is_authenticated)
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    return jsonify({
+        "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
+        "puertos": puertos, "dns": dns,
+        "headers": {k: bool(v) for k, v in headers.items()},
+        "riesgo": riesgo, "label": label, "color": color,
+        "desglose": desglose, "cms": cms, "wp": wp_audit, "ps": ps_audit, "ssl": ssl_info,
+        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+        "demo": True, "locked": False
+    })
+
+
 @app.route("/api/lead-unlock", methods=["POST"])
 @limiter.limit("10 per hour")
 def lead_unlock():

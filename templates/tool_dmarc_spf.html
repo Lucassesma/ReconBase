@@ -196,7 +196,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href="/">Inicio</a>
     <a href="/pricing">Precios</a>
     <a href="/blog">Blog</a>
-    <a href="/register" class="btn-primary">Crear cuenta gratis</a>
+    {% if current_user.is_authenticated %}<a href="/perfil" class="btn-primary">Mi perfil</a>{% else %}<a href="/register" class="btn-primary">Crear cuenta gratis</a>{% endif %}
   </div>
 </nav>
 
