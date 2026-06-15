@@ -309,6 +309,7 @@ def sitemap():
         {"loc": base + "/auditoria-prestashop", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/skimmer-check",        "priority": "0.85","changefreq": "monthly", "lastmod": today},
         {"loc": base + "/comprobar-cabeceras-http", "priority": "0.85","changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/comprobar-lista-negra",    "priority": "0.85","changefreq": "monthly", "lastmod": today},
         {"loc": base + "/status",  "priority": "0.5",  "changefreq": "daily",   "lastmod": today},
     ]
     # Añadir posts del blog con su lastmod real
@@ -465,6 +466,52 @@ def tool_headers():
     """Herramienta gratuita: comprobar cabeceras de seguridad HTTP.
     SEO: 'comprobar cabeceras seguridad', 'security headers test español'."""
     return render_template("tool_headers.html")
+
+@app.route("/comprobar-lista-negra")
+def tool_blacklist():
+    """Herramienta gratuita: comprobar si un dominio está en listas negras
+    de malware/phishing. SEO: 'comprobar lista negra google', 'mi web marcada
+    como insegura', 'verificar sitio seguro'."""
+    return render_template("tool_blacklist.html")
+
+@app.route("/api/check-blacklist", methods=["POST"])
+@limiter.limit("30 per hour")
+def api_check_blacklist():
+    """Comprueba si un dominio aparece en listas negras de malware/phishing.
+    Fuente principal URLhaus (sin key) + Google Safe Browsing si hay key."""
+    import re as _re
+    data = request.get_json(silent=True) or {}
+    raw  = (data.get("dominio") or "").strip()[:255]
+    if not raw:
+        return jsonify({"error": "Introduce un dominio"}), 400
+    dominio = raw.split("@")[-1] if "@" in raw else raw
+    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
+    if not dominio or "." not in dominio:
+        return jsonify({"error": "Dominio inválido"}), 400
+    try:
+        sb_key = os.getenv("GOOGLE_SAFEBROWSING_KEY", "") or None
+        res = engine.check_blacklist(dominio, safebrowsing_key=sb_key)
+    except Exception as e:
+        logger.warning(f"[check-blacklist] error {dominio}: {e}")
+        return jsonify({"error": "No se pudo completar la comprobación"}), 500
+    res["timestamp"] = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+    # Tracking ligero
+    try:
+        ip_real = (request.headers.get("CF-Connecting-IP")
+                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                   or request.remote_addr or "")
+        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
+        db.session.add(AnonymousScan(
+            dominio=dominio[:255], riesgo=100 if res.get("listed") else 0,
+            label=("BLACKLIST" if res.get("listed") else "LIMPIO")[:20], ip_hash=ip_h,
+            referer=(request.headers.get("Referer") or "")[:255],
+            user_agent=(request.headers.get("User-Agent") or "")[:100],
+            es_logged=bool(getattr(current_user, "is_authenticated", False))
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    return jsonify(res)
 
 @app.route("/api/check-headers", methods=["POST"])
 @limiter.limit("30 per hour")

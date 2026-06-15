@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
+try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');if(v==='accepted'){gtag('consent','update',{'ad_storage':'granted','analytics_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(_){}
+</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comprobar si tu web está en lista negra (malware/phishing) gratis · ReconBase</title>
+<meta name="description" content="Comprueba gratis si tu dominio está marcado como peligroso en listas negras de malware y phishing (URLhaus, Google Safe Browsing). Si tu web está en una blocklist, pierdes el 70% del tráfico. Sin registro.">
+<meta name="keywords" content="comprobar lista negra, mi web marcada como insegura, verificar sitio seguro google, blacklist check, comprobar malware web, sitio web peligroso google">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://reconbase.es/comprobar-lista-negra">
+<meta property="og:title" content="¿Tu web está en una lista negra? Compruébalo gratis">
+<meta property="og:description" content="Si tu dominio está marcado como peligroso por Google o en blocklists de malware, los navegadores bloquean a tus visitantes. Compruébalo en segundos.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://reconbase.es/comprobar-lista-negra">
+<meta property="og:image" content="https://reconbase.es/og/home.png">
+<meta property="og:locale" content="es_ES">
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Comprobador de listas negras","description":"Herramienta gratuita para comprobar si un dominio está en listas negras de malware o phishing.","url":"https://reconbase.es/comprobar-lista-negra","applicationCategory":"SecurityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"es-ES"}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"¿Qué significa estar en una lista negra?","acceptedAnswer":{"@type":"Answer","text":"Significa que un servicio de seguridad (Google Safe Browsing, abuse.ch, etc.) ha marcado tu dominio como peligroso por distribuir malware o alojar phishing. Cuando eso pasa, los navegadores muestran una pantalla roja de advertencia a tus visitantes y dejas de aparecer correctamente en Google. Pierdes la mayoría del tráfico hasta que limpias la web y solicitas la revisión."}},
+{"@type":"Question","name":"¿Qué fuentes consultáis?","acceptedAnswer":{"@type":"Answer","text":"Consultamos el feed público de URLhaus (abuse.ch), una de las mayores bases de datos de URLs de malware activas, y opcionalmente Google Safe Browsing. Son las fuentes que usan los navegadores y antivirus para decidir si bloquean un sitio."}},
+{"@type":"Question","name":"Mi web sale limpia, ¿estoy 100% seguro?","acceptedAnswer":{"@type":"Answer","text":"Salir limpio es buena señal, pero las listas negras reaccionan DESPUÉS de detectar el problema. Si tu web fue comprometida hace pocas horas, puede que aún no esté listada. Por eso conviene combinar esta comprobación con una auditoría completa que detecte el problema en origen."}}
+]}
+</script>
+
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
+<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
+{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060D09;--surface:#0A1410;--border:#152B1E;--text:#E2EDF8;--muted:#64748B;--muted-2:#94A3B8;--green:#22C55E;--green-dk:#15803D;--red:#EF4444;--amber:#F59E0B}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.6}
+a{color:var(--green);text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 6%;border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:1.1rem;letter-spacing:-.03em}
+.nav-links{display:flex;gap:1.5rem;font-size:.85rem}
+.nav-links a{color:var(--muted)}
+.btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff !important;padding:.5rem 1.25rem;border-radius:6px;font-weight:700;font-size:.82rem}
+.hero{background:linear-gradient(160deg,#021a0a 0%,#052e16 45%,#063a1c 100%);padding:3.5rem 6% 2.5rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 80%,rgba(22,163,74,.14) 0%,transparent 55%)}
+.hero-inner{max-width:760px;margin:0 auto;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);padding:.35rem .85rem;border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;margin-bottom:1.25rem}
+.dot{width:6px;height:6px;border-radius:50%;background:#22C55E}
+h1{font-size:clamp(1.8rem,3.6vw,2.5rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;margin-bottom:.85rem}
+h1 em{font-style:normal;color:#4ADE80}
+.hero-sub{font-size:clamp(.95rem,1.4vw,1.05rem);color:#86EFAC;max-width:580px;margin:0 auto 2rem;opacity:.92}
+.scan-form{max-width:560px;margin:0 auto;display:flex;gap:.5rem;flex-wrap:wrap}
+.scan-input{flex:1;min-width:220px;background:rgba(6,13,9,.7);border:1px solid rgba(22,163,74,.4);color:#F0FDF4;padding:.85rem 1.1rem;border-radius:8px;font-size:.95rem;outline:none;font-family:'Inter',sans-serif}
+.scan-input:focus{border-color:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.scan-btn{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.6rem;border-radius:8px;font-weight:700;font-size:.92rem;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.scan-btn:disabled{opacity:.65;cursor:not-allowed}
+.results{max-width:760px;margin:2rem auto 0;padding:0 6%;display:none}
+.results.show{display:block}
+.verdict{border-radius:12px;padding:1.75rem;margin-bottom:1.25rem;text-align:center;border:1px solid}
+.verdict.clean{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.4)}
+.verdict.listed{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.5)}
+.verdict.info{background:var(--surface);border-color:var(--border)}
+.verdict-ico{font-size:2.5rem;margin-bottom:.5rem}
+.verdict-title{font-size:1.3rem;font-weight:800;margin-bottom:.4rem}
+.verdict.clean .verdict-title{color:#4ADE80}
+.verdict.listed .verdict-title{color:#FCA5A5}
+.verdict-dom{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--muted-2);margin-bottom:.75rem}
+.verdict-desc{font-size:.9rem;color:var(--muted-2);line-height:1.6;max-width:520px;margin:0 auto}
+.src-list{display:flex;flex-direction:column;gap:.5rem;margin-top:1rem;text-align:left;max-width:420px;margin-left:auto;margin-right:auto}
+.src-row{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:.65rem .9rem;font-size:.82rem;color:#FCA5A5;display:flex;justify-content:space-between;gap:.5rem}
+.checked{font-size:.75rem;color:var(--muted);margin-top:1rem;font-family:'JetBrains Mono',monospace}
+.cta-box{background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(22,163,74,.16));border:1px solid rgba(34,197,94,.35);border-radius:12px;padding:1.5rem;margin-top:1.5rem;text-align:center}
+.cta-title{font-size:1.05rem;font-weight:800;color:#F0FDF4;margin-bottom:.4rem}
+.cta-sub{font-size:.85rem;color:#86EFAC;margin-bottom:1rem;line-height:1.55}
+.cta-btn{display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-weight:700;font-size:.85rem}
+.content{max-width:760px;margin:4rem auto 3rem;padding:0 6%}
+.content h2{font-size:1.4rem;font-weight:800;letter-spacing:-.02em;margin:2.5rem 0 1rem;color:#F0FDF4}
+.content h2:first-child{margin-top:0}
+.content p{color:var(--muted-2);margin-bottom:1rem;font-size:.95rem}
+.content strong{color:#F0FDF4}
+.faq{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.15rem 1.4rem;margin-bottom:.7rem}
+.faq-q{font-weight:700;font-size:.98rem;margin-bottom:.4rem;color:#F0FDF4}
+.faq-a{font-size:.88rem;color:var(--muted-2);line-height:1.6}
+footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.82rem;color:var(--muted);margin-top:3rem}
+footer a{color:var(--muted-2);margin:0 .6rem}
+@media(max-width:720px){nav{padding:.9rem 5%}.nav-links{display:none}.hero{padding:2.5rem 5% 2rem}.scan-form{flex-direction:column}.scan-btn{width:100%}.results{padding:0 5%}}
+</style>
+<link rel="stylesheet" href="/static/css/mobile.css">
+<script src="/static/js/toast.js"></script>
+</head>
+<body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<nav>
+  <a href="/" class="nav-logo">RECON<span style="color:var(--green)">BASE</span></a>
+  <div class="nav-links">
+    <a href="/herramientas">Herramientas</a>
+    <a href="/blog">Blog</a>
+    <a href="/pricing">Precios</a>
+    <a href="/register" class="btn-primary">Empezar gratis</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="badge"><span class="dot"></span>comprobación gratis · sin registro</div>
+    <h1>¿Tu web está en una <em>lista negra</em>?</h1>
+    <p class="hero-sub">Si Google o las bases de datos de malware marcan tu dominio como peligroso, los navegadores muestran una pantalla roja a tus visitantes y pierdes la mayoría del tráfico. Compruébalo en segundos.</p>
+    <form class="scan-form" onsubmit="event.preventDefault();checkBlacklist();">
+      <input type="text" id="bl-domain" class="scan-input" placeholder="tudominio.com" autocomplete="off" required>
+      <button type="submit" class="scan-btn" id="bl-btn">Comprobar ahora</button>
+    </form>
+  </div>
+</section>
+
+<section class="results" id="bl-results"></section>
+
+<section class="content">
+  <h2>Qué significa estar en una lista negra</h2>
+  <p>Cuando un servicio de seguridad detecta que tu web distribuye malware o aloja una página de phishing, te añade a su <strong>lista negra</strong> (blocklist). A partir de ese momento:</p>
+  <p>• <strong>Chrome, Firefox, Safari y Edge</strong> muestran una pantalla roja de advertencia ("El sitio que intentas visitar puede ser peligroso") antes de dejar entrar a tus visitantes. La mayoría se da media vuelta.</p>
+  <p>• <strong>Google</strong> degrada o retira tu web de los resultados de búsqueda.</p>
+  <p>• Los <strong>filtros de correo</strong> marcan como spam los emails que enlacen a tu dominio.</p>
+  <p>• Algunos <strong>antivirus</strong> bloquean directamente el acceso.</p>
+  <p>El resultado: puedes perder fácilmente el <strong>70% de tu tráfico</strong> de un día para otro, sin que tu web esté "caída". Simplemente nadie puede llegar.</p>
+
+  <h2>Qué fuentes consultamos</h2>
+  <p><strong>URLhaus (abuse.ch)</strong> — una de las mayores bases de datos colaborativas de URLs de malware activas, mantenida por la fundación suiza abuse.ch. Es una de las fuentes que alimentan a navegadores y antivirus.</p>
+  <p><strong>Google Safe Browsing</strong> — el sistema de Google que protege a más de 4.000 millones de dispositivos. Es el que dispara la pantalla roja en Chrome. (Activo en ReconBase cuando está configurada la integración.)</p>
+
+  <h2>Si tu web está listada, qué hacer</h2>
+  <p>Estar en una lista negra es síntoma de que tu web fue comprometida. El orden de actuación:</p>
+  <p>1. <strong>Limpia el origen.</strong> No sirve de nada pedir la revisión si el malware sigue ahí. Identifica y elimina el código malicioso (o restaura desde un backup limpio). Nuestra <a href="/">auditoría completa</a> y la <a href="/auditoria-wordpress">de WordPress</a> ayudan a localizar el punto de entrada.</p>
+  <p>2. <strong>Solicita la revisión</strong> en <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Google Search Console</a> → Seguridad y acciones manuales. Google reescanea y, si está limpio, te quita de la lista en 24-72h.</p>
+  <p>3. <strong>Vigila que no vuelva.</strong> Muchos sitios limpiados vuelven a infectarse en semanas porque no se cerró la vulnerabilidad de entrada. La monitorización continua te avisa si reaparece.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <div class="faq"><div class="faq-q">Mi web sale limpia, ¿estoy 100% seguro?</div><div class="faq-a">Salir limpio es buena señal, pero las listas negras reaccionan DESPUÉS de detectar el problema. Si tu web fue comprometida hace pocas horas, puede que aún no esté listada. Combina esta comprobación con una auditoría completa que detecte el problema en origen.</div></div>
+  <div class="faq"><div class="faq-q">¿Cada cuánto se actualizan las listas?</div><div class="faq-a">Continuamente. URLhaus añade URLs nuevas cada pocos minutos. Google Safe Browsing actualiza varias veces al día. Por eso una web puede pasar de limpia a listada en cuestión de horas tras un ataque.</div></div>
+  <div class="faq"><div class="faq-q">¿Esto arregla el problema?</div><div class="faq-a">No, solo te dice si estás listado. Para salir de la lista tienes que limpiar la web y pedir la revisión. Esta herramienta es la señal de alarma; la auditoría completa te ayuda a encontrar la causa.</div></div>
+</section>
+
+<footer>
+  <a href="/herramientas">Todas las herramientas</a><a href="/comprobar-cabeceras-http">Cabeceras HTTP</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a>
+  <div style="margin-top:1rem;font-size:.72rem;color:var(--muted)">© ReconBase · Herramientas de seguridad para PYMEs españolas</div>
+</footer>
+
+<script>
+function checkBlacklist(){
+  var v=(document.getElementById('bl-domain').value||'').trim();
+  if(!v){document.getElementById('bl-domain').focus();return;}
+  try{if(window.gtag)gtag('event','blacklist_check_started',{domain:v});}catch(_){}
+  try{if(window.plausible)plausible('Blacklist Check',{props:{domain:v}});}catch(_){}
+  var btn=document.getElementById('bl-btn');btn.textContent='Comprobando...';btn.disabled=true;
+  var res=document.getElementById('bl-results');res.classList.add('show');
+  res.innerHTML='<div class="verdict info"><div class="verdict-title" style="font-size:1rem;color:var(--muted-2)">Consultando listas negras para '+v+'...</div></div>';
+
+  fetch('/api/check-blacklist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dominio:v})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    btn.textContent='Comprobar ahora';btn.disabled=false;
+    if(d.error){res.innerHTML='<div class="verdict info"><div class="verdict-title" style="font-size:1rem;color:#FCA5A5">'+d.error+'</div></div>';return;}
+    var checked=(d.checked_sources||[]).join(' · ')||'—';
+    var html='';
+    if(d.listed){
+      var srcs=(d.sources||[]).map(function(s){return '<div class="src-row"><span>'+s.name+'</span><span>'+s.threat+'</span></div>';}).join('');
+      html+='<div class="verdict listed"><div class="verdict-ico">🚨</div><div class="verdict-title">Tu web está en una lista negra</div><div class="verdict-dom">'+d.domain+'</div><div class="verdict-desc">Tu dominio aparece marcado como peligroso. Los navegadores pueden estar bloqueando a tus visitantes AHORA MISMO. Limpia la web y solicita la revisión cuanto antes.</div><div class="src-list">'+srcs+'</div><div class="checked">Fuentes consultadas: '+checked+'</div></div>';
+      html+='<div class="cta-box"><div class="cta-title">Encuentra y cierra el punto de entrada</div><div class="cta-sub">Estar listado es síntoma de un compromiso. La auditoría completa de ReconBase localiza la vulnerabilidad para que limpies el origen, no solo el síntoma.</div><a href="/" class="cta-btn">Auditoría completa gratis →</a></div>';
+    } else {
+      html+='<div class="verdict clean"><div class="verdict-ico">✓</div><div class="verdict-title">Web limpia</div><div class="verdict-dom">'+d.domain+'</div><div class="verdict-desc">Tu dominio no aparece en las listas negras consultadas. Buena señal — pero recuerda que las listas reaccionan después del ataque. Para detectar problemas en origen, haz una auditoría completa.</div><div class="checked">Fuentes consultadas: '+checked+'</div></div>';
+      html+='<div class="cta-box"><div class="cta-title">¿Y el resto de tu seguridad?</div><div class="cta-sub">No estar en una lista negra es solo una parte. Comprueba puertos, SSL, DNS, cabeceras y vulnerabilidades de tu CMS con el escáner completo, gratis.</div><a href="/" class="cta-btn">Escaneo completo gratis →</a></div>';
+    }
+    res.innerHTML=html;
+    res.scrollIntoView({behavior:'smooth',block:'start'});
+  })
+  .catch(function(){btn.textContent='Comprobar ahora';btn.disabled=false;toast('Error de conexión','err');});
+}
+</script>
+</body>
+</html>

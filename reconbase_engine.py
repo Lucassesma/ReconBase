@@ -892,6 +892,119 @@ def cms_audit(domain, timeout=6, cms_hint=None):
 
 
 # ─────────────────────────────────────────────────────────────
+# MÓDULO 6c: LISTA NEGRA / BLOCKLIST (malware, phishing)
+# ─────────────────────────────────────────────────────────────
+# Feed público de URLhaus (abuse.ch) — URLs de malware activas. Sin API key.
+_BLACKLIST_FEED_URL = "https://urlhaus.abuse.ch/downloads/text_online/"
+_BLACKLIST_FEED_CACHE = {"hosts": None, "ts": 0}
+
+
+def _load_blacklist_feed(timeout=12):
+    """Descarga y cachea (1h) el feed de hosts maliciosos de URLhaus.
+    Devuelve un set de dominios. Sin API key."""
+    import time as _t
+    now = _t.time()
+    if _BLACKLIST_FEED_CACHE["hosts"] is not None and (now - _BLACKLIST_FEED_CACHE["ts"]) < 3600:
+        return _BLACKLIST_FEED_CACHE["hosts"]
+    hosts = set()
+    try:
+        r = requests.get(_BLACKLIST_FEED_URL, timeout=timeout,
+                         headers={"User-Agent": "ReconBase/2.0"})
+        if r.status_code == 200:
+            for line in r.text.splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                try:
+                    host = line.split("://", 1)[1].split("/", 1)[0].split(":", 1)[0].lower()
+                    if host.startswith("www."):
+                        host = host[4:]
+                    if host:
+                        hosts.add(host)
+                except Exception:
+                    continue
+            _BLACKLIST_FEED_CACHE["hosts"] = hosts
+            _BLACKLIST_FEED_CACHE["ts"] = now
+    except Exception:
+        pass
+    return _BLACKLIST_FEED_CACHE["hosts"] or set()
+
+
+def _check_safebrowsing(domain, api_key, timeout=8):
+    """Consulta Google Safe Browsing Lookup API v4. Requiere api_key.
+    Devuelve lista de amenazas detectadas (vacía si limpio o si falla)."""
+    import json as _json
+    threats = []
+    try:
+        body = _json.dumps({
+            "client": {"clientId": "reconbase", "clientVersion": "1.0"},
+            "threatInfo": {
+                "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING",
+                                "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
+                "platformTypes": ["ANY_PLATFORM"],
+                "threatEntryTypes": ["URL"],
+                "threatEntries": [
+                    {"url": f"http://{domain}/"},
+                    {"url": f"https://{domain}/"},
+                ],
+            },
+        }).encode("utf-8")
+        url = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={api_key}"
+        r = requests.post(url, data=body, timeout=timeout,
+                          headers={"Content-Type": "application/json"})
+        if r.status_code == 200:
+            data = r.json()
+            for m in (data.get("matches") or []):
+                t = m.get("threatType", "THREAT")
+                if t not in threats:
+                    threats.append(t)
+    except Exception:
+        pass
+    return threats
+
+
+def check_blacklist(domain, safebrowsing_key=None):
+    """Comprueba si un dominio está en listas negras de malware/phishing.
+    Fuente principal: URLhaus (abuse.ch, sin key). Capa opcional: Google
+    Safe Browsing (si se pasa safebrowsing_key). Devuelve dict homogéneo."""
+    import re as _re
+    domain = _re.sub(r'^https?://', '', (domain or "").strip(), flags=_re.IGNORECASE)
+    domain = domain.replace("www.", "").split("/")[0].split(":")[0].strip().lower()
+    result = {
+        "domain": domain,
+        "listed": False,
+        "sources": [],          # [{name, threat}]
+        "checked_sources": [],  # nombres de fuentes consultadas
+    }
+    if not domain or "." not in domain:
+        return result
+
+    # 1) URLhaus (keyless)
+    feed = _load_blacklist_feed()
+    if feed is not None:
+        result["checked_sources"].append("URLhaus (abuse.ch)")
+        if domain in feed:
+            result["listed"] = True
+            result["sources"].append({"name": "URLhaus (abuse.ch)", "threat": "Distribución de malware"})
+
+    # 2) Google Safe Browsing (opcional)
+    if safebrowsing_key:
+        result["checked_sources"].append("Google Safe Browsing")
+        threats = _check_safebrowsing(domain, safebrowsing_key)
+        _map = {
+            "MALWARE": "Malware",
+            "SOCIAL_ENGINEERING": "Phishing / ingeniería social",
+            "UNWANTED_SOFTWARE": "Software no deseado",
+            "POTENTIALLY_HARMFUL_APPLICATION": "Aplicación potencialmente dañina",
+        }
+        for t in threats:
+            result["listed"] = True
+            result["sources"].append({"name": "Google Safe Browsing", "threat": _map.get(t, t)})
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────
 # MÓDULO 7: VIGILANCIA NOCTURNA
 # ─────────────────────────────────────────────────────────────
 def enviar_alerta(mensaje):
