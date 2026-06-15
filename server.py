@@ -6434,6 +6434,61 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
 <p>La auditoría WordPress de ReconBase es lo que harías tú mismo si fueras pentester y tuvieras 60 segundos. <a href="/auditoria-wordpress">Pásala ahora a tu dominio</a> y mira el informe. Si todo sale en verde, perfecto — tienes evidencia de "due diligence" para auditorías de cumplimiento. Si sale algo en rojo, mejor lo arreglas antes de que un atacante lo encuentre.</p>
 """.strip()
     },
+    {
+        "slug": "wordpress-se-hackean-mas-rapido-2026-ventana-parche",
+        "titulo": "Por qué los WordPress se hackean más rápido que nunca en 2026 (y cómo cerrar la ventana de exposición)",
+        "excerpt": "El tiempo entre que se publica una vulnerabilidad de WordPress y los bots la explotan masivamente ha caído a horas. Te explicamos por qué pasa, cuánto tardan realmente los atacantes y cómo proteger tu web sin estar pendiente 24/7.",
+        "tags": "wordpress,vulnerabilidades,parches,botnet,seguridad,CVE,2026",
+        "contenido": """
+<h2>La ventana entre vulnerabilidad y ataque se mide ya en horas</h2>
+<p>Hace cinco años, cuando se publicaba una vulnerabilidad en un plugin popular de WordPress, los administradores tenían días — a veces semanas — para aplicar el parche antes de que alguien la explotara. En 2026 esa ventana se ha desplomado: los datos del sector muestran que los primeros intentos de explotación masiva llegan, de media, <strong>en menos de 12 horas</strong> desde la publicación del CVE. En algunos casos documentados, en menos de 2 horas.</p>
+<p>Esto cambia por completo las reglas. Ya no basta con "actualizar de vez en cuando". Si tu WordPress tiene un plugin vulnerable y tú te enteras el lunes de una vulnerabilidad publicada el viernes, es muy probable que tu web lleve el fin de semana entero siendo escaneada por botnets automatizadas.</p>
+
+<h2>¿Por qué se ha acelerado tanto?</h2>
+<p>Cuatro factores se han combinado:</p>
+<ol>
+  <li><strong>Automatización total del lado atacante.</strong> Los grupos de ataque ya no buscan webs a mano. Tienen botnets que monitorizan las bases de datos públicas de vulnerabilidades (CVE, WPScan, Wordfence Intelligence) y, en cuanto aparece una nueva, generan automáticamente el exploit y lo lanzan contra millones de webs WordPress indexadas.</li>
+  <li><strong>WordPress es el objetivo más rentable.</strong> Con el 43% de Internet sobre WordPress, cualquier vulnerabilidad en un plugin con cientos de miles de instalaciones es una mina. El retorno por hora de trabajo del atacante es altísimo.</li>
+  <li><strong>Inteligencia artificial en la generación de exploits.</strong> Lo que antes requería un investigador experto ahora se acelera con herramientas que convierten el aviso de seguridad (el "advisory") en código de explotación funcional en minutos.</li>
+  <li><strong>El parque de WordPress está desatendido.</strong> La mayoría de pymes instalaron su WordPress hace años y nadie lo mantiene. Plugins de 2019, versiones de core sin actualizar, themes nulled. Es terreno fértil.</li>
+</ol>
+
+<h2>Qué busca exactamente una botnet en tu WordPress</h2>
+<p>No es un humano mirando tu web. Es un script que, en segundos, comprueba:</p>
+<ul>
+  <li>La <strong>versión del core</strong> (vía readme.html, meta generator, API) para saber si es vulnerable.</li>
+  <li>Los <strong>plugins activos</strong> y sus versiones (vía rutas /wp-content/plugins/) para cruzarlos con su base de CVEs.</li>
+  <li>Si <strong>xmlrpc.php</strong> está abierto, para fuerza bruta acelerada.</li>
+  <li>Si los <strong>usuarios son enumerables</strong> vía /wp-json/wp/v2/users, para tener la lista de logins a atacar.</li>
+  <li>Si hay <strong>archivos sensibles</strong> expuestos (backups, install.php, debug.log).</li>
+</ul>
+<p>Es exactamente la misma información que comprueba la <a href="/auditoria-wordpress">auditoría WordPress de ReconBase</a> — porque para defenderte necesitas ver tu web con los mismos ojos que el atacante.</p>
+
+<h2>Cómo cerrar la ventana de exposición</h2>
+<p>No puedes parchear en "menos de 12 horas" si te enteras de las vulnerabilidades por casualidad. Necesitas un sistema. Por orden de impacto:</p>
+
+<h3>1. Activa las actualizaciones automáticas de plugins críticos</h3>
+<p>WordPress permite desde el panel marcar plugins para que se actualicen solos (Plugins → Activar actualizaciones automáticas). Para los plugins de seguridad, formularios y e-commerce, actívalo. El riesgo de que una actualización rompa algo es mucho menor que el de quedarte sin parchear durante el fin de semana.</p>
+
+<h3>2. Reduce tu superficie: borra lo que no usas</h3>
+<p>Cada plugin y theme instalado — aunque esté desactivado — es una puerta potencial. Un plugin desactivado con una vulnerabilidad de tipo "unauthenticated" sigue siendo explotable. Borra todo lo que no uses de verdad.</p>
+
+<h3>3. Monitorización continua, no revisiones puntuales</h3>
+<p>Aquí está la clave de 2026: como la ventana es de horas, la revisión manual mensual no sirve. Necesitas que <strong>algo vigile tu web cada día</strong> y te avise en cuanto aparezca un problema nuevo. La vigilancia nocturna de ReconBase reescanea tu dominio automáticamente y te envía una alerta por email (y Slack) si detecta una versión obsoleta, un plugin que pasó a ser vulnerable o un archivo sensible recién expuesto.</p>
+
+<h3>4. Bloquea los vectores de fuerza bruta</h3>
+<p>Deshabilita xmlrpc.php si no lo usas, bloquea la enumeración de usuarios y pon un límite de intentos de login. Son tres cambios de configuración que cierran los ataques automatizados más comunes.</p>
+
+<h3>5. Ten un backup que puedas restaurar de verdad</h3>
+<p>Si todo falla y te comprometen, un backup limpio reciente es la diferencia entre 1 hora de downtime y una semana de pesadilla. Pruébalo: un backup que nunca has restaurado no es un backup, es una ilusión.</p>
+
+<h2>El cambio de mentalidad que necesitas</h2>
+<p>La seguridad de WordPress ya no es un evento ("voy a revisar la web este mes"), es un proceso continuo. La pregunta correcta no es "¿está mi web segura hoy?", sino "<strong>¿me enteraré dentro de las próximas horas si deja de estarlo?</strong>". Si la respuesta es no, tienes una ventana de exposición abierta justo del tamaño que las botnets necesitan.</p>
+
+<h2>Conclusión</h2>
+<p>Los atacantes se han automatizado y han reducido la ventana a horas. Tu defensa también tiene que automatizarse. <a href="/auditoria-wordpress">Haz una auditoría gratuita de tu WordPress ahora</a> para ver tu estado actual, y si quieres dormir tranquilo, activa la vigilancia continua: que un sistema mire tu web cada noche para que tú no tengas que hacerlo.</p>
+""".strip()
+    },
 ]
 
 with app.app_context():
