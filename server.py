@@ -4458,6 +4458,73 @@ def admin_panel():
         recent_users=recent_users, recent_scans=recent_scans,
         now=now)
 
+@app.route("/admin/stripe-check")
+@login_required
+@admin_required
+def admin_stripe_check():
+    """Diagnóstico rápido: consulta a Stripe el precio REAL que se está
+    cobrando por los price_id configurados y lo compara con lo que anuncia
+    la web (9€/mes, 90€/año). Sirve para verificar que web y cobro coinciden."""
+    from flask import Response
+    ESPERADO_MES  = 9.0
+    ESPERADO_ANIO = 90.0
+    filas = []
+    def _precio(label, price_id, esperado):
+        if not price_id:
+            return {"label": label, "price_id": "(no configurado)", "importe": None,
+                    "moneda": "", "esperado": esperado, "ok": False, "error": "Variable de entorno vacía"}
+        try:
+            p = stripe.Price.retrieve(price_id)
+            importe = (p.get("unit_amount") or 0) / 100.0
+            moneda  = (p.get("currency") or "eur").upper()
+            return {"label": label, "price_id": price_id, "importe": importe,
+                    "moneda": moneda, "esperado": esperado,
+                    "ok": abs(importe - esperado) < 0.01, "error": None}
+        except Exception as e:
+            return {"label": label, "price_id": price_id, "importe": None,
+                    "moneda": "", "esperado": esperado, "ok": False, "error": str(e)[:120]}
+    if not stripe.api_key:
+        cuerpo = "<p style='color:#DC2626'>STRIPE_SECRET_KEY no configurada — no se puede consultar Stripe.</p>"
+    else:
+        filas.append(_precio("Pro mensual", STRIPE_PRICE_PRO, ESPERADO_MES))
+        filas.append(_precio("Pro anual",   STRIPE_PRICE_PRO_ANUAL, ESPERADO_ANIO))
+        rows = ""
+        for f in filas:
+            if f["error"]:
+                estado = f"<span style='color:#DC2626'>⚠ {f['error']}</span>"
+                cobra  = "—"
+            elif f["ok"]:
+                estado = "<span style='color:#16A34A;font-weight:700'>✓ CORRECTO</span>"
+                cobra  = f"{f['importe']:.2f} {f['moneda']}"
+            else:
+                estado = f"<span style='color:#DC2626;font-weight:700'>✗ NO COINCIDE (esperado {f['esperado']:.2f}€)</span>"
+                cobra  = f"<strong style='color:#DC2626'>{f['importe']:.2f} {f['moneda']}</strong>"
+            rows += (f"<tr><td style='padding:.6rem 1rem;border-bottom:1px solid #E2E8F0'>{f['label']}</td>"
+                     f"<td style='padding:.6rem 1rem;border-bottom:1px solid #E2E8F0;font-family:monospace;font-size:.8rem'>{f['price_id']}</td>"
+                     f"<td style='padding:.6rem 1rem;border-bottom:1px solid #E2E8F0'>{cobra}</td>"
+                     f"<td style='padding:.6rem 1rem;border-bottom:1px solid #E2E8F0'>{estado}</td></tr>")
+        cuerpo = (f"<table style='border-collapse:collapse;width:100%;max-width:820px'>"
+                  f"<thead><tr style='background:#F1F5F9'>"
+                  f"<th style='text-align:left;padding:.6rem 1rem'>Plan</th>"
+                  f"<th style='text-align:left;padding:.6rem 1rem'>price_id (Stripe)</th>"
+                  f"<th style='text-align:left;padding:.6rem 1rem'>Cobra realmente</th>"
+                  f"<th style='text-align:left;padding:.6rem 1rem'>Estado</th></tr></thead>"
+                  f"<tbody>{rows}</tbody></table>")
+    html = (f"<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'>"
+            f"<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            f"<title>Stripe check — ReconBase Admin</title>"
+            f"<style>body{{font-family:Inter,system-ui,sans-serif;background:#F8FAFC;color:#0F172A;padding:2.5rem 6%;line-height:1.6}}"
+            f"h1{{font-size:1.4rem}}a{{color:#16A34A}}</style></head><body>"
+            f"<h1>Comprobación de precios en Stripe</h1>"
+            f"<p>Compara el precio real que cobra Stripe con lo que anuncia la web (<strong>9€/mes · 90€/año</strong>).</p>"
+            f"{cuerpo}"
+            f"<p style='margin-top:1.5rem;font-size:.85rem;color:#64748B'>Si aparece <strong>NO COINCIDE</strong>: crea el precio correcto en el panel de Stripe y actualiza la variable de Railway "
+            f"(<code>STRIPE_PRICE_PRO</code> / <code>PRICE_PRO_ANUAL</code>). Luego recarga esta página.</p>"
+            f"<p style='margin-top:1rem'><a href='/admin/metricas'>← Volver a métricas</a></p>"
+            f"</body></html>")
+    return Response(html, mimetype="text/html")
+
+
 @app.route("/admin/metricas")
 @login_required
 @admin_required
