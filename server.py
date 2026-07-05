@@ -1479,7 +1479,7 @@ def api_logout():
     return jsonify({"ok": True})
 
 @app.route("/api/scan-demo", methods=["POST"])
-@limiter.limit("5 per hour")
+@limiter.limit("30 per hour")
 def scan_demo():
     """Escaneo público sin login para la landing. No guarda resultados en BD."""
     data     = request.get_json() or {}
