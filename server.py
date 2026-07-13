@@ -873,6 +873,16 @@ def index():
         plan      = current_user.plan_efectivo
         scan_hora = current_user.scan_hora if current_user.scan_hora is not None else 3
         scan_dias = current_user.scan_dias.split(',') if current_user.scan_dias else []
+    # ── ¿El usuario ha escaneado alguna vez? (histórico total, no del mes) ──
+    # Sirve para ocultar los banners de bienvenida/primeros pasos en cuanto
+    # hace su primer escaneo, sin depender de que pulse la X.
+    ha_escaneado = False
+    if current_user.is_authenticated:
+        try:
+            ha_escaneado = Scan.query.filter_by(user_id=current_user.id).count() > 0
+        except Exception:
+            db.session.rollback()
+            ha_escaneado = False
     # ── Detectar si el usuario tiene tiendas PrestaShop sin vigilancia automática ──
     # El sentido: si tiene PS detectado en algún escaneo previo + NO tiene vigilancia
     # activa, mostrarle un banner que le invite a activar la monitorización (skimmers).
@@ -907,6 +917,7 @@ def index():
                            stats_breaches=stats_breaches,
                            tiene_ps_sin_vigilancia=tiene_ps_sin_vigilancia,
                            ps_dominios_sample=ps_dominios_sample,
+                           ha_escaneado=ha_escaneado,
                            show_cookie_banner=show_cookie_banner))
     # Evitar que el navegador cachee el HTML (para que los fixes lleguen al instante)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

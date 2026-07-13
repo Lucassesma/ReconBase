@@ -676,7 +676,7 @@ function rbDismissPSBanner(){
 </script>
 {% endif %}
 
-{% if user and user.is_authenticated and not user.onboarding_done %}
+{% if user and user.is_authenticated and not user.onboarding_done and not ha_escaneado %}
 <div id="rb-welcome-banner" style="background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap">
   <div style="font-size:1.5rem;line-height:1;margin-top:.1rem">👋</div>
   <div style="flex:1;min-width:200px">
@@ -728,7 +728,7 @@ function rbDismissPSBanner(){
   <div class="sc-panel active" id="sc-auditoria">
 
     <!-- Onboarding checklist (se oculta tras la primera vez) -->
-    {% if user and user.is_authenticated and not user.onboarding_done %}
+    {% if user and user.is_authenticated and not user.onboarding_done and not ha_escaneado %}
     <div id="sc-checklist" style="background:#0A1410;border:1px solid #152B1E;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
         <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:#22C55E;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Primeros pasos</span>
