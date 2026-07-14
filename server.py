@@ -314,6 +314,7 @@ def sitemap():
         {"loc": base + "/herramientas",         "priority": "0.9", "changefreq": "weekly",  "lastmod": today},
         {"loc": base + "/auditoria-wordpress",  "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-prestashop", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
+        {"loc": base + "/auditoria-rapida",     "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/skimmer-check",        "priority": "0.85","changefreq": "monthly", "lastmod": today},
         {"loc": base + "/comprobar-cabeceras-http", "priority": "0.85","changefreq": "monthly", "lastmod": today},
         {"loc": base + "/comprobar-lista-negra",    "priority": "0.85","changefreq": "monthly", "lastmod": today},
@@ -449,6 +450,12 @@ def tool_dmarc_spf():
 def landing_wordpress():
     """Landing especializada para auditoría WordPress. SEO-first."""
     return render_template("landing_wordpress.html")
+
+@app.route("/auditoria-rapida")
+def auditoria_rapida():
+    """Landing de auditoría rápida: SPF/DMARC + cabeceras HTTP + reputación."""
+    user = current_user if current_user.is_authenticated else None
+    return render_template("auditoria_rapida.html", user=user)
 
 @app.route("/auditoria-prestashop")
 def landing_prestashop():
@@ -3817,6 +3824,57 @@ def cron_ssl_alerts():
             if dias is not None and dias in (1, 3, 7, 14, 30):
                 enviar_alerta_ssl(user.email, ultimo.dominio, dias)
 
+def cron_resumen_semanal():
+    """Cada lunes a las 8:00 envía resumen de la semana anterior a usuarios activos."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        if ahora.weekday() != 0:   # 0 = lunes
+            return
+        desde = ahora - timedelta(days=7)
+        usuarios = User.query.all()
+        for user in usuarios:
+            scans = Scan.query.filter(
+                Scan.user_id == user.id,
+                Scan.timestamp >= desde,
+                Scan.timestamp <= ahora
+            ).all()
+            if not scans:
+                continue
+            riesgo_prom = int(sum(s.riesgo for s in scans) / len(scans))
+            dominios = list({s.dominio for s in scans})
+            problemas = [s for s in scans if s.riesgo >= 40]
+
+            def _send(email, empresa, n_scans, r_prom, doms, n_prob):
+                try:
+                    cuerpo = (
+                        f"Hola {empresa},\n\n"
+                        f"Resumen de seguridad de esta semana en ReconBase.\n\n"
+                        f"{'='*50}\n"
+                        f"ESCANEOS ESTA SEMANA: {n_scans}\n"
+                        f"RIESGO PROMEDIO:      {r_prom}%\n"
+                        f"DOMINIOS ANALIZADOS:  {', '.join(doms[:5]) if doms else 'Ninguno'}\n"
+                        + (f"ALERTAS DETECTADAS:   {n_prob} escaneo(s) con riesgo ≥40%\n" if n_prob else "")
+                        + f"{'='*50}\n\n"
+                        f"Entra al dashboard para ver el historial completo:\n"
+                        f"{BASE_URL}/\n\n"
+                        f"--\nReconBase - Resumen semanal de seguridad\n"
+                        f"Para no recibir estos emails, ajusta tus notificaciones en el perfil.\n"
+                    )
+                    with app.app_context():
+                        mail.send(Message(
+                            subject=f"[ReconBase] Resumen semanal de {empresa} — {ahora.strftime('%d/%m/%Y')}",
+                            recipients=[email],
+                            body=cuerpo
+                        ))
+                        logger.info(f"[Semanal] Resumen enviado a {email}")
+                except Exception as e:
+                    logger.warning(f"[Semanal] Error resumen semanal {email}: {e}")
+
+            import threading as _th
+            _th.Thread(target=_send, args=(user.email, user.empresa, len(scans),
+                                           riesgo_prom, dominios, len(problemas)),
+                       daemon=True).start()
+
 def enviar_resumen_mensual(destinatario, empresa, scans_mes, riesgo_promedio, dominios):
     def _send():
         try:
@@ -4023,6 +4081,7 @@ scheduler.add_job(escaneo_automatico,   'cron', minute=0)
 scheduler.add_job(cron_onboarding,      'cron', hour=10, minute=0)
 scheduler.add_job(cron_ssl_alerts,      'cron', hour=9,  minute=0)
 scheduler.add_job(cron_resumen_mensual, 'cron', hour=8,  minute=0)
+scheduler.add_job(cron_resumen_semanal, 'cron', hour=8,  minute=5)
 scheduler.add_job(cron_trial_expiring,  'cron', hour=9,  minute=30)
 scheduler.add_job(cron_reengagement,    'cron', hour=11, minute=0)
 scheduler.add_job(cron_lead_followup,   'cron', hour=10, minute=30)

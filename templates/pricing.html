@@ -110,6 +110,7 @@ h1{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-.035em;line-he
 .plan-price::before{content:"€";font-size:1.4rem;vertical-align:top;margin-right:.1rem;opacity:.6}
 .plan-price span{font-size:.85rem;font-weight:600;color:var(--dim);margin-left:.25rem}
 .plan-desc{font-size:.85rem;color:var(--muted);margin:.75rem 0 1.25rem;min-height:48px}
+.plan-tagline{font-size:.78rem;color:#86EFAC;font-style:italic;margin:.1rem 0 .5rem;opacity:.85}
 .plan-div{height:1px;background:var(--border);margin:1rem 0}
 .pf{display:flex;align-items:flex-start;gap:.6rem;padding:.35rem 0;font-size:.85rem;color:var(--text)}
 .pf .ck{width:18px;height:18px;border-radius:50%;background:rgba(34,197,94,.2);color:#86EFAC;font-weight:900;font-size:.68rem;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.12rem}
@@ -187,8 +188,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="plans">
   <div class="plan">
     <div class="plan-name">Gratis</div>
+    <div class="plan-tagline">Descubre tu exposición real en 2 minutos</div>
     <div class="plan-price">0<span>/ mes</span></div>
-    <div class="plan-desc">Para empresas que quieren conocer su estado de seguridad sin coste.</div>
+    <div class="plan-desc">Para empresas que quieren conocer su estado de seguridad — sin compromisos, sin tarjeta.</div>
     <div class="plan-div"></div>
     <div class="pf"><span class="ck"></span>Hasta 10 dominios</div>
     <div class="pf"><span class="ck"></span>30 análisis al mes</div>
@@ -203,15 +205,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="pf off"><span class="ck"></span>Vigilancia nocturna 24/7</div>
     <div class="pf off"><span class="ck"></span>Alertas automáticas por email</div>
     <div class="pf off"><span class="ck"></span>Integración Slack · Webhooks</div>
-    <a href="/register" class="btn-plan ol">Empezar gratis</a>
+    <a href="/register" class="btn-plan ol">Escanear mi dominio →</a>
   </div>
 
   <div class="plan hot">
     <div class="plan-badge">RECOMENDADO</div>
     <div class="plan-name">Pro</div>
+    <div class="plan-tagline">Duerme tranquilo. Nosotros vigilamos por ti.</div>
     <div class="plan-price"><span id="pro-amount" style="font-size:2.75rem;font-weight:900;color:var(--text)">9</span><span id="pro-period">/ mes</span></div>
     <div id="pro-note" style="display:none;font-size:.72rem;color:var(--accent);font-weight:700;margin-top:-.3rem">90€/año · ahorras 18€</div>
-    <div class="plan-desc">Para empresas que necesitan protección continua, no solo análisis puntuales.</div>
+    <div class="plan-desc">Vigilancia 24/7, alertas automáticas y PDF ejecutivo listo para mostrar a dirección o clientes.</div>
     <div class="plan-div"></div>
     <div class="pf"><span class="ck"></span>Todo lo del plan Gratis</div>
     <div class="pf"><span class="ck"></span>Hasta 50 dominios</div>

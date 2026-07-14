@@ -225,11 +225,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 6
 .gauge-item-val{font-size:1.1rem;font-weight:800;color:#F0FDF4;letter-spacing:-.03em}
 .gauge-item-lbl{font-size:.59rem;font-family:'JetBrains Mono',monospace;color:#4ADE80;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-top:.1rem}
 /* COUNTER BAR */
-.hero-counter{background:rgba(0,0,0,.3);border-top:1px solid rgba(22,163,74,.15);padding:1.2rem 6%;position:relative;z-index:1}
+.hero-counter{background:linear-gradient(90deg,rgba(5,46,22,.75),rgba(4,10,6,.8));border-top:1px solid rgba(22,163,74,.3);border-bottom:1px solid rgba(22,163,74,.1);padding:1rem 6%;position:relative;z-index:1}
 .hero-counter-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:3rem;flex-wrap:wrap}
 .hc-stat{display:flex;align-items:center;gap:.6rem}
-.hc-num{font-size:1.5rem;font-weight:800;color:#4ADE80;font-family:'Inter',sans-serif;letter-spacing:-.04em}
-.hc-lbl{font-size:.72rem;color:rgba(134,239,172,.65);font-family:'JetBrains Mono',monospace}
+.hc-num{font-size:1.65rem;font-weight:900;color:#4ADE80;font-family:'Inter',sans-serif;letter-spacing:-.04em}
+.hc-lbl{font-size:.7rem;color:rgba(134,239,172,.75);font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
 .hc-div{width:1px;height:28px;background:rgba(22,163,74,.2)}
 /* BUTTONS */
 .btn-primary{background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .15s;min-height:44px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(22,163,74,.35)}
@@ -925,11 +925,18 @@ function rbDismissPSBanner(){
 </section>
 <div class="hero-counter">
   <div class="hero-counter-inner">
-    <div class="hc-stat"><span class="hc-num" id="cnt-dominios">0</span><span class="hc-lbl">escaneos realizados</span></div>
+    <div style="display:flex;align-items:center;gap:.45rem;margin-right:.25rem">
+      <span class="dot" style="flex-shrink:0"></span>
+      <span style="font-size:.62rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;letter-spacing:.14em;text-transform:uppercase;opacity:.8">En vivo</span>
+    </div>
     <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-vulns">0</span><span class="hc-lbl">riesgos analizados</span></div>
+    <div class="hc-stat"><span class="hc-num" id="cnt-dominios">0</span><span class="hc-lbl">dominios analizados</span></div>
     <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-breaches">0</span><span class="hc-lbl">empresas registradas</span></div>
+    <div class="hc-stat"><span class="hc-num" id="cnt-vulns">0</span><span class="hc-lbl">riesgos detectados</span></div>
+    <div class="hc-div"></div>
+    <div class="hc-stat"><span class="hc-num" id="cnt-breaches">0</span><span class="hc-lbl">empresas protegidas</span></div>
+    <div class="hc-div"></div>
+    <a href="/register" style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:#22C55E;font-weight:700;white-space:nowrap;letter-spacing:.05em;text-decoration:none">Únete →</a>
   </div>
 </div>
 </div>
@@ -2202,6 +2209,29 @@ function renderDemoResult(d){
         '<a href="/login" style="color:#86EFAC;font-size:.78rem;text-align:center;opacity:.8">Ya tengo cuenta</a>'+
       '</div>';
 
+  // Sticky monitoring bar — aparece ~0.8s después del resultado
+  (function(){
+    var bar = document.getElementById('monitor-sticky-bar');
+    if (!bar) return;
+    var domEl = document.getElementById('msb-domain');
+    if (domEl) domEl.textContent = d.objetivo || 'tu dominio';
+    var ctaEl = document.getElementById('msb-cta');
+    if (ctaEl) {
+      if (isLoggedIn) {
+        var safeObj = (d.objetivo||'').replace(/'/g, "\\'");
+        ctaEl.innerHTML =
+          '<button onclick="rbAbrirEscaner(\''+safeObj+'\');document.getElementById(\'monitor-sticky-bar\').style.display=\'none\'" '+
+          'style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.65rem 1.4rem;border-radius:8px;font-weight:700;font-size:.84rem;cursor:pointer;white-space:nowrap">Activar vigilancia →</button>';
+      } else {
+        ctaEl.innerHTML =
+          '<a href="/register?target='+encodeURIComponent(d.objetivo||'')+'" '+
+          'style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.65rem 1.4rem;border-radius:8px;font-weight:700;font-size:.84rem;white-space:nowrap;display:inline-block">Registrarme gratis →</a>'+
+          '<span style="font-size:.72rem;color:rgba(134,239,172,.7);white-space:nowrap">Sin tarjeta · 30 seg</span>';
+      }
+    }
+    setTimeout(function(){ bar.style.display = 'block'; }, 800);
+  })();
+
   // Limpiar pasos de carga
   document.getElementById('dr-steps').innerHTML='';
 }
@@ -2417,5 +2447,21 @@ function rbMarcarTodasLeidas() {
 })();
 
 </script>
+
+<!-- ── Monitor Sticky Bar (shows after demo scan) ─────────────────────── -->
+<div id="monitor-sticky-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9000;background:linear-gradient(135deg,#052e16 0%,#0a1f0f 100%);border-top:2px solid rgba(22,163,74,.5);padding:.8rem 5%;box-shadow:0 -6px 28px -4px rgba(0,0,0,.7)">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <span class="dot" style="flex-shrink:0"></span>
+      <div>
+        <div style="font-size:.63rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.1rem">Vigilancia disponible</div>
+        <div style="font-size:.86rem;font-weight:700;color:#F0FDF4">Monitoriza <span id="msb-domain" style="color:#4ADE80;font-family:'JetBrains Mono',monospace"></span> automáticamente</div>
+      </div>
+    </div>
+    <div id="msb-cta" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap"></div>
+    <button onclick="document.getElementById('monitor-sticky-bar').style.display='none'" style="position:absolute;top:.55rem;right:.8rem;background:transparent;border:none;color:rgba(134,239,172,.5);font-size:.85rem;cursor:pointer;padding:.2rem .4rem;line-height:1">✕</button>
+  </div>
+</div>
+
 </body>
 </html>
