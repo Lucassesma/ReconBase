@@ -44,8 +44,15 @@ load_dotenv()
 app = Flask(__name__)
 _SECRET_KEY = os.getenv("SECRET_KEY")
 if not _SECRET_KEY:
-    # En desarrollo local permitimos un fallback, pero en producción (Railway) lo exigimos
-    if os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("RAILWAY_ENVIRONMENT"):
+    # En desarrollo local permitimos un fallback, pero en producción lo exigimos.
+    # Detectamos producción por Railway, FLASK_ENV o la variable genérica PRODUCTION.
+    _is_prod = (
+        os.getenv("RAILWAY_ENVIRONMENT_NAME")
+        or os.getenv("RAILWAY_ENVIRONMENT")
+        or os.getenv("FLASK_ENV", "").lower() == "production"
+        or os.getenv("PRODUCTION", "").lower() in ("1", "true", "yes")
+    )
+    if _is_prod:
         raise RuntimeError("SECRET_KEY no configurada en producción")
     _SECRET_KEY = "dev_only_secret_change_in_prod"
 app.secret_key = _SECRET_KEY
@@ -1242,6 +1249,7 @@ def api_login():
     # Si tiene 2FA activado, no hacer login todavía — pedir código TOTP
     if getattr(user, 'totp_enabled', False) and user.totp_secret:
         session["2fa_pending_user"] = user.id
+        session["2fa_pending_ts"] = time.time()  # TTL: expira en 5 min (ver totp_verify_login)
         return jsonify({"ok": True, "requires_2fa": True})
     # Sesión persistente: sobrevive a cerrar el navegador hasta 30 días
     session.permanent = True
@@ -1304,8 +1312,14 @@ def _verify_turnstile(token, remote_ip=None):
             result = json.loads(resp.read().decode("utf-8"))
             return bool(result.get("success"))
     except Exception as e:
-        logger.warning(f"[Turnstile] verify failed: {e}")
-        # Fail-open: si Cloudflare está down, no bloquear registros legítimos
+        # Fail-open: si Cloudflare está down no bloqueamos registros legítimos,
+        # pero lo registramos con ERROR para detectar abuso o degradación sostenida.
+        logger.error(f"[Turnstile] FAIL-OPEN — verify falló, permitiendo paso sin captcha: {e}")
+        try:
+            import sentry_sdk as _sentry
+            _sentry.capture_message(f"[Turnstile] fail-open: {e}", level="warning")
+        except Exception:
+            pass
         return True
 
 
@@ -1352,6 +1366,7 @@ def api_register():
 
 @app.route("/api/stripe-portal", methods=["POST"])
 @login_required
+@require_verified
 def stripe_portal():
     """Crea una sesión del portal de clientes de Stripe para gestionar/cancelar suscripción."""
     if not stripe.api_key:
@@ -2784,6 +2799,7 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
 
 @app.route("/api/scan", methods=["POST"])
 @login_required
+@require_verified
 @limiter.limit("20 per hour")
 def scan():
     if current_user.plan_efectivo == "free":
@@ -4214,15 +4230,27 @@ def totp_enable():
 @login_required
 @limiter.limit("5 per hour")
 def totp_disable():
-    """Desactiva 2FA (requiere contraseña)."""
+    """Desactiva 2FA (requiere contraseña + código TOTP actual para evitar que
+    una sesión robada pueda desactivar el segundo factor sin el dispositivo)."""
+    try:
+        import pyotp as _pyotp
+    except ImportError:
+        return jsonify({"ok": False, "error": "pyotp no instalado"}), 500
     data = request.get_json() or {}
     password = data.get("password", "")
+    code     = (data.get("code") or "").strip()
     if not current_user.check_password(password):
         return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 400
+    if not code:
+        return jsonify({"ok": False, "error": "Introduce el código de tu app de autenticación"}), 400
+    totp = _pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(code, valid_window=1):
+        return jsonify({"ok": False, "error": "Código 2FA incorrecto"}), 400
     user = db.session.get(User, current_user.id)
     user.totp_enabled = False
     user.totp_secret = None
     db.session.commit()
+    _registrar_audit(current_user.id, '2fa_disable', "2FA desactivado por el usuario")
     return jsonify({"ok": True})
 
 @app.route("/api/2fa/verify", methods=["POST"])
@@ -4236,6 +4264,12 @@ def totp_verify_login():
     uid = session.get("2fa_pending_user")
     if not uid:
         return jsonify({"ok": False, "error": "No hay login pendiente de 2FA"}), 400
+    # Expirar el desafío 2FA si han pasado más de 5 minutos
+    pending_ts = session.get("2fa_pending_ts", 0)
+    if time.time() - pending_ts > 300:
+        session.pop("2fa_pending_user", None)
+        session.pop("2fa_pending_ts", None)
+        return jsonify({"ok": False, "error": "El código 2FA expiró. Vuelve a iniciar sesión."}), 400
     data = request.get_json() or {}
     code = (data.get("code") or "").strip()
     user = db.session.get(User, uid)
@@ -4247,6 +4281,7 @@ def totp_verify_login():
         _track_login_attempt(user.email, exito=False, razon="2fa_fail")
         return jsonify({"ok": False, "error": "Código 2FA incorrecto"}), 400
     session.pop("2fa_pending_user", None)
+    session.pop("2fa_pending_ts", None)
     # Sesión persistente: sobrevive a cerrar el navegador hasta 30 días
     session.permanent = True
     login_user(user, remember=True, duration=timedelta(days=30))
@@ -4443,6 +4478,23 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
             return abort(403)
+        return f(*args, **kwargs)
+    return decorated
+
+def require_verified(f):
+    """Decorador: bloquea el acceso si el usuario no ha verificado su email.
+    Permite que usuarios recién registrados vean el dashboard sin verificar,
+    pero impide que lancen escaneos o accedan a funciones de pago."""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not getattr(current_user, 'email_verified', True):
+            return jsonify({
+                "ok": False,
+                "error": "Verifica tu email antes de usar esta función. "
+                         "Revisa tu bandeja de entrada.",
+                "needs_verification": True,
+            }), 403
         return f(*args, **kwargs)
     return decorated
 
