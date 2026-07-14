@@ -1371,6 +1371,23 @@ def api_register():
         logger.warning(f"[Register] No se pudo marcar leads de {email}: {e}")
     return jsonify({"ok": True})
 
+def require_verified(f):
+    """Decorador: bloquea el acceso si el usuario no ha verificado su email.
+    Permite que usuarios recién registrados vean el dashboard sin verificar,
+    pero impide que lancen escaneos o accedan a funciones de pago."""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not getattr(current_user, 'email_verified', True):
+            return jsonify({
+                "ok": False,
+                "error": "Verifica tu email antes de usar esta función. "
+                         "Revisa tu bandeja de entrada.",
+                "needs_verification": True,
+            }), 403
+        return f(*args, **kwargs)
+    return decorated
+
 @app.route("/api/stripe-portal", methods=["POST"])
 @login_required
 @require_verified
@@ -4540,22 +4557,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
-def require_verified(f):
-    """Decorador: bloquea el acceso si el usuario no ha verificado su email.
-    Permite que usuarios recién registrados vean el dashboard sin verificar,
-    pero impide que lancen escaneos o accedan a funciones de pago."""
-    from functools import wraps
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if not getattr(current_user, 'email_verified', True):
-            return jsonify({
-                "ok": False,
-                "error": "Verifica tu email antes de usar esta función. "
-                         "Revisa tu bandeja de entrada.",
-                "needs_verification": True,
-            }), 403
-        return f(*args, **kwargs)
-    return decorated
+
 
 @app.route("/admin")
 @login_required
