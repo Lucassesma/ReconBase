@@ -48,3 +48,71 @@ class TestAntiSSRF:
     def test_endpoint_rechaza_puerto_en_host_interno(self, client):
         r = client.post("/api/scan-demo", json={"objetivo": "127.0.0.1:6379"})
         assert r.status_code == 400
+
+
+class _RespFalsa:
+    def __init__(self, text="", status_code=200, json_data=None, headers=None, url=""):
+        self.text, self.status_code, self._json = text, status_code, json_data
+        self.headers, self.url = headers or {}, url
+
+    def json(self):
+        return self._json
+
+
+XSS = "<img src=x onerror=alert(1)>"
+
+
+class TestContenidoRemotoNoEjecutable:
+    """Lo que devuelve una web escaneada no debe poder inyectar HTML en ReconBase."""
+
+    def test_usuarios_wordpress_saneados(self, monkeypatch):
+        home = '<meta name="generator" content="WordPress 6.4.2"><link href="/wp-content/x.css">'
+
+        def falso(url, timeout=5, headers=None):
+            if url.endswith("/wp-json/wp/v2/users"):
+                return _RespFalsa(json_data=[{"name": XSS}, {"name": "José García"}])
+            if url.endswith("://web-maliciosa.test"):
+                return _RespFalsa(text=home)
+            return None
+
+        monkeypatch.setattr(engine, "_safe_get", falso)
+        res = engine.wordpress_audit("web-maliciosa.test")
+        assert res["users_found"], "debería haber detectado usuarios"
+        for nombre in res["users_found"]:
+            assert "<" not in nombre and ">" not in nombre
+        assert "José García" in res["users_found"]
+
+    def test_evidencia_skimmer_saneada(self, monkeypatch):
+        home = ('<div class="/modules/ps_cart/"></div>'
+                f'<script src="https://{XSS}googie-analytics.com/a.js"></script>')
+
+        def falso(url, timeout=5, headers=None):
+            return _RespFalsa(text=home, url=url) if url.endswith("://tienda-maliciosa.test") else None
+
+        monkeypatch.setattr(engine, "_safe_get", falso)
+        res = engine.prestashop_audit("tienda-maliciosa.test")
+        assert res["skimmer_suspect"]
+        for ev in res["skimmer_evidence"]:
+            assert "<" not in ev and ">" not in ev
+
+    def test_version_cms_de_wp_json_saneada(self, monkeypatch):
+        def falso(url, timeout=5, headers=None, max_redirects=5):
+            if url.endswith("/wp-json/"):
+                return _RespFalsa(json_data={"version": XSS})
+            return _RespFalsa(text="<html><link href='/wp-content/a.css'></html>")
+
+        monkeypatch.setattr(engine, "get_seguro", falso)
+        res = engine.detect_cms("web-maliciosa.test")
+        assert res["cms"] == "WordPress"
+        assert res["version"] is None or "<" not in str(res["version"])
+
+    def test_plantillas_escapan_datos_remotos(self):
+        sumideros = {
+            "templates/landing_wordpress.html": ".map(rbEsc).join(', ')",
+            "templates/landing_prestashop.html": ".map(rbEsc).join(' · ')",
+            "templates/tool_skimmer_check.html": "'<li>'+rbEsc(e)+'</li>'",
+            "templates/landing.html": "'<li>'+rbEsc(e)+'</li>'",
+            "static/js/scanner.js": "'<li>'+rbEsc(e)+'</li>'",
+        }
+        for ruta, fragmento in sumideros.items():
+            assert fragmento in open(ruta, encoding="utf-8").read(), ruta

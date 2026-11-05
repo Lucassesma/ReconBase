@@ -172,6 +172,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
 </footer>
 
 <script>
+function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function checkSkimmer(){
   var v=(document.getElementById('sk-domain').value||'').trim();
   if(!v){document.getElementById('sk-domain').focus();return;}
@@ -192,7 +193,7 @@ function checkSkimmer(){
     }
     var html='';
     if(d.skimmer_suspect){
-      var evList=(d.skimmer_evidence||[]).map(function(e){return '<li>'+e+'</li>';}).join('');
+      var evList=(d.skimmer_evidence||[]).map(function(e){return '<li>'+rbEsc(e)+'</li>';}).join('');
       html+='<div class="verdict verdict-crit"><div class="verdict-label">⚠ Alerta crítica</div><div class="verdict-title">Posible skimmer detectado en '+d.dominio+'</div><div class="verdict-desc">Detectados patrones característicos de Magecart en el JavaScript del checkout. Esto NO es una confirmación forense, pero sí una alerta preliminar muy seria. Si tu tienda procesa pagos con tarjeta, sigue el protocolo de respuesta URGENTE.</div>'+(evList?'<div class="evidence-list"><ul>'+evList+'</ul></div>':'')+'</div>';
       html+='<div class="cta-box"><div class="cta-title">Quiero vigilancia 24/7 del checkout</div><div class="cta-sub">Con la cuenta Pro tienes monitorización continua: reescaneo cada hora, alerta inmediata por email + in-app cuando aparece un skimmer y PDF ejecutivo para notificar AEPD.</div><a href="/register" class="cta-btn">Crear cuenta gratis →</a></div>';
     } else if(d.is_prestashop){

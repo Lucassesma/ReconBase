@@ -225,6 +225,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
 </footer>
 
 <script>
+function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function scanWP(){
   var v=(document.getElementById('wp-domain').value||'').trim();
   if(!v){document.getElementById('wp-domain').focus();return;}
@@ -283,7 +284,7 @@ function renderResults(d){
     if(d.wp.version_outdated) issues.push(card('crit','WordPress '+v+' está obsoleto','Hay versiones más recientes disponibles. Las versiones antiguas acumulan vulnerabilidades públicas que las botnets explotan en cuestión de horas tras publicarse.','version'));
     else issues.push(card('ok','WordPress '+v+' (versión actual)','Tu WordPress está en una versión reciente. Buen punto de partida — mantén también los plugins al día.'));
     if(d.wp.xmlrpc_exposed) issues.push(card('crit','xmlrpc.php expuesto','Este archivo permite hacer cientos de intentos de login en una sola petición (fuerza bruta acelerada) y ataques de amplificación pingback para tumbar otras webs.','xmlrpc'));
-    if(d.wp.users_enumerable){var u=(d.wp.users_found||[]).slice(0,3).join(', ');issues.push(card('warn','Usuarios enumerables vía wp-json','Cualquiera puede listar tus nombres de usuario reales'+(u?' (detectados: '+u+(d.wp.users_found&&d.wp.users_found.length>3?'...':'')+')':'')+'. Con la lista de logins, la fuerza bruta es mucho más fácil.','users'));}
+    if(d.wp.users_enumerable){var u=(d.wp.users_found||[]).slice(0,3).map(rbEsc).join(', ');issues.push(card('warn','Usuarios enumerables vía wp-json','Cualquiera puede listar tus nombres de usuario reales'+(u?' (detectados: '+u+(d.wp.users_found&&d.wp.users_found.length>3?'...':'')+')':'')+'. Con la lista de logins, la fuerza bruta es mucho más fácil.','users'));}
     var vp=d.wp.vulnerable_plugins||[];
     if(vp.length) issues.push(card('crit',vp.length+' plugin'+(vp.length>1?'s':'')+' vulnerable'+(vp.length>1?'s':''),'Detectados plugins con vulnerabilidades conocidas: '+vp.slice(0,3).map(function(p){return '<code>'+p.name+'</code> ('+p.severity+')';}).join(', ')+(vp.length>3?'...':'')+'. El plugin desactualizado es el vector de ataque nº1 en WordPress.','plugins'));
     var sf=d.wp.sensitive_files||[];

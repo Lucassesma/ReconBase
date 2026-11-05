@@ -251,6 +251,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
 </footer>
 
 <script>
+function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function scanPS(){
   var v=(document.getElementById('ps-domain').value||'').trim();
   if(!v){document.getElementById('ps-domain').focus();return;}
@@ -309,7 +310,7 @@ function renderResults(d){
   } else {
     var v=d.ps.version||'?';
     if(d.ps.skimmer_suspect){
-      var ev=(d.ps.skimmer_evidence||[]).slice(0,2).join(' · ');
+      var ev=(d.ps.skimmer_evidence||[]).slice(0,2).map(rbEsc).join(' · ');
       html+=card('crit','★ Posible SKIMMER detectado en checkout','Un skimmer es código JavaScript que roba los datos de tarjeta de tus clientes en el momento del pago. '+(ev?'<br><strong>Evidencia:</strong> '+ev+'. ':'')+'No es una confirmación forense, pero es una alerta muy seria: actúa como si lo fuera.','skimmer');
     }
     if(d.ps.install_dir_exposed) html+=card('crit','/install/ accesible — RIESGO CRÍTICO','La carpeta de instalación sigue accesible desde internet. Permite que un atacante reinstale tu tienda con sus propias credenciales y tome el control total. Debe eliminarse siempre tras instalar.','install');

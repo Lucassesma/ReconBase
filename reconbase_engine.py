@@ -62,6 +62,16 @@ def clasificar_destino(host):
     return "interno", ips
 
 
+_RE_VERSION = _re.compile(r"^\d+(?:\.\d+){0,3}$")
+_RE_HOST = _re.compile(r"^[a-z0-9.-]{1,253}$")
+
+
+def _texto_seguro(valor, max_len=50):
+    """Lo que devuelve una web escaneada acaba en el HTML de nuestros usuarios:
+    solo se conservan letras, dígitos, espacios y . _ @ -"""
+    return _re.sub(r"[^\w .@-]", "", str(valor))[:max_len].strip()
+
+
 def destino_permitido(host):
     return clasificar_destino(host)[0] == "publico"
 
@@ -356,7 +366,7 @@ def detect_cms(domain, timeout=7):
                                     import json
                                     wp_data = wp.json()
                                     version = wp_data.get("version")
-                                    if version:
+                                    if version and _RE_VERSION.match(str(version)):
                                         result["version"] = str(version)
                             except Exception:
                                 pass
@@ -527,7 +537,9 @@ def wordpress_audit(domain, timeout=6):
                     if isinstance(u, dict):
                         name = u.get("name") or u.get("slug")
                         if name:
-                            result["users_found"].append(str(name)[:50])
+                            limpio = _texto_seguro(name)
+                            if limpio:
+                                result["users_found"].append(limpio)
         except Exception:
             pass
 
@@ -830,7 +842,8 @@ def prestashop_audit(domain, timeout=6):
         for dom in _PS_SKIMMER_DOMAINS:
             if dom in host:
                 result["skimmer_suspect"] = True
-                result["skimmer_evidence"].append(f"script externo desde dominio en blocklist: {host}")
+                host_seguro = host if _RE_HOST.match(host) else _re.sub(r"[^a-z0-9.-]", "", host)
+                result["skimmer_evidence"].append(f"script externo desde dominio en blocklist: {host_seguro}")
                 break
 
     # 8.4) Buscar patrones ofuscados / robo de tarjeta en HTML+JS combinado

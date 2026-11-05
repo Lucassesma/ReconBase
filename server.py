@@ -241,6 +241,14 @@ def _rechazar_si_interno(objetivo):
     return None
 
 
+from html import escape as _html_escape
+
+
+def _slack_escape(texto):
+    """Slack interpreta <...> como enlaces/menciones: se escapan & < > (formato oficial de Slack)."""
+    return str(texto).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 class _SinRedirecciones(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -3826,7 +3834,7 @@ def escaneo_automatico():
                                         f"[URGENTE] Posible skimmer detectado en {dominio}",
                                         "⚠️ Alerta crítica: posible robo de tarjetas en tu checkout",
                                         f"<p>La vigilancia nocturna ha detectado patrones característicos de skimmers digitales (Magecart) en el JavaScript de <strong>{dominio}</strong>.</p>"
-                                        f"<p><strong>Evidencia detectada:</strong><br>{ev}</p>"
+                                        f"<p><strong>Evidencia detectada:</strong><br>{_html_escape(ev)}</p>"
                                         f"<p>Esto NO es una confirmación forense, pero sí una alerta preliminar muy seria. Si tu tienda procesa pagos con tarjeta, sigue el protocolo de respuesta inmediatamente.</p>",
                                         BASE_URL + f"/scan/{scan.id}",
                                         "Ver informe completo"
@@ -5027,7 +5035,7 @@ def notificar_integraciones(user, resultado):
                             {"type": "mrkdwn", "text": f"*PrestaShop:* {ps_audit.get('version','?')}"},
                         ]},
                         {"type": "section", "text": {"type": "mrkdwn",
-                            "text": "*Evidencia:*\n" + "\n".join(f"• {e}" for e in skimmer_evidence) if skimmer_evidence else "*Evidencia:* patrones de ofuscación + referencias a campos de tarjeta"}},
+                            "text": "*Evidencia:*\n" + "\n".join(f"• {_slack_escape(e)}" for e in skimmer_evidence) if skimmer_evidence else "*Evidencia:* patrones de ofuscación + referencias a campos de tarjeta"}},
                         {"type": "section", "text": {"type": "mrkdwn",
                             "text": "*Acción inmediata:* no toques nada, haz copia forense, cambia credenciales y notifica AEPD en 72h si confirmas exfiltración."}},
                         {"type": "actions", "elements": [

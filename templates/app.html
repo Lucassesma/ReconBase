@@ -473,6 +473,8 @@ function renderGauge(pct, color) {
   document.getElementById('gauge-label').textContent = pct >= 70 ? 'CRITICO' : pct >= 40 ? 'MODERADO' : 'BAJO';
 }
 
+function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
 function renderCards(d) {
   var col = document.getElementById('cards-col');
   var html = '';
@@ -495,7 +497,7 @@ function renderCards(d) {
     html += card('ok','b-green','NO LEAKS','Sin filtraciones','No se encontraron credenciales comprometidas.');
   }
   if(d.cms && d.cms.cms) {
-    var cmsName = d.cms.cms + (d.cms.version ? ' v' + d.cms.version : '');
+    var cmsName = rbEsc(d.cms.cms + (d.cms.version ? ' v' + d.cms.version : ''));
     if(d.cms.riesgo) {
       html += card('crit','b-red','CMS DETECTADO', cmsName, d.cms.detalle);
     } else {
@@ -512,15 +514,15 @@ function renderCards(d) {
       html += card('crit','b-red','SSL POR CADUCAR','Expira en ' + d.ssl.dias_restantes + ' dias (' + d.ssl.expira + ')','Renueva el certificado antes de que caduque para evitar interrupciones.');
     } else if(d.ssl.tiene_ssl) {
       var sslDetail = (d.ssl.version_ssl || '') + (d.ssl.cifrado ? ' · ' + d.ssl.cifrado : '') + (d.ssl.expira ? ' · Expira ' + d.ssl.expira : '');
-      html += card('ok','b-green','SSL/TLS OK', d.ssl.sujeto || 'Certificado valido', sslDetail);
+      html += card('ok','b-green','SSL/TLS OK', rbEsc(d.ssl.sujeto || 'Certificado valido'), rbEsc(sslDetail));
     }
     if(d.ssl.error && d.ssl.tiene_ssl) {
-      html += card('crit','b-red','SSL ERROR', d.ssl.error, 'Revisa la configuracion del certificado.');
+      html += card('crit','b-red','SSL ERROR', rbEsc(d.ssl.error), 'Revisa la configuracion del certificado.');
     }
   }
   // OS Detection
   if(d.os) {
-    html += card('ok','b-green','SISTEMA DETECTADO', d.os, 'Sistema operativo inferido desde banners de servicios activos.');
+    html += card('ok','b-green','SISTEMA DETECTADO', rbEsc(d.os), 'Sistema operativo inferido desde banners de servicios activos.');
   }
   // Banners
   var bannerPorts = d.banners ? Object.keys(d.banners) : [];
