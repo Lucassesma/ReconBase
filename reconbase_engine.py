@@ -1,4 +1,5 @@
 import concurrent.futures
+import ipaddress
 import requests
 import socket
 import ssl
@@ -6,12 +7,95 @@ import datetime
 import re as _re
 import time
 import schedule
+from urllib.parse import urlsplit, urljoin
 
 try:
     import dns.resolver
     DNS_DISPONIBLE = True
 except ImportError:
     DNS_DISPONIBLE = False
+
+# ─────────────────────────────────────────────────────────────
+# VALIDACIÓN DE DESTINOS (anti-SSRF)
+# ─────────────────────────────────────────────────────────────
+# Cualquier visitante elige el dominio que escaneamos: sin este filtro podría
+# apuntar el escáner a la red interna del servidor (localhost, 10.x,
+# *.railway.internal, 169.254.169.254...).
+_SUFIJOS_INTERNOS = (".internal", ".local", ".localhost", ".localdomain", ".lan", ".home.arpa")
+
+
+def _normaliza_host(host):
+    host = (host or "").strip().lower().rstrip(".")
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    return host
+
+
+def _ip_publica(ip_str):
+    try:
+        ip = ipaddress.ip_address(ip_str.split("%", 1)[0])
+    except ValueError:
+        return False
+    mapped = getattr(ip, "ipv4_mapped", None)
+    if mapped is not None:
+        ip = mapped
+    return ip.is_global and not ip.is_multicast
+
+
+def clasificar_destino(host):
+    """Devuelve (estado, ips). estado: 'vacio' | 'interno' | 'no_resuelve' | 'publico'.
+    Solo es 'publico' si el host resuelve EXCLUSIVAMENTE a IPs públicas."""
+    host = _normaliza_host(host)
+    if not host:
+        return "vacio", []
+    if host == "localhost" or host.endswith(_SUFIJOS_INTERNOS):
+        return "interno", []
+    try:
+        infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, UnicodeError, ValueError, OSError):
+        return "no_resuelve", []
+    ips = sorted({info[4][0] for info in infos})
+    if not ips:
+        return "no_resuelve", []
+    if all(_ip_publica(ip) for ip in ips):
+        return "publico", ips
+    return "interno", ips
+
+
+def destino_permitido(host):
+    return clasificar_destino(host)[0] == "publico"
+
+
+def es_destino_interno(host):
+    return clasificar_destino(host)[0] == "interno"
+
+
+def ip_publica_de(host, solo_ipv4=True):
+    """IP pública ya validada de `host`, o None. Los sockets se conectan a esta IP
+    y no al nombre: así una segunda resolución DNS no puede desviar la conexión
+    a una red interna (DNS rebinding)."""
+    estado, ips = clasificar_destino(host)
+    if estado != "publico":
+        return None
+    v4 = [ip for ip in ips if ":" not in ip]
+    if v4:
+        return v4[0]
+    return None if solo_ipv4 else ips[0]
+
+
+def get_seguro(url, timeout=5, headers=None, max_redirects=5):
+    """requests.get que valida el destino de la URL inicial y de cada redirección.
+    Lanza ValueError si algún salto apunta a una red interna."""
+    for _ in range(max_redirects + 1):
+        partes = urlsplit(url)
+        if partes.scheme not in ("http", "https") or not destino_permitido(partes.hostname or ""):
+            raise ValueError("Destino no permitido")
+        r = requests.get(url, timeout=timeout, headers=headers, allow_redirects=False)
+        if not (r.is_redirect and r.headers.get("Location")):
+            return r
+        url = urljoin(url, r.headers["Location"])
+        r.close()
+    raise ValueError("Demasiadas redirecciones")
 
 # ─────────────────────────────────────────────────────────────
 # MÓDULO 1: FILTRACIONES (Have I Been Pwned)
@@ -86,8 +170,11 @@ def check_single_port(domain, port, timeout=1.5):
 
 def scan_critical_ports_fast(domain, max_workers=50, timeout=1.5):
     abiertos = []
+    ip = ip_publica_de(domain)
+    if not ip:
+        return abiertos
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
-        futures = {ex.submit(check_single_port, domain, p, timeout): p for p in PUERTOS}
+        futures = {ex.submit(check_single_port, ip, p, timeout): p for p in PUERTOS}
         for f in concurrent.futures.as_completed(futures):
             p = f.result()
             if p: abiertos.append({"puerto": p, "servicio": PUERTOS[p]})
@@ -115,8 +202,7 @@ def check_security_headers(domain, timeout=6):
                   "Chrome/126.0.0.0 Safari/537.36")
     for scheme in ["https","http"]:
         try:
-            r = requests.get(f"{scheme}://{domain}", timeout=timeout,
-                             allow_redirects=True,
+            r = get_seguro(f"{scheme}://{domain}", timeout=timeout,
                              headers={
                                  "User-Agent": browser_ua,
                                  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -220,9 +306,8 @@ def detect_cms(domain, timeout=7):
     try:
         for scheme in ["https", "http"]:
             try:
-                r = requests.get(
+                r = get_seguro(
                     f"{scheme}://{domain}", timeout=timeout,
-                    allow_redirects=True,
                     headers={"User-Agent": "Mozilla/5.0 (compatible; ReconBase/2.0)"}
                 )
                 html = r.text.lower()
@@ -265,8 +350,8 @@ def detect_cms(domain, timeout=7):
                         # WordPress: check version via wp-json
                         if cms_name == "WordPress" and not version:
                             try:
-                                wp = requests.get(f"{scheme}://{domain}/wp-json/", timeout=4,
-                                                  headers={"User-Agent": "Mozilla/5.0"})
+                                wp = get_seguro(f"{scheme}://{domain}/wp-json/", timeout=4,
+                                                 headers={"User-Agent": "Mozilla/5.0"})
                                 if wp.status_code == 200:
                                     import json
                                     wp_data = wp.json()
@@ -322,7 +407,7 @@ def _safe_get(url, timeout=5, headers=None):
     """GET defensivo. Devuelve response o None."""
     try:
         h = headers or {"User-Agent": "Mozilla/5.0 (compatible; ReconBase-WP/2.0)"}
-        return requests.get(url, timeout=timeout, allow_redirects=True, headers=h)
+        return get_seguro(url, timeout=timeout, headers=h)
     except Exception:
         return None
 
@@ -1055,9 +1140,13 @@ def ssl_scan(target, port=443, timeout=6):
         "sujeto": None,
         "error": None,
     }
+    ip = ip_publica_de(target, solo_ipv4=False)
+    if not ip:
+        result["error"] = "Destino no permitido o no resuelve"
+        return result
     try:
         ctx = ssl.create_default_context()
-        with socket.create_connection((target, port), timeout=timeout) as sock:
+        with socket.create_connection((ip, port), timeout=timeout) as sock:
             with ctx.wrap_socket(sock, server_hostname=target) as ssock:
                 cert = ssock.getpeercert()
                 cipher = ssock.cipher()
@@ -1107,12 +1196,15 @@ def banner_grab(target, puertos_abiertos, timeout=2):
     otros caracteres de control que pueden venir en banners raw de
     SMTP/IMAP/MySQL/Redis/etc."""
     banners = {}
+    ip = ip_publica_de(target)
+    if not ip:
+        return banners
     for p_info in puertos_abiertos:
         port = p_info["puerto"]
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(timeout)
-            s.connect((target, port))
+            s.connect((ip, port))
             probe = _PROBES.get(port, b"")
             if probe:
                 try:

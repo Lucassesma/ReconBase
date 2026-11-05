@@ -226,6 +226,30 @@ def set_security_headers(resp):
     )
     return resp
 
+# ─── Anti-SSRF en la entrada de los endpoints de escaneo ───────────────────────
+def _rechazar_si_interno(objetivo):
+    """Respuesta 400 si el objetivo apunta a una red interna/privada; None si se
+    puede analizar. Un dominio que no resuelve se deja pasar: los módulos que no
+    conectan (HIBP, SPF/DMARC) siguen siendo útiles y el motor no conectará."""
+    from urllib.parse import urlsplit
+    try:
+        host = urlsplit("//" + (objetivo or "").strip()).hostname or ""
+    except ValueError:
+        return jsonify({"ok": False, "error": "Dominio inválido"}), 400
+    if engine.es_destino_interno(host):
+        return jsonify({"ok": False, "error": "Ese destino apunta a una red interna o privada y no se puede analizar."}), 400
+    return None
+
+
+class _SinRedirecciones(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+# Para webhooks de usuario: una redirección podría apuntar a la red interna.
+_opener_sin_redirecciones = urllib.request.build_opener(_SinRedirecciones)
+
+
 # ─── Bloquear acceso a ficheros sensibles ─────────────────────────────────────
 _BLOCKED_EXT   = ('.log', '.env', '.cfg', '.ini', '.conf', '.bak', '.sql', '.db', '.sqlite', '.py')
 _BLOCKED_NAMES = {'debug.log', '.env', 'config.py', 'server.py', 'models.py', 'requirements.txt'}
@@ -540,6 +564,9 @@ def api_check_headers():
     dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
     if not dominio or "." not in dominio:
         return jsonify({"error": "Dominio inválido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
     try:
         headers = engine.check_security_headers(dominio)
     except Exception as e:
@@ -600,6 +627,9 @@ def api_skimmer_check():
     dominio = dominio.replace("www.", "").split("/")[0].strip().lower()
     if not dominio or "." not in dominio:
         return jsonify({"error": "Dominio inválido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
 
     try:
         ps = engine.prestashop_audit(dominio)
@@ -1544,6 +1574,9 @@ def scan_demo():
     dominio = _re2.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
     if not dominio:
         return jsonify({"error": "Dominio inválido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
 
     es_ip_flag = engine.es_ip(dominio)
 
@@ -1692,6 +1725,9 @@ def auditar_cms():
     dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
     if not dominio or "." not in dominio:
         return jsonify({"error": "Dominio inválido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
 
     es_ip_flag = engine.es_ip(dominio)
 
@@ -1784,6 +1820,9 @@ def lead_unlock():
     dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
     if not dominio:
         return jsonify({"error": "Dominio inválido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
 
     es_ip_flag = engine.es_ip(dominio)
 
@@ -2850,6 +2889,9 @@ def scan():
 
     es_ip    = engine.es_ip(objetivo)
     dominio  = objetivo.split("@")[-1] if "@" in objetivo else objetivo
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
     es_email = "@" in objetivo
 
     # Módulos comunes: puertos, SSL, banners
@@ -4223,6 +4265,9 @@ def api_v1_scan():
     dominio = _re_api.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
     if not dominio or len(dominio) < 3:
         return jsonify({"error": "Dominio no válido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
 
     try:
         es_ip_flag = engine.es_ip(dominio)
@@ -4864,6 +4909,9 @@ def anadir_dominio():
     dominio = _re3.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
     if not dominio or len(dominio) < 3:
         return jsonify({"ok": False, "error": "Dominio no válido"}), 400
+    _bloqueo = _rechazar_si_interno(dominio)
+    if _bloqueo:
+        return _bloqueo
     # Limites: free=10, pro=50
     max_doms = 10 if current_user.plan_efectivo == 'free' else 50
     count = Domain.query.filter_by(user_id=current_user.id).count()
@@ -4923,6 +4971,14 @@ def guardar_integraciones():
         return jsonify({"ok": False, "error": "La URL de Slack debe empezar por https://hooks.slack.com/"}), 400
     if custom and not custom.startswith("https://"):
         return jsonify({"ok": False, "error": "El webhook debe usar HTTPS"}), 400
+    if custom:
+        from urllib.parse import urlsplit as _us
+        try:
+            _host_wh = _us(custom).hostname or ""
+        except ValueError:
+            _host_wh = ""
+        if not engine.destino_permitido(_host_wh):
+            return jsonify({"ok": False, "error": "La URL del webhook debe apuntar a un servidor público accesible desde internet."}), 400
     user.slack_webhook = slack or None
     user.custom_webhook = custom or None
     db.session.commit()
@@ -5024,11 +5080,14 @@ def notificar_integraciones(user, resultado):
                     "evidence": skimmer_evidence,
                     "action_url": f"{base_url}/blog/skimmers-digitales-prestashop-magecart-2026",
                 }
+            from urllib.parse import urlsplit as _us
+            if not engine.destino_permitido(_us(custom_url).hostname or ""):
+                raise ValueError("webhook apunta a un destino no permitido")
             webhook_payload = json.dumps(webhook_payload_dict).encode("utf-8")
             req = urllib.request.Request(custom_url, data=webhook_payload,
                                         headers={"Content-Type": "application/json", "User-Agent": "ReconBase/1.0"},
                                         method="POST")
-            urllib.request.urlopen(req, timeout=10)
+            _opener_sin_redirecciones.open(req, timeout=10)
             logger.info(f"[Webhook] Notificación enviada a {user_email}{' (SKIMMER)' if skimmer_alert else ''}")
         except Exception as e:
             logger.warning(f"[Webhook] Error para {user_email}: {e}")
@@ -5097,8 +5156,8 @@ def _check_uptime(dominio):
     for scheme in ('https', 'http'):
         try:
             t0 = time.time()
-            r = _req.get(f"{scheme}://{dominio}", timeout=10, allow_redirects=True,
-                         headers={'User-Agent': 'ReconBase-Uptime/1.0'})
+            r = engine.get_seguro(f"{scheme}://{dominio}", timeout=10,
+                                  headers={'User-Agent': 'ReconBase-Uptime/1.0'})
             ms = int((time.time() - t0) * 1000)
             return {'up': True, 'status_code': r.status_code, 'response_ms': ms}
         except Exception:
@@ -5113,8 +5172,8 @@ def _detect_technologies(dominio):
     try:
         for scheme in ('https', 'http'):
             try:
-                r = _req.get(f"{scheme}://{dominio}", timeout=12, allow_redirects=True,
-                             headers={'User-Agent': 'Mozilla/5.0 (compatible; ReconBase/1.0)'})
+                r = engine.get_seguro(f"{scheme}://{dominio}", timeout=12,
+                                      headers={'User-Agent': 'Mozilla/5.0 (compatible; ReconBase/1.0)'})
                 break
             except Exception:
                 continue
