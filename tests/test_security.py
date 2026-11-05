@@ -2,6 +2,7 @@
 import pytest
 
 import reconbase_engine as engine
+import server
 
 DESTINOS_INTERNOS = [
     "127.0.0.1", "localhost", "10.0.0.1", "172.16.5.4", "192.168.1.1",
@@ -116,3 +117,39 @@ class TestContenidoRemotoNoEjecutable:
         }
         for ruta, fragmento in sumideros.items():
             assert fragmento in open(ruta, encoding="utf-8").read(), ruta
+
+
+PROXY = {"REMOTE_ADDR": "10.0.0.9"}
+
+
+class TestRateLimitIPReal:
+    """El rate limit debe contar por visitante, sin que se pueda falsificar la IP."""
+
+    def test_sin_secreto_ignora_cf_connecting_ip(self, app, monkeypatch):
+        monkeypatch.setattr(server, "ORIGIN_SECRET", "")
+        with app.test_request_context("/", headers={"CF-Connecting-IP": "1.2.3.4"}, environ_base=PROXY):
+            assert server._ip_cliente() == "10.0.0.9"
+
+    def test_secreto_correcto_usa_ip_de_cloudflare(self, app, monkeypatch):
+        monkeypatch.setattr(server, "ORIGIN_SECRET", "s3cr3t")
+        cab = {"CF-Connecting-IP": "1.2.3.4", "X-Origin-Secret": "s3cr3t"}
+        with app.test_request_context("/", headers=cab, environ_base=PROXY):
+            assert server._ip_cliente() == "1.2.3.4"
+
+    def test_secreto_incorrecto_no_permite_falsificar_ip(self, app, monkeypatch):
+        monkeypatch.setattr(server, "ORIGIN_SECRET", "s3cr3t")
+        cab = {"CF-Connecting-IP": "1.2.3.4", "X-Origin-Secret": "inventado"}
+        with app.test_request_context("/", headers=cab, environ_base=PROXY):
+            assert server._ip_cliente() == "10.0.0.9"
+
+    def test_origin_lock_bloquea_acceso_directo(self, client, monkeypatch):
+        monkeypatch.setattr(server, "ORIGIN_SECRET", "s3cr3t")
+        monkeypatch.setattr(server, "ORIGIN_LOCK", True)
+        assert client.get("/").status_code == 403
+        assert client.get("/", headers={"X-Origin-Secret": "s3cr3t"}).status_code == 200
+        assert client.post("/api/webhook", data=b"{}").status_code != 403
+
+    def test_origin_lock_desactivado_por_defecto(self, client, monkeypatch):
+        monkeypatch.setattr(server, "ORIGIN_SECRET", "s3cr3t")
+        monkeypatch.setattr(server, "ORIGIN_LOCK", False)
+        assert client.get("/").status_code == 200

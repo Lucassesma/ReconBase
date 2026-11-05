@@ -160,12 +160,54 @@ def send_email(to, subject, body):
     else:
         return _send_via_smtp(to, subject, body)
 
+# ─── IP real del cliente (Cloudflare → Railway → app) ───
+# request.remote_addr es la IP del proxy de Railway, la misma para todos los
+# visitantes. CF-Connecting-IP la fija Cloudflare, pero cualquiera puede
+# falsificarla entrando directamente al origen (*.up.railway.app). Solo nos
+# fiamos de ella si la petición trae la cabecera secreta que añade nuestra regla
+# de Cloudflare (Transform Rule "X-Origin-Secret").
+ORIGIN_SECRET = os.getenv("ORIGIN_SECRET", "")
+# Con ORIGIN_LOCK=1 se rechaza todo lo que no venga por Cloudflare (impide saltarse
+# el WAF entrando al origen). Activar solo tras comprobar /admin/origen-check.
+ORIGIN_LOCK = os.getenv("ORIGIN_LOCK", "") == "1"
+
+
+def _via_cloudflare():
+    if not ORIGIN_SECRET:
+        return False
+    import hmac as _hmac
+    return _hmac.compare_digest(request.headers.get("X-Origin-Secret", ""), ORIGIN_SECRET)
+
+
+def _ip_cliente():
+    """Clave del rate limit: IP real del visitante si se puede verificar."""
+    if _via_cloudflare():
+        return request.headers.get("CF-Connecting-IP") or get_remote_address()
+    return get_remote_address()
+
+
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=_ip_cliente,
     app=app,
     default_limits=[],
     storage_uri=os.getenv("REDIS_URL", "memory://")
 )
+if not ORIGIN_SECRET:
+    logging.getLogger("reconbase").warning(
+        "[RateLimit] ORIGIN_SECRET no configurado: todos los visitantes comparten "
+        "contador (IP del proxy). Configura la regla de Cloudflare + ORIGIN_SECRET.")
+
+
+@app.before_request
+def _bloquear_acceso_directo_al_origen():
+    if not (ORIGIN_LOCK and ORIGIN_SECRET):
+        return None
+    # Stripe firma sus webhooks; el healthcheck de Railway no pasa por Cloudflare.
+    if request.path == "/api/webhook" or (request.host or "").split(":")[0] == "healthcheck.railway.app":
+        return None
+    if not _via_cloudflare():
+        abort(403)
+    return None
 
 # ─── CSRF protection ───
 # Pragmatic setup: protege los formularios HTML tradicionales.
@@ -4634,6 +4676,22 @@ def admin_panel():
         users_verified=users_verified,
         recent_users=recent_users, recent_scans=recent_scans,
         now=now)
+
+@app.route("/admin/origen-check")
+@login_required
+@admin_required
+def admin_origen_check():
+    """Comprueba si la cabecera secreta de Cloudflare llega bien, antes de activar ORIGIN_LOCK."""
+    return jsonify({
+        "origin_secret_configurado": bool(ORIGIN_SECRET),
+        "peticion_via_cloudflare_verificada": _via_cloudflare(),
+        "ip_usada_para_rate_limit": _ip_cliente(),
+        "cf_connecting_ip": request.headers.get("CF-Connecting-IP"),
+        "remote_addr_proxy": request.remote_addr,
+        "origin_lock_activo": ORIGIN_LOCK and bool(ORIGIN_SECRET),
+        "redis_configurado": bool(os.getenv("REDIS_URL")),
+    })
+
 
 @app.route("/admin/stripe-check")
 @login_required
