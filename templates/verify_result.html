@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Verificación de email — ReconBase</title>
+<title>{{ titulo_pagina or "Verificación de email" }} — ReconBase</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -33,10 +33,10 @@ nav{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;padding:
 <div class="card">
   {% if ok %}
   <div class="icon">✅</div>
-  <div class="title" style="color:var(--green)">Email verificado</div>
+  <div class="title" style="color:var(--green)">{{ titulo or "Email verificado" }}</div>
   {% else %}
   <div class="icon">❌</div>
-  <div class="title" style="color:var(--red)">Enlace no válido</div>
+  <div class="title" style="color:var(--red)">{{ titulo or "Enlace no válido" }}</div>
   {% endif %}
   <div class="msg">{{ msg }}</div>
   <a href="/" class="btn">Ir al inicio</a>

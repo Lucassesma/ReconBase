@@ -106,6 +106,13 @@ class Domain(db.Model):
     added_at   = db.Column(db.DateTime, default=datetime.utcnow)
     scan_hora  = db.Column(db.Integer, nullable=True)
     scan_dias  = db.Column(db.String(20), nullable=True)
+    # Verificación de titularidad: sin ella solo se hace el análisis pasivo.
+    autorizacion_at     = db.Column(db.DateTime, nullable=True)   # declaró ser titular o tener autorización
+    verificado          = db.Column(db.Boolean, default=False, nullable=False)
+    verif_token         = db.Column(db.String(64), nullable=True)
+    verif_metodo        = db.Column(db.String(10), nullable=True)  # dns | meta | fichero
+    verificado_at       = db.Column(db.DateTime, nullable=True)
+    verif_comprobado_at = db.Column(db.DateTime, nullable=True)   # última reverificación
 
     __table_args__ = (db.UniqueConstraint('user_id', 'dominio', name='uq_user_domain'),)
 
@@ -287,3 +294,16 @@ class ProcessedWebhook(db.Model):
     event_id    = db.Column(db.String(120), unique=True, nullable=False, index=True)
     event_type  = db.Column(db.String(80),  nullable=True)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ScanOptOut(db.Model):
+    """Titulares de dominios que han pedido que ReconBase no los analice.
+    La petición se confirma con un enlace enviado a un email de ese dominio."""
+    __tablename__ = 'scan_opt_outs'
+    id            = db.Column(db.Integer, primary_key=True)
+    dominio       = db.Column(db.String(255), nullable=False, index=True)
+    email         = db.Column(db.String(120), nullable=False)
+    token         = db.Column(db.String(64), nullable=False, unique=True)
+    confirmado    = db.Column(db.Boolean, default=False, nullable=False)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    confirmado_at = db.Column(db.DateTime, nullable=True)

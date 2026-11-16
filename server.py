@@ -8,9 +8,9 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from models import (db, User, Scan, Domain, BlogPost,
                     SSLCheck, UptimeCheck, Notification, DNSRecord,
                     TechDetection, IPReputation, AuditLog, Invoice, Lead,
-                    ProcessedWebhook, AnonymousScan, LoginAttempt)
+                    ProcessedWebhook, AnonymousScan, LoginAttempt, ScanOptOut)
 import reconbase_engine as engine
-import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, base64
+import os, io, json, stripe, threading, logging, urllib.request, urllib.error, hashlib, hmac, base64, secrets
 import ssl as _ssl_mod, socket, time, re
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -283,6 +283,109 @@ def _rechazar_si_interno(objetivo):
     return None
 
 
+# ─── Dominios: normalización, verificación de titularidad y exclusiones ────────
+_RE_DOMINIO = re.compile(r"^(?=.{3,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$")
+
+
+def _normalizar_dominio(raw):
+    """'https://www.Ejemplo.com/ruta' o 'ana@ejemplo.com' → 'ejemplo.com'.
+    Devuelve '' si no es un dominio o una IPv4 válidos."""
+    d = (raw or "").strip().lower()
+    d = d.split("@")[-1]
+    d = re.sub(r"^[a-z][a-z0-9+.-]*://", "", d)
+    d = d.split("/")[0].split("?")[0].split("#")[0].rstrip(".")
+    if d.startswith("[") or d.count(":") == 1:
+        d = d.split(":")[0]
+    if d.startswith("www."):
+        d = d[4:]
+    if engine.es_ip(d) or _RE_DOMINIO.match(d):
+        return d
+    return ""
+
+
+def _dominio_verificado_de(user, dominio):
+    """Domain verificado del usuario que cubre `dominio`, o None. La verificación
+    por DNS cubre también los subdominios; la de meta o fichero, solo ese host."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    dominio = _normalizar_dominio(dominio)
+    if not dominio:
+        return None
+    for d in Domain.query.filter_by(user_id=user.id, verificado=True).all():
+        base = (d.dominio or "").lower()
+        if dominio == base:
+            return d
+        if d.verif_metodo == "dns" and dominio.endswith("." + base):
+            return d
+    return None
+
+
+def _modo_para(user, dominio):
+    return engine.MODO_COMPLETO if _dominio_verificado_de(user, dominio) else engine.MODO_PASIVO
+
+
+def _excluido_por_titular(dominio):
+    """True si el titular de `dominio` (o de un dominio padre) pidió no ser analizado."""
+    dominio = _normalizar_dominio(dominio)
+    if not dominio:
+        return False
+    partes = dominio.split(".")
+    candidatos = [".".join(partes[i:]) for i in range(len(partes) - 1)] or [dominio]
+    return db.session.query(ScanOptOut.id).filter(
+        ScanOptOut.confirmado.is_(True), ScanOptOut.dominio.in_(candidatos)
+    ).first() is not None
+
+
+def _validar_objetivo(dominio, user=None):
+    """Respuesta de error si no se puede analizar `dominio`; None si se puede.
+    El titular que ha verificado su dominio puede analizarlo aunque lo excluyera."""
+    bloqueo = _rechazar_si_interno(dominio)
+    if bloqueo:
+        return bloqueo
+    if _excluido_por_titular(dominio) and not _dominio_verificado_de(user, dominio):
+        return jsonify({"ok": False, "excluido": True,
+                        "error": "El titular de este dominio ha pedido que ReconBase no lo analice."}), 403
+    return None
+
+
+def _email_hibp_permitido(user, email):
+    """HIBP solo para el email del propio usuario o emails de un dominio que ha
+    verificado: así no se consultan datos personales de terceros."""
+    email = (email or "").strip().lower()
+    if not user or not getattr(user, "is_authenticated", False) or "@" not in email:
+        return False
+    if email == (user.email or "").lower():
+        return True
+    return _dominio_verificado_de(user, email.split("@")[-1]) is not None
+
+
+HIBP_ATRIBUCION = "Datos de filtraciones: Have I Been Pwned (haveibeenpwned.com), licencia CC BY 4.0"
+
+
+def _ejecutar_analisis(objetivo, dominio, user=None, subdominios=True):
+    """Análisis único para todos los endpoints: el modo depende de si `user` ha
+    verificado el dominio; HIBP solo se consulta si el email está permitido."""
+    modo = _modo_para(user, dominio)
+    resultado = engine.analizar(dominio, modo=modo, subdominios=subdominios)
+    resultado["objetivo"] = objetivo
+    leaks, estado_hibp = [], "no_aplica"
+    if "@" in objetivo:
+        if not _email_hibp_permitido(user, objetivo):
+            estado_hibp = "no_permitido"
+        elif not API_KEY:
+            estado_hibp = "no_disponible"
+        else:
+            leaks = engine.check_leaks_real(objetivo, API_KEY)
+            estado_hibp = "consultado" if leaks is not None else "no_disponible"
+            leaks = leaks or []
+    resultado["leaks_raw"] = leaks
+    resultado["leaks"] = len(leaks)
+    resultado["hibp_estado"] = estado_hibp
+    if estado_hibp == "consultado":
+        resultado["hibp_atribucion"] = HIBP_ATRIBUCION
+    return engine.puntuar(resultado)
+
+
 from html import escape as _html_escape
 
 
@@ -386,6 +489,7 @@ def sitemap():
         {"loc": base + "/blog",    "priority": "0.7",  "changefreq": "weekly",  "lastmod": today},
         {"loc": base + "/comprobar-dmarc-spf", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/herramientas",         "priority": "0.9", "changefreq": "weekly",  "lastmod": today},
+        {"loc": base + "/escaner-info",         "priority": "0.4", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-wordpress",  "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-prestashop", "priority": "0.9", "changefreq": "monthly", "lastmod": today},
         {"loc": base + "/auditoria-rapida",     "priority": "0.9", "changefreq": "monthly", "lastmod": today},
@@ -547,7 +651,7 @@ def tool_skimmer_check():
 def hub_herramientas():
     """Hub SEO que agrupa todas las herramientas gratuitas. Mejora el
     interlinking interno y capta búsquedas tipo 'herramientas seguridad web gratis'."""
-    return render_template("herramientas.html")
+    return render_template("herramientas.html", lista_negra_disponible=bool(WEB_RISK_API_KEY))
 
 @app.route("/comprobar-cabeceras-http")
 def tool_headers():
@@ -560,61 +664,70 @@ def tool_blacklist():
     """Herramienta gratuita: comprobar si un dominio está en listas negras
     de malware/phishing. SEO: 'comprobar lista negra google', 'mi web marcada
     como insegura', 'verificar sitio seguro'."""
-    return render_template("tool_blacklist.html")
+    return render_template("tool_blacklist.html", disponible=bool(WEB_RISK_API_KEY))
+
+# ─── Registro anónimo de uso de las herramientas públicas ──────────────────────
+# La IP no se guarda: solo un HMAC truncado con una clave derivada del secreto de
+# la app y de la fecha. Sirve para contar visitantes únicos del día y no permite
+# relacionar visitas de días distintos ni recuperar la IP sin el secreto.
+_IP_HASH_SECRET = (os.getenv("IP_HASH_SECRET") or app.secret_key or "").encode()
+
+
+def _hash_ip_visitante():
+    ip = _ip_cliente()
+    if not ip:
+        return None
+    clave_dia = hmac.new(_IP_HASH_SECRET, datetime.utcnow().strftime("%Y-%m-%d").encode(), hashlib.sha256).digest()
+    return hmac.new(clave_dia, ip.encode(), hashlib.sha256).hexdigest()[:16]
+
+
+def _registrar_escaneo_anonimo(dominio, riesgo, label):
+    try:
+        db.session.add(AnonymousScan(
+            dominio=(dominio or "")[:255], riesgo=int(riesgo or 0), label=(label or "")[:20],
+            ip_hash=_hash_ip_visitante(),
+            referer=(request.headers.get("Referer") or "")[:255],
+            user_agent=(request.headers.get("User-Agent") or "")[:100],
+            es_logged=bool(getattr(current_user, "is_authenticated", False)),
+        ))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.warning(f"[AnonScan] no se pudo guardar: {e}")
+
+
+WEB_RISK_API_KEY = os.getenv("WEB_RISK_API_KEY", "")
+_LISTA_NEGRA_NO_DISPONIBLE = ("La comprobación de listas negras no está disponible en este momento. "
+                              "Vuelve a intentarlo más tarde.")
+
 
 @app.route("/api/check-blacklist", methods=["POST"])
 @limiter.limit("30 per hour")
 def api_check_blacklist():
-    """Comprueba si un dominio aparece en listas negras de malware/phishing.
-    Fuente principal URLhaus (sin key) + Google Safe Browsing si hay key."""
-    import re as _re
+    """¿Está el dominio en las listas de Google Web Risk? No contacta con el dominio."""
     data = request.get_json(silent=True) or {}
-    raw  = (data.get("dominio") or "").strip()[:255]
-    if not raw:
-        return jsonify({"error": "Introduce un dominio"}), 400
-    dominio = raw.split("@")[-1] if "@" in raw else raw
-    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
-    if not dominio or "." not in dominio:
-        return jsonify({"error": "Dominio inválido"}), 400
-    try:
-        sb_key = os.getenv("GOOGLE_SAFEBROWSING_KEY", "") or None
-        res = engine.check_blacklist(dominio, safebrowsing_key=sb_key)
-    except Exception as e:
-        logger.warning(f"[check-blacklist] error {dominio}: {e}")
-        return jsonify({"error": "No se pudo completar la comprobación"}), 500
+    dominio = _normalizar_dominio((data.get("dominio") or "")[:255])
+    if not dominio or engine.es_ip(dominio):
+        return jsonify({"error": "Introduce un dominio válido"}), 400
+    if not WEB_RISK_API_KEY:
+        return jsonify({"error": _LISTA_NEGRA_NO_DISPONIBLE, "disponible": False}), 503
+    res = engine.check_blacklist(dominio, web_risk_key=WEB_RISK_API_KEY)
+    if not res.get("disponible"):
+        return jsonify({"error": _LISTA_NEGRA_NO_DISPONIBLE, "disponible": False}), 503
     res["timestamp"] = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
-    # Tracking ligero
-    try:
-        ip_real = (request.headers.get("CF-Connecting-IP")
-                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                   or request.remote_addr or "")
-        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
-        db.session.add(AnonymousScan(
-            dominio=dominio[:255], riesgo=100 if res.get("listed") else 0,
-            label=("BLACKLIST" if res.get("listed") else "LIMPIO")[:20], ip_hash=ip_h,
-            referer=(request.headers.get("Referer") or "")[:255],
-            user_agent=(request.headers.get("User-Agent") or "")[:100],
-            es_logged=bool(getattr(current_user, "is_authenticated", False))
-        ))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+    _registrar_escaneo_anonimo(dominio, 100 if res.get("listed") else 0,
+                               "BLACKLIST" if res.get("listed") else "LIMPIO")
     return jsonify(res)
 
 @app.route("/api/check-headers", methods=["POST"])
 @limiter.limit("30 per hour")
 def api_check_headers():
     """Comprueba las cabeceras de seguridad HTTP de un dominio. Público, sin login."""
-    import re as _re
     data = request.get_json(silent=True) or {}
-    raw  = (data.get("dominio") or "").strip()[:255]
-    if not raw:
-        return jsonify({"error": "Introduce un dominio"}), 400
-    dominio = raw.split("@")[-1] if "@" in raw else raw
-    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
-    if not dominio or "." not in dominio:
-        return jsonify({"error": "Dominio inválido"}), 400
-    _bloqueo = _rechazar_si_interno(dominio)
+    dominio = _normalizar_dominio((data.get("dominio") or "")[:255])
+    if not dominio:
+        return jsonify({"error": "Introduce un dominio válido"}), 400
+    _bloqueo = _validar_objetivo(dominio, current_user)
     if _bloqueo:
         return _bloqueo
     try:
@@ -642,21 +755,7 @@ def api_check_headers():
         "Permissions-Policy": "Limita el acceso a cámara, micrófono, geolocalización, etc. desde tu web.",
     }
     detalle = [{"nombre": k, "presente": bool(v), "explica": explica.get(k, "")} for k, v in headers.items()]
-    # Tracking ligero
-    try:
-        ip_real = (request.headers.get("CF-Connecting-IP")
-                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                   or request.remote_addr or "")
-        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
-        db.session.add(AnonymousScan(
-            dominio=dominio[:255], riesgo=100 - pct, label=f"HDR-{nota}"[:20], ip_hash=ip_h,
-            referer=(request.headers.get("Referer") or "")[:255],
-            user_agent=(request.headers.get("User-Agent") or "")[:100],
-            es_logged=bool(getattr(current_user, "is_authenticated", False))
-        ))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+    _registrar_escaneo_anonimo(dominio, 100 - pct, f"HDR-{nota}")
     return jsonify({
         "dominio": dominio, "nota": nota, "porcentaje": pct,
         "presentes": presentes, "total": total, "detalle": detalle,
@@ -666,23 +765,20 @@ def api_check_headers():
 @app.route("/api/skimmer-check", methods=["POST"])
 @limiter.limit("20 per hour")
 def api_skimmer_check():
-    """Endpoint público que ejecuta SOLO el check de skimmer sobre un dominio.
-    No requiere registro. Devuelve si hay sospecha + evidencia + ruta de checkout."""
-    import re as _re
+    """Detector público de skimmers: analiza la tienda pública (home, páginas de
+    pedido y scripts que cargan). Sin registro, siempre en modo pasivo."""
     data = request.get_json(silent=True) or {}
-    raw  = (data.get("dominio") or "").strip()[:255]
-    if not raw:
-        return jsonify({"error": "Introduce un dominio"}), 400
-    dominio = _re.sub(r'^https?://', '', raw, flags=_re.IGNORECASE)
-    dominio = dominio.replace("www.", "").split("/")[0].strip().lower()
-    if not dominio or "." not in dominio:
-        return jsonify({"error": "Dominio inválido"}), 400
-    _bloqueo = _rechazar_si_interno(dominio)
+    dominio = _normalizar_dominio((data.get("dominio") or "")[:255])
+    if not dominio:
+        return jsonify({"error": "Introduce un dominio válido"}), 400
+    _bloqueo = _validar_objetivo(dominio, current_user)
     if _bloqueo:
         return _bloqueo
+    if engine.es_ip(dominio):
+        return jsonify({"error": "Introduce un dominio, no una IP"}), 400
 
     try:
-        ps = engine.prestashop_audit(dominio)
+        ps = engine.prestashop_audit(dominio, modo=_modo_para(current_user, dominio))
     except Exception as e:
         logger.warning(f"[skimmer-check] error en {dominio}: {e}")
         return jsonify({"error": "No se pudo escanear el dominio (timeout o respuesta inválida)"}), 500
@@ -693,30 +789,14 @@ def api_skimmer_check():
         "version": ps.get("version"),
         "skimmer_suspect": ps.get("skimmer_suspect", False),
         "skimmer_evidence": ps.get("skimmer_evidence", []),
+        "modo": ps.get("modo", engine.MODO_PASIVO),
         "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
     }
-    # Si NO es PrestaShop, devolvemos respuesta correcta pero sin análisis (la heurística PS solo aplica a PS)
     if not ps.get("is_prestashop"):
         response["note"] = ("No se detectó PrestaShop en este dominio. El detector de skimmers de ReconBase "
                             "está optimizado para tiendas PrestaShop. Para análisis genérico usa la auditoría completa.")
-    # Tracking ligero: guardar en AnonymousScan para verlo en /admin/metricas
-    try:
-        ip_real = (request.headers.get("CF-Connecting-IP")
-                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                   or request.remote_addr or "")
-        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
-        label = "SKIMMER" if ps.get("skimmer_suspect") else ("PS-OK" if ps.get("is_prestashop") else "NO-PS")
-        db.session.add(AnonymousScan(
-            dominio=dominio[:255],
-            riesgo=100 if ps.get("skimmer_suspect") else 0,
-            label=label[:20], ip_hash=ip_h,
-            referer=(request.headers.get("Referer") or "")[:255],
-            user_agent=(request.headers.get("User-Agent") or "")[:100],
-            es_logged=bool(getattr(current_user, "is_authenticated", False))
-        ))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+    label = "SKIMMER" if ps.get("skimmer_suspect") else ("PS-OK" if ps.get("is_prestashop") else "NO-PS")
+    _registrar_escaneo_anonimo(dominio, 100 if ps.get("skimmer_suspect") else 0, label)
     return jsonify(response)
 
 @app.route("/api/check-dmarc-spf", methods=["POST"])
@@ -729,10 +809,8 @@ def api_check_dmarc_spf():
     if not raw:
         return jsonify({"error": "Introduce un dominio"}), 400
 
-    # Limpiar: quitar http(s)://, www., paths, @ (si vino email)
-    dominio = raw.split("@")[-1] if "@" in raw else raw
-    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
-    if not dominio or "." not in dominio:
+    dominio = _normalizar_dominio(raw)
+    if not dominio or engine.es_ip(dominio):
         return jsonify({"error": "Dominio inválido"}), 400
 
     spf_present, spf_raw = False, ""
@@ -834,6 +912,66 @@ def security_txt():
     )
     return Response(txt, mimetype="text/plain",
                     headers={"Cache-Control": "public, max-age=86400"})
+
+
+# ─── Transparencia del escáner y exclusión de dominios ────────────────────────
+@app.route("/escaner-info")
+def escaner_info():
+    return render_template("escaner_info.html", user_agent=engine.USER_AGENT)
+
+
+@app.route("/api/excluir-dominio", methods=["POST"])
+@limiter.limit("5 per hour")
+def api_excluir_dominio():
+    """El titular de un dominio pide que no lo analicemos. Se confirma con un
+    enlace enviado a un email de ese mismo dominio."""
+    data = request.get_json(silent=True) or {}
+    dominio = _normalizar_dominio((data.get("dominio") or "")[:255])
+    email = (data.get("email") or "").strip().lower()[:120]
+    if not dominio or engine.es_ip(dominio):
+        return jsonify({"ok": False, "error": "Introduce un dominio válido."}), 400
+    if not re.match(r"^[^@\s]+@[^@\s]+$", email):
+        return jsonify({"ok": False, "error": "Introduce un email válido."}), 400
+    dominio_email = email.split("@")[-1]
+    if dominio_email != dominio and not dominio_email.endswith("." + dominio):
+        return jsonify({"ok": False, "error": f"El email debe ser de {dominio} (por ejemplo, admin@{dominio})."}), 400
+    if _excluido_por_titular(dominio):
+        return jsonify({"ok": True})
+    peticion = ScanOptOut.query.filter_by(dominio=dominio, email=email, confirmado=False).first()
+    if not peticion:
+        peticion = ScanOptOut(dominio=dominio, email=email, token=secrets.token_urlsafe(32))
+        db.session.add(peticion)
+        db.session.commit()
+    try:
+        send_html_email(
+            email, f"Confirma que ReconBase no debe analizar {dominio}",
+            "Confirma la exclusión de tu dominio",
+            f"<p>Hemos recibido una petición para que ReconBase no analice <strong>{_html_escape(dominio)}</strong> "
+            "ni sus subdominios.</p><p>Si la has hecho tú, confírmala con el botón. Si no, ignora este email: "
+            "no cambiará nada.</p>",
+            f"{BASE_URL}/excluir-dominio/confirmar/{peticion.token}", "Confirmar exclusión")
+    except Exception as e:
+        logger.warning(f"[Exclusión] no se pudo enviar el email a {email}: {e}")
+        return jsonify({"ok": False, "error": "No pudimos enviar el email. Escríbenos a hola@reconbase.es."}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/excluir-dominio/confirmar/<token>")
+@limiter.limit("30 per hour")
+def confirmar_exclusion(token):
+    peticion = ScanOptOut.query.filter_by(token=(token or "")[:64]).first()
+    if not peticion:
+        return render_template("verify_result.html", ok=False, titulo_pagina="Exclusión del escáner",
+                               msg="El enlace no es válido. Vuelve a pedir la exclusión desde /escaner-info."), 404
+    if not peticion.confirmado:
+        peticion.confirmado = True
+        peticion.confirmado_at = datetime.utcnow()
+        db.session.commit()
+        logger.info(f"[Exclusión] confirmada para {peticion.dominio}")
+    return render_template("verify_result.html", ok=True, titulo_pagina="Exclusión del escáner",
+                           titulo="Exclusión confirmada",
+                           msg=f"ReconBase no analizará {peticion.dominio} ni sus subdominios. "
+                               "Si cambias de opinión, escríbenos a hola@reconbase.es.")
 
 
 @app.route("/og/<page>.png")
@@ -1012,6 +1150,7 @@ def index():
                            tiene_ps_sin_vigilancia=tiene_ps_sin_vigilancia,
                            ps_dominios_sample=ps_dominios_sample,
                            ha_escaneado=ha_escaneado,
+                           turnstile_site_key=os.getenv("TURNSTILE_SITE_KEY", ""),
                            show_cookie_banner=show_cookie_banner))
     # Evitar que el navegador cachee el HTML (para que los fixes lleguen al instante)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -1611,245 +1750,47 @@ def api_logout():
 @app.route("/api/scan-demo", methods=["POST"])
 @limiter.limit("30 per hour")
 def scan_demo():
-    """Escaneo público sin login para la landing. No guarda resultados en BD."""
-    data     = request.get_json() or {}
+    """Análisis rápido de la home. Sin cuenta, o sobre un dominio que el usuario
+    no ha verificado, es pasivo (solo información pública). No guarda resultados."""
+    data     = request.get_json(silent=True) or {}
     objetivo = (data.get("objetivo") or "").strip()[:200]
     if not objetivo:
         return jsonify({"error": "Introduce un dominio"}), 400
-
-    dominio = objetivo
-    if "@" in objetivo:
-        dominio = objetivo.split("@")[-1]
-    import re as _re2
-    dominio = _re2.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
+    dominio = _normalizar_dominio(objetivo)
     if not dominio:
         return jsonify({"error": "Dominio inválido"}), 400
-    _bloqueo = _rechazar_si_interno(dominio)
+    _bloqueo = _validar_objetivo(dominio, current_user)
     if _bloqueo:
         return _bloqueo
+    objetivo = objetivo.lower() if "@" in objetivo else dominio
 
-    es_ip_flag = engine.es_ip(dominio)
-
-    try: puertos = engine.scan_critical_ports_fast(dominio)
-    except Exception: puertos = []
-
-    # Helper inline para tracking anónimo (sin PII, RGPD-friendly)
-    def _track_demo_scan(dom, ries, lab, logged):
-        try:
-            ip_real = (request.headers.get("CF-Connecting-IP")
-                       or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                       or request.remote_addr or "")
-            ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
-            db.session.add(AnonymousScan(
-                dominio=dom[:255], riesgo=int(ries or 0), label=(lab or "")[:20],
-                ip_hash=ip_h, referer=(request.headers.get("Referer") or "")[:255],
-                user_agent=(request.headers.get("User-Agent") or "")[:100],
-                es_logged=logged
-            ))
-            db.session.commit()
-        except Exception as _te:
-            db.session.rollback()
-            logger.warning(f"[TrackDemo] no se pudo guardar: {_te}")
-
-    # Usuarios sin cuenta: SOLO puertos. El resto se muestra bloqueado en el frontend.
-    if not current_user.is_authenticated:
-        # Riesgo aproximado basado solo en puertos para mostrar algo orientativo
-        critical_set = {3389, 22, 3306, 5432, 27017, 6379, 5900, 23, 21, 1433}
-        crit_count = len([p for p in puertos if p.get('puerto') in critical_set])
-        riesgo_aprox = min(100, crit_count * 25)
-        label_aprox, color_aprox = label_riesgo(riesgo_aprox)
-        _track_demo_scan(dominio, riesgo_aprox, label_aprox, logged=False)
-        return jsonify({
-            "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
-            "puertos": puertos,
-            "riesgo": riesgo_aprox, "label": label_aprox, "color": color_aprox,
-            "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-            "demo": True, "locked": True
-        })
-
-    # Logged-in: ejecuta el MISMO conjunto de checks que /api/scan para que
-    # el resultado del demo y el del dashboard coincidan exactamente.
-    try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
-    except Exception: dns = {}
-    try: headers = engine.check_security_headers(dominio)
-    except Exception: headers = {}
-    try: ssl_info = engine.ssl_scan(dominio)
-    except Exception: ssl_info = {}
-    try:
-        banners = engine.banner_grab(dominio, puertos)
-        os_det  = engine.detect_os_from_banners(banners)
-    except Exception: banners = {}; os_det = None
-    try: subs = [] if es_ip_flag else engine.scan_subdomains(dominio)
-    except Exception: subs = []
-    try: cms = {"cms": None, "version": None, "riesgo": False, "detalle": ""} if es_ip_flag else engine.detect_cms(dominio)
-    except Exception: cms = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
-    # Auditoría WordPress dedicada (solo si CMS detectado es WP)
-    wp_audit = {"is_wordpress": False}
-    if cms.get("cms") == "WordPress" and not es_ip_flag:
-        try: wp_audit = engine.wordpress_audit(dominio)
-        except Exception: wp_audit = {"is_wordpress": False}
-    # Auditoría PrestaShop dedicada (solo si CMS detectado es PS)
-    ps_audit = {"is_prestashop": False}
-    if cms.get("cms") == "PrestaShop" and not es_ip_flag:
-        try: ps_audit = engine.prestashop_audit(dominio)
-        except Exception: ps_audit = {"is_prestashop": False}
-    leaks = []
-    es_email = "@" in objetivo
-    if es_email and API_KEY:
-        try: leaks = engine.check_leaks_real(objetivo, API_KEY) or []
-        except Exception: leaks = []
-
-    riesgo, desglose = calcular_riesgo(puertos, dns, leaks, headers)
-    if cms.get("riesgo"):
-        riesgo = min(100, riesgo + 10); desglose["CMS desactualizable"] = 10
-    # Penalizaciones específicas WordPress
-    if wp_audit.get("is_wordpress"):
-        if wp_audit.get("version_outdated"):
-            riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
-        if wp_audit.get("xmlrpc_exposed"):
-            riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
-        if wp_audit.get("users_enumerable"):
-            riesgo = min(100, riesgo + 10); desglose["Usuarios WP enumerables"] = 10
-        vp = len(wp_audit.get("vulnerable_plugins") or [])
-        if vp:
-            pts = min(20, vp * 8)
-            riesgo = min(100, riesgo + pts); desglose[f"{vp} plugin(s) vulnerable(s)"] = pts
-        sf = len(wp_audit.get("sensitive_files") or [])
-        if sf:
-            pts = min(15, sf * 5)
-            riesgo = min(100, riesgo + pts); desglose[f"{sf} archivo(s) sensible(s) WP"] = pts
-    # Penalizaciones específicas PrestaShop
-    if ps_audit.get("is_prestashop"):
-        if ps_audit.get("version_outdated"):
-            riesgo = min(100, riesgo + 10); desglose["PrestaShop obsoleto"] = 10
-        if ps_audit.get("admin_path_default"):
-            riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
-        if ps_audit.get("install_dir_exposed"):
-            riesgo = min(100, riesgo + 18); desglose["/install/ PrestaShop accesible"] = 18
-        vm = len(ps_audit.get("vulnerable_modules") or [])
-        if vm:
-            pts = min(20, vm * 8)
-            riesgo = min(100, riesgo + pts); desglose[f"{vm} módulo(s) PS vulnerable(s)"] = pts
-        sfp = len(ps_audit.get("sensitive_files") or [])
-        if sfp:
-            pts = min(15, sfp * 5)
-            riesgo = min(100, riesgo + pts); desglose[f"{sfp} archivo(s) sensible(s) PS"] = pts
-        if not ps_audit.get("https_forced"):
-            riesgo = min(100, riesgo + 10); desglose["HTTPS no forzado (checkout)"] = 10
-        if ps_audit.get("skimmer_suspect"):
-            riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
-    if ssl_info.get("caducado"):
-        riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
-    elif ssl_info.get("pronto_a_caducar"):
-        riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
-    label, color = label_riesgo(riesgo)
-
-    _track_demo_scan(dominio, riesgo, label, logged=True)
-    return jsonify({
-        "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
-        "puertos": puertos, "dns": dns,
-        "headers": {k: bool(v) for k, v in headers.items()},
-        "subs": subs, "leaks": len(leaks), "leaks_raw": leaks,
-        "riesgo": riesgo, "label": label, "color": color,
-        "desglose": desglose, "cms": cms, "wp": wp_audit, "ps": ps_audit, "ssl": ssl_info,
-        "banners": banners, "os": os_det,
-        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-        "demo": True, "locked": False
-    })
+    resultado = _ejecutar_analisis(objetivo, dominio, current_user)
+    resultado["demo"] = True
+    _registrar_escaneo_anonimo(dominio, resultado["riesgo"], resultado["label"])
+    return jsonify(resultado)
 
 
 @app.route("/api/auditar-cms", methods=["POST"])
 @limiter.limit("20 per hour")
 def auditar_cms():
-    """Auditoría CMS pública para las landings /auditoria-wordpress y
-    /auditoria-prestashop. A DIFERENCIA de /api/scan-demo, esta SÍ ejecuta
-    la auditoría de CMS (WordPress/PrestaShop) también para visitantes
-    anónimos — son páginas SEO cuyo objetivo es dar valor antes del registro.
-    Devuelve puertos + SSL + la tarjeta del CMS detectado, sin bloquear."""
-    import re as _re
-    data     = request.get_json() or {}
+    """Auditoría de las landings /auditoria-wordpress y /auditoria-prestashop.
+    Pasiva para visitantes y dominios sin verificar; completa si el usuario ha
+    verificado el dominio."""
+    data     = request.get_json(silent=True) or {}
     objetivo = (data.get("objetivo") or "").strip()[:200]
     if not objetivo:
         return jsonify({"error": "Introduce un dominio"}), 400
-    dominio = objetivo.split("@")[-1] if "@" in objetivo else objetivo
-    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip().lower()
-    if not dominio or "." not in dominio:
+    dominio = _normalizar_dominio(objetivo)
+    if not dominio:
         return jsonify({"error": "Dominio inválido"}), 400
-    _bloqueo = _rechazar_si_interno(dominio)
+    _bloqueo = _validar_objetivo(dominio, current_user)
     if _bloqueo:
         return _bloqueo
 
-    es_ip_flag = engine.es_ip(dominio)
-
-    try: puertos = engine.scan_critical_ports_fast(dominio)
-    except Exception: puertos = []
-    try: ssl_info = engine.ssl_scan(dominio)
-    except Exception: ssl_info = {}
-    try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
-    except Exception: dns = {}
-    try: headers = engine.check_security_headers(dominio)
-    except Exception: headers = {}
-    try: cms = {"cms": None, "version": None} if es_ip_flag else engine.detect_cms(dominio)
-    except Exception: cms = {"cms": None, "version": None}
-
-    wp_audit = {"is_wordpress": False}
-    ps_audit = {"is_prestashop": False}
-    if not es_ip_flag:
-        if cms.get("cms") == "WordPress":
-            try: wp_audit = engine.wordpress_audit(dominio)
-            except Exception: wp_audit = {"is_wordpress": False}
-        if cms.get("cms") == "PrestaShop":
-            try: ps_audit = engine.prestashop_audit(dominio)
-            except Exception: ps_audit = {"is_prestashop": False}
-
-    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
-    if wp_audit.get("is_wordpress"):
-        if wp_audit.get("version_outdated"):  riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
-        if wp_audit.get("xmlrpc_exposed"):    riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
-        if wp_audit.get("users_enumerable"):  riesgo = min(100, riesgo + 10); desglose["Usuarios WP enumerables"] = 10
-        vp = len(wp_audit.get("vulnerable_plugins") or [])
-        if vp: riesgo = min(100, riesgo + min(20, vp*8)); desglose[f"{vp} plugin(s) vulnerable(s)"] = min(20, vp*8)
-        sf = len(wp_audit.get("sensitive_files") or [])
-        if sf: riesgo = min(100, riesgo + min(15, sf*5)); desglose[f"{sf} archivo(s) sensible(s) WP"] = min(15, sf*5)
-    if ps_audit.get("is_prestashop"):
-        if ps_audit.get("version_outdated"):    riesgo = min(100, riesgo + 10); desglose["PrestaShop obsoleto"] = 10
-        if ps_audit.get("admin_path_default"):  riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
-        if ps_audit.get("install_dir_exposed"): riesgo = min(100, riesgo + 18); desglose["/install/ accesible"] = 18
-        vm = len(ps_audit.get("vulnerable_modules") or [])
-        if vm: riesgo = min(100, riesgo + min(20, vm*8)); desglose[f"{vm} módulo(s) vulnerable(s)"] = min(20, vm*8)
-        sfp = len(ps_audit.get("sensitive_files") or [])
-        if sfp: riesgo = min(100, riesgo + min(15, sfp*5)); desglose[f"{sfp} archivo(s) sensible(s) PS"] = min(15, sfp*5)
-        if not ps_audit.get("https_forced"): riesgo = min(100, riesgo + 10); desglose["HTTPS no forzado (checkout)"] = 10
-        if ps_audit.get("skimmer_suspect"):  riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
-    if ssl_info.get("caducado"):          riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
-    elif ssl_info.get("pronto_a_caducar"): riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
-    label, color = label_riesgo(riesgo)
-
-    # Tracking anónimo (sin PII)
-    try:
-        ip_real = (request.headers.get("CF-Connecting-IP")
-                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                   or request.remote_addr or "")
-        ip_h = hashlib.sha256((ip_real + "rb_salt_2026").encode()).hexdigest()[:16] if ip_real else None
-        db.session.add(AnonymousScan(
-            dominio=dominio[:255], riesgo=int(riesgo or 0), label=(label or "")[:20], ip_hash=ip_h,
-            referer=(request.headers.get("Referer") or "")[:255],
-            user_agent=(request.headers.get("User-Agent") or "")[:100],
-            es_logged=bool(current_user.is_authenticated)
-        ))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-
-    return jsonify({
-        "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
-        "puertos": puertos, "dns": dns,
-        "headers": {k: bool(v) for k, v in headers.items()},
-        "riesgo": riesgo, "label": label, "color": color,
-        "desglose": desglose, "cms": cms, "wp": wp_audit, "ps": ps_audit, "ssl": ssl_info,
-        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-        "demo": True, "locked": False
-    })
+    resultado = _ejecutar_analisis(dominio, dominio, current_user, subdominios=False)
+    resultado["demo"] = True
+    _registrar_escaneo_anonimo(dominio, resultado["riesgo"], resultado["label"])
+    return jsonify(resultado)
 
 
 @app.route("/api/lead-unlock", methods=["POST"])
@@ -1866,47 +1807,19 @@ def lead_unlock():
     if not objetivo:
         return jsonify({"error": "Introduce un dominio"}), 400
 
-    dominio = objetivo.split("@")[-1] if "@" in objetivo else objetivo
-    dominio = _re.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
+    dominio = _normalizar_dominio(objetivo)
     if not dominio:
         return jsonify({"error": "Dominio inválido"}), 400
-    _bloqueo = _rechazar_si_interno(dominio)
+    _bloqueo = _validar_objetivo(dominio)
     if _bloqueo:
         return _bloqueo
 
-    es_ip_flag = engine.es_ip(dominio)
-
-    try: puertos = engine.scan_critical_ports_fast(dominio)
-    except Exception: puertos = []
-    try: dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
-    except Exception: dns = {}
-    try: headers = engine.check_security_headers(dominio)
-    except Exception: headers = {}
-    try: ssl_info = engine.ssl_scan(dominio)
-    except Exception: ssl_info = {}
-    try:
-        banners = engine.banner_grab(dominio, puertos)
-        os_det  = engine.detect_os_from_banners(banners)
-    except Exception: banners = {}; os_det = None
-
-    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
-    if ssl_info.get("caducado"):
-        riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
-    elif ssl_info.get("pronto_a_caducar"):
-        riesgo = min(100, riesgo + 10); desglose["SSL por caducar"] = 10
-    label, color = label_riesgo(riesgo)
-
-    resultado = {
-        "objetivo": objetivo, "dominio": dominio, "es_ip": es_ip_flag,
-        "puertos": puertos, "dns": dns,
-        "headers": {k: bool(v) for k, v in headers.items()},
-        "subs": [], "leaks": 0,
-        "riesgo": riesgo, "label": label, "color": color,
-        "desglose": desglose, "ssl": ssl_info,
-        "banners": banners, "os": os_det,
-        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-        "demo": True, "locked": False
-    }
+    # Lo pide un visitante sin cuenta: siempre análisis pasivo.
+    resultado = engine.puntuar(engine.analizar(dominio, modo=engine.MODO_PASIVO, subdominios=False))
+    resultado["objetivo"] = dominio
+    resultado["demo"] = True
+    riesgo, label = resultado["riesgo"], resultado["label"]
+    puertos, dns, ssl_info = resultado["puertos"], resultado["dns"], resultado["ssl"]
 
     # Guardar lead (no bloquea si falla)
     try:
@@ -2422,29 +2335,13 @@ def dashboard():
     return redirect(url_for('index'))
 
 # ── SCAN ──
-def calcular_riesgo(puertos, dns, leaks, headers):
-    score, desglose = 0, {}
-    servicios_criticos = ["RDP","Telnet","MySQL","MongoDB","Redis","PostgreSQL","MSSQL","Docker API","Elasticsearch","VNC"]
-    pts = 0
-    for p in puertos:
-        pts += 15 if p.get("servicio") in servicios_criticos else 5
-    pts = min(pts, 35)
-    score += pts
-    if pts: desglose["Red"] = pts
-    spf   = 20 if not dns.get("SPF")   else 0
-    dmarc = 15 if not dns.get("DMARC") else 0
-    score += spf + dmarc
-    if spf:   desglose["SPF ausente"]   = spf
-    if dmarc: desglose["DMARC ausente"] = dmarc
-    pts_l = min(len(leaks)*10, 30) if leaks else 0
-    score += pts_l
-    if pts_l: desglose["Filtraciones"] = pts_l
-    return min(score, 100), desglose
+calcular_riesgo = engine.calcular_riesgo
+label_riesgo = engine.label_riesgo
 
-def label_riesgo(score):
-    if score >= 70: return "CRITICO",  "#EF4444"
-    if score >= 40: return "MODERADO", "#F59E0B"
-    return "BAJO", "#10B981"
+# El motor guarda las cabeceras con nombre corto (engine.CABECERAS): HSTS, CSP...
+def _cabecera_presente(headers, nombre):
+    headers = headers or {}
+    return bool(headers.get(nombre) or headers.get(engine.CABECERAS.get(nombre, nombre)))
 
 def sanitizar(texto):
     return str(texto).encode("ascii","ignore").decode("ascii")
@@ -2888,12 +2785,13 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
                 f"Se ha detectado un <strong>aumento en el nivel de riesgo</strong> de tu dominio.<br><br>"
                 f"<table style='background:#080C14;border:1px solid #152B1E;border-radius:8px;padding:16px;width:100%;border-collapse:collapse'>"
                 f"<tr><td style='padding:8px 12px;color:#64748B;font-size:13px'>Dominio</td>"
-                f"<td style='padding:8px 12px;color:#E2EDF8;font-weight:700'>{objetivo}</td></tr>"
+                f"<td style='padding:8px 12px;color:#E2EDF8;font-weight:700'>{_html_escape(objetivo)}</td></tr>"
                 f"<tr><td style='padding:8px 12px;color:#64748B;font-size:13px'>Riesgo</td>"
                 f"<td style='padding:8px 12px;color:{color_riesgo};font-weight:700;font-size:18px'>{riesgo}% — {nivel}</td></tr>"
                 f"</table><br>"
                 f"{cambio_html}"
                 f"{'<p><strong>Puntos a revisar:</strong></p><ul>' + desglose_html + '</ul>' if desglose_html else ''}"
+                f"{'<p style=\"color:#94A3B8;font-size:12px\">' + HIBP_ATRIBUCION + '.</p>' if desglose.get('Filtraciones') else ''}"
             )
             base_url = BASE_URL
             with app.app_context():
@@ -2926,127 +2824,22 @@ def scan():
         if scans_mes >= 30:
             return jsonify({"error": "limite_free"}), 403
 
-    data     = request.get_json()
-    raw      = (data.get("objetivo") or "").strip()
+    data     = request.get_json(silent=True) or {}
+    raw      = (data.get("objetivo") or "").strip()[:200]
     if not raw:
         return jsonify({"error": "Objetivo vacío"}), 400
-    # Normalización consistente con /api/scan-demo: quita scheme, www., path, espacios
-    import re as _re_norm
-    objetivo = _re_norm.sub(r'^https?://', '', raw, flags=_re_norm.IGNORECASE)
-    objetivo = objetivo.replace('www.', '', 1).split('/')[0].rstrip('.').lower()
-    if not objetivo:
-        return jsonify({"error": "Objetivo vacío"}), 400
-
-    es_ip    = engine.es_ip(objetivo)
-    dominio  = objetivo.split("@")[-1] if "@" in objetivo else objetivo
-    _bloqueo = _rechazar_si_interno(dominio)
+    dominio = _normalizar_dominio(raw)
+    if not dominio:
+        return jsonify({"error": "Dominio no válido"}), 400
+    _bloqueo = _validar_objetivo(dominio, current_user)
     if _bloqueo:
         return _bloqueo
-    es_email = "@" in objetivo
+    objetivo = raw.lower() if "@" in raw else dominio
+    es_ip = engine.es_ip(dominio)
 
-    # Módulos comunes: puertos, SSL, banners
-    puertos  = engine.scan_critical_ports_fast(dominio)
-    ssl_info = engine.ssl_scan(dominio)
-    banners  = engine.banner_grab(dominio, puertos)
-    os_det   = engine.detect_os_from_banners(banners)
-
-    # Módulos solo para dominios (no IPs)
-    wp_audit = {"is_wordpress": False}
-    ps_audit = {"is_prestashop": False}
-    if not es_ip:
-        dns     = engine.check_email_spoofing(dominio)
-        headers = engine.check_security_headers(dominio)
-        subs    = engine.scan_subdomains(dominio)
-        cms     = engine.detect_cms(dominio)
-        # Auditoría WordPress dedicada si CMS = WordPress
-        if cms.get("cms") == "WordPress":
-            try: wp_audit = engine.wordpress_audit(dominio)
-            except Exception: wp_audit = {"is_wordpress": False}
-        # Auditoría PrestaShop dedicada si CMS = PrestaShop
-        if cms.get("cms") == "PrestaShop":
-            try: ps_audit = engine.prestashop_audit(dominio)
-            except Exception: ps_audit = {"is_prestashop": False}
-    else:
-        dns     = {"SPF": None, "DMARC": None, "SPF_raw": "", "DMARC_raw": ""}
-        headers = {}
-        subs    = []
-        cms     = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
-
-    leaks = []
-    if es_email and API_KEY:
-        leaks = engine.check_leaks_real(objetivo, API_KEY) or []
-
-    riesgo, desglose = calcular_riesgo(puertos, dns, leaks, headers)
-    if cms.get("riesgo"):
-        riesgo = min(100, riesgo + 10)
-        desglose["CMS desactualizable"] = 10
-    # Penalizaciones específicas WordPress
-    if wp_audit.get("is_wordpress"):
-        if wp_audit.get("version_outdated"):
-            riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
-        if wp_audit.get("xmlrpc_exposed"):
-            riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
-        if wp_audit.get("users_enumerable"):
-            riesgo = min(100, riesgo + 10); desglose["Usuarios WP enumerables"] = 10
-        vp = len(wp_audit.get("vulnerable_plugins") or [])
-        if vp:
-            pts = min(20, vp * 8)
-            riesgo = min(100, riesgo + pts); desglose[f"{vp} plugin(s) vulnerable(s)"] = pts
-        sf = len(wp_audit.get("sensitive_files") or [])
-        if sf:
-            pts = min(15, sf * 5)
-            riesgo = min(100, riesgo + pts); desglose[f"{sf} archivo(s) sensible(s) WP"] = pts
-    # Penalizaciones específicas PrestaShop
-    if ps_audit.get("is_prestashop"):
-        if ps_audit.get("version_outdated"):
-            riesgo = min(100, riesgo + 10); desglose["PrestaShop obsoleto"] = 10
-        if ps_audit.get("admin_path_default"):
-            riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
-        if ps_audit.get("install_dir_exposed"):
-            riesgo = min(100, riesgo + 18); desglose["/install/ PrestaShop accesible"] = 18
-        vm = len(ps_audit.get("vulnerable_modules") or [])
-        if vm:
-            pts = min(20, vm * 8)
-            riesgo = min(100, riesgo + pts); desglose[f"{vm} módulo(s) PS vulnerable(s)"] = pts
-        sfp = len(ps_audit.get("sensitive_files") or [])
-        if sfp:
-            pts = min(15, sfp * 5)
-            riesgo = min(100, riesgo + pts); desglose[f"{sfp} archivo(s) sensible(s) PS"] = pts
-        if not ps_audit.get("https_forced"):
-            riesgo = min(100, riesgo + 10); desglose["HTTPS no forzado (checkout)"] = 10
-        if ps_audit.get("skimmer_suspect"):
-            riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
-    # Penalización SSL
-    if ssl_info.get("caducado"):
-        riesgo = min(100, riesgo + 20)
-        desglose["SSL caducado"] = 20
-    elif ssl_info.get("pronto_a_caducar"):
-        riesgo = min(100, riesgo + 10)
-        desglose["SSL por caducar"] = 10
-    label, color = label_riesgo(riesgo)
-
-    resultado = {
-        "objetivo":  objetivo,
-        "dominio":   dominio,
-        "es_ip":     es_ip,
-        "puertos":   puertos,
-        "dns":       dns,
-        "headers":   {k: bool(v) for k, v in headers.items()},
-        "subs":      subs,
-        "leaks":     len(leaks),
-        "leaks_raw": leaks,
-        "riesgo":    riesgo,
-        "label":     label,
-        "color":     color,
-        "desglose":  desglose,
-        "cms":       cms,
-        "wp":        wp_audit,
-        "ps":        ps_audit,
-        "ssl":       ssl_info,
-        "banners":   banners,
-        "os":        os_det,
-        "timestamp": datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
-    }
+    resultado = _ejecutar_analisis(objetivo, dominio, current_user)
+    riesgo, label, desglose = resultado["riesgo"], resultado["label"], resultado["desglose"]
+    puertos, subs = resultado["puertos"], resultado["subs"]
 
     scan = Scan(
         user_id  = current_user.id,
@@ -3134,7 +2927,7 @@ def get_scan(scan_id):
     scan = Scan.query.filter_by(id=scan_id, user_id=current_user.id).first()
     if not scan:
         return jsonify({"error": "Escaneo no encontrado"}), 404
-    return jsonify(scan.resultado or {})
+    return jsonify({**(scan.resultado or {}), "scan_id": scan.id})
 
 @app.route("/api/pdf", methods=["POST"])
 @login_required
@@ -3145,7 +2938,18 @@ def generar_pdf():
     subdominios, OS) + cálculo de riesgo desglosado + plan de remediación."""
     if not PDF_OK:
         return jsonify({"error": "fpdf2 no instalado"}), 500
-    datos = request.get_json() or {}
+    # El informe se genera SIEMPRE a partir del escaneo guardado: si aceptáramos
+    # los datos del navegador, cualquiera podría fabricar un PDF con la marca de
+    # ReconBase y resultados inventados.
+    try:
+        scan_id = int((request.get_json(silent=True) or {}).get("scan_id") or 0)
+    except (TypeError, ValueError):
+        scan_id = 0
+    scan_obj = Scan.query.filter_by(id=scan_id, user_id=current_user.id).first() if scan_id else None
+    if not scan_obj or not scan_obj.resultado:
+        return jsonify({"error": "Escaneo no encontrado. Lanza un análisis desde el escáner para generar el informe."}), 404
+    datos = dict(scan_obj.resultado)
+    datos.setdefault("timestamp", scan_obj.timestamp.strftime("%d/%m/%Y %H:%M") if scan_obj.timestamp else "")
 
     # ─── Paleta de color corporativa ───
     BRAND_GREEN   = (22, 163, 74)
@@ -3249,6 +3053,10 @@ def generar_pdf():
     pdf.set_text_color(*TEXT_MUTED)
     pdf.cell(0, 5, sanitizar(label or ""), ln=1)
 
+    if datos.get('modo') == 'pasivo':
+        pdf.set_x(75)
+        pdf.cell(0, 5, sanitizar("Análisis pasivo (parcial): no incluye puertos, rutas ni ficheros"), ln=1)
+
     pdf.set_y(y_box + 45)
 
     # ─── Resumen de hallazgos ───
@@ -3282,7 +3090,7 @@ def generar_pdf():
         findings.append(('warn', "DMARC no configurado", "Riesgo de phishing con tu dominio"))
     elif not dns.get('SPF'):
         findings.append(('warn', "SPF no configurado", "Vulnerable a suplantación"))
-    miss_h = [k for k in ['Content-Security-Policy','X-Frame-Options','X-Content-Type-Options'] if not headers.get(k)]
+    miss_h = [k for k in ['Content-Security-Policy','X-Frame-Options','X-Content-Type-Options'] if not _cabecera_presente(headers, k)]
     if len(miss_h) >= 2:
         findings.append(('warn', f"{len(miss_h)} cabeceras HTTP ausentes", ', '.join(miss_h)))
     if ssl_i.get('caducado'):
@@ -3378,7 +3186,9 @@ def generar_pdf():
 
     # ─── 1. Puertos ───
     section_header("1. PUERTOS Y SERVICIOS EXPUESTOS")
-    if puertos:
+    if datos.get('modo') == 'pasivo':
+        body("No comprobados: el escaneo de puertos solo se hace en dominios cuyo titular los ha verificado.")
+    elif puertos:
         kv("Total expuestos", str(len(puertos)))
         kv("Puertos críticos", str(len(critPorts)), CRIT_RED if critPorts else OK_GREEN)
         if puertos:
@@ -3435,7 +3245,7 @@ def generar_pdf():
     pdf.cell(0, 5, "ESTADO", ln=1)
     pdf.set_draw_color(*BORDER); pdf.line(15, pdf.get_y(), 195, pdf.get_y()); pdf.ln(1)
     for hname, hdesc in h_list:
-        present = bool(headers.get(hname) or headers.get(hdesc.split(' - ')[0]))
+        present = _cabecera_presente(headers, hname)
         pdf.set_font("Helvetica", "", 9)
         pdf.set_text_color(*TEXT_DARK)
         pdf.cell(95, 5, sanitizar(hname))
@@ -3571,7 +3381,10 @@ def generar_pdf():
 
     # ─── 6. Filtraciones ───
     section_header("6. FILTRACIONES DE DATOS")
-    if leaks_n > 0:
+    hibp_estado = datos.get('hibp_estado') or ('consultado' if leaks_n else 'no_aplica')
+    if hibp_estado != 'consultado':
+        body("No consultadas: solo se comprueban el email del propio usuario o emails de un dominio verificado.")
+    elif leaks_n > 0:
         kv("Brechas encontradas", str(leaks_n), CRIT_RED)
         leaks_raw = datos.get('leaks_raw') or []
         for leak in leaks_raw[:5]:
@@ -3582,6 +3395,8 @@ def generar_pdf():
         body("Acciones urgentes: cambia las contraseñas de los emails afectados, activa 2FA, notifica al equipo.")
     else:
         kv("Estado", "Sin filtraciones detectadas", OK_GREEN)
+    if hibp_estado == 'consultado':
+        body(HIBP_ATRIBUCION + ".")
     pdf.ln(2)
 
     # ─── 7. Subdominios ───
@@ -3789,16 +3604,10 @@ def escaneo_automatico():
             user_dias = [int(d) for d in user_dias_str.split(',') if d.strip()] if user_dias_str else []
             user_hora = user.scan_hora
 
-            # Multi-dominio: escanear dominios activos, cada uno con su propio horario si lo tiene.
-            dominios_user = Domain.query.filter_by(user_id=user.id, activo=True).all()
-            if not dominios_user:
-                # Fallback: sin dominios configurados, usar último escaneo con horario global
-                if not user_dias or user_hora != hora_actual or dia_actual not in user_dias:
-                    continue
-                ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
-                if not ultimo:
-                    continue
-                dominios_user = [type('D', (), {'dominio': ultimo.dominio, 'scan_hora': None, 'scan_dias': None})()]
+            # Solo dominios activos y VERIFICADOS: la vigilancia hace el análisis
+            # completo (puertos, rutas no enlazadas) y eso exige la autorización
+            # del titular. Los no verificados siguen con la monitorización pasiva.
+            dominios_user = Domain.query.filter_by(user_id=user.id, activo=True, verificado=True).all()
 
             for dom_obj in dominios_user:
                 # Per-domain schedule override
@@ -3810,47 +3619,11 @@ def escaneo_automatico():
                 dominio  = dom_obj.dominio
                 objetivo = dominio
                 try:
-                    puertos = engine.scan_critical_ports_fast(dominio)
-                    dns     = engine.check_email_spoofing(dominio)
-                    headers = engine.check_security_headers(dominio)
-                    subs    = engine.scan_subdomains(dominio)
-                    # CMS detection + auditoría específica WP/PS para detectar skimmers
-                    try:
-                        cms = engine.detect_cms(dominio)
-                    except Exception:
-                        cms = {"cms": None, "version": None}
-                    wp_audit = {"is_wordpress": False}
-                    ps_audit = {"is_prestashop": False}
-                    if cms.get("cms") == "WordPress":
-                        try: wp_audit = engine.wordpress_audit(dominio)
-                        except Exception: pass
-                    if cms.get("cms") == "PrestaShop":
-                        try: ps_audit = engine.prestashop_audit(dominio)
-                        except Exception: pass
-
-                    riesgo, desglose = calcular_riesgo(puertos, dns, [], headers)
-                    # Penalizaciones de WP/PS para que el riesgo refleje los hallazgos del CMS
-                    if wp_audit.get("is_wordpress"):
-                        if wp_audit.get("version_outdated"):  riesgo = min(100, riesgo + 10); desglose["WordPress obsoleto"] = 10
-                        if wp_audit.get("xmlrpc_exposed"):    riesgo = min(100, riesgo + 5);  desglose["xmlrpc.php expuesto"] = 5
-                        if wp_audit.get("vulnerable_plugins"): riesgo = min(100, riesgo + 10); desglose["Plugins WP vulnerables"] = 10
-                    if ps_audit.get("is_prestashop"):
-                        if ps_audit.get("skimmer_suspect"):     riesgo = min(100, riesgo + 25); desglose["Posible skimmer en checkout"] = 25
-                        if ps_audit.get("install_dir_exposed"): riesgo = min(100, riesgo + 18); desglose["/install/ PrestaShop accesible"] = 18
-                        if ps_audit.get("admin_path_default"):  riesgo = min(100, riesgo + 15); desglose["Admin PrestaShop sin renombrar"] = 15
-
-                    label, color     = label_riesgo(riesgo)
-                    resultado = {
-                        "objetivo": objetivo, "dominio": dominio,
-                        "puertos": puertos, "dns": dns,
-                        "headers": {k: bool(v) for k, v in headers.items()},
-                        "subs": subs, "leaks": 0, "leaks_raw": [],
-                        "riesgo": riesgo, "label": label, "color": color,
-                        "desglose": desglose,
-                        "cms": cms, "wp": wp_audit, "ps": ps_audit,
-                        "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
-                        "automatico": True
-                    }
+                    resultado = engine.puntuar(engine.analizar(dominio, modo=engine.MODO_COMPLETO))
+                    resultado["objetivo"] = objetivo
+                    resultado["automatico"] = True
+                    riesgo, label, desglose = resultado["riesgo"], resultado["label"], resultado["desglose"]
+                    puertos, subs, ps_audit = resultado["puertos"], resultado["subs"], resultado["ps"]
                     scan = Scan(user_id=user.id, objetivo=objetivo, dominio=dominio,
                                 riesgo=riesgo, label=label, resultado=resultado)
                     db.session.add(scan)
@@ -4309,39 +4082,20 @@ def api_v1_scan():
     if (user.api_calls_month or 0) >= max_calls:
         return jsonify({"error": f"Límite mensual alcanzado ({max_calls} llamadas)"}), 429
 
-    data = request.get_json() or {}
-    import re as _re_api
-    dominio = (data.get("dominio") or "").strip().lower()
-    dominio = _re_api.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
-    if not dominio or len(dominio) < 3:
+    data = request.get_json(silent=True) or {}
+    dominio = _normalizar_dominio((data.get("dominio") or "")[:255])
+    if not dominio:
         return jsonify({"error": "Dominio no válido"}), 400
-    _bloqueo = _rechazar_si_interno(dominio)
+    _bloqueo = _validar_objetivo(dominio, user)
     if _bloqueo:
         return _bloqueo
 
     try:
-        es_ip_flag = engine.es_ip(dominio)
-        puertos = engine.scan_critical_ports_fast(dominio)
-        dns = {} if es_ip_flag else engine.check_email_spoofing(dominio)
-        headers_sec = engine.check_security_headers(dominio)
-        ssl_info = engine.ssl_scan(dominio)
-        riesgo, desglose = calcular_riesgo(puertos, dns, [], headers_sec)
-        if ssl_info.get("caducado"):
-            riesgo = min(100, riesgo + 20); desglose["SSL caducado"] = 20
-        label, color = label_riesgo(riesgo)
-
-        resultado = {
-            "dominio": dominio, "es_ip": es_ip_flag,
-            "puertos": puertos, "dns": dns,
-            "headers": {k: bool(v) for k, v in headers_sec.items()},
-            "ssl": ssl_info,
-            "riesgo": riesgo, "label": label, "color": color,
-            "desglose": desglose,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-        }
-        # Guardar en BD y contar uso
+        # Completo solo si el dueño de la API key ha verificado el dominio.
+        resultado = _ejecutar_analisis(dominio, dominio, user, subdominios=False)
+        resultado["timestamp"] = datetime.utcnow().isoformat() + "Z"
         scan = Scan(user_id=user.id, objetivo=dominio, dominio=dominio,
-                    riesgo=riesgo, label=label, resultado=resultado)
+                    riesgo=resultado["riesgo"], label=resultado["label"], resultado=resultado)
         db.session.add(scan)
         user.api_calls_month = (user.api_calls_month or 0) + 1
         db.session.commit()
@@ -4954,27 +4708,117 @@ def admin_borrar_usuario(uid):
     db.session.commit()
     return jsonify({"ok": True})
 
-# ── MULTI-DOMINIO ──
+# ── MULTI-DOMINIO Y VERIFICACIÓN DE TITULARIDAD ──
+VERIF_PREFIJO = "reconbase-verificacion"
+VERIF_RUTA_FICHERO = "/.well-known/reconbase-verificacion.txt"
+VERIF_DIAS_REVALIDAR = 30
+
+
+def _instrucciones_verificacion(d):
+    token = d.verif_token or ""
+    return {
+        "dns": {"tipo": "TXT", "nombre": d.dominio, "valor": f"{VERIF_PREFIJO}={token}",
+                "nota": "Cubre también los subdominios. Puede tardar unos minutos en propagarse."},
+        "meta": {"etiqueta": f'<meta name="{VERIF_PREFIJO}" content="{token}">',
+                 "nota": "Dentro del <head> de la página de inicio."},
+        "fichero": {"ruta": VERIF_RUTA_FICHERO, "contenido": token,
+                    "url": f"https://{d.dominio}{VERIF_RUTA_FICHERO}",
+                    "nota": "Un fichero de texto con el código como único contenido."},
+    }
+
+
+def _dominio_json(d):
+    return {
+        "id": d.id, "dominio": d.dominio, "activo": d.activo,
+        "added_at": d.added_at.strftime("%d/%m/%Y") if d.added_at else None,
+        "verificado": bool(d.verificado),
+        "verif_metodo": d.verif_metodo,
+        "verificado_at": d.verificado_at.strftime("%d/%m/%Y") if d.verificado_at else None,
+        "instrucciones": None if d.verificado else _instrucciones_verificacion(d),
+    }
+
+
+def _respuesta_del_dominio(url_respuesta, dominio):
+    """La página que contiene el código debe ser del propio dominio (o su www),
+    no de otro sitio al que redirija."""
+    from urllib.parse import urlsplit
+    host = (urlsplit(url_respuesta or "").hostname or "").lower()
+    return host in (dominio, "www." + dominio)
+
+
+_RE_META_VERIF = re.compile(r'<meta[^>]+name=["\']reconbase-verificacion["\'][^>]*>', re.I)
+
+
+def _comprobar_verificacion(dominio, token, metodo):
+    """True si el código `token` está publicado en el dominio con `metodo`."""
+    if not token or not dominio:
+        return False
+    if metodo == "dns":
+        if engine.es_ip(dominio):
+            return False
+        esperado = f"{VERIF_PREFIJO}={token}"
+        try:
+            import dns.resolver as _resolver
+            res = _resolver.Resolver()
+            res.lifetime = 6
+            for rd in res.resolve(dominio, "TXT"):
+                if b"".join(rd.strings).decode("utf-8", errors="ignore").strip() == esperado:
+                    return True
+        except Exception:
+            return False
+        return False
+    if metodo == "meta":
+        for scheme in ("https", "http"):
+            try:
+                r = engine.get_seguro(f"{scheme}://{dominio}/", timeout=8)
+            except Exception:
+                continue
+            if not _respuesta_del_dominio(r.url, dominio):
+                return False
+            for etiqueta in _RE_META_VERIF.findall((r.text or "")[:300000]):
+                m = re.search(r'content=["\']([^"\']+)["\']', etiqueta, re.I)
+                if m and m.group(1).strip() == token:
+                    return True
+            return False
+        return False
+    if metodo == "fichero":
+        for scheme in ("https", "http"):
+            try:
+                r = engine.peticion_segura(f"{scheme}://{dominio}{VERIF_RUTA_FICHERO}", timeout=8, stream=True)
+                contenido = r.raw.read(1024, decode_content=True) or b""
+                r.close()
+            except Exception:
+                continue
+            if r.status_code == 200 and _respuesta_del_dominio(r.url, dominio):
+                return contenido.decode("utf-8", errors="ignore").strip() == token
+        return False
+    return False
+
+
 @app.route("/api/dominios", methods=["GET"])
 @login_required
 def listar_dominios():
     doms = Domain.query.filter_by(user_id=current_user.id).order_by(Domain.added_at.desc()).all()
-    return jsonify({"dominios": [
-        {"id": d.id, "dominio": d.dominio, "activo": d.activo,
-         "added_at": d.added_at.strftime("%d/%m/%Y") if d.added_at else None}
-        for d in doms
-    ]})
+    cambios = False
+    for d in doms:
+        if not d.verif_token:
+            d.verif_token = secrets.token_hex(16)
+            cambios = True
+    if cambios:
+        db.session.commit()
+    return jsonify({"dominios": [_dominio_json(d) for d in doms]})
+
 
 @app.route("/api/dominios", methods=["POST"])
 @login_required
 @limiter.limit("20 per hour")
 def anadir_dominio():
-    data = request.get_json() or {}
-    import re as _re3
-    dominio = (data.get("dominio") or "").strip().lower()
-    dominio = _re3.sub(r'^https?://', '', dominio).replace("www.", "").split("/")[0].strip()
-    if not dominio or len(dominio) < 3:
+    data = request.get_json(silent=True) or {}
+    dominio = _normalizar_dominio((data.get("dominio") or "")[:255])
+    if not dominio:
         return jsonify({"ok": False, "error": "Dominio no válido"}), 400
+    if data.get("autorizacion") is not True:
+        return jsonify({"ok": False, "error": "Debes declarar que eres titular del dominio o que tienes autorización para analizarlo."}), 400
     _bloqueo = _rechazar_si_interno(dominio)
     if _bloqueo:
         return _bloqueo
@@ -4987,10 +4831,76 @@ def anadir_dominio():
     existing = Domain.query.filter_by(user_id=current_user.id, dominio=dominio).first()
     if existing:
         return jsonify({"ok": False, "error": "Este dominio ya está añadido"}), 400
-    dom = Domain(user_id=current_user.id, dominio=dominio)
+    dom = Domain(user_id=current_user.id, dominio=dominio,
+                 autorizacion_at=datetime.utcnow(), verif_token=secrets.token_hex(16))
     db.session.add(dom)
     db.session.commit()
-    return jsonify({"ok": True, "id": dom.id, "dominio": dom.dominio})
+    _registrar_audit(current_user.id, "dominio_anadido", f"{dominio} (declara ser titular o tener autorización)")
+    return jsonify({"ok": True, **_dominio_json(dom)})
+
+
+@app.route("/api/dominios/<int:dom_id>/verificar", methods=["POST"])
+@login_required
+@limiter.limit("30 per hour")
+def verificar_dominio(dom_id):
+    dom = Domain.query.filter_by(id=dom_id, user_id=current_user.id).first()
+    if not dom:
+        return jsonify({"ok": False, "error": "Dominio no encontrado"}), 404
+    metodo = ((request.get_json(silent=True) or {}).get("metodo") or "").strip()
+    if metodo not in ("dns", "meta", "fichero"):
+        return jsonify({"ok": False, "error": "Método no válido"}), 400
+    if metodo != "fichero" and engine.es_ip(dom.dominio):
+        return jsonify({"ok": False, "error": "Las IPs solo se pueden verificar con el fichero."}), 400
+    if not dom.verif_token:
+        dom.verif_token = secrets.token_hex(16)
+        db.session.commit()
+    if not _comprobar_verificacion(dom.dominio, dom.verif_token, metodo):
+        return jsonify({"ok": False, "error": "No encontramos el código de verificación. Revisa que esté publicado exactamente como se indica y vuelve a intentarlo (los cambios de DNS pueden tardar unos minutos)."}), 400
+    ahora = datetime.utcnow()
+    dom.verificado, dom.verif_metodo = True, metodo
+    dom.verificado_at = dom.verif_comprobado_at = ahora
+    if not dom.autorizacion_at:
+        dom.autorizacion_at = ahora
+    db.session.commit()
+    _registrar_audit(current_user.id, "dominio_verificado", f"{dom.dominio} por {metodo}")
+    return jsonify({"ok": True, **_dominio_json(dom)})
+
+
+def cron_reverificar_dominios():
+    """Cada día comprueba los dominios verificados hace más de 30 días. Si el
+    código ya no está, el dominio vuelve al análisis pasivo y se avisa."""
+    with app.app_context():
+        limite = datetime.utcnow() - timedelta(days=VERIF_DIAS_REVALIDAR)
+        pendientes = Domain.query.filter(
+            Domain.verificado.is_(True),
+            db.or_(Domain.verif_comprobado_at.is_(None), Domain.verif_comprobado_at < limite),
+        ).limit(200).all()
+        for d in pendientes:
+            try:
+                if _comprobar_verificacion(d.dominio, d.verif_token, d.verif_metodo):
+                    d.verif_comprobado_at = datetime.utcnow()
+                    db.session.commit()
+                    continue
+                d.verificado = False
+                d.verif_comprobado_at = datetime.utcnow()
+                db.session.commit()
+                _crear_notificacion(d.user_id, "sistema", f"{d.dominio} ya no está verificado",
+                                    "No encontramos el código de verificación. Hasta que lo vuelvas a publicar "
+                                    "solo haremos el análisis pasivo y la vigilancia automática queda en pausa.",
+                                    url="/perfil#dominios")
+                user = db.session.get(User, d.user_id)
+                if user:
+                    send_html_email(
+                        user.email, f"[ReconBase] {d.dominio} ya no está verificado",
+                        "Tu dominio ha dejado de estar verificado",
+                        f"<p>Al revisar <strong>{_html_escape(d.dominio)}</strong> no hemos encontrado el código de verificación.</p>"
+                        "<p>Hasta que lo vuelvas a publicar solo haremos el análisis pasivo (información pública) "
+                        "y la vigilancia automática queda en pausa.</p>",
+                        BASE_URL + "/perfil#dominios", "Volver a verificar")
+            except Exception as e:
+                db.session.rollback()
+                logger.warning(f"[Reverificación] {d.dominio}: {e}")
+
 
 @app.route("/api/dominios/<int:dom_id>", methods=["DELETE"])
 @login_required
@@ -5191,8 +5101,11 @@ def _registrar_audit(user_id, evento, detalles=None, req=None):
 def _check_ssl(dominio):
     """Comprueba el certificado SSL de un dominio. Devuelve dict con resultado."""
     try:
+        ip = engine.ip_publica_de(dominio, solo_ipv4=False)
+        if not ip:
+            raise ValueError("Destino no permitido o no resuelve")
         ctx = _ssl_mod.create_default_context()
-        with socket.create_connection((dominio, 443), timeout=10) as sock:
+        with socket.create_connection((ip, 443), timeout=10) as sock:
             with ctx.wrap_socket(sock, server_hostname=dominio) as ssock:
                 cert = ssock.getpeercert()
         expiry_str = cert.get('notAfter', '')
@@ -5222,8 +5135,7 @@ def _check_uptime(dominio):
     for scheme in ('https', 'http'):
         try:
             t0 = time.time()
-            r = engine.get_seguro(f"{scheme}://{dominio}", timeout=10,
-                                  headers={'User-Agent': 'ReconBase-Uptime/1.0'})
+            r = engine.get_seguro(f"{scheme}://{dominio}", timeout=10)
             ms = int((time.time() - t0) * 1000)
             return {'up': True, 'status_code': r.status_code, 'response_ms': ms}
         except Exception:
@@ -5238,8 +5150,7 @@ def _detect_technologies(dominio):
     try:
         for scheme in ('https', 'http'):
             try:
-                r = engine.get_seguro(f"{scheme}://{dominio}", timeout=12,
-                                      headers={'User-Agent': 'Mozilla/5.0 (compatible; ReconBase/1.0)'})
+                r = engine.get_seguro(f"{scheme}://{dominio}", timeout=12)
                 break
             except Exception:
                 continue
@@ -5405,25 +5316,31 @@ def _check_dns_cambios(user_id, dominio):
     return cambios
 
 
+# Listas DNSBL consultadas para la reputación de IPs. Las de Spamhaus (zen, CBL)
+# solo son gratuitas para uso no comercial y bloquean las consultas desde nubes
+# como Railway; SORBS cerró en 2024 y Barracuda exige registro. Se pueden añadir
+# otras (p. ej. Spamhaus DQS con su clave) con DNSBL_LISTAS="a.org,b.net".
+DNSBL_LISTAS = [l.strip() for l in os.getenv("DNSBL_LISTAS", "bl.spamcop.net").split(",") if l.strip()]
+
+
 def _check_ip_reputacion(ip):
     """Comprueba la IP contra listas negras DNS (DNSBL)."""
     try:
         import dns.resolver as _resolver
     except ImportError:
         return {'limpio': True, 'listas_negras': []}
-
-    DNSBL = [
-        'zen.spamhaus.org', 'bl.spamcop.net', 'dnsbl.sorbs.net',
-        'cbl.abuseat.org',  'b.barracudacentral.org', 'dnsbl-1.uceprotect.net',
-    ]
+    if not engine.es_ip(ip):
+        return {'limpio': True, 'listas_negras': []}
     reversed_ip = '.'.join(reversed(ip.split('.')))
     listas = []
-    for bl in DNSBL:
+    for bl in DNSBL_LISTAS:
         try:
-            _resolver.resolve(f"{reversed_ip}.{bl}", 'A', lifetime=3)
-            listas.append(bl)
+            respuestas = _resolver.resolve(f"{reversed_ip}.{bl}", 'A', lifetime=3)
         except Exception:
-            pass
+            continue
+        # 127.0.0.x = listada. 127.255.255.x = la lista rechaza la consulta.
+        if any(str(r).startswith("127.0.0.") for r in respuestas):
+            listas.append(bl)
     return {'limpio': len(listas) == 0, 'listas_negras': listas}
 
 
@@ -6115,6 +6032,7 @@ try:
     scheduler.add_job(cron_dns_monitoring,   'cron', minute=30,             id='dns_mon',    replace_existing=True)
     scheduler.add_job(cron_ip_reputation,    'cron', hour=5,   minute=0,   id='ip_rep',     replace_existing=True)
     scheduler.add_job(cron_pdf_reports,      'cron', hour=7,   minute=30,  id='pdf_rep',    replace_existing=True)
+    scheduler.add_job(cron_reverificar_dominios, 'cron', hour=4, minute=15, id='reverif_dom', replace_existing=True)
 except Exception as _sched_e:
     logger.warning(f"[Scheduler] Batch 2 jobs: {_sched_e}")
 
@@ -6180,6 +6098,15 @@ with app.app_context():
         "CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip)",
         "CREATE INDEX IF NOT EXISTS idx_login_attempts_exito ON login_attempts(exito)",
         "CREATE INDEX IF NOT EXISTS idx_login_attempts_created ON login_attempts(created_at)",
+        # ── Verificación de titularidad de dominios ──
+        "ALTER TABLE domains ADD COLUMN IF NOT EXISTS autorizacion_at TIMESTAMP",
+        "ALTER TABLE domains ADD COLUMN IF NOT EXISTS verificado BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE domains ADD COLUMN IF NOT EXISTS verif_token VARCHAR(64)",
+        "ALTER TABLE domains ADD COLUMN IF NOT EXISTS verif_metodo VARCHAR(10)",
+        "ALTER TABLE domains ADD COLUMN IF NOT EXISTS verificado_at TIMESTAMP",
+        "ALTER TABLE domains ADD COLUMN IF NOT EXISTS verif_comprobado_at TIMESTAMP",
+        "CREATE TABLE IF NOT EXISTS scan_opt_outs (id SERIAL PRIMARY KEY, dominio VARCHAR(255) NOT NULL, email VARCHAR(120) NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, confirmado BOOLEAN DEFAULT FALSE NOT NULL, created_at TIMESTAMP DEFAULT NOW(), confirmado_at TIMESTAMP)",
+        "CREATE INDEX IF NOT EXISTS idx_scan_opt_outs_dominio ON scan_opt_outs(dominio)",
     ]:
         try:
             db.session.execute(text(col_sql))

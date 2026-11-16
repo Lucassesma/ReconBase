@@ -180,8 +180,11 @@ class TestProtectedEndpoints:
 
     def test_dominios_crud(self, client, test_user):
         self._login(client)
-        # Añadir
+        # Sin declarar titularidad o autorización no se puede añadir
         r = client.post("/api/dominios", json={"dominio": "test-example.com"})
+        assert r.status_code == 400
+        # Añadir
+        r = client.post("/api/dominios", json={"dominio": "test-example.com", "autorizacion": True})
         data = r.get_json()
         assert data["ok"] is True
         dom_id = data["id"]

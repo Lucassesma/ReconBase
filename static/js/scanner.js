@@ -16,6 +16,43 @@ function rbEsc(s) {
   });
 }
 
+// El servidor devuelve las cabeceras con nombre corto (CSP, HSTS...): se aceptan ambos.
+var SC_HDR_ALIAS = {
+  'Content-Security-Policy': 'CSP', 'X-Frame-Options': 'Anti-Clickjacking',
+  'X-Content-Type-Options': 'MIME-Sniffing', 'Strict-Transport-Security': 'HSTS',
+  'Referrer-Policy': 'Referrer-Policy', 'Permissions-Policy': 'Permissions-Policy'
+};
+function scHdr(h, nombre) { return !!(h && (h[nombre] || h[SC_HDR_ALIAS[nombre]])); }
+function scEsPasivo(d) { return d && d.modo === 'pasivo'; }
+
+// Aviso de análisis parcial: qué no se ha comprobado y cómo desbloquearlo.
+function scAvisoPasivo(d) {
+  if (!scEsPasivo(d)) return '';
+  var omitidos = (d.omitidos || []).map(rbEsc).join(' · ');
+  return '<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-left:3px solid #2563EB;border-radius:8px;padding:.9rem 1rem;margin-bottom:.75rem">' +
+    '<span style="font-size:.6rem;font-family:\'JetBrains Mono\',monospace;background:#DBEAFE;color:#1D4ED8;padding:.15rem .5rem;border-radius:4px;font-weight:700;letter-spacing:.08em">ANÁLISIS PASIVO</span>' +
+    '<div style="font-size:.85rem;font-weight:700;color:#0F172A;margin:.4rem 0 .2rem">Solo información pública: el resultado es parcial</div>' +
+    '<div style="font-size:.78rem;color:#475569;line-height:1.55">No hemos comprobado: ' + omitidos + '. ' +
+    'Para el análisis completo, <a href="/perfil#dominios" style="color:#1D4ED8;font-weight:700;text-decoration:underline">verifica que el dominio es tuyo</a>. ' +
+    '<a href="/escaner-info" target="_blank" style="color:#1D4ED8;text-decoration:underline">Qué incluye cada análisis</a></div></div>';
+}
+
+// Filtraciones: solo se muestra "sin filtraciones" si de verdad se consultó HIBP.
+function scCardFiltraciones(d) {
+  var est = d.hibp_estado || (d.leaks_raw && d.leaks_raw.length ? 'consultado' : 'no_aplica');
+  var atrib = '<div style="margin-top:.4rem;font-size:.7rem;color:#64748B">Fuente: <a href="https://haveibeenpwned.com" target="_blank" rel="noopener" style="color:#64748B;text-decoration:underline">Have I Been Pwned</a> (CC BY 4.0)</div>';
+  if (est === 'consultado') {
+    if ((d.leaks || 0) > 0) {
+      var fuentes = (d.leaks_raw || []).slice(0, 3).map(function(f){ return rbEsc(f.Title || f.Name || f.fuente || f); }).join(', ');
+      return scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' encontrada' + (d.leaks > 1 ? 's' : ''), (fuentes || 'El email aparece en brechas de seguridad conocidas.') + atrib, 'leaks');
+    }
+    return scCard('ok', 'Sin filtraciones conocidas', 'El email no aparece en las brechas registradas en Have I Been Pwned.' + atrib);
+  }
+  if (est === 'no_permitido') return scCard('info', 'Filtraciones: no consultadas', 'Solo puedes comprobar tu propio email o emails de un dominio que hayas verificado.');
+  if (est === 'no_disponible') return scCard('info', 'Filtraciones: no disponible', 'La consulta a Have I Been Pwned no está disponible ahora mismo.');
+  return scCard('info', 'Filtraciones de credenciales', 'Analiza tu email (o uno de un dominio verificado) para saber si aparece en brechas conocidas.');
+}
+
 function scSwitch(tab, el) {
   document.querySelectorAll('.sc-tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.sc-panel').forEach(function(p){p.classList.remove('active');});
@@ -96,17 +133,17 @@ function scResetLoading() {
 
 function scRenderResults(d) {
   var col = d.riesgo >= 70 ? '#DC2626' : d.riesgo >= 40 ? '#D97706' : '#16A34A';
-  document.getElementById('sc-res-obj').textContent = d.objetivo;
+  document.getElementById('sc-res-obj').textContent = d.objetivo + (scEsPasivo(d) ? '  ·  análisis pasivo' : '');
   document.getElementById('sc-res-ts').textContent = d.timestamp;
 
   var rEl = document.getElementById('sc-m-riesgo'); if(rEl) { rEl.textContent = d.riesgo + '%'; rEl.style.color = col; }
   var lEl = document.getElementById('sc-m-label'); if(lEl) { lEl.textContent = d.label; lEl.style.color = col; }
-  document.getElementById('sc-m-puertos').textContent = (d.puertos || []).length;
+  document.getElementById('sc-m-puertos').textContent = scEsPasivo(d) ? '—' : (d.puertos || []).length;
   document.getElementById('sc-m-subs').textContent = (d.subs || []).length;
   var spf = d.dns && d.dns.SPF, dmarc = d.dns && d.dns.DMARC;
   var dnsEl = document.getElementById('sc-m-dns'); if(dnsEl) dnsEl.textContent = (spf && dmarc) ? '✓' : (spf || dmarc) ? '~' : '✗';
   var dnsSub = document.getElementById('sc-m-dns-sub'); if(dnsSub) dnsSub.textContent = (spf && dmarc) ? 'OK' : (!spf && !dmarc) ? 'Ambos ausentes' : 'Parcial';
-  document.getElementById('sc-m-leaks').textContent = d.leaks || 0;
+  document.getElementById('sc-m-leaks').textContent = (d.hibp_estado === 'consultado') ? (d.leaks || 0) : '—';
 
   document.getElementById('sc-results').style.display = 'block';
 
@@ -140,7 +177,7 @@ function scRenderGauge(pct, lbl) {
 }
 
 function scRenderCards(d) {
-  var html = '';
+  var html = scAvisoPasivo(d);
 
   // ALERTA SUPERIOR: si se detectó skimmer en PrestaShop, banner crítico arriba del todo
   if (d.ps && d.ps.skimmer_suspect) {
@@ -164,7 +201,8 @@ function scRenderCards(d) {
 
   var serviciosCrit = ["RDP","Telnet","MySQL","MongoDB","Redis","PostgreSQL","MSSQL","Docker API","Elasticsearch","VNC"];
   var critPorts = (d.puertos || []).filter(function(p){ return serviciosCrit.indexOf(p.servicio) !== -1; });
-  if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles: ' + critPorts.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '. Ciérralos en el firewall.', 'puerto');
+  if (scEsPasivo(d)) html += scCard('info', 'Puertos y servicios: no comprobados', 'El escaneo de puertos solo se hace en dominios verificados. <a href="/perfil#dominios" style="color:#1D4ED8;text-decoration:underline">Verificar dominio</a>');
+  else if (critPorts.length) html += scCard('crit', critPorts.length + ' puerto' + (critPorts.length > 1 ? 's críticos' : ' crítico') + ' expuesto' + (critPorts.length > 1 ? 's' : ''), 'Accesibles: ' + critPorts.map(function(p){return p.puerto+'/'+p.servicio;}).join(', ') + '. Ciérralos en el firewall.', 'puerto');
   else if ((d.puertos || []).length === 0) html += scCard('ok', 'Sin puertos críticos expuestos', 'No se detectaron servicios sensibles accesibles.');
   else html += scCard('ok', 'Puertos bajo control', 'Solo puertos estándar detectados.');
 
@@ -177,9 +215,9 @@ function scRenderCards(d) {
 
   if (d.headers) {
     var miss = [];
-    if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) miss.push('X-Frame-Options');
-    if (!d.headers['Content-Security-Policy']) miss.push('CSP');
-    if (!d.headers['X-Content-Type-Options']) miss.push('X-Content-Type-Options');
+    if (!scHdr(d.headers, 'X-Frame-Options') && !scHdr(d.headers, 'Content-Security-Policy')) miss.push('X-Frame-Options');
+    if (!scHdr(d.headers, 'Content-Security-Policy')) miss.push('CSP');
+    if (!scHdr(d.headers, 'X-Content-Type-Options')) miss.push('X-Content-Type-Options');
     if (miss.length >= 2) html += scCard('warn', miss.length + ' cabeceras HTTP ausentes', miss.slice(0,3).join(', ') + ' — expuesto a XSS y clickjacking.', 'headers');
     else if (miss.length === 1) html += scCard('warn', 'Cabecera ' + miss[0] + ' ausente', 'Configúrala en tu servidor.', 'headers');
     else html += scCard('ok', 'Cabeceras HTTP correctas', 'Las principales cabeceras de seguridad están configuradas.');
@@ -241,11 +279,7 @@ function scRenderCards(d) {
     }
   }
 
-  if ((d.leaks || 0) > 0) {
-    html += scCard('crit', d.leaks + ' filtración' + (d.leaks > 1 ? 'es' : '') + ' detectada' + (d.leaks > 1 ? 's' : ''), (d.leaks_raw||[]).slice(0,3).map(function(f){return f.fuente||f;}).join(', ') || 'Credenciales comprometidas encontradas.', 'leaks');
-  } else {
-    html += scCard('ok', 'Sin filtraciones conocidas', 'No se encontraron datos en bases de brechas.');
-  }
+  html += scCardFiltraciones(d);
 
   document.getElementById('sc-cards').innerHTML = html;
 }
@@ -265,7 +299,8 @@ function scCard(type, title, desc, remedKey) {
   var C = {
     crit: {b:'#FEE2E2',l:'#DC2626',bg:'#FEF2F2',c:'#DC2626',lbl:'CRÍTICO'},
     warn: {b:'#FEF3C7',l:'#D97706',bg:'#FFFBEB',c:'#D97706',lbl:'ADVERTENCIA'},
-    ok:   {b:'#DCFCE7',l:'#16A34A',bg:'#F0FDF4',c:'#16A34A',lbl:'OK'}
+    ok:   {b:'#DCFCE7',l:'#16A34A',bg:'#F0FDF4',c:'#16A34A',lbl:'OK'},
+    info: {b:'#E2E8F0',l:'#64748B',bg:'#F8FAFC',c:'#475569',lbl:'INFO'}
   };
   var s = C[type] || C.ok;
   var remedHtml = '';
@@ -290,7 +325,7 @@ function scRenderHeadersChart(headers, canvasId) {
   if (canvasId === 'sc-dh' && scDashHeadersChart) { scDashHeadersChart.destroy(); scDashHeadersChart = null; }
   var keys = ['Content-Security-Policy','X-Frame-Options','X-Content-Type-Options','Strict-Transport-Security','Referrer-Policy','Permissions-Policy'];
   var labels = ['CSP','X-Frame','X-Type','HSTS','Referrer','Permissions'];
-  var presente = keys.map(function(k){ return headers && headers[k] ? true : false; });
+  var presente = keys.map(function(k){ return scHdr(headers, k); });
   var colors = presente.map(function(v){ return v ? 'rgba(22,163,74,.85)' : 'rgba(220,38,38,.75)'; });
   var newChart = new Chart(canvas, {
     type: 'bar',
@@ -308,7 +343,7 @@ function scRenderHeadersChart(headers, canvasId) {
 function scRenderRadarChart(d, canvasId) {
   var canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  var puertos = Math.min((d.puertos||[]).length * 10, 100);
+  var puertos = scEsPasivo(d) ? 0 : Math.min((d.puertos||[]).length * 10, 100);
   var dns = (d.dns && d.dns.SPF && d.dns.DMARC) ? 0 : (d.dns && (d.dns.SPF || d.dns.DMARC)) ? 40 : 80;
   var headers = 100 - Math.min(Object.values(d.headers||{}).filter(Boolean).length * 15, 100);
   var ssl = d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado ? 0 : 70;
@@ -345,7 +380,7 @@ function scRenderExport(d) {
   document.getElementById('sc-exp-empty').style.display = 'none';
   document.getElementById('sc-exp-content').style.display = 'block';
   var sum = document.getElementById('sc-exp-summary');
-  if (sum) sum.innerHTML = '<strong>' + d.objetivo + '</strong> — Riesgo: <strong style="color:' + (d.riesgo>=70?'#DC2626':d.riesgo>=40?'#D97706':'#16A34A') + '">' + d.riesgo + '%</strong> · ' + d.timestamp;
+  if (sum) sum.innerHTML = '<strong>' + rbEsc(d.objetivo) + '</strong> — Riesgo: <strong style="color:' + (d.riesgo>=70?'#DC2626':d.riesgo>=40?'#D97706':'#16A34A') + '">' + d.riesgo + '%</strong> · ' + d.timestamp;
   scUpdatePdfFreeCard(d);
 }
 
@@ -394,8 +429,9 @@ function scComprarInforme9(scanId) {
 
 function scDescargarPDF() {
   if (!scCurrentData) return;
-  fetch('/api/pdf', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(scCurrentData) })
-  .then(function(r){ return r.blob(); })
+  if (!scCurrentData.scan_id) { alert('Lanza el análisis desde el escáner para generar el informe.'); return; }
+  fetch('/api/pdf', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({scan_id: scCurrentData.scan_id}) })
+  .then(function(r){ if (!r.ok) throw new Error('pdf'); return r.blob(); })
   .then(function(b) {
     var url = URL.createObjectURL(b);
     var a = document.createElement('a'); a.href = url; a.download = 'reconbase-' + (scCurrentData.objetivo||'informe') + '.pdf';
@@ -425,7 +461,7 @@ function scLoadComparar(scans) {
   selA.innerHTML = '<option value="" style="' + optStyle + '">— Selecciona —</option>';
   selB.innerHTML = '<option value="" style="' + optStyle + '">— Selecciona —</option>';
   scans.forEach(function(s, i) {
-    var label = (s.objetivo || s.dominio) + ' · ' + (s.timestamp || '') + ' · ' + s.riesgo + '%';
+    var label = rbEsc((s.objetivo || s.dominio) + ' · ' + (s.timestamp || '') + ' · ' + s.riesgo + '%');
     selA.innerHTML += '<option value="' + i + '" style="' + optStyle + '">' + label + '</option>';
     selB.innerHTML += '<option value="' + i + '" style="' + optStyle + '">' + label + '</option>';
   });
@@ -504,7 +540,7 @@ function scRenderHistorial(scans) {
     var col = s.riesgo >= 70 ? '#DC2626' : s.riesgo >= 40 ? '#D97706' : '#16A34A';
     return '<tr>' +
       '<td style="color:var(--muted)">' + (i+1) + '</td>' +
-      '<td><code style="font-size:.8rem">' + s.objetivo + '</code></td>' +
+      '<td><code style="font-size:.8rem">' + rbEsc(s.objetivo) + '</code></td>' +
       '<td><span style="color:' + col + ';font-weight:700">' + s.riesgo + '%</span></td>' +
       '<td>' + (s.puertos||[]).length + '</td>' +
       '<td>' + (s.leaks||0) + '</td>' +
@@ -661,7 +697,7 @@ function scRenderTendencia() {
       var col = s.riesgo >= 70 ? '#DC2626' : s.riesgo >= 40 ? '#D97706' : '#16A34A';
       var di = domainKeys.indexOf(s.dominio);
       var dc = _SC_COLORS[di >= 0 ? di % _SC_COLORS.length : 0].line;
-      return '<tr><td>' + (i+1) + '</td><td><code style="font-size:.78rem;color:' + dc + '">' + (s.dominio||s.objetivo||'—') + '</code></td><td style="color:' + col + ';font-weight:700">' + s.riesgo + '%</td><td>—</td><td>—</td><td>—</td><td style="font-size:.78rem;color:var(--muted)">' + (s.label||s.fecha||'') + '</td></tr>';
+      return '<tr><td>' + (i+1) + '</td><td><code style="font-size:.78rem;color:' + dc + '">' + rbEsc(s.dominio||s.objetivo||'—') + '</code></td><td style="color:' + col + ';font-weight:700">' + s.riesgo + '%</td><td>—</td><td>—</td><td>—</td><td style="font-size:.78rem;color:var(--muted)">' + (s.label||s.fecha||'') + '</td></tr>';
     }).join('');
   }).catch(function(){
     /* Fallback to historial if evolucion not available */
@@ -687,7 +723,7 @@ function scRenderTendencia() {
         scTendChart = new Chart(canvas, { type:'line', data:{ labels:scans.map(function(s){return(s.timestamp||'').split(' ')[0];}), datasets:[{label:'Riesgo (%)',data:riesgos,borderColor:'#DC2626',backgroundColor:'rgba(220,38,38,.08)',tension:0.4,fill:true,pointBackgroundColor:'#DC2626',pointRadius:4}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{color:'#64748B'},grid:{color:'rgba(255,255,255,.05)'}},x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}}}}});
       }
       var tbody = document.getElementById('sc-tend-body');
-      if (tbody) tbody.innerHTML = scans.map(function(s,i){ var col=s.riesgo>=70?'#DC2626':s.riesgo>=40?'#D97706':'#16A34A'; return '<tr><td>'+(i+1)+'</td><td><code style="font-size:.78rem">'+s.objetivo+'</code></td><td style="color:'+col+';font-weight:700">'+s.riesgo+'%</td><td>'+(s.puertos||[]).length+'</td><td>'+(s.leaks||0)+'</td><td>'+(s.subs||[]).length+'</td><td style="font-size:.78rem;color:var(--muted)">'+(s.timestamp||'')+'</td></tr>'; }).join('');
+      if (tbody) tbody.innerHTML = scans.map(function(s,i){ var col=s.riesgo>=70?'#DC2626':s.riesgo>=40?'#D97706':'#16A34A'; return '<tr><td>'+(i+1)+'</td><td><code style="font-size:.78rem">'+rbEsc(s.objetivo)+'</code></td><td style="color:'+col+';font-weight:700">'+s.riesgo+'%</td><td>'+(s.puertos||[]).length+'</td><td>'+(s.leaks||0)+'</td><td>'+(s.subs||[]).length+'</td><td style="font-size:.78rem;color:var(--muted)">'+(s.timestamp||'')+'</td></tr>'; }).join('');
     }).catch(function(){});
   });
 }

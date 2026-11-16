@@ -1877,15 +1877,13 @@ function rbDismissOnboarding(){
 function heroScan(){
   var v=(document.getElementById('hero-domain').value||'').trim();
   if(!v){document.getElementById('hero-domain').focus();return;}
-  // Tracking: clic en escanear desde la landing (visitante anónimo)
-  try { if(window.gtag) gtag('event', 'scan_button_clicked', {domain: v, source: 'landing_hero'}); } catch(_){}
-  try { if(window.plausible) plausible('Scan Click Landing', {props:{domain: v}}); } catch(_){}
+  try { if(window.gtag) gtag('event', 'scan_button_clicked', {source: 'landing_hero'}); } catch(_){}
+  try { if(window.plausible) plausible('Scan Click Landing'); } catch(_){}
   var btn=document.querySelector('.hsf-btn');
   var inp=document.getElementById('hero-domain');
   btn.textContent='Analizando...';btn.disabled=true;inp.disabled=true;
 
-  // Pasos animados mientras carga
-  var steps=['→ Escaneando puertos...','→ Verificando DNS y correo...','→ Analizando cabeceras HTTP...','→ Comprobando SSL/TLS...'];
+  var steps=['→ Consultando DNS y correo...','→ Analizando cabeceras HTTP...','→ Comprobando SSL/TLS...','→ Detectando CMS y plugins...'];
   var stepsEl=document.getElementById('dr-steps');
   stepsEl.innerHTML=steps.map(function(s,i){return'<span class="dr-step" id="drs'+i+'">'+s+'</span>';}).join('');
   var hitReset=document.getElementById('dr-hit');
@@ -1899,8 +1897,7 @@ function heroScan(){
   .then(function(d){
     btn.textContent='Analizar ahora →';btn.disabled=false;inp.disabled=false;
     if(d.error){document.getElementById('landing-results').style.display='none';toast(d.error, 'err');return;}
-    // GA4 event: escaneo demo completado
-    try { if(typeof gtag==='function') gtag('event','scan_completed',{scan_type:'demo',risk_score:d.riesgo||0,locked:!!d.locked}); } catch(_){}
+    try { if(typeof gtag==='function') gtag('event','scan_completed',{scan_type:'demo',risk_score:d.riesgo||0,modo:d.modo}); } catch(_){}
     try { if(typeof plausible==='function') plausible('scan_completed'); } catch(_){}
     renderDemoResult(d);
   })
@@ -1911,7 +1908,10 @@ function heroScan(){
   });
 }
 
-function leadUnlock(targetEnc){
+// Envía el informe pasivo por email (lead). El consentimiento comercial es
+// opcional y va desmarcado: sin él solo se envía el informe pedido.
+var RB_LEAD_TS = null;
+function leadEnviar(targetEnc){
   var emailEl = document.getElementById('lead-email');
   var msgEl = document.getElementById('lead-msg');
   var btn = document.getElementById('lead-btn');
@@ -1920,130 +1920,135 @@ function leadUnlock(targetEnc){
     msgEl.textContent='Email no válido'; msgEl.style.color='#FCA5A5'; msgEl.style.display='block';
     emailEl.focus(); return;
   }
-  btn.textContent='Analizando...'; btn.disabled=true; emailEl.disabled=true;
+  var tsInput = document.querySelector('#lead-ts [name="cf-turnstile-response"]');
+  btn.textContent='Enviando...'; btn.disabled=true; emailEl.disabled=true;
   msgEl.style.display='none';
   fetch('/api/lead-unlock',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email:email, objetivo:decodeURIComponent(targetEnc)})
+    body:JSON.stringify({
+      email:email, objetivo:decodeURIComponent(targetEnc),
+      acepta_comercial: !!(document.getElementById('lead-comercial')||{}).checked,
+      'cf-turnstile-response': tsInput ? tsInput.value : ''
+    })
   })
-  .then(function(r){return r.json();})
-  .then(function(d){
-    btn.textContent='Ver informe →'; btn.disabled=false; emailEl.disabled=false;
-    if(d.error){ msgEl.textContent=d.error; msgEl.style.color='#FCA5A5'; msgEl.style.display='block'; return; }
-    // Re-render con los resultados completos
-    d.locked = false;
-    d.unlocked_by_lead = true;
-    d.lead_email = email;
-    renderDemoResult(d);
+  .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d};});})
+  .then(function(x){
+    btn.textContent='Enviar informe →'; btn.disabled=false; emailEl.disabled=false;
+    if(!x.ok || x.d.error){
+      msgEl.textContent=x.d.error||'No se pudo enviar.'; msgEl.style.color='#FCA5A5'; msgEl.style.display='block';
+      if(window.turnstile && RB_LEAD_TS !== null){ try{ turnstile.reset(RB_LEAD_TS); }catch(_){} }
+      return;
+    }
+    document.getElementById('lead-unlock-box').innerHTML =
+      '<div style="font-size:1rem;font-weight:800;color:#F0FDF4;margin-bottom:.35rem">✓ Informe enviado a '+rbEsc(email)+'</div>'+
+      '<div style="font-size:.82rem;color:#BBF7D0">Revisa tu bandeja de entrada (y la de spam). Para guardarlo y vigilar tu dominio, <a href="/register?target='+targetEnc+'&email='+encodeURIComponent(email)+'" style="color:#86EFAC;text-decoration:underline;font-weight:700">crea una cuenta gratis</a>.</div>';
     try { if(typeof plausible==='function') plausible('lead_unlock'); } catch(e){}
-    try { if(typeof gtag==='function') gtag('event','lead_unlock',{method:'email_magnet'}); } catch(_){}
+    try { if(typeof gtag==='function') gtag('event','lead_unlock',{method:'email_report'}); } catch(_){}
   })
   .catch(function(){
-    btn.textContent='Ver informe →'; btn.disabled=false; emailEl.disabled=false;
+    btn.textContent='Enviar informe →'; btn.disabled=false; emailEl.disabled=false;
     msgEl.textContent='Error de conexión. Inténtalo de nuevo.'; msgEl.style.color='#FCA5A5'; msgEl.style.display='block';
   });
 }
 
 function demoCard(type,title,desc){
-  var C={crit:{b:'#3B0D0D',l:'#EF4444',bg:'rgba(239,68,68,.13)',c:'#EF4444',lbl:'CRÍTICO'},warn:{b:'#3B1F0A',l:'#F59E0B',bg:'rgba(245,158,11,.11)',c:'#F59E0B',lbl:'ADVERTENCIA'},ok:{b:'#0A2615',l:'#22C55E',bg:'rgba(34,197,94,.1)',c:'#22C55E',lbl:'OK'}};
+  var C={crit:{b:'#3B0D0D',l:'#EF4444',bg:'rgba(239,68,68,.13)',c:'#EF4444',lbl:'CRÍTICO'},warn:{b:'#3B1F0A',l:'#F59E0B',bg:'rgba(245,158,11,.11)',c:'#F59E0B',lbl:'ADVERTENCIA'},ok:{b:'#0A2615',l:'#22C55E',bg:'rgba(34,197,94,.1)',c:'#22C55E',lbl:'OK'},info:{b:'#1E293B',l:'#64748B',bg:'rgba(100,116,139,.15)',c:'#94A3B8',lbl:'INFO'}};
   var s=C[type]||C.ok;
   return '<div class="dr-card" style="border-color:'+s.b+';border-left:3px solid '+s.l+'"><span class="dr-badge" style="background:'+s.bg+';color:'+s.c+'">'+s.lbl+'</span><div class="dr-card-title">'+title+'</div><div class="dr-card-desc">'+desc+'</div></div>';
 }
 
-function lockedCard(title, teaser){
-  return '<div class="dr-card" style="border-color:#1E293B;border-left:3px solid #64748B;position:relative;overflow:hidden">'+
-    '<span class="dr-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">🔒 REQUIERE CUENTA</span>'+
-    '<div class="dr-card-title" style="filter:blur(0)">'+title+'</div>'+
-    '<div class="dr-card-desc" style="filter:blur(4px);user-select:none;pointer-events:none">'+teaser+'</div>'+
-    '<div style="margin-top:.55rem;font-size:.73rem;color:#86EFAC"><a href="/register" style="color:#22C55E;font-weight:700;text-decoration:underline">Crea una cuenta gratis</a> para desbloquear este análisis</div>'+
-    '</div>';
+// Comprobación que no se ha hecho porque exige verificar el dominio.
+function lockedCard(title, desc){
+  var cta = isLoggedIn
+    ? '<a href="/perfil#dominios" style="color:#22C55E;font-weight:700;text-decoration:underline">Verifica tu dominio</a> para incluirla.'
+    : '<a href="/register" style="color:#22C55E;font-weight:700;text-decoration:underline">Crea una cuenta gratis</a> y verifica tu dominio para incluirla.';
+  return '<div class="dr-card" style="border-color:#1E293B;border-left:3px solid #64748B">'+
+    '<span class="dr-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">🔒 REQUIERE VERIFICAR EL DOMINIO</span>'+
+    '<div class="dr-card-title">'+title+'</div>'+
+    '<div class="dr-card-desc">'+desc+'</div>'+
+    '<div style="margin-top:.55rem;font-size:.73rem;color:#86EFAC">'+cta+'</div></div>';
+}
+
+var RB_HDR_ALIAS={'Content-Security-Policy':'CSP','X-Frame-Options':'Anti-Clickjacking','X-Content-Type-Options':'MIME-Sniffing','Strict-Transport-Security':'HSTS'};
+function demoHdr(h,n){return !!(h&&(h[n]||h[RB_HDR_ALIAS[n]]));}
+var RB_SERVICIOS_CRITICOS=['RDP','Telnet','MySQL','MongoDB','Redis','PostgreSQL','MSSQL','Docker API','Elasticsearch','VNC'];
+
+// Lista de problemas reales del resultado: alimenta el resumen y la cuenta del CTA.
+function demoProblemas(d){
+  var p=[];
+  var pasivo = d.modo==='pasivo';
+  if(!pasivo){
+    var cp=(d.puertos||[]).filter(function(x){return RB_SERVICIOS_CRITICOS.indexOf(x.servicio)!==-1;});
+    if(cp.length) p.push({crit:true});
+  }
+  if(d.dns && !d.es_ip){
+    if(!d.dns.SPF && !d.dns.DMARC) p.push({crit:true});
+    else if(!d.dns.SPF || !d.dns.DMARC) p.push({crit:false});
+  }
+  if(d.headers){
+    var miss=0;
+    if(!demoHdr(d.headers,'X-Frame-Options') && !demoHdr(d.headers,'Content-Security-Policy')) miss++;
+    if(!demoHdr(d.headers,'Content-Security-Policy')) miss++;
+    if(!demoHdr(d.headers,'X-Content-Type-Options')) miss++;
+    if(miss) p.push({crit:false});
+  }
+  if(d.ssl){
+    if(!d.ssl.tiene_ssl || d.ssl.caducado) p.push({crit:true});
+    else if(d.ssl.pronto_a_caducar) p.push({crit:false});
+  }
+  var wp=d.wp||{}, ps=d.ps||{};
+  if(wp.is_wordpress && (wp.version_outdated || (wp.vulnerable_plugins||[]).length || (wp.sensitive_files||[]).length || wp.xmlrpc_exposed || wp.users_enumerable)) p.push({crit:(wp.vulnerable_plugins||[]).length>0});
+  if(ps.is_prestashop && (ps.version_outdated || ps.skimmer_suspect || !ps.https_forced || (ps.vulnerable_modules||[]).length || ps.admin_path_default || ps.install_dir_exposed)) p.push({crit:!!(ps.skimmer_suspect||ps.install_dir_exposed)});
+  if(d.hibp_estado==='consultado' && (d.leaks||0)>0) p.push({crit:true});
+  return p;
 }
 
 function renderDemoResult(d){
   var col=d.riesgo>=70?'#EF4444':d.riesgo>=40?'#F59E0B':'#22C55E';
+  var pasivo = d.modo==='pasivo';
+  var obj = rbEsc(d.objetivo||'');
+  var problemas = demoProblemas(d);
+  var criticos = problemas.filter(function(x){return x.crit;}).length;
 
-  // === Hit banner: resumen de riesgos detectados ===
+  // === Resumen superior ===
   (function(){
-    var risks = 0;
-    var critical = 0;
-    // Puertos críticos expuestos
-    var critSet = [3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443];
-    var cp = (d.puertos||[]).filter(function(p){return critSet.indexOf(p)!==-1;});
-    if (cp.length){ risks += cp.length; critical += cp.length; }
-    // DNS SPF/DMARC
-    if (d.dns){
-      if (!d.dns.spf && !d.dns.dmarc){ risks += 1; critical += 1; }
-      else if (!d.dns.spf || !d.dns.dmarc){ risks += 1; }
-    }
-    // Cabeceras HTTP
-    if (d.headers){
-      var miss = 0;
-      if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) miss++;
-      if (!d.headers['Content-Security-Policy']) miss++;
-      if (!d.headers['X-Content-Type-Options']) miss++;
-      if (miss >= 2) risks += 1;
-      else if (miss === 1) risks += 1;
-    }
-    // SSL
-    if (d.ssl){
-      if (!d.ssl.tiene_ssl){ risks += 1; critical += 1; }
-      else if (d.ssl.caducado){ risks += 1; critical += 1; }
-      else if (d.ssl.pronto_a_caducar){ risks += 1; }
-    }
     var hit = document.getElementById('dr-hit');
     if (!hit) return;
     hit.className = 'dr-hit show';
     var cls, icon, title, sub;
-    if (risks === 0){
+    if (problemas.length === 0){
       cls = 'ok'; icon = '✓';
-      title = 'No hemos detectado riesgos críticos en ' + (d.objetivo||'tu dominio');
-      sub = 'Regístrate gratis para activar vigilancia continua y recibir alertas automáticas si algo cambia.';
+      title = 'No hemos encontrado problemas en lo analizado de ' + obj;
+      sub = pasivo ? 'Ha sido un análisis pasivo (información pública). Puertos, rutas y ficheros expuestos requieren verificar el dominio.' : 'Activa la vigilancia para recibir alertas si algo cambia.';
     } else {
-      cls = critical > 0 ? 'crit' : 'warn';
-      icon = critical > 0 ? '!' : '⚠';
-      var palabra = risks === 1 ? 'posible riesgo' : 'posibles riesgos';
-      title = 'Hemos encontrado ' + risks + ' ' + palabra + ' en ' + (d.objetivo||'tu dominio');
-      sub = (isLoggedIn
-        ? 'Abre el escáner para ver el informe técnico completo y recomendaciones detalladas.'
-        : 'Regístrate gratis para ver el informe completo con las recomendaciones específicas.');
+      cls = criticos > 0 ? 'crit' : 'warn';
+      icon = criticos > 0 ? '!' : '⚠';
+      title = 'Hemos encontrado ' + problemas.length + (problemas.length === 1 ? ' aspecto a revisar' : ' aspectos a revisar') + ' en ' + obj;
+      sub = pasivo ? 'Análisis pasivo (información pública). Debajo tienes el detalle y cómo solucionarlo.' : 'Debajo tienes el detalle de cada punto.';
     }
     hit.classList.add(cls);
-    var ctaLabel = isLoggedIn ? 'Abrir en el escáner →' : 'Regístrate gratis →';
-    var ctaInner;
-    if (isLoggedIn){
-      // Función global rbAbrirEscaner(): cambia a vista escáner, pre-rellena
-      // y lanza el scan completo (mismo que el dashboard) — sin discrepancias.
-      var safeObj = (d.objetivo||'').replace(/'/g, "\\'");
-      ctaInner = '<button type="button" class="dr-hit-cta" onclick="rbAbrirEscaner(\'' + safeObj + '\')" style="cursor:pointer;border:none">' + ctaLabel + '</button>';
-    } else {
-      ctaInner = '<a href="/register?target=' + encodeURIComponent(d.objetivo||'') + '" class="dr-hit-cta">' + ctaLabel + '</a>';
-    }
+    var ctaInner = isLoggedIn
+      ? '<button type="button" class="dr-hit-cta" onclick="rbAbrirEscaner(\'' + (d.objetivo||'').replace(/[^a-z0-9.@-]/gi,'') + '\')" style="cursor:pointer;border:none">Abrir en el escáner →</button>'
+      : '<a href="/register?target=' + encodeURIComponent(d.objetivo||'') + '" class="dr-hit-cta">Crear cuenta gratis →</a>';
     hit.innerHTML =
       '<div class="dr-hit-icon">' + icon + '</div>' +
-      '<div class="dr-hit-body">' +
-        '<div class="dr-hit-title">' + title + '</div>' +
-        '<div class="dr-hit-sub">' + sub + '</div>' +
-      '</div>' +
-      ctaInner;
+      '<div class="dr-hit-body"><div class="dr-hit-title">' + title + '</div><div class="dr-hit-sub">' + sub + '</div></div>' + ctaInner;
   })();
 
-  // Header
+  // Cabecera
   document.getElementById('dr-header').innerHTML=
     '<div class="dr-score" style="color:'+col+'">'+d.riesgo+'%</div>'+
-    '<div><div style="font-size:.7rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.15em">'+d.label+'</div>'+
-    '<div style="font-size:.85rem;color:#86EFAC;margin-top:.3rem">'+d.objetivo+' · '+d.timestamp+'</div></div>'+
+    '<div><div style="font-size:.7rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.15em">'+rbEsc(d.label)+(pasivo?' · ANÁLISIS PASIVO':'')+'</div>'+
+    '<div style="font-size:.85rem;color:#86EFAC;margin-top:.3rem">'+obj+' · '+rbEsc(d.timestamp)+'</div></div>'+
     (isLoggedIn
-      ? '<button type="button" onclick="rbAbrirEscaner(\''+(d.objetivo||'').replace(/\'/g,"\\\\'")+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap;border:none;cursor:pointer">Ver en el escáner →</button>'
-      : '<a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap">Guardar informe →</a>');
+      ? '<button type="button" onclick="rbAbrirEscaner(\''+(d.objetivo||'').replace(/[^a-z0-9.@-]/gi,'')+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap;border:none;cursor:pointer">Ver en el escáner →</button>'
+      : '<a href="/register?target='+encodeURIComponent(d.objetivo||'')+'" style="margin-left:auto;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.7rem 1.4rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.82rem;white-space:nowrap">Guardar informe →</a>');
 
-  // Barra de riesgo
   setTimeout(function(){document.getElementById('dr-bar-fill').style.width=d.riesgo+'%';},100);
 
-  // Cards
   var html='';
 
-  // ALERTA SUPERIOR: si se detectó skimmer en PrestaShop, banner crítico arriba del todo
   if(d.ps && d.ps.skimmer_suspect){
     var skEvidence=(d.ps.skimmer_evidence||[]).slice(0,4);
     var skEvList=skEvidence.length
@@ -2052,164 +2057,138 @@ function renderDemoResult(d){
     html+='<div style="background:#7F1D1D;border:2px solid #DC2626;border-radius:10px;padding:1.1rem 1.3rem;margin-bottom:1rem;color:#FEE2E2">'+
       '<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">'+
         '<span style="font-size:1.4rem;line-height:1">⚠️</span>'+
-        '<span style="font-size:.7rem;font-family:\'JetBrains Mono\',monospace;font-weight:700;letter-spacing:.14em;background:#DC2626;color:#fff;padding:.18rem .55rem;border-radius:4px">SKIMMER · ALERTA CRÍTICA</span>'+
+        '<span style="font-size:.7rem;font-family:\'JetBrains Mono\',monospace;font-weight:700;letter-spacing:.14em;background:#DC2626;color:#fff;padding:.18rem .55rem;border-radius:4px">POSIBLE SKIMMER</span>'+
       '</div>'+
-      '<div style="font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:.3rem">Posible robo de datos de tarjeta en tu checkout</div>'+
-      '<div style="font-size:.85rem;color:#FCA5A5;line-height:1.6">Detectados patrones característicos de skimmers digitales (Magecart) en el JavaScript de tu tienda. No toques nada, haz copia forense y notifica AEPD en 72h si confirmas exfiltración.</div>'+
+      '<div style="font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:.3rem">Indicios de código que podría robar datos de tarjeta</div>'+
+      '<div style="font-size:.85rem;color:#FCA5A5;line-height:1.6">Hemos visto patrones habituales de los skimmers digitales (Magecart) en el JavaScript de la tienda. Es una alerta preliminar, no una confirmación: revísalo con tu desarrollador o hosting cuanto antes.</div>'+
       skEvList+
-      '<div style="margin-top:.7rem"><a href="/blog/skimmers-digitales-prestashop-magecart-2026" target="_blank" style="background:#fff;color:#7F1D1D;padding:.4rem .8rem;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none">Ver protocolo de respuesta →</a></div>'+
+      '<div style="margin-top:.7rem"><a href="/blog/skimmers-digitales-prestashop-magecart-2026" target="_blank" style="background:#fff;color:#7F1D1D;padding:.4rem .8rem;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none">Qué hacer si tienes un skimmer →</a></div>'+
     '</div>';
   }
 
-  var critPorts=(d.puertos||[]).filter(function(p){return[3389,22,3306,5432,27017,6379,5900,23,21,1433,8080,8443].indexOf(p)!==-1;});
-  if(critPorts.length) html+=demoCard('crit',critPorts.length+' puerto'+(critPorts.length>1?'s críticos':' crítico')+' expuesto'+(critPorts.length>1?'s':''),'Accesibles desde internet: '+critPorts.join(', ')+'. Ciérralos en el firewall.');
-  else if((d.puertos||[]).length===0) html+=demoCard('ok','Sin puertos críticos expuestos','No se detectaron servicios sensibles accesibles desde internet.');
-  else html+=demoCard('ok','Puertos bajo control','Solo puertos estándar (80/443) detectados.');
-
-  // Si el usuario no está logueado Y no ha desbloqueado con email, mostrar el resto bloqueado
-  if ((d.locked || !isLoggedIn) && !d.unlocked_by_lead) {
-    // CTA del lead-unlock VA PRIMERO (antes de las cards bloqueadas).
-    // Razón: el visitante ve la oferta arriba, no enterrada bajo 5 cards
-    // que tiene que scrollear. Conversión típicamente +30%.
-    var leadBox = '<div id="lead-unlock-box" style="margin-bottom:1.2rem;background:linear-gradient(135deg,rgba(22,163,74,.18),rgba(34,197,94,.08));border:2px solid #16A34A;border-radius:12px;padding:1.5rem 1.4rem;text-align:center;box-shadow:0 0 0 1px rgba(34,197,94,.15),0 12px 32px -10px rgba(34,197,94,.4);position:relative;overflow:hidden">'+
-      '<div style="position:absolute;top:.65rem;right:.85rem;background:#15803D;color:#fff;font-size:.62rem;font-family:\'JetBrains Mono\',monospace;letter-spacing:.1em;padding:.2rem .6rem;border-radius:20px;font-weight:700">GRATIS · SIN CUENTA</div>'+
-      '<div style="font-size:1.15rem;font-weight:800;color:#F0FDF4;margin-bottom:.45rem;letter-spacing:-.01em">🔓 Desbloquea el informe completo</div>'+
-      '<div style="font-size:.85rem;color:#BBF7D0;margin-bottom:1.1rem;line-height:1.5">Introduce tu email y te enseñamos los <strong style="color:#FCD34D">5 hallazgos críticos</strong> que tenemos detectados sobre tu dominio. Sin tarjeta, sin contraseña, sin spam.</div>'+
-      '<div style="display:flex;gap:.5rem;max-width:460px;margin:0 auto;flex-wrap:wrap">'+
-        '<input type="email" id="lead-email" placeholder="tu@email.com" style="flex:1;min-width:200px;background:rgba(6,13,9,.85);border:1px solid rgba(22,163,74,.5);color:#F0FDF4;padding:.85rem 1rem;border-radius:8px;font-size:.92rem;outline:none;font-family:inherit" onkeydown="if(event.key===\'Enter\')leadUnlock(\''+encodeURIComponent(d.objetivo)+'\')">'+
-        '<button id="lead-btn" onclick="leadUnlock(\''+encodeURIComponent(d.objetivo)+'\')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.6rem;border-radius:8px;font-weight:800;font-size:.9rem;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px -2px rgba(34,197,94,.5)">Ver informe →</button>'+
-      '</div>'+
-      '<div id="lead-msg" style="margin-top:.7rem;font-size:.78rem;color:#FCA5A5;display:none"></div>'+
-      '<div style="margin-top:1rem;padding-top:.85rem;border-top:1px solid rgba(22,163,74,.2);font-size:.72rem;color:rgba(134,239,172,.7)">¿Quieres guardar resultados, alertas e informe PDF? <a href="/register?target='+encodeURIComponent(d.objetivo)+'" style="color:#86EFAC;text-decoration:underline;font-weight:600">Crea una cuenta gratis</a></div>'+
-      '</div>';
-    html += leadBox;
-
-    html += lockedCard('Suplantación de email (SPF / DMARC)', 'Análisis completo de los registros DNS que protegen tu dominio contra phishing.');
-    html += lockedCard('Cabeceras HTTP de seguridad', 'Auditoría de CSP, X-Frame-Options, HSTS y otras cabeceras críticas.');
-    html += lockedCard('Certificado SSL/TLS', 'Comprobación de validez, fecha de caducidad y configuración del certificado.');
-    html += lockedCard('Sistema operativo detectado', 'Identificación del SO del servidor a partir del análisis de banners.');
-    html += lockedCard('Filtraciones en bases de datos', 'Comprobación de si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).');
-    document.getElementById('dr-grid').innerHTML = html;
-    // CTA inferior
-    document.getElementById('dr-cta').innerHTML =
-      '<div style="flex:1">'+
-        '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem">Este es solo un adelanto</div>'+
-        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9">Con tu email ves DNS, cabeceras, SSL, sistema operativo y más. Sin crear cuenta.</div>'+
-      '</div>'+
-      '<button onclick="document.getElementById(\'lead-email\').focus();document.getElementById(\'lead-unlock-box\').scrollIntoView({behavior:\'smooth\',block:\'center\'})" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.85rem 1.75rem;border-radius:8px;font-weight:700;font-size:.88rem;white-space:nowrap;cursor:pointer">Desbloquear con email →</button>';
-    document.getElementById('dr-steps').innerHTML='';
-    return;
+  if(pasivo){
+    html+='<div class="dr-card" style="border-color:#1E3A8A;border-left:3px solid #3B82F6"><span class="dr-badge" style="background:rgba(59,130,246,.15);color:#93C5FD">ANÁLISIS PASIVO</span>'+
+      '<div class="dr-card-title">Solo hemos usado información pública</div>'+
+      '<div class="dr-card-desc">DNS, certificado, cabeceras y lo que la web publica. No hemos probado puertos, rutas ocultas ni ficheros: eso solo lo hacemos en dominios cuyo titular lo ha verificado. <a href="/escaner-info" target="_blank" style="color:#93C5FD;text-decoration:underline">Cómo funciona el escáner</a></div></div>';
   }
 
-  if(d.dns){
-    if(!d.dns.spf&&!d.dns.dmarc) html+=demoCard('crit','SPF y DMARC ausentes','Cualquiera puede enviar emails haciéndose pasar por tu empresa ahora mismo.');
-    else if(!d.dns.dmarc) html+=demoCard('warn','DMARC no configurado','Tu dominio puede ser suplantado. Añade el registro TXT en tu DNS.');
-    else if(!d.dns.spf) html+=demoCard('warn','SPF no configurado','Riesgo de suplantación de correo. Añade el registro SPF en tu DNS.');
-    else html+=demoCard('ok','SPF y DMARC correctos','Tu dominio está protegido contra suplantación de email.');
+  if(d.dns && !d.es_ip){
+    if(!d.dns.SPF&&!d.dns.DMARC) html+=demoCard('crit','SPF y DMARC ausentes','Sin estos registros es fácil enviar emails haciéndose pasar por tu dominio.');
+    else if(!d.dns.DMARC) html+=demoCard('warn','DMARC no configurado','Tu dominio puede ser suplantado. Añade el registro TXT _dmarc en tu DNS.');
+    else if(!d.dns.SPF) html+=demoCard('warn','SPF no configurado','Riesgo de suplantación de correo. Añade el registro SPF en tu DNS.');
+    else html+=demoCard('ok','SPF y DMARC configurados','Tu dominio tiene los registros que dificultan la suplantación de email.');
   }
 
   if(d.headers){
     var miss=[];
-    if(!d.headers['X-Frame-Options']&&!d.headers['Content-Security-Policy']) miss.push('X-Frame-Options');
-    if(!d.headers['Content-Security-Policy']) miss.push('CSP');
-    if(!d.headers['X-Content-Type-Options']) miss.push('X-Content-Type-Options');
-    if(miss.length>=2) html+=demoCard('warn',miss.length+' cabeceras HTTP ausentes',miss.slice(0,3).join(', ')+' — expuesto a XSS y clickjacking.');
-    else if(miss.length===1) html+=demoCard('warn','Cabecera '+miss[0]+' ausente','Configúrala en tu servidor para protegerte de ataques de inyección.');
+    if(!demoHdr(d.headers,'X-Frame-Options')&&!demoHdr(d.headers,'Content-Security-Policy')) miss.push('X-Frame-Options');
+    if(!demoHdr(d.headers,'Content-Security-Policy')) miss.push('CSP');
+    if(!demoHdr(d.headers,'X-Content-Type-Options')) miss.push('X-Content-Type-Options');
+    if(miss.length>=2) html+=demoCard('warn',miss.length+' cabeceras de seguridad ausentes',miss.join(', ')+': protegen frente a XSS y clickjacking.');
+    else if(miss.length===1) html+=demoCard('warn','Cabecera '+miss[0]+' ausente','Configúrala en tu servidor o CDN.');
     else html+=demoCard('ok','Cabeceras HTTP correctas','Las principales cabeceras de seguridad están configuradas.');
   }
 
   if(d.ssl){
-    if(!d.ssl.tiene_ssl) html+=demoCard('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. La comunicación va en texto plano.');
-    else if(d.ssl.caducado) html+=demoCard('crit','Certificado SSL caducado','Expiró el '+(d.ssl.expira||'?')+'. Los navegadores muestran aviso de inseguridad.');
-    else if(d.ssl.pronto_a_caducar) html+=demoCard('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de que expire para evitar interrupciones.');
-    else html+=demoCard('ok','SSL/TLS válido','Certificado activo, caduca en '+(d.ssl.dias_restantes||'?')+' días.');
+    if(!d.ssl.tiene_ssl) html+=demoCard('crit','Sin certificado SSL/TLS','No hemos podido establecer una conexión HTTPS con el dominio.');
+    else if(d.ssl.caducado) html+=demoCard('crit','Certificado SSL caducado','Expiró el '+rbEsc(d.ssl.expira||'?')+'. Los navegadores muestran un aviso de inseguridad.');
+    else if(d.ssl.pronto_a_caducar) html+=demoCard('warn','SSL caduca en '+rbEsc(d.ssl.dias_restantes)+' días','Renuévalo antes de que expire.');
+    else html+=demoCard('ok','SSL/TLS válido','Certificado activo, caduca en '+rbEsc(d.ssl.dias_restantes||'?')+' días.');
   }
 
-  // CARD WORDPRESS — solo si se detecta WP
   if (d.wp && d.wp.is_wordpress) {
     var wpIssues = [];
-    if (d.wp.version_outdated) wpIssues.push('versión obsoleta (' + (d.wp.version || '?') + ')');
-    if (d.wp.xmlrpc_exposed) wpIssues.push('xmlrpc.php expuesto');
-    if (d.wp.users_enumerable) wpIssues.push((d.wp.users_found && d.wp.users_found.length ? d.wp.users_found.length : '') + ' usuarios enumerables');
+    if (d.wp.version_outdated) wpIssues.push('versión anterior a la actual (' + rbEsc(d.wp.version || '?') + ')');
+    if (d.wp.xmlrpc_exposed) wpIssues.push('xmlrpc.php accesible');
+    if (d.wp.users_enumerable) wpIssues.push('usuarios visibles vía wp-json');
     var vpC = (d.wp.vulnerable_plugins || []).length;
-    if (vpC) wpIssues.push(vpC + ' plugin' + (vpC>1?'s':'') + ' con vulnerabilidad conocida');
+    if (vpC) wpIssues.push(vpC + ' plugin' + (vpC>1?'s':'') + ' con vulnerabilidades conocidas en algunas versiones');
     var sfC = (d.wp.sensitive_files || []).length;
-    if (sfC) wpIssues.push(sfC + ' archivo' + (sfC>1?'s':'') + ' sensible' + (sfC>1?'s':'') + ' expuesto' + (sfC>1?'s':''));
-
-    if (wpIssues.length === 0) {
-      html += demoCard('ok', 'WordPress detectado (' + (d.wp.version || 'versión desconocida') + ')', 'Sin hallazgos críticos. ' + (d.wp.plugins||[]).length + ' plugins visibles.');
-    } else {
-      var sev = (d.wp.vulnerable_plugins||[]).length > 0 || (d.wp.sensitive_files||[]).length > 0 ? 'crit' : 'warn';
-      html += demoCard(sev, 'WordPress vulnerable: ' + wpIssues.length + ' hallazgo' + (wpIssues.length>1?'s':''),
-        'WordPress ' + (d.wp.version || '?') + ' — ' + wpIssues.slice(0,3).join(' · ') + (wpIssues.length>3?'...':''));
-    }
+    if (sfC) wpIssues.push(sfC + ' fichero' + (sfC>1?'s':'') + ' sensible' + (sfC>1?'s':'') + ' accesible' + (sfC>1?'s':''));
+    if (wpIssues.length === 0) html += demoCard('ok', 'WordPress ' + rbEsc(d.wp.version || '') + ' detectado', 'Sin problemas en lo analizado. ' + (d.wp.plugins||[]).length + ' plugins visibles en la página de inicio.');
+    else html += demoCard(vpC || sfC ? 'crit' : 'warn', 'WordPress: ' + wpIssues.length + (wpIssues.length>1?' aspectos':' aspecto') + ' a revisar', wpIssues.join(' · '));
   }
 
-  // CARD PRESTASHOP — solo si se detecta PS
   if (d.ps && d.ps.is_prestashop) {
     var psIssues = [];
-    if (d.ps.version_outdated) psIssues.push('versión obsoleta (' + (d.ps.version || '?') + ')');
-    if (d.ps.admin_path_default) psIssues.push('panel admin sin renombrar');
+    if (d.ps.version_outdated) psIssues.push('versión anterior a la actual (' + rbEsc(d.ps.version || '?') + ')');
+    if (d.ps.admin_path_default) psIssues.push('panel de administración en la ruta por defecto');
     if (d.ps.install_dir_exposed) psIssues.push('/install/ accesible');
     var vmC = (d.ps.vulnerable_modules || []).length;
-    if (vmC) psIssues.push(vmC + ' módulo' + (vmC>1?'s':'') + ' vulnerable' + (vmC>1?'s':''));
+    if (vmC) psIssues.push(vmC + ' módulo' + (vmC>1?'s':'') + ' con vulnerabilidades conocidas en algunas versiones');
     var sfpC = (d.ps.sensitive_files || []).length;
-    if (sfpC) psIssues.push(sfpC + ' archivo' + (sfpC>1?'s':'') + ' sensible' + (sfpC>1?'s':''));
-    if (!d.ps.https_forced) psIssues.push('HTTPS no forzado en checkout');
-    if (d.ps.skimmer_suspect) psIssues.push('posible SKIMMER en checkout');
-
-    if (psIssues.length === 0) {
-      html += demoCard('ok', 'PrestaShop detectado (' + (d.ps.version || 'versión desconocida') + ')', 'Sin hallazgos críticos. ' + (d.ps.modules_detected||[]).length + ' módulos cargados.');
-    } else {
-      var sevPs = (d.ps.skimmer_suspect || d.ps.install_dir_exposed || d.ps.admin_path_default || (d.ps.vulnerable_modules||[]).length > 0) ? 'crit' : 'warn';
-      html += demoCard(sevPs, 'PrestaShop vulnerable: ' + psIssues.length + ' hallazgo' + (psIssues.length>1?'s':''),
-        'PrestaShop ' + (d.ps.version || '?') + ' — ' + psIssues.slice(0,3).join(' · ') + (psIssues.length>3?'...':''));
-    }
+    if (sfpC) psIssues.push(sfpC + ' fichero' + (sfpC>1?'s':'') + ' sensible' + (sfpC>1?'s':'') + ' accesible' + (sfpC>1?'s':''));
+    if (!d.ps.https_forced) psIssues.push('HTTPS no forzado');
+    if (d.ps.skimmer_suspect) psIssues.push('posible skimmer');
+    if (psIssues.length === 0) html += demoCard('ok', 'PrestaShop ' + rbEsc(d.ps.version || '') + ' detectado', 'Sin problemas en lo analizado. ' + (d.ps.modules_detected||[]).length + ' módulos visibles.');
+    else html += demoCard((d.ps.skimmer_suspect || d.ps.install_dir_exposed) ? 'crit' : 'warn', 'PrestaShop: ' + psIssues.length + (psIssues.length>1?' aspectos':' aspecto') + ' a revisar', psIssues.join(' · '));
   }
 
-  if(d.os) html+=demoCard('ok','Sistema detectado: '+d.os,'Información obtenida por análisis de banners de servicio.');
+  if (pasivo) {
+    html += lockedCard('Puertos y servicios expuestos', 'Bases de datos, escritorio remoto u otros servicios accesibles desde internet.');
+    html += lockedCard('Rutas y ficheros sensibles', 'Paneles de administración, instaladores olvidados, copias de configuración o ficheros .env accesibles.');
+  } else {
+    var critPorts=(d.puertos||[]).filter(function(p){return RB_SERVICIOS_CRITICOS.indexOf(p.servicio)!==-1;});
+    if(critPorts.length) html+=demoCard('crit',critPorts.length+' servicio'+(critPorts.length>1?'s críticos':' crítico')+' expuesto'+(critPorts.length>1?'s':''),'Accesibles desde internet: '+critPorts.map(function(p){return rbEsc(p.puerto+'/'+p.servicio);}).join(', ')+'. Ciérralos en el firewall.');
+    else html+=demoCard('ok','Sin servicios críticos expuestos','Entre los 23 puertos comprobados no hay bases de datos ni accesos remotos abiertos.');
+    if(d.os) html+=demoCard('info','Sistema detectado: '+rbEsc(d.os),'Deducido de los banners de los servicios.');
+  }
 
-  html+='<div class="dr-card" style="border-color:#1E1B4B;border-left:3px solid #818CF8"><span class="dr-badge" style="background:rgba(129,140,248,.12);color:#818CF8">REQUIERE CUENTA</span><div class="dr-card-title">Filtraciones en bases de datos</div><div class="dr-card-desc">Crea una cuenta gratis para comprobar si tu email aparece en brechas de seguridad conocidas (Have I Been Pwned).</div></div>';
+  if (d.hibp_estado === 'consultado') {
+    var atrib = ' Fuente: <a href="https://haveibeenpwned.com" target="_blank" rel="noopener" style="color:#86EFAC;text-decoration:underline">Have I Been Pwned</a> (CC BY 4.0).';
+    html += (d.leaks||0) > 0
+      ? demoCard('crit', d.leaks + ' filtración' + (d.leaks>1?'es':'') + ' encontrada' + (d.leaks>1?'s':''), 'El email aparece en brechas de seguridad conocidas.' + atrib)
+      : demoCard('ok', 'Sin filtraciones conocidas', 'El email no aparece en las brechas registradas.' + atrib);
+  } else {
+    html += demoCard('info', 'Filtraciones de credenciales', isLoggedIn
+      ? 'Puedes comprobar tu propio email o los de un dominio que hayas verificado desde el escáner.'
+      : 'Con una cuenta gratuita puedes comprobar si tu email aparece en brechas conocidas (Have I Been Pwned).');
+  }
 
   if (!isLoggedIn) {
-    html += '<div style="margin-top:.75rem;background:rgba(15,23,42,.6);border:1px dashed #334155;border-radius:8px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">' +
-      '<div><div style="font-size:.78rem;font-weight:700;color:#CBD5E1;margin-bottom:.2rem">📄 Informe PDF ejecutivo</div>' +
-      '<div style="font-size:.73rem;color:#64748B">Disponible tras crear tu cuenta gratuita · 9€ por informe o incluido en Pro</div></div>' +
-      '<button onclick="scPDFLoginRequired()" style="background:transparent;border:1px solid #334155;color:#94A3B8;padding:.45rem 1rem;border-radius:6px;font-family:\'Inter\',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap">Desbloquear →</button>' +
+    html += '<div id="lead-unlock-box" style="margin-top:1rem;background:linear-gradient(135deg,rgba(22,163,74,.18),rgba(34,197,94,.08));border:1px solid #16A34A;border-radius:12px;padding:1.3rem 1.3rem;text-align:left">'+
+      '<div style="font-size:1.05rem;font-weight:800;color:#F0FDF4;margin-bottom:.35rem">📩 Recibe este informe por email</div>'+
+      '<div style="font-size:.82rem;color:#BBF7D0;margin-bottom:.9rem;line-height:1.5">Te enviamos el resumen con los pasos para corregir cada punto. Sin crear cuenta.</div>'+
+      '<div style="display:flex;gap:.5rem;flex-wrap:wrap">'+
+        '<input type="email" id="lead-email" placeholder="tu@email.com" style="flex:1;min-width:200px;background:rgba(6,13,9,.85);border:1px solid rgba(22,163,74,.5);color:#F0FDF4;padding:.8rem 1rem;border-radius:8px;font-size:.92rem;outline:none;font-family:inherit" onkeydown="if(event.key===\'Enter\')leadEnviar(\''+encodeURIComponent(d.objetivo||'')+'\')">'+
+        '<button id="lead-btn" onclick="leadEnviar(\''+encodeURIComponent(d.objetivo||'')+'\')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.8rem 1.4rem;border-radius:8px;font-weight:800;font-size:.9rem;cursor:pointer;white-space:nowrap">Enviar informe →</button>'+
+      '</div>'+
+      '<label style="display:flex;gap:.5rem;align-items:flex-start;margin-top:.75rem;font-size:.76rem;color:#BBF7D0;line-height:1.45;cursor:pointer"><input type="checkbox" id="lead-comercial" style="margin-top:.15rem;accent-color:#22C55E"><span>Quiero recibir también consejos de seguridad y novedades de ReconBase por email (opcional; puedes darte de baja cuando quieras).</span></label>'+
+      '<div id="lead-ts" style="margin-top:.6rem"></div>'+
+      '<div id="lead-msg" style="margin-top:.6rem;font-size:.78rem;color:#FCA5A5;display:none"></div>'+
+      '<div style="margin-top:.7rem;font-size:.7rem;color:rgba(187,247,208,.7);line-height:1.5">Usaremos tu email para enviarte este informe'+' y, solo si marcas la casilla, comunicaciones comerciales. Más información en la <a href="/privacy" style="color:#86EFAC;text-decoration:underline">política de privacidad</a>.</div>'+
       '</div>';
   }
 
   document.getElementById('dr-grid').innerHTML=html;
 
-  // Contar problemas para CTA personalizado
-  var numProblemas = 0;
-  if (d.puertos && d.puertos.length) numProblemas++;
-  if (d.dns && (!d.dns.SPF || !d.dns.DMARC)) numProblemas++;
-  if (d.ssl && (!d.ssl.tiene_ssl || d.ssl.caducado || d.ssl.pronto_a_caducar)) numProblemas++;
-  var missingH = 0;
-  if (d.headers) { if (!d.headers['Content-Security-Policy']) missingH++; if (!d.headers['X-Content-Type-Options']) missingH++; if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) missingH++; }
-  if (missingH >= 2) numProblemas++;
-  var problemaTxt = numProblemas === 0 ? 'Sin problemas críticos detectados' : numProblemas === 1 ? '1 problema detectado' : numProblemas + ' problemas detectados';
-  var problemaColor = numProblemas === 0 ? '#4ADE80' : numProblemas >= 3 ? '#F87171' : '#FCD34D';
+  if (!isLoggedIn && window.RB_TURNSTILE_KEY) {
+    var montarTs = function(){
+      if (!window.turnstile) { setTimeout(montarTs, 300); return; }
+      try { RB_LEAD_TS = turnstile.render('#lead-ts', {sitekey: window.RB_TURNSTILE_KEY, theme: 'dark', size: 'flexible'}); } catch(_){}
+    };
+    montarTs();
+  }
 
-  // CTA
+  var problemaTxt = problemas.length === 0 ? 'Sin problemas en lo analizado' : problemas.length === 1 ? '1 aspecto a revisar' : problemas.length + ' aspectos a revisar';
+  var problemaColor = problemas.length === 0 ? '#4ADE80' : criticos ? '#F87171' : '#FCD34D';
+
   document.getElementById('dr-cta').innerHTML= isLoggedIn
-    ? '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">Usa el escáner completo con historial y vigilancia nocturna</div>'+
-      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">Datos guardados, alertas por email y guías de remediación paso a paso.</div></div>'+
-      '<a href="#escaner" onclick="navSwitch(\'escaner\')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">Abrir escáner →</a>'
+    ? '<div><div style="font-size:.95rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">'+(pasivo?'Verifica tu dominio para el análisis completo':'Activa la vigilancia de tu dominio')+'</div>'+
+      '<div style="font-size:.82rem;color:#86EFAC;opacity:.85">'+(pasivo?'Con el dominio verificado incluimos puertos, rutas y ficheros expuestos, y la vigilancia automática.':'Historial, alertas por email y guías de solución paso a paso.')+'</div></div>'+
+      '<a href="'+(pasivo?'/perfil#dominios':'#escaner')+'" '+(pasivo?'':'onclick="navSwitch(\'escaner\')" ')+'style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;flex-shrink:0">'+(pasivo?'Verificar dominio →':'Abrir escáner →')+'</a>'
     : '<div style="flex:1">'+
         '<div style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,0,0,.2);border-radius:6px;padding:.3rem .8rem;margin-bottom:.6rem">'+
-          '<span style="font-size:.75rem;font-weight:700;color:'+problemaColor+';font-family:\'JetBrains Mono\',monospace">● '+problemaTxt+' en '+d.objetivo+'</span>'+
+          '<span style="font-size:.75rem;font-weight:700;color:'+problemaColor+';font-family:\'JetBrains Mono\',monospace">● '+problemaTxt+' en '+obj+'</span>'+
         '</div>'+
-        '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem;letter-spacing:-.03em">'+(d.unlocked_by_lead?'Guarda tu análisis y activa la vigilancia':'Guarda el informe y activa la vigilancia')+'</div>'+
-        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9;line-height:1.6">'+(d.unlocked_by_lead?'Crea tu cuenta gratis para guardar este informe, recibir alertas cuando cambie algo y descargar el PDF ejecutivo.':'Crea una cuenta gratis en 30 segundos. Sin tarjeta. Recibirás el informe completo con pasos de acción concretos.')+'</div>'+
+        '<div style="font-size:.95rem;font-weight:800;color:#F0FDF4;margin-bottom:.3rem;letter-spacing:-.03em">¿Es tu dominio? Hazle el análisis completo</div>'+
+        '<div style="font-size:.82rem;color:#86EFAC;opacity:.9;line-height:1.6">Crea una cuenta gratis, verifica que el dominio es tuyo y analizamos también puertos, rutas y ficheros expuestos. Sin tarjeta.</div>'+
       '</div>'+
       '<div style="display:flex;flex-direction:column;gap:.5rem;flex-shrink:0">'+
-        '<a href="/register?target='+encodeURIComponent(d.objetivo)+(d.unlocked_by_lead&&d.lead_email?'&email='+encodeURIComponent(d.lead_email):'')+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;display:block;text-align:center">Crear cuenta gratis →</a>'+
+        '<a href="/register?target='+encodeURIComponent(d.objetivo||'')+'" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.85rem 1.75rem;border-radius:8px;font-family:\'Inter\',sans-serif;font-weight:700;font-size:.88rem;white-space:nowrap;display:block;text-align:center">Crear cuenta gratis →</a>'+
         '<a href="/login" style="color:#86EFAC;font-size:.78rem;text-align:center;opacity:.8">Ya tengo cuenta</a>'+
       '</div>';
 
-  // Sticky monitoring bar — aparece ~0.8s después del resultado
   (function(){
     var bar = document.getElementById('monitor-sticky-bar');
     if (!bar) return;
@@ -2218,21 +2197,18 @@ function renderDemoResult(d){
     var ctaEl = document.getElementById('msb-cta');
     if (ctaEl) {
       if (isLoggedIn) {
-        var safeObj = (d.objetivo||'').replace(/'/g, "\\'");
         ctaEl.innerHTML =
-          '<button onclick="rbAbrirEscaner(\''+safeObj+'\');document.getElementById(\'monitor-sticky-bar\').style.display=\'none\'" '+
-          'style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.65rem 1.4rem;border-radius:8px;font-weight:700;font-size:.84rem;cursor:pointer;white-space:nowrap">Activar vigilancia →</button>';
+          '<a href="/perfil#dominios" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.65rem 1.4rem;border-radius:8px;font-weight:700;font-size:.84rem;white-space:nowrap;display:inline-block">Activar vigilancia →</a>';
       } else {
         ctaEl.innerHTML =
           '<a href="/register?target='+encodeURIComponent(d.objetivo||'')+'" '+
           'style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.65rem 1.4rem;border-radius:8px;font-weight:700;font-size:.84rem;white-space:nowrap;display:inline-block">Registrarme gratis →</a>'+
-          '<span style="font-size:.72rem;color:rgba(134,239,172,.7);white-space:nowrap">Sin tarjeta · 30 seg</span>';
+          '<span style="font-size:.72rem;color:rgba(134,239,172,.7);white-space:nowrap">Sin tarjeta</span>';
       }
     }
     setTimeout(function(){ bar.style.display = 'block'; }, 800);
   })();
 
-  // Limpiar pasos de carga
   document.getElementById('dr-steps').innerHTML='';
 }
 
@@ -2294,9 +2270,11 @@ function navSwitch(mode) {
    ESCÁNER INTEGRADO — código en /static/js/scanner.js
 ═══════════════════════════════════════════════ */
 window.RB = { isLoggedIn: {{ 'true' if user and user.is_authenticated else 'false' }} };
+window.RB_TURNSTILE_KEY = {{ (turnstile_site_key or '') | tojson }};
 var isLoggedIn = window.RB.isLoggedIn;
 </script>
-<script src="/static/js/scanner.js?v=3"></script>
+<script src="/static/js/scanner.js?v=4"></script>
+{% if turnstile_site_key and not (user and user.is_authenticated) %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>{% endif %}
 
 <!-- GDPR Cookie Banner — 100% client-side injection.
      NO hay HTML del banner en el servidor. El JS lo construye y lo inserta

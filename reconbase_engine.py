@@ -4,9 +4,9 @@ import requests
 import socket
 import ssl
 import datetime
+import os
 import re as _re
 import time
-import schedule
 from urllib.parse import urlsplit, urljoin
 
 try:
@@ -93,19 +93,93 @@ def ip_publica_de(host, solo_ipv4=True):
     return None if solo_ipv4 else ips[0]
 
 
-def get_seguro(url, timeout=5, headers=None, max_redirects=5):
-    """requests.get que valida el destino de la URL inicial y de cada redirección.
+# ─────────────────────────────────────────────────────────────
+# IDENTIFICACIÓN DEL ESCÁNER Y MODOS DE ANÁLISIS
+# ─────────────────────────────────────────────────────────────
+# Todas las peticiones salen con un User-Agent que nos identifica y enlaza a la
+# página pública que explica qué hace el escáner y cómo excluirse de él.
+SCANNER_INFO_URL = os.getenv("BASE_URL", "https://reconbase.es").rstrip("/") + "/escaner-info"
+USER_AGENT = f"Mozilla/5.0 (compatible; ReconBase/2.0; +{SCANNER_INFO_URL})"
+_CABECERAS_BASE = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+}
+
+# Pasivo: solo lo que la web publica o enlaza (home, recursos que carga, DNS,
+# certificado) y consultas a servicios de terceros. Apto para cualquier dominio.
+# Completo: además prueba rutas no enlazadas, puertos y servicios. Solo para
+# dominios cuya titularidad o autorización ha verificado el usuario.
+MODO_PASIVO = "pasivo"
+MODO_COMPLETO = "completo"
+
+
+def peticion_segura(url, timeout=5, headers=None, max_redirects=5, method="GET", stream=False):
+    """requests que valida el destino de la URL inicial y de cada redirección.
     Lanza ValueError si algún salto apunta a una red interna."""
+    cabeceras = dict(_CABECERAS_BASE)
+    cabeceras.update(headers or {})
+    cabeceras["User-Agent"] = USER_AGENT
     for _ in range(max_redirects + 1):
         partes = urlsplit(url)
         if partes.scheme not in ("http", "https") or not destino_permitido(partes.hostname or ""):
             raise ValueError("Destino no permitido")
-        r = requests.get(url, timeout=timeout, headers=headers, allow_redirects=False)
+        r = requests.request(method, url, timeout=timeout, headers=cabeceras,
+                             allow_redirects=False, stream=stream)
         if not (r.is_redirect and r.headers.get("Location")):
             return r
         url = urljoin(url, r.headers["Location"])
         r.close()
     raise ValueError("Demasiadas redirecciones")
+
+
+def get_seguro(url, timeout=5, headers=None, max_redirects=5):
+    return peticion_segura(url, timeout=timeout, headers=headers, max_redirects=max_redirects)
+
+
+def sondear_fichero(url, timeout=4):
+    """Comprueba si un fichero es accesible SIN descargar su contenido: solo el
+    código de respuesta y las cabeceras. Un .env o una copia de wp-config puede
+    contener credenciales y no queremos leerlas ni guardarlas nunca."""
+    try:
+        r = peticion_segura(url, timeout=timeout, method="HEAD")
+        if r.status_code in (405, 501):
+            r.close()
+            r = peticion_segura(url, timeout=timeout, method="GET", stream=True)
+        try:
+            longitud = int(r.headers.get("Content-Length", ""))
+        except ValueError:
+            longitud = None
+        info = {"status": r.status_code,
+                "content_type": (r.headers.get("Content-Type") or "").lower(),
+                "length": longitud}
+        r.close()
+        return info
+    except Exception:
+        return None
+
+
+def fichero_expuesto(info, min_len=30):
+    """200 con un tipo que no es HTML. Las webs que responden a todo con la home
+    (soft 404) devuelven text/html y no cuentan."""
+    if not info or info["status"] != 200 or "text/html" in info["content_type"]:
+        return False
+    return info["length"] is None or info["length"] > min_len
+
+
+def _leer_pagina(url, timeout=4, max_bytes=16384):
+    """Lee como mucho `max_bytes` de una página HTML pública (pantallas de login,
+    instaladores, readme). Devuelve (status, texto) o (None, "")."""
+    try:
+        r = peticion_segura(url, timeout=timeout, stream=True)
+        cuerpo = b""
+        for trozo in r.iter_content(4096):
+            cuerpo += trozo
+            if len(cuerpo) >= max_bytes:
+                break
+        r.close()
+        return r.status_code, cuerpo[:max_bytes].decode(r.encoding or "utf-8", errors="ignore")
+    except Exception:
+        return None, ""
 
 # ─────────────────────────────────────────────────────────────
 # MÓDULO 1: FILTRACIONES (Have I Been Pwned)
@@ -114,7 +188,7 @@ def check_leaks_real(email, api_key, timeout=8):
     if not api_key:
         return None
     url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
-    headers = {"hibp-api-key": api_key, "user-agent": "ReconBase-Enterprise-v2"}
+    headers = {"hibp-api-key": api_key, "user-agent": USER_AGENT}
     try:
         r = requests.get(url, headers=headers, params={"truncateResponse":"false"}, timeout=timeout)
         if r.status_code == 200: return r.json()
@@ -203,21 +277,11 @@ CABECERAS = {
 }
 
 def check_security_headers(domain, timeout=6):
-    """Comprueba cabeceras de seguridad. Usa UA de navegador real para evitar
-    que Cloudflare/CDNs sirvan una página de bot-challenge sin las cabeceras
-    reales del sitio (que era lo que pasaba con UA 'ReconBase-Enterprise-v2')."""
+    """Comprueba las cabeceras de seguridad de la home."""
     resultados = {v: False for v in CABECERAS.values()}
-    browser_ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/126.0.0.0 Safari/537.36")
     for scheme in ["https","http"]:
         try:
-            r = get_seguro(f"{scheme}://{domain}", timeout=timeout,
-                             headers={
-                                 "User-Agent": browser_ua,
-                                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                                 "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-                             })
+            r = get_seguro(f"{scheme}://{domain}", timeout=timeout)
             for k, v in CABECERAS.items():
                 if k in r.headers: resultados[v] = True
             return resultados
@@ -316,10 +380,7 @@ def detect_cms(domain, timeout=7):
     try:
         for scheme in ["https", "http"]:
             try:
-                r = get_seguro(
-                    f"{scheme}://{domain}", timeout=timeout,
-                    headers={"User-Agent": "Mozilla/5.0 (compatible; ReconBase/2.0)"}
-                )
+                r = get_seguro(f"{scheme}://{domain}", timeout=timeout)
                 html = r.text.lower()
                 headers = {k.lower(): v.lower() for k, v in r.headers.items()}
 
@@ -360,8 +421,7 @@ def detect_cms(domain, timeout=7):
                         # WordPress: check version via wp-json
                         if cms_name == "WordPress" and not version:
                             try:
-                                wp = get_seguro(f"{scheme}://{domain}/wp-json/", timeout=4,
-                                                 headers={"User-Agent": "Mozilla/5.0"})
+                                wp = get_seguro(f"{scheme}://{domain}/wp-json/", timeout=4)
                                 if wp.status_code == 200:
                                     import json
                                     wp_data = wp.json()
@@ -416,8 +476,7 @@ _WP_VULNERABLE_PLUGINS = {
 def _safe_get(url, timeout=5, headers=None):
     """GET defensivo. Devuelve response o None."""
     try:
-        h = headers or {"User-Agent": "Mozilla/5.0 (compatible; ReconBase-WP/2.0)"}
-        return get_seguro(url, timeout=timeout, headers=h)
+        return get_seguro(url, timeout=timeout, headers=headers)
     except Exception:
         return None
 
@@ -441,10 +500,25 @@ def _wp_version_outdated(version):
         return False, None
 
 
-def wordpress_audit(domain, timeout=6):
-    """Auditoría WordPress completa: versión, plugins, xmlrpc, wp-json,
-    enumeración de usuarios, archivos sensibles. Solo se llama si detect_cms()
-    confirma WordPress."""
+# Rutas que una web WordPress no enlaza: solo se comprueban en modo completo.
+# Los ficheros de datos (copias de wp-config, logs) se sondean sin leer su
+# contenido; las páginas (instalador, readme) se leen como mucho 16 KB.
+_WP_FICHEROS_SENSIBLES = [
+    ("/wp-config.php.bak",     "copia de wp-config.php accesible"),
+    ("/wp-config.php~",        "copia de wp-config.php (tilde) accesible"),
+    ("/.wp-config.php.swp",    "fichero swap de wp-config.php accesible"),
+    ("/wp-content/debug.log",  "debug.log público"),
+]
+
+OMITIDOS_WP_PASIVO = ["xmlrpc.php", "usuarios enumerables (wp-json/wp/v2/users)",
+                      "instalador y readme.html", "ficheros sensibles"]
+
+
+def wordpress_audit(domain, timeout=6, modo=MODO_PASIVO):
+    """Auditoría WordPress. En modo pasivo solo usa la home, el feed y la raíz de
+    wp-json (las tres las enlaza la propia web). El modo completo añade rutas no
+    enlazadas: xmlrpc.php, usuarios, instalador y ficheros sensibles."""
+    completo = modo == MODO_COMPLETO
     result = {
         "is_wordpress": False,
         "version": None,
@@ -459,50 +533,47 @@ def wordpress_audit(domain, timeout=6):
         "sensitive_files": [],
         "checks_count": 0,  # total de checks realizados
         "issues_count": 0,  # total de issues encontrados
+        "modo": MODO_COMPLETO if completo else MODO_PASIVO,
+        "omitidos": [] if completo else list(OMITIDOS_WP_PASIVO),
     }
 
     base = None
-    # Encontrar scheme + base
+    html = ""
     for scheme in ["https", "http"]:
         r = _safe_get(f"{scheme}://{domain}", timeout=timeout)
         if r and r.status_code < 500:
             base = f"{scheme}://{domain}"
-            html = r.text
+            html = r.text or ""
             break
     if not base:
         return result
 
-    # 1) Detectar versión via meta generator
+    # 1) Versión: meta generator, feed RSS y raíz de wp-json
     import re
     m = re.search(r'<meta\s+name=["\']generator["\']\s+content=["\']WordPress\s+([\d.]+)', html, re.I)
     if m:
         result["is_wordpress"] = True
         result["version"] = m.group(1)
-    # Fallback: feed RSS
     if not result["version"]:
         rss = _safe_get(f"{base}/feed/", timeout=4)
         if rss and rss.status_code == 200:
-            mm = re.search(r'<generator>https?://wordpress\.org/\?v=([\d.]+)</generator>', rss.text, re.I)
+            mm = re.search(r'<generator>https?://wordpress\.org/\?v=([\d.]+)</generator>', rss.text or "", re.I)
             if mm:
                 result["is_wordpress"] = True
                 result["version"] = mm.group(1)
-    # Fallback: wp-json
     if not result["version"]:
         wpj = _safe_get(f"{base}/wp-json/", timeout=4)
         if wpj and wpj.status_code == 200:
             try:
                 data = wpj.json()
-                if data.get("namespaces") or data.get("routes"):
+                if isinstance(data, dict) and (data.get("namespaces") or data.get("routes")):
                     result["is_wordpress"] = True
-                if "wp/v2" in (data.get("namespaces") or []):
-                    pass  # confirmed but no version exposed
             except Exception:
                 pass
-    # Heurística final: /wp-login.php o /wp-content/ accesibles
-    if not result["is_wordpress"]:
-        wpl = _safe_get(f"{base}/wp-login.php", timeout=3)
-        if wpl and wpl.status_code in (200, 302) and ("wp-submit" in (wpl.text or "") or "wordpress" in (wpl.text or "").lower()):
-            result["is_wordpress"] = True
+    if not result["is_wordpress"] and ("/wp-content/" in html or "/wp-includes/" in html):
+        result["is_wordpress"] = True
+    if result["version"] and not _RE_VERSION.match(result["version"]):
+        result["version"] = None
 
     if not result["is_wordpress"]:
         return result
@@ -516,14 +587,32 @@ def wordpress_audit(domain, timeout=6):
         if outdated:
             result["issues_count"] += 1
 
-    # 3) xmlrpc.php expuesto
+    # 3) Plugins y tema visibles en el HTML de la home
     result["checks_count"] += 1
-    xr = _safe_get(f"{base}/xmlrpc.php", timeout=3)
-    if xr and xr.status_code == 200 and "XML-RPC" in (xr.text or "")[:500]:
+    plugin_matches = re.findall(r'/wp-content/plugins/([a-z0-9\-_]+)/', html, re.I)
+    plugins_unique = sorted({p.lower() for p in plugin_matches})[:15]
+    result["plugins"] = plugins_unique
+    for p in plugins_unique:
+        if p in _WP_VULNERABLE_PLUGINS:
+            desc, sev = _WP_VULNERABLE_PLUGINS[p]
+            result["vulnerable_plugins"].append({"name": p, "desc": desc, "severity": sev})
+            result["issues_count"] += 1
+    result["checks_count"] += 1
+    theme_match = re.search(r'/wp-content/themes/([a-z0-9\-_]+)/', html, re.I)
+    if theme_match:
+        result["theme"] = theme_match.group(1).lower()
+
+    if not completo:
+        return result
+
+    # 4) xmlrpc.php expuesto
+    result["checks_count"] += 1
+    status, texto = _leer_pagina(f"{base}/xmlrpc.php", timeout=3, max_bytes=2048)
+    if status == 200 and "XML-RPC" in texto:
         result["xmlrpc_exposed"] = True
         result["issues_count"] += 1
 
-    # 4) Enumeración de usuarios via wp-json/wp/v2/users
+    # 5) Enumeración de usuarios vía wp-json/wp/v2/users (solo nombres públicos)
     result["checks_count"] += 1
     users_resp = _safe_get(f"{base}/wp-json/wp/v2/users", timeout=4)
     if users_resp and users_resp.status_code == 200:
@@ -532,7 +621,6 @@ def wordpress_audit(domain, timeout=6):
             if isinstance(users, list) and users:
                 result["users_enumerable"] = True
                 result["issues_count"] += 1
-                # Capturar primeros 5 usernames (sin email/datos sensibles)
                 for u in users[:5]:
                     if isinstance(u, dict):
                         name = u.get("name") or u.get("slug")
@@ -543,40 +631,24 @@ def wordpress_audit(domain, timeout=6):
         except Exception:
             pass
 
-    # 5) Plugins visibles en HTML (URLs /wp-content/plugins/PLUGIN_SLUG/)
+    # 6) Instalador y readme.html (páginas HTML, lectura limitada)
     result["checks_count"] += 1
-    plugin_matches = re.findall(r'/wp-content/plugins/([a-z0-9\-_]+)/', html or "", re.I)
-    plugins_unique = list({p.lower() for p in plugin_matches})[:15]
-    result["plugins"] = plugins_unique
-    # Cruzar con lista vulnerable
-    for p in plugins_unique:
-        if p in _WP_VULNERABLE_PLUGINS:
-            desc, sev = _WP_VULNERABLE_PLUGINS[p]
-            result["vulnerable_plugins"].append({"name": p, "desc": desc, "severity": sev})
-            result["issues_count"] += 1
-
-    # 6) Theme visible en HTML
+    status, texto = _leer_pagina(f"{base}/wp-admin/install.php", timeout=3)
+    bajo = texto.lower()
+    if status == 200 and "wordpress" in bajo and "already installed" not in bajo and "ya está instalado" not in bajo:
+        result["sensitive_files"].append({"path": "/wp-admin/install.php",
+                                          "desc": "install.php accesible (reinstalación posible)"})
+        result["issues_count"] += 1
     result["checks_count"] += 1
-    theme_match = re.search(r'/wp-content/themes/([a-z0-9\-_]+)/', html or "", re.I)
-    if theme_match:
-        result["theme"] = theme_match.group(1).lower()
+    status, texto = _leer_pagina(f"{base}/readme.html", timeout=3, max_bytes=4096)
+    if status == 200 and "wordpress" in texto.lower() and "<html" in texto.lower():
+        result["sensitive_files"].append({"path": "/readme.html", "desc": "readme.html revela que es WordPress y su versión"})
+        result["issues_count"] += 1
 
-    # 7) Archivos sensibles típicos
-    sensitive_paths = [
-        ("/wp-config.php.bak", "backup wp-config.php expuesto"),
-        ("/wp-config.php~",    "backup wp-config.php (tilde) expuesto"),
-        ("/.wp-config.php.swp","swap file wp-config.php expuesto"),
-        ("/wp-admin/install.php", "install.php accesible (re-instalación posible)"),
-        ("/readme.html",       "readme.html con versión WP filtrada"),
-        ("/wp-content/debug.log", "debug.log público"),
-    ]
-    for path, desc in sensitive_paths:
+    # 7) Ficheros de datos: solo cabeceras, nunca el contenido
+    for path, desc in _WP_FICHEROS_SENSIBLES:
         result["checks_count"] += 1
-        sf = _safe_get(f"{base}{path}", timeout=3)
-        if sf and sf.status_code == 200 and len(sf.text or "") > 50:
-            # Filtrar: install.php redirige a /wp-admin/ tras instalar, OK
-            if path == "/wp-admin/install.php" and "already installed" in (sf.text or "").lower():
-                continue
+        if fichero_expuesto(sondear_fichero(f"{base}{path}", timeout=3), min_len=50):
             result["sensitive_files"].append({"path": path, "desc": desc})
             result["issues_count"] += 1
 
@@ -662,11 +734,26 @@ def _ps_version_outdated(version):
         return False, None
 
 
-def prestashop_audit(domain, timeout=6):
-    """Auditoría PrestaShop: versión, /install/, /admin sin renombrar,
-    módulos vulnerables, archivos sensibles, HTTPS checkout, skimmers.
-    Solo se llama si detect_cms() confirma PrestaShop."""
+_PS_FICHEROS_SENSIBLES = [
+    ("/composer.lock",              "composer.lock expuesto: revela dependencias y versiones"),
+    ("/var/logs/prod.log",          "logs de producción accesibles"),
+    ("/app/config/parameters.php",  "fichero de configuración servido sin ejecutar"),
+    ("/.git/config",                "directorio .git accesible: expone el código fuente"),
+    ("/.env",                       "fichero .env accesible: puede contener credenciales"),
+    ("/README.md",                  "README.md público: filtra la estructura del proyecto"),
+]
+
+OMITIDOS_PS_PASIVO = ["panel de administración sin renombrar", "directorio /install/",
+                      "INSTALL.txt", "ficheros sensibles"]
+
+
+def prestashop_audit(domain, timeout=6, modo=MODO_PASIVO):
+    """Auditoría PrestaShop. En modo pasivo analiza la tienda pública: home,
+    páginas de pedido, scripts que cargan y si fuerza HTTPS. El modo completo
+    añade rutas no enlazadas: panel de administración, /install/ y ficheros
+    sensibles (estos sin descargar su contenido)."""
     import re
+    completo = modo == MODO_COMPLETO
     result = {
         "is_prestashop":     False,
         "version":           None,
@@ -683,6 +770,8 @@ def prestashop_audit(domain, timeout=6):
         "skimmer_evidence":    [],
         "checks_count":        0,
         "issues_count":        0,
+        "modo":                MODO_COMPLETO if completo else MODO_PASIVO,
+        "omitidos":            [] if completo else list(OMITIDOS_PS_PASIVO),
     }
 
     base = None
@@ -696,24 +785,24 @@ def prestashop_audit(domain, timeout=6):
     if not base:
         return result
 
-    # 1) Confirmar PrestaShop + versión
-    # Heurísticas: meta generator, /themes/, header Powered-By, /modules/, var prestashop
-    if re.search(r'<meta\s+name=["\']generator["\']\s+content=["\']PrestaShop\s*([\d.]*)', html, re.I):
+    # 1) Confirmar PrestaShop + versión (meta generator y marcas del HTML)
+    if re.search(r'<meta\s+name=["\']generator["\']\s+content=["\']PrestaShop', html, re.I):
         result["is_prestashop"] = True
         m = re.search(r'PrestaShop\s+([\d.]+)', html, re.I)
         if m: result["version"] = m.group(1)
     if "/themes/classic/" in html or "var prestashop" in html.lower() or "/modules/" in html:
         result["is_prestashop"] = True
-    # Fallback: /modules/ps_emailsubscription/
-    if not result["version"]:
-        readme = _safe_get(f"{base}/INSTALL.txt", timeout=3)
-        if readme and readme.status_code == 200:
-            mm = re.search(r'PrestaShop\s+([\d.]+)', readme.text or "", re.I)
+    if completo and not result["version"]:
+        status, texto = _leer_pagina(f"{base}/INSTALL.txt", timeout=3, max_bytes=4096)
+        if status == 200:
+            mm = re.search(r'PrestaShop\s+([\d.]+)', texto, re.I)
             if mm:
                 result["is_prestashop"] = True
                 result["version"] = mm.group(1)
-                result["sensitive_files"].append({"path": "/INSTALL.txt", "desc": "fichero INSTALL.txt filtra versión PrestaShop"})
+                result["sensitive_files"].append({"path": "/INSTALL.txt", "desc": "INSTALL.txt revela la versión de PrestaShop"})
                 result["issues_count"] += 1
+    if result["version"] and not _RE_VERSION.match(result["version"].strip(".")):
+        result["version"] = None
     if not result["is_prestashop"]:
         return result
 
@@ -726,42 +815,31 @@ def prestashop_audit(domain, timeout=6):
         if outdated:
             result["issues_count"] += 1
 
-    # 3) Panel /admin/ sin renombrar (mala práctica clásica de PrestaShop)
-    result["checks_count"] += 1
-    for path in ["/admin/", "/administracion/", "/administrator/", "/back-office/", "/bo/"]:
-        adm = _safe_get(f"{base}{path}", timeout=3)
-        if adm and adm.status_code in (200, 302) and ("prestashop" in (adm.text or "").lower() or "back office" in (adm.text or "").lower()):
-            result["admin_path_default"] = True
-            result["admin_path_found"] = path
-            result["issues_count"] += 1
-            break
-
-    # 4) Directorio /install/ accesible (DEBE eliminarse tras instalar)
-    result["checks_count"] += 1
-    inst = _safe_get(f"{base}/install/", timeout=3)
-    if inst and inst.status_code == 200 and ("install" in (inst.text or "").lower() or "prestashop" in (inst.text or "").lower()):
-        result["install_dir_exposed"] = True
-        result["issues_count"] += 1
-
-    # 5) Archivos sensibles típicos
-    sensitive_paths = [
-        ("/README.md",                  "README.md público — filtra estructura"),
-        ("/CONTRIBUTING.md",            "CONTRIBUTING.md filtra detalles del repo"),
-        ("/composer.lock",              "composer.lock expuesto — revela dependencias y versiones"),
-        ("/var/logs/prod.log",          "logs de producción accesibles"),
-        ("/app/config/parameters.php",  "fichero de configuración expuesto"),
-        ("/.git/config",                "directorio .git accesible — código fuente comprometido"),
-        ("/.env",                       "fichero .env público — credenciales filtradas"),
-    ]
-    for path, desc in sensitive_paths:
+    if completo:
+        # 3) Panel /admin/ sin renombrar (mala práctica clásica de PrestaShop)
         result["checks_count"] += 1
-        sf = _safe_get(f"{base}{path}", timeout=3)
-        if sf and sf.status_code == 200 and len(sf.text or "") > 30:
-            ct = (sf.headers.get("Content-Type") or "").lower()
-            if "text/html" in ct and "<html" in (sf.text or "")[:300].lower():
-                continue  # es la home, ignorar (catch-all del CMS)
-            result["sensitive_files"].append({"path": path, "desc": desc})
+        for path in ["/admin/", "/administracion/", "/administrator/", "/back-office/", "/bo/"]:
+            status, texto = _leer_pagina(f"{base}{path}", timeout=3)
+            bajo = texto.lower()
+            if status == 200 and ("prestashop" in bajo or "back office" in bajo):
+                result["admin_path_default"] = True
+                result["admin_path_found"] = path
+                result["issues_count"] += 1
+                break
+
+        # 4) Directorio /install/ accesible (DEBE eliminarse tras instalar)
+        result["checks_count"] += 1
+        status, texto = _leer_pagina(f"{base}/install/", timeout=3)
+        if status == 200 and "prestashop" in texto.lower() and "install" in texto.lower():
+            result["install_dir_exposed"] = True
             result["issues_count"] += 1
+
+        # 5) Ficheros sensibles: solo código de respuesta y cabeceras
+        for path, desc in _PS_FICHEROS_SENSIBLES:
+            result["checks_count"] += 1
+            if fichero_expuesto(sondear_fichero(f"{base}{path}", timeout=3)):
+                result["sensitive_files"].append({"path": path, "desc": desc})
+                result["issues_count"] += 1
 
     # 6) Módulos detectados desde HTML y módulos vulnerables conocidos
     result["checks_count"] += 1
@@ -885,7 +963,7 @@ def prestashop_audit(domain, timeout=6):
 # ─────────────────────────────────────────────────────────────
 # ROUTER: cms_audit — punto único de entrada
 # ─────────────────────────────────────────────────────────────
-def cms_audit(domain, timeout=6, cms_hint=None):
+def cms_audit(domain, timeout=6, cms_hint=None, modo=MODO_PASIVO):
     """Router unificado de auditoría CMS.
 
     Detecta el CMS (o lo recibe en cms_hint para evitar doble detección) y
@@ -915,7 +993,7 @@ def cms_audit(domain, timeout=6, cms_hint=None):
 
     # ── WordPress ──
     if cms_name == "WordPress":
-        wp = wordpress_audit(domain, timeout=timeout)
+        wp = wordpress_audit(domain, timeout=timeout, modo=modo)
         out["raw"] = wp
         if not wp.get("is_wordpress"):
             return out
@@ -947,7 +1025,7 @@ def cms_audit(domain, timeout=6, cms_hint=None):
 
     # ── PrestaShop ──
     if cms_name == "PrestaShop":
-        ps = prestashop_audit(domain, timeout=timeout)
+        ps = prestashop_audit(domain, timeout=timeout, modo=modo)
         out["raw"] = ps
         if not ps.get("is_prestashop"):
             return out
@@ -990,151 +1068,55 @@ def cms_audit(domain, timeout=6, cms_hint=None):
 
 
 # ─────────────────────────────────────────────────────────────
-# MÓDULO 6c: LISTA NEGRA / BLOCKLIST (malware, phishing)
+# MÓDULO 6c: LISTA NEGRA (Google Web Risk)
 # ─────────────────────────────────────────────────────────────
-# Feed público de URLhaus (abuse.ch) — URLs de malware activas. Sin API key.
-_BLACKLIST_FEED_URL = "https://urlhaus.abuse.ch/downloads/text_online/"
-_BLACKLIST_FEED_CACHE = {"hosts": None, "ts": 0}
+# Web Risk es la versión comercial de Safe Browsing: su licencia permite usarlo
+# en un producto de pago (Safe Browsing y el feed de URLhaus no). Sin clave
+# configurada la comprobación queda desactivada, nunca se simula.
+_WEB_RISK_URL = "https://webrisk.googleapis.com/v1/uris:search"
+_WEB_RISK_TIPOS = {
+    "MALWARE": "Malware",
+    "SOCIAL_ENGINEERING": "Phishing / ingeniería social",
+    "UNWANTED_SOFTWARE": "Software no deseado",
+}
+WEB_RISK_ATRIBUCION = "Datos de Google Web Risk"
 
 
-def _load_blacklist_feed(timeout=12):
-    """Descarga y cachea (1h) el feed de hosts maliciosos de URLhaus.
-    Devuelve un set de dominios. Sin API key."""
-    import time as _t
-    now = _t.time()
-    if _BLACKLIST_FEED_CACHE["hosts"] is not None and (now - _BLACKLIST_FEED_CACHE["ts"]) < 3600:
-        return _BLACKLIST_FEED_CACHE["hosts"]
-    hosts = set()
-    try:
-        r = requests.get(_BLACKLIST_FEED_URL, timeout=timeout,
-                         headers={"User-Agent": "ReconBase/2.0"})
-        if r.status_code == 200:
-            for line in r.text.splitlines():
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                try:
-                    host = line.split("://", 1)[1].split("/", 1)[0].split(":", 1)[0].lower()
-                    if host.startswith("www."):
-                        host = host[4:]
-                    if host:
-                        hosts.add(host)
-                except Exception:
-                    continue
-            _BLACKLIST_FEED_CACHE["hosts"] = hosts
-            _BLACKLIST_FEED_CACHE["ts"] = now
-    except Exception:
-        pass
-    return _BLACKLIST_FEED_CACHE["hosts"] or set()
+def _consultar_web_risk(uri, api_key, timeout=8):
+    """Devuelve la lista de amenazas de `uri` o lanza si la API falla."""
+    params = [("uri", uri), ("key", api_key)] + [("threatTypes", t) for t in _WEB_RISK_TIPOS]
+    r = requests.get(_WEB_RISK_URL, params=params, timeout=timeout,
+                     headers={"User-Agent": USER_AGENT})
+    r.raise_for_status()
+    return (r.json().get("threat") or {}).get("threatTypes") or []
 
 
-def _check_safebrowsing(domain, api_key, timeout=8):
-    """Consulta Google Safe Browsing Lookup API v4. Requiere api_key.
-    Devuelve lista de amenazas detectadas (vacía si limpio o si falla)."""
-    import json as _json
-    threats = []
-    try:
-        body = _json.dumps({
-            "client": {"clientId": "reconbase", "clientVersion": "1.0"},
-            "threatInfo": {
-                "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING",
-                                "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
-                "platformTypes": ["ANY_PLATFORM"],
-                "threatEntryTypes": ["URL"],
-                "threatEntries": [
-                    {"url": f"http://{domain}/"},
-                    {"url": f"https://{domain}/"},
-                ],
-            },
-        }).encode("utf-8")
-        url = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={api_key}"
-        r = requests.post(url, data=body, timeout=timeout,
-                          headers={"Content-Type": "application/json"})
-        if r.status_code == 200:
-            data = r.json()
-            for m in (data.get("matches") or []):
-                t = m.get("threatType", "THREAT")
-                if t not in threats:
-                    threats.append(t)
-    except Exception:
-        pass
-    return threats
-
-
-def check_blacklist(domain, safebrowsing_key=None):
-    """Comprueba si un dominio está en listas negras de malware/phishing.
-    Fuente principal: URLhaus (abuse.ch, sin key). Capa opcional: Google
-    Safe Browsing (si se pasa safebrowsing_key). Devuelve dict homogéneo."""
-    import re as _re
+def check_blacklist(domain, web_risk_key=None):
+    """¿Aparece el dominio en las listas de Google Web Risk? Devuelve un dict
+    homogéneo; `disponible` es False si no hay clave o la consulta falló."""
     domain = _re.sub(r'^https?://', '', (domain or "").strip(), flags=_re.IGNORECASE)
-    domain = domain.replace("www.", "").split("/")[0].split(":")[0].strip().lower()
-    result = {
-        "domain": domain,
-        "listed": False,
-        "sources": [],          # [{name, threat}]
-        "checked_sources": [],  # nombres de fuentes consultadas
-    }
-    if not domain or "." not in domain:
+    domain = domain.split("/")[0].split(":")[0].strip().lower()
+    if domain.startswith("www."):
+        domain = domain[4:]
+    result = {"domain": domain, "listed": False, "sources": [], "checked_sources": [],
+              "disponible": bool(web_risk_key), "atribucion": WEB_RISK_ATRIBUCION}
+    if not domain or "." not in domain or not web_risk_key:
         return result
-
-    # 1) URLhaus (keyless)
-    feed = _load_blacklist_feed()
-    if feed is not None:
-        result["checked_sources"].append("URLhaus (abuse.ch)")
-        if domain in feed:
-            result["listed"] = True
-            result["sources"].append({"name": "URLhaus (abuse.ch)", "threat": "Distribución de malware"})
-
-    # 2) Google Safe Browsing (opcional)
-    if safebrowsing_key:
-        result["checked_sources"].append("Google Safe Browsing")
-        threats = _check_safebrowsing(domain, safebrowsing_key)
-        _map = {
-            "MALWARE": "Malware",
-            "SOCIAL_ENGINEERING": "Phishing / ingeniería social",
-            "UNWANTED_SOFTWARE": "Software no deseado",
-            "POTENTIALLY_HARMFUL_APPLICATION": "Aplicación potencialmente dañina",
-        }
-        for t in threats:
-            result["listed"] = True
-            result["sources"].append({"name": "Google Safe Browsing", "threat": _map.get(t, t)})
-
+    amenazas = []
+    try:
+        for uri in (f"http://{domain}/", f"https://{domain}/"):
+            for t in _consultar_web_risk(uri, web_risk_key):
+                if t not in amenazas:
+                    amenazas.append(t)
+    except Exception as e:
+        print(f"[!] Web Risk error: {e}")
+        result["disponible"] = False
+        return result
+    result["checked_sources"].append("Google Web Risk")
+    for t in amenazas:
+        result["listed"] = True
+        result["sources"].append({"name": "Google Web Risk", "threat": _WEB_RISK_TIPOS.get(t, t)})
     return result
-
-
-# ─────────────────────────────────────────────────────────────
-# MÓDULO 7: VIGILANCIA NOCTURNA
-# ─────────────────────────────────────────────────────────────
-def enviar_alerta(mensaje):
-    print(f"\n{'='*55}\n  ALERTA RECONBASE [{time.strftime('%Y-%m-%d %H:%M:%S')}]\n{'='*55}")
-    print(mensaje)
-    print('='*55+'\n')
-
-def vigilancia_nocturna(clientes, api_key):
-    print(f"[{time.strftime('%H:%M:%S')}] Iniciando ronda de vigilancia...")
-    for c in clientes:
-        dominio = c.get("dominio","")
-        email   = c.get("email","")
-        nombre  = c.get("nombre", dominio)
-        alertas = []
-        print(f"  Escaneando: {dominio}")
-        p = scan_critical_ports_fast(dominio)
-        criticos = [x for x in p if x["servicio"] in ["RDP","Telnet","MySQL","MongoDB","Redis","PostgreSQL","MSSQL","Docker API"]]
-        if criticos:
-            lista_criticos = ", ".join([str(x["puerto"]) + "/" + x["servicio"] for x in criticos])
-            alertas.append("Puertos criticos: " + lista_criticos)
-        dns = check_email_spoofing(dominio)
-        if not dns["SPF"]:   alertas.append("SPF ausente")
-        if not dns["DMARC"]: alertas.append("DMARC ausente")
-        if email and api_key:
-            leaks = check_leaks_real(email, api_key)
-            if leaks: alertas.append(f"{len(leaks)} filtracion(es) para {email}")
-        if alertas:
-            msg = f"ALERTA: {nombre} ({dominio})\n" + "\n".join(f"  - {a}" for a in alertas)
-            enviar_alerta(msg)
-        else:
-            print(f"    [{dominio}] Sin alertas.")
-    print(f"[{time.strftime('%H:%M:%S')}] Ronda finalizada.")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1264,15 +1246,133 @@ def es_ip(target):
     """Devuelve True si el target es una dirección IPv4."""
     return bool(_re.match(r'^\d{1,3}(\.\d{1,3}){3}$', target.strip()))
 
-if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
-    CLIENTES = [
-        {"nombre":"Demo", "dominio":"scanme.nmap.org", "email":""},
-    ]
-    vigilancia_nocturna(CLIENTES, os.getenv("RECONBASE_API_KEY",""))
-    schedule.every().day.at("03:00").do(vigilancia_nocturna, CLIENTES, os.getenv("RECONBASE_API_KEY",""))
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+
+# ─────────────────────────────────────────────────────────────
+# ANÁLISIS COMPLETO DE UN OBJETIVO + PUNTUACIÓN
+# ─────────────────────────────────────────────────────────────
+# Punto único para todos los endpoints y crons: así ninguno puede saltarse la
+# regla de modos por error. Las filtraciones (HIBP) las añade el servidor, que
+# es quien sabe si el email pertenece al usuario o a un dominio verificado.
+SERVICIOS_CRITICOS = ["RDP", "Telnet", "MySQL", "MongoDB", "Redis", "PostgreSQL",
+                      "MSSQL", "Docker API", "Elasticsearch", "VNC"]
+OMITIDOS_PASIVO = ["puertos y servicios expuestos", "identificación de servicios (banners)"]
+
+
+def calcular_riesgo(puertos, dns, leaks, headers):
+    score, desglose = 0, {}
+    pts = 0
+    for p in puertos:
+        pts += 15 if p.get("servicio") in SERVICIOS_CRITICOS else 5
+    pts = min(pts, 35)
+    score += pts
+    if pts: desglose["Red"] = pts
+    spf   = 20 if dns and not dns.get("SPF")   else 0
+    dmarc = 15 if dns and not dns.get("DMARC") else 0
+    score += spf + dmarc
+    if spf:   desglose["SPF ausente"]   = spf
+    if dmarc: desglose["DMARC ausente"] = dmarc
+    pts_l = min(len(leaks)*10, 30) if leaks else 0
+    score += pts_l
+    if pts_l: desglose["Filtraciones"] = pts_l
+    return min(score, 100), desglose
+
+
+def label_riesgo(score):
+    if score >= 70: return "CRITICO",  "#EF4444"
+    if score >= 40: return "MODERADO", "#F59E0B"
+    return "BAJO", "#10B981"
+
+
+def puntuar(res):
+    """Calcula riesgo, etiqueta, color y desglose de un resultado y los guarda en él."""
+    riesgo, desglose = calcular_riesgo(res.get("puertos") or [], res.get("dns") or {},
+                                       res.get("leaks_raw") or [], res.get("headers") or {})
+
+    def sumar(clave, pts):
+        nonlocal riesgo
+        riesgo = min(100, riesgo + pts)
+        desglose[clave] = pts
+
+    if (res.get("cms") or {}).get("riesgo"):
+        sumar("CMS desactualizable", 10)
+    wp = res.get("wp") or {}
+    if wp.get("is_wordpress"):
+        if wp.get("version_outdated"): sumar("WordPress obsoleto", 10)
+        if wp.get("xmlrpc_exposed"):   sumar("xmlrpc.php expuesto", 5)
+        if wp.get("users_enumerable"): sumar("Usuarios WP enumerables", 10)
+        vp = len(wp.get("vulnerable_plugins") or [])
+        if vp: sumar(f"{vp} plugin(s) vulnerable(s)", min(20, vp * 8))
+        sf = len(wp.get("sensitive_files") or [])
+        if sf: sumar(f"{sf} archivo(s) sensible(s) WP", min(15, sf * 5))
+    ps = res.get("ps") or {}
+    if ps.get("is_prestashop"):
+        if ps.get("version_outdated"):    sumar("PrestaShop obsoleto", 10)
+        if ps.get("admin_path_default"):  sumar("Admin PrestaShop sin renombrar", 15)
+        if ps.get("install_dir_exposed"): sumar("/install/ PrestaShop accesible", 18)
+        vm = len(ps.get("vulnerable_modules") or [])
+        if vm: sumar(f"{vm} módulo(s) PS vulnerable(s)", min(20, vm * 8))
+        sfp = len(ps.get("sensitive_files") or [])
+        if sfp: sumar(f"{sfp} archivo(s) sensible(s) PS", min(15, sfp * 5))
+        if not ps.get("https_forced"):    sumar("HTTPS no forzado (checkout)", 10)
+        if ps.get("skimmer_suspect"):     sumar("Posible skimmer en checkout", 25)
+    ssl_info = res.get("ssl") or {}
+    if ssl_info.get("caducado"):
+        sumar("SSL caducado", 20)
+    elif ssl_info.get("pronto_a_caducar"):
+        sumar("SSL por caducar", 10)
+
+    label, color = label_riesgo(riesgo)
+    res.update({"riesgo": riesgo, "label": label, "color": color, "desglose": desglose})
+    return res
+
+
+def _intentar(funcion, por_defecto, *args, **kwargs):
+    try:
+        return funcion(*args, **kwargs)
+    except Exception:
+        return por_defecto
+
+
+def analizar(dominio, modo=MODO_PASIVO, subdominios=True, cms=True):
+    """Ejecuta las comprobaciones que permite `modo` y devuelve el resultado
+    (sin filtraciones ni puntuación: ver puntuar())."""
+    completo = modo == MODO_COMPLETO
+    ip = es_ip(dominio)
+    cms_vacio = {"cms": None, "version": None, "riesgo": False, "detalle": ""}
+
+    puertos = _intentar(scan_critical_ports_fast, [], dominio) if completo else []
+    banners = _intentar(banner_grab, {}, dominio, puertos) if puertos else {}
+    os_det = detect_os_from_banners(banners) if banners else None
+    ssl_info = _intentar(ssl_scan, {}, dominio)
+    headers = _intentar(check_security_headers, {}, dominio)
+
+    dns, subs, cms_info = {}, [], dict(cms_vacio)
+    wp = {"is_wordpress": False}
+    ps = {"is_prestashop": False}
+    if not ip:
+        dns = _intentar(check_email_spoofing, {}, dominio)
+        if subdominios:
+            subs = _intentar(scan_subdomains, [], dominio)
+        if cms:
+            cms_info = _intentar(detect_cms, dict(cms_vacio), dominio)
+            if cms_info.get("cms") == "WordPress":
+                wp = _intentar(wordpress_audit, {"is_wordpress": False}, dominio, modo=modo)
+            elif cms_info.get("cms") == "PrestaShop":
+                ps = _intentar(prestashop_audit, {"is_prestashop": False}, dominio, modo=modo)
+
+    omitidos = [] if completo else list(OMITIDOS_PASIVO)
+    for auditoria in (wp, ps):
+        omitidos += auditoria.get("omitidos") or []
+
+    return {
+        "dominio": dominio, "es_ip": ip,
+        "puertos": puertos, "dns": dns,
+        "headers": {k: bool(v) for k, v in headers.items()},
+        "subs": subs, "leaks": 0, "leaks_raw": [],
+        "cms": cms_info, "wp": wp, "ps": ps, "ssl": ssl_info,
+        "banners": banners, "os": os_det,
+        "modo": MODO_COMPLETO if completo else MODO_PASIVO,
+        "parcial": not completo,
+        "omitidos": omitidos,
+        "timestamp": datetime.datetime.utcnow().strftime("%d/%m/%Y %H:%M"),
+    }

@@ -346,13 +346,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <!-- Mis dominios -->
-  <div class="card">
+  <div class="card" id="dominios">
     <div class="card-title">Mis dominios</div>
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
-      Gestiona los dominios que quieres monitorizar. Plan Free: 1 dominio · Plan Pro: hasta 10.
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5">
+      Añade los dominios de tu empresa (plan Gratis: hasta 10 · Pro: hasta 50). Sin verificar, ReconBase solo hace el
+      <strong style="color:var(--text)">análisis pasivo</strong> (información pública). Para el <strong style="color:var(--text)">análisis completo</strong>
+      (puertos, rutas y ficheros expuestos) y la vigilancia automática, verifica que el dominio es tuyo.
+      <a href="/escaner-info" target="_blank" style="color:var(--green)">Qué incluye cada uno</a>
     </div>
     <div id="dom-list" style="margin-bottom:.75rem"></div>
     <input class="form-input" type="text" id="dom-input" placeholder="ejemplo.com" style="width:100%;margin-bottom:.5rem">
+    <label style="display:flex;gap:.55rem;align-items:flex-start;font-size:.78rem;color:var(--muted);line-height:1.45;margin-bottom:.6rem;cursor:pointer">
+      <input type="checkbox" id="dom-autorizacion" style="margin-top:.15rem;accent-color:var(--green)">
+      <span>Declaro que soy titular de este dominio o que tengo autorización de su titular para analizar su seguridad.</span>
+    </label>
     <button class="btn btn-green" onclick="addDominio()" style="width:100%">Añadir dominio</button>
     <div class="msg msg-err" id="dom-err" style="margin-top:.5rem"></div>
   </div>
@@ -737,7 +744,27 @@ async function disableTotp() {
 }
 loadTotpStatus();
 
-// ── Dominios ──
+// ── Dominios y verificación ──
+function rbE(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+var DOM_ABIERTO = null;
+function domCopiar(txt){ try{ navigator.clipboard.writeText(txt); toast('Copiado', 'ok'); }catch(e){} }
+function domInstrucciones(dom){
+  var ins = dom.instrucciones || {};
+  var bloque = function(titulo, cuerpo, metodo, nota){
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:.7rem .8rem;margin-top:.5rem">' +
+      '<div style="font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:.35rem">' + titulo + '</div>' + cuerpo +
+      '<div style="font-size:.72rem;color:var(--dim);margin:.35rem 0 .5rem">' + rbE(nota) + '</div>' +
+      '<button onclick="verificarDom(' + dom.id + ',\'' + metodo + '\',this)" style="background:var(--green-dk);color:#fff;border:none;padding:.4rem .8rem;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer">Comprobar</button></div>';
+  };
+  var codigo = function(txt){
+    return '<code style="display:block;background:#050B07;border:1px solid var(--border);padding:.45rem .55rem;border-radius:6px;font-size:.72rem;color:#86EFAC;word-break:break-all;cursor:pointer" title="Copiar" onclick="domCopiar(this.textContent)">' + rbE(txt) + '</code>';
+  };
+  var html = '<div style="padding:.2rem .1rem .6rem">';
+  if (ins.dns) html += bloque('Opción 1 · Registro DNS TXT (recomendado)', '<div style="font-size:.74rem;color:var(--muted);margin-bottom:.3rem">Crea un registro TXT en <strong style="color:var(--text)">' + rbE(ins.dns.nombre) + '</strong> con el valor:</div>' + codigo(ins.dns.valor), 'dns', ins.dns.nota);
+  if (ins.meta) html += bloque('Opción 2 · Etiqueta en la página de inicio', codigo(ins.meta.etiqueta), 'meta', ins.meta.nota);
+  if (ins.fichero) html += bloque('Opción 3 · Fichero en tu servidor', '<div style="font-size:.74rem;color:var(--muted);margin-bottom:.3rem">Publica <strong style="color:var(--text)">' + rbE(ins.fichero.url) + '</strong> con este contenido:</div>' + codigo(ins.fichero.contenido), 'fichero', ins.fichero.nota);
+  return html + '<div class="msg msg-err" id="dom-verr-' + dom.id + '" style="margin-top:.5rem"></div></div>';
+}
 async function loadDominios() {
   try {
     var r = await fetch('/api/dominios');
@@ -749,23 +776,43 @@ async function loadDominios() {
     }
     list.innerHTML = d.dominios.map(function(dom) {
       var color = dom.activo ? 'var(--green)' : 'var(--dim)';
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem .6rem;border:1px solid var(--border);border-radius:6px;margin-bottom:.35rem">' +
-        '<span style="font-family:JetBrains Mono,monospace;font-size:.82rem;color:' + color + '">' + dom.dominio + '</span>' +
+      var estado = dom.verificado
+        ? '<span title="Verificado por ' + rbE(dom.verif_metodo) + ' el ' + rbE(dom.verificado_at) + '" style="font-size:.66rem;font-weight:700;color:#4ADE80;background:rgba(34,197,94,.12);padding:.12rem .45rem;border-radius:10px">✓ VERIFICADO</span>'
+        : '<button onclick="domToggleVerif(' + dom.id + ')" style="font-size:.66rem;font-weight:700;color:#FCD34D;background:rgba(245,158,11,.12);border:none;padding:.15rem .5rem;border-radius:10px;cursor:pointer">SIN VERIFICAR · Verificar</button>';
+      var abierto = (!dom.verificado && DOM_ABIERTO === dom.id) ? domInstrucciones(dom) : '';
+      return '<div style="border:1px solid var(--border);border-radius:6px;margin-bottom:.35rem;padding:.45rem .6rem">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">' +
+        '<span style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap"><span style="font-family:JetBrains Mono,monospace;font-size:.82rem;color:' + color + '">' + rbE(dom.dominio) + '</span>' + estado + '</span>' +
         '<span style="display:flex;gap:.4rem">' +
           '<button onclick="toggleDom(' + dom.id + ')" style="background:none;border:1px solid var(--border);color:var(--muted);padding:.2rem .5rem;border-radius:4px;font-size:.7rem;cursor:pointer">' + (dom.activo ? 'Pausar' : 'Activar') + '</button>' +
           '<button onclick="delDom(' + dom.id + ')" style="background:none;border:1px solid #7F1D1D;color:#F87171;padding:.2rem .5rem;border-radius:4px;font-size:.7rem;cursor:pointer">✕</button>' +
-        '</span></div>';
+        '</span></div>' + abierto + '</div>';
     }).join('');
   } catch(e) { console.error(e); }
 }
+function domToggleVerif(id){ DOM_ABIERTO = (DOM_ABIERTO === id) ? null : id; loadDominios(); }
+async function verificarDom(id, metodo, btn){
+  var err = document.getElementById('dom-verr-' + id);
+  if (err) err.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Comprobando...';
+  try {
+    var r = await fetch('/api/dominios/' + id + '/verificar', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metodo:metodo})});
+    var d = await r.json();
+    if (d.ok) { DOM_ABIERTO = null; toast('Dominio verificado: ya tienes el análisis completo', 'ok'); loadDominios(); return; }
+    if (err) { err.textContent = d.error || 'No se pudo verificar'; err.style.display = 'block'; }
+  } catch(e) { if (err) { err.textContent = 'Error de conexión'; err.style.display = 'block'; } }
+  btn.disabled = false; btn.textContent = 'Comprobar';
+}
 async function addDominio() {
   var inp = document.getElementById('dom-input');
+  var aut = document.getElementById('dom-autorizacion');
   var err = document.getElementById('dom-err');
   err.style.display = 'none';
   if (!inp.value.trim()) { err.textContent='Introduce un dominio'; err.style.display='block'; return; }
-  var r = await fetch('/api/dominios', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dominio:inp.value.trim()})});
+  if (!aut.checked) { err.textContent='Marca la casilla para declarar que eres titular o tienes autorización'; err.style.display='block'; return; }
+  var r = await fetch('/api/dominios', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dominio:inp.value.trim(), autorizacion:true})});
   var d = await r.json();
-  if (d.ok) { inp.value=''; loadDominios(); }
+  if (d.ok) { inp.value=''; aut.checked=false; DOM_ABIERTO = d.id; loadDominios(); }
   else { err.textContent=d.error||'Error'; err.style.display='block'; }
 }
 async function delDom(id) {

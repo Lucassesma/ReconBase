@@ -10,12 +10,12 @@ try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Auditoría PrestaShop gratuita — Detector de skimmers, módulos vulnerables y checkout · ReconBase</title>
-<meta name="description" content="Escanea tu PrestaShop gratis: detecta skimmers digitales en el checkout, módulos vulnerables, /install/ expuesto, admin sin renombrar y HTTPS no forzado. RGPD y PCI-DSS.">
+<meta name="description" content="Revisa gratis tu PrestaShop: indicios de skimmers en el JavaScript de la tienda, módulos visibles con vulnerabilidades conocidas, versión y HTTPS. Sin registro y sin instalar nada.">
 <meta name="keywords" content="auditoria prestashop, escaner prestashop, prestashop vulnerabilidades, skimmer prestashop, magecart, seguridad ecommerce, prestashop checkout">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://reconbase.es/auditoria-prestashop">
 <meta property="og:title" content="Auditoría PrestaShop gratuita — Detector de skimmers en tu checkout">
-<meta property="og:description" content="Detecta skimmers digitales, módulos vulnerables, /install/ accesible y problemas de PCI-DSS en tu PrestaShop. Sin registro.">
+<meta property="og:description" content="Indicios de skimmers, módulos con vulnerabilidades conocidas, versión y HTTPS de tu PrestaShop. Sin registro.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://reconbase.es/auditoria-prestashop">
 <meta property="og:image" content="https://reconbase.es/og/home.png">
@@ -23,14 +23,14 @@ try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.
 <meta name="twitter:card" content="summary_large_image">
 
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"Auditoría PrestaShop ReconBase","description":"Escáner gratuito de seguridad para tiendas PrestaShop. Detecta skimmers digitales, módulos con CVE, panel admin por defecto, /install/ accesible, archivos sensibles y HTTPS no forzado.","url":"https://reconbase.es/auditoria-prestashop","applicationCategory":"SecurityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"es-ES"}
+{"@context":"https://schema.org","@type":"WebApplication","name":"Auditoría PrestaShop ReconBase","description":"Análisis gratuito de seguridad para tiendas PrestaShop: indicios de skimmers digitales, módulos con vulnerabilidades conocidas, versión y HTTPS.","url":"https://reconbase.es/auditoria-prestashop","applicationCategory":"SecurityApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"es-ES"}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"¿Qué es un skimmer digital y por qué me afecta?","acceptedAnswer":{"@type":"Answer","text":"Un skimmer digital es código JavaScript malicioso que un atacante inyecta en el checkout de tu tienda para robar los datos de la tarjeta de pago de tus clientes. PrestaShop es uno de los objetivos principales de los grupos Magecart en 2026. El cliente paga normalmente, pero su tarjeta queda comprometida — y la responsabilidad RGPD recae sobre tu tienda."}},
-{"@type":"Question","name":"¿Cómo detectáis skimmers en mi checkout?","acceptedAnswer":{"@type":"Answer","text":"Descargamos el HTML de tu home y de /order (checkout) y analizamos el JavaScript en busca de dominios conocidos en blocklists Magecart, patrones de código ofuscado (eval+atob, eval+unescape) y referencias a campos sensibles (cvv, card_number, cvc). Si detectamos coincidencias, marcamos el sitio como sospechoso para que lo revises."}},
-{"@type":"Question","name":"¿Es seguro escanear mi PrestaShop?","acceptedAnswer":{"@type":"Answer","text":"Sí. Solo hacemos peticiones HTTP públicas, las mismas que cualquier cliente que abre tu tienda. No accedemos al back office, no requerimos credenciales y no tocamos la base de datos. Análisis pasivo y RGPD-compliant."}},
-{"@type":"Question","name":"¿Necesito instalar un módulo en PrestaShop?","acceptedAnswer":{"@type":"Answer","text":"No. La auditoría es 100% externa. No instalas nada, no compartes contraseñas, no abres puertos. En 60 segundos tienes el informe."}}
+{"@type":"Question","name":"¿Qué es un skimmer digital y por qué me afecta?","acceptedAnswer":{"@type":"Answer","text":"Un skimmer digital es código JavaScript malicioso que un atacante inyecta en el checkout de tu tienda para robar los datos de la tarjeta de pago de tus clientes. Afecta a cualquier tienda online, también a las PrestaShop. El cliente paga con normalidad, pero sus datos de tarjeta acaban en manos del atacante, y la tienda responde como responsable del tratamiento."}},
+{"@type":"Question","name":"¿Cómo detectáis skimmers en mi checkout?","acceptedAnswer":{"@type":"Answer","text":"Leemos la página de inicio y la página de pedido de tu tienda, como haría un cliente, y analizamos el JavaScript que cargan: dominios incluidos en listas de skimmers conocidos, patrones de código ofuscado (eval+atob, eval+unescape) y referencias a campos de tarjeta (cvv, card_number). Si hay coincidencias, marcamos la tienda como sospechosa para que la revises."}},
+{"@type":"Question","name":"¿Es seguro escanear mi PrestaShop?","acceptedAnswer":{"@type":"Answer","text":"Sí. Sin cuenta, el análisis es pasivo: solo visitamos las páginas públicas de la tienda, como cualquier cliente. No accedemos al back office, no pedimos credenciales y no tocamos la base de datos. Las comprobaciones de rutas no enlazadas (panel de administración, /install/, ficheros) solo se hacen si verificas que el dominio es tuyo."}},
+{"@type":"Question","name":"¿Necesito instalar un módulo en PrestaShop?","acceptedAnswer":{"@type":"Answer","text":"No. La auditoría es externa: no instalas nada ni compartes contraseñas."}}
 ]}
 </script>
 
@@ -171,15 +171,16 @@ footer a{color:var(--muted-2);margin:0 .6rem}
   <div class="hero-inner">
     <div class="badge-warn"><span class="dot"></span>nuevo · detector de skimmers digitales</div>
     <h1>Auditoría <em>PrestaShop</em> con detección de skimmers</h1>
-    <p class="hero-sub">Detectamos <strong>skimmers digitales (Magecart)</strong> en tu checkout, módulos vulnerables, /install/ accesible, admin sin renombrar y HTTPS no forzado. Cumple RGPD y PCI-DSS.</p>
+    <p class="hero-sub">Buscamos indicios de <strong>skimmers digitales (Magecart)</strong> en el JavaScript de tu tienda, módulos visibles con vulnerabilidades conocidas, la versión y si fuerzas HTTPS. Con tu dominio verificado, también el panel de administración, /install/ y ficheros expuestos.</p>
     <form class="scan-form" onsubmit="event.preventDefault();scanPS();">
       <input type="text" id="ps-domain" class="scan-input" placeholder="mitienda.com" autocomplete="off" required>
       <button type="submit" class="scan-btn" id="ps-btn">Auditar mi tienda</button>
     </form>
+    {% include "_aviso_pasivo.html" %}
     <div class="trust-row">
       <span>✓ sin registro</span>
       <span>✓ no tocamos tu back office</span>
-      <span>✓ 60 segundos</span>
+      <span>✓ análisis pasivo</span>
     </div>
     <div class="steps" id="ps-steps"></div>
   </div>
@@ -199,31 +200,32 @@ footer a{color:var(--muted-2);margin:0 .6rem}
   <div class="cards" id="ps-cards"></div>
   <div class="cta-box">
     <div class="cta-title">¿Quieres el informe completo y monitorización del checkout?</div>
-    <p class="cta-sub">Crea tu cuenta gratis y recibe el PDF ejecutivo, vigilancia 24/7 del checkout, alertas inmediatas si aparece un skimmer y seguimiento histórico.</p>
+    <p class="cta-sub">Crea tu cuenta gratis y verifica tu dominio: añadimos panel de administración, /install/ y ficheros expuestos, alertas por email e historial.</p>
     <a href="/register" class="cta-btn">Crear cuenta gratis →</a>
   </div>
 </section>
 
 <section class="content">
-  <h2>El robo silencioso de tarjetas en 2026</h2>
-  <p>Los <strong>skimmers digitales</strong> (también llamados ataques Magecart) son el vector más rentable contra tiendas online. Un atacante explota una vulnerabilidad en tu PrestaShop, inyecta un fragmento de JavaScript en la página de checkout y, a partir de ese momento, <strong>cada cliente que paga te paga normalmente</strong> — pero los datos de su tarjeta llegan también al servidor del atacante.</p>
+  <h2>El robo silencioso de tarjetas</h2>
+  <p>Los <strong>skimmers digitales</strong> (también llamados ataques Magecart) son uno de los ataques más dañinos contra tiendas online. Un atacante explota una vulnerabilidad en tu PrestaShop, inyecta un fragmento de JavaScript en la página de checkout y, a partir de ese momento, <strong>cada cliente que paga te paga normalmente</strong> — pero los datos de su tarjeta llegan también al servidor del atacante.</p>
 
   <div class="alert-box">
     <strong>El daño no se ve hasta meses después</strong>
-    <span>El cliente recibe cargos fraudulentos semanas después. Su banco le devuelve el dinero. El banco te lo reclama a ti con chargebacks. La AEPD te abre expediente por brecha de datos personales no notificada (multa hasta 20M€ o 4% facturación). PCI-DSS te suspende como comerciante. Es la cadena clásica.</span>
+    <span>Los clientes empiezan a ver cargos fraudulentos semanas después y la tienda puede recibir contracargos. Si hay una brecha de datos personales, el RGPD obliga a notificarla a la AEPD en 72 horas (art. 33) y las sanciones pueden llegar a 20 millones de euros o el 4 % de la facturación anual (art. 83). La pasarela de pago puede además exigir medidas o suspender el servicio.</span>
   </div>
 
   <h2>Qué comprueba esta auditoría</h2>
-  <p>ReconBase analiza tu PrestaShop desde fuera, igual que lo haría un cliente real. En 60 segundos detectamos:</p>
+  <p>ReconBase analiza tu PrestaShop desde fuera. Sin cuenta hace el <strong>análisis pasivo</strong>: visita las páginas públicas como un cliente. Lo marcado con 🔒 solo se comprueba en dominios cuyo titular los ha verificado (<a href="/escaner-info">cómo funciona</a>).</p>
   <div class="checklist">
-    <div class="check-item highlight"><span class="check-icon highlight">★</span><div><strong>Skimmers digitales en checkout</strong><span>Descargamos el JS de /order y buscamos dominios en blocklists Magecart, código ofuscado y referencias a campos de tarjeta.</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>Panel admin sin renombrar</strong><span>Comprobamos /admin/, /administrator/, /bo/. Si responde, es la primera puerta para fuerza bruta.</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>Directorio /install/ accesible</strong><span>Permite reinstalar la tienda con credenciales del atacante. Debe eliminarse tras la instalación inicial.</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>Módulos vulnerables conocidos</strong><span>Identificamos módulos activos vía /modules/ y los cruzamos con lista de CVEs (blockwishlist, gamification, ps_facetedsearch, etc.).</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>Archivos sensibles expuestos</strong><span>composer.lock, /var/logs/, /.git/, /.env, app/config/parameters.php — todos accesibles desde el navegador.</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>HTTPS forzado en checkout</strong><span>Si http:// devuelve 200 sin redirigir a https://, los datos de tarjeta viajan en claro. Incumple PCI-DSS.</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>Versión PrestaShop obsoleta</strong><span>Detectamos la versión y la comparamos con la última estable. Versiones antiguas tienen RCEs públicos explotables.</span></div></div>
-    <div class="check-item"><span class="check-icon">✓</span><div><strong>Web general (SSL, DNS, puertos)</strong><span>Auditoría completa incluida: certificado, DMARC/SPF, cabeceras HTTP, puertos abiertos, subdominios.</span></div></div>
+    <div class="check-item highlight"><span class="check-icon highlight">★</span><div><strong>Indicios de skimmers</strong><span>Analizamos el JavaScript de la portada y de la página de pedido: dominios de skimmers conocidos, código ofuscado y referencias a campos de tarjeta.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Módulos visibles</strong><span>Los que carga la tienda (rutas /modules/), cruzados con una lista de módulos con vulnerabilidades conocidas en algunas versiones.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>HTTPS forzado</strong><span>Si la versión http:// de la tienda no redirige a https://.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Versión de PrestaShop</strong><span>Si la tienda la publica, la comparamos con la última versión estable.</span></div></div>
+    <div class="check-item"><span class="check-icon">✓</span><div><strong>Web general</strong><span>Certificado SSL, cabeceras HTTP y registros SPF/DMARC.</span></div></div>
+    <div class="check-item"><span class="check-icon">🔒</span><div><strong>Panel de administración</strong><span>Si responde en rutas por defecto como /admin/ o /bo/.</span></div></div>
+    <div class="check-item"><span class="check-icon">🔒</span><div><strong>Directorio /install/</strong><span>Debe eliminarse tras la instalación.</span></div></div>
+    <div class="check-item"><span class="check-icon">🔒</span><div><strong>Ficheros sensibles</strong><span>composer.lock, logs, .git o .env accesibles. Solo comprobamos si responden: nunca descargamos su contenido.</span></div></div>
+    <div class="check-item"><span class="check-icon">🔒</span><div><strong>Puertos y servicios</strong><span>Bases de datos u otros servicios abiertos a internet.</span></div></div>
   </div>
 
   <h2>Si detectamos un posible skimmer, qué hacer</h2>
@@ -235,14 +237,15 @@ footer a{color:var(--muted-2);margin:0 .6rem}
     <li style="margin-bottom:.45rem">Restaura desde un backup anterior al ataque (si tienes). Si no, contrata un servicio de limpieza profesional.</li>
     <li style="margin-bottom:.45rem">Notifica a la <strong>AEPD en 72h</strong> si hubo exfiltración de datos personales (obligatorio RGPD art. 33).</li>
     <li>Avisa a tu pasarela de pago y al banco que opera tu TPV. Pueden ayudarte a identificar tarjetas comprometidas.</li>
+    <li>Si sospechas un delito, puedes contactar con el <a href="https://www.incibe.es/linea-de-ayuda-en-ciberseguridad" target="_blank" rel="noopener">017 de INCIBE</a> (línea gratuita de ayuda en ciberseguridad) y denunciarlo ante la Policía o la Guardia Civil.</li>
   </ol>
 
   <h2>Preguntas frecuentes</h2>
-  <div class="faq"><div class="faq-q">¿Qué es un skimmer digital y por qué me afecta?</div><div class="faq-a">Un skimmer digital es código JavaScript malicioso que un atacante inyecta en el checkout de tu tienda para robar los datos de tarjeta de pago de tus clientes. PrestaShop es uno de los objetivos principales de los grupos Magecart en 2026. El cliente paga normalmente, pero su tarjeta queda comprometida — y la responsabilidad RGPD recae sobre tu tienda.</div></div>
-  <div class="faq"><div class="faq-q">¿Cómo detectáis skimmers exactamente?</div><div class="faq-a">Descargamos el HTML de tu home y de /order y analizamos el JavaScript en busca de: 1) dominios conocidos en blocklists Magecart, 2) patrones de código ofuscado típicos (eval+atob, eval+unescape, document.write+unescape), 3) referencias a campos sensibles como cvv, card_number, cvc. Si detectamos coincidencias, marcamos el sitio como sospechoso para que lo revises a fondo.</div></div>
-  <div class="faq"><div class="faq-q">¿Es seguro escanear mi PrestaShop?</div><div class="faq-a">Sí. Solo hacemos peticiones HTTP públicas, las mismas que cualquier cliente. No accedemos al back office, no requerimos credenciales y no tocamos la base de datos. Análisis pasivo y RGPD-compliant.</div></div>
-  <div class="faq"><div class="faq-q">¿Si no me sale skimmer, estoy 100% seguro?</div><div class="faq-a">No. Detectar skimmers desde fuera tiene límites — si el atacante usa técnicas avanzadas (carga dinámica desde dominios limpios, ofuscación a medida) puede pasar desapercibido en el análisis estático. Para certidumbre absoluta, contrata una auditoría forense profesional. Nuestra herramienta es la primera línea de defensa, no la única.</div></div>
-  <div class="faq"><div class="faq-q">¿Sirve para versiones antiguas de PrestaShop (1.6, 1.7)?</div><div class="faq-a">Sí. Detectamos versiones 1.6, 1.7 y 8.x. Si tu tienda corre en 1.6 o 1.7, te marcaremos urgentemente como obsoleta — esas versiones ya no reciben parches y son objetivo prioritario de Magecart.</div></div>
+  <div class="faq"><div class="faq-q">¿Qué es un skimmer digital y por qué me afecta?</div><div class="faq-a">Un skimmer digital es código JavaScript malicioso que un atacante inyecta en el checkout de tu tienda para robar los datos de tarjeta de pago de tus clientes. Afecta a cualquier tienda online, también a las PrestaShop. El cliente paga con normalidad, pero sus datos de tarjeta acaban en manos del atacante, y la tienda responde como responsable del tratamiento.</div></div>
+  <div class="faq"><div class="faq-q">¿Cómo detectáis skimmers exactamente?</div><div class="faq-a">Leemos la página de inicio y la de pedido, como haría un cliente, y analizamos el JavaScript que cargan en busca de: 1) dominios incluidos en listas de skimmers conocidos, 2) patrones de código ofuscado típicos (eval+atob, eval+unescape, document.write+unescape), 3) referencias a campos sensibles como cvv, card_number, cvc. Si detectamos coincidencias, marcamos el sitio como sospechoso para que lo revises a fondo.</div></div>
+  <div class="faq"><div class="faq-q">¿Es seguro escanear mi PrestaShop?</div><div class="faq-a">Sí. Sin cuenta solo visitamos las páginas públicas de la tienda, como cualquier cliente. No accedemos al back office, no pedimos credenciales y no tocamos la base de datos. Las comprobaciones de rutas no enlazadas solo se hacen si verificas que el dominio es tuyo.</div></div>
+  <div class="faq"><div class="faq-q">¿Si no me sale skimmer, estoy 100% seguro?</div><div class="faq-a">No. Detectar skimmers desde fuera tiene límites — si el atacante usa técnicas avanzadas (carga dinámica desde dominios limpios, ofuscación a medida) puede pasar desapercibido en el análisis estático. Si necesitas certeza, contrata una auditoría forense profesional. Nuestra herramienta es una primera comprobación, no la única.</div></div>
+  <div class="faq"><div class="faq-q">¿Sirve para versiones antiguas de PrestaShop (1.6, 1.7)?</div><div class="faq-a">Sí, si la tienda publica su versión. Si usas una rama antigua, te la marcaremos como desactualizada: comprueba en prestashop.com si sigue recibiendo actualizaciones de seguridad.</div></div>
 </section>
 
 <footer>
@@ -255,10 +258,10 @@ function rbEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){ret
 function scanPS(){
   var v=(document.getElementById('ps-domain').value||'').trim();
   if(!v){document.getElementById('ps-domain').focus();return;}
-  try{if(window.gtag)gtag('event','scan_button_clicked',{domain:v,source:'landing_prestashop'});}catch(_){}
-  try{if(window.plausible)plausible('Scan Click PS',{props:{domain:v}});}catch(_){}
+  try{if(window.gtag)gtag('event','scan_button_clicked',{source:'landing_prestashop'});}catch(_){}
+  try{if(window.plausible)plausible('Scan Click PS');}catch(_){}
   var btn=document.getElementById('ps-btn');btn.textContent='Auditando...';btn.disabled=true;
-  var steps=['→ Detectando versión de PrestaShop...','→ Analizando módulos y rutas admin...','→ Inspeccionando /checkout en busca de skimmers...','→ Comprobando HTTPS, certificado y headers...'];
+  var steps=['→ Detectando versión de PrestaShop...','→ Analizando módulos visibles...','→ Revisando el JavaScript de la tienda...','→ Comprobando HTTPS, certificado y cabeceras...'];
   var s=document.getElementById('ps-steps');s.innerHTML=steps.map(function(t,i){return'<span id="pss'+i+'">'+t+'</span>';}).join('');s.classList.add('show');
   steps.forEach(function(_,i){setTimeout(function(){var el=document.getElementById('pss'+i);if(el)el.classList.add('show');},i*1300);});
 
@@ -274,7 +277,7 @@ function scanPS(){
 
 function renderResults(d){
   document.getElementById('ps-results').classList.add('show');
-  document.getElementById('ps-summary-domain').textContent=d.dominio||'—';
+  document.getElementById('ps-summary-domain').textContent=(d.dominio||'—')+(d.modo==='pasivo'?' · análisis pasivo':'');
   var riskEl=document.getElementById('ps-summary-risk');
   riskEl.textContent=(d.riesgo||0)+'%';
   riskEl.className='sr-risk '+(d.riesgo>=70?'sr-risk-high':d.riesgo>=40?'sr-risk-med':'sr-risk-low');
@@ -289,7 +292,7 @@ function renderResults(d){
     version:['Haz un <strong>backup completo</strong> (base de datos + archivos) antes de nada.','Entra en el back office → <strong>Parámetros avanzados → Mejoras → Actualizar PrestaShop</strong>.','Sigue el asistente hasta la última versión 8.x estable.','Prueba el checkout y el catálogo tras actualizar. Si algo falla, restaura el backup.'],
     modules:['Entra en <strong>Módulos → Gestor de módulos</strong> en el back office.','Actualiza los módulos marcados. Si alguno no tiene actualización y es vulnerable, desinstálalo.','Descarga módulos solo desde <code>addons.prestashop.com</code> — nunca versiones "nulled" (suelen traer backdoors).','Elimina los módulos que no uses: cada módulo es superficie de ataque.'],
     files:['Por FTP/SSH, bloquea o elimina los archivos sensibles listados.','En el <code>.htaccess</code> de la raíz, deniega el acceso a esas rutas. Ejemplo para <code>.git</code>: <code>RedirectMatch 404 /\\.git</code>.','Mueve <code>composer.lock</code>, logs y configs fuera de la carpeta pública si es posible.','Comprueba que cada ruta ya devuelve 403 o 404.'],
-    https:['Entra en <strong>Parámetros de la tienda → General</strong>.','Activa <strong>"Activar SSL"</strong> y <strong>"Activar SSL en todas las páginas"</strong>.','Asegúrate de tener un certificado válido (Let\'s Encrypt es gratis, casi todos los hostings lo incluyen).','Esto es obligatorio para cumplir PCI-DSS: sin HTTPS forzado, los datos de tarjeta viajan sin cifrar.'],
+    https:['Entra en <strong>Parámetros de la tienda → General</strong>.','Activa <strong>"Activar SSL"</strong> y <strong>"Activar SSL en todas las páginas"</strong>.','Asegúrate de tener un certificado válido (Let\'s Encrypt es gratis, casi todos los hostings lo incluyen).','PCI-DSS exige cifrar los datos de tarjeta en tránsito: sin HTTPS forzado pueden viajar sin cifrar.'],
     ssl_none:['Contrata o activa un certificado SSL — la mayoría de hostings ofrecen <strong>Let\'s Encrypt gratis</strong>.','Actívalo desde el panel de tu hosting (cPanel, Plesk) en un par de clics.','Después, fuerza HTTPS en PrestaShop (Parámetros de la tienda → General).'],
     ssl_exp:['Renueva el certificado desde tu hosting. Si usas Let\'s Encrypt, ejecuta <code>certbot renew</code>.','Activa la <strong>renovación automática</strong> para que no vuelva a caducar.','Comprueba la nueva fecha de expiración recargando la tienda.'],
     puertos:['Accede al firewall de tu hosting o servidor.','Bloquea el acceso externo a esos puertos. Bases de datos (MySQL, Redis, etc.) deben escuchar solo en <code>127.0.0.1</code>.','Si necesitas acceso remoto, hazlo por VPN o restringe por IP, nunca abierto a internet.','Vuelve a escanear para confirmar que están cerrados.']
@@ -297,7 +300,7 @@ function renderResults(d){
   function card(type,title,desc,fixKey){
     var b=type==='crit'?'dr-badge-crit':type==='warn'?'dr-badge-warn':'dr-badge-ok';
     var c=type==='crit'?'dr-card-crit':type==='warn'?'dr-card-warn':'dr-card-ok';
-    var lbl=type==='crit'?'CRÍTICO':type==='warn'?'ADVERTENCIA':'OK';
+    var lbl=type==='crit'?'CRÍTICO':type==='warn'?'ADVERTENCIA':type==='info'?'INFO':'OK';
     var fix='';
     if(fixKey&&FIX[fixKey]){
       fix='<details class="dr-fix"><summary>Cómo solucionarlo</summary><div class="dr-fix-body"><ol>'+FIX[fixKey].map(function(s){return '<li>'+s+'</li>';}).join('')+'</ol></div></details>';
@@ -306,32 +309,33 @@ function renderResults(d){
   }
 
   if(!d.ps||!d.ps.is_prestashop){
-    html+=card('warn','No se detectó PrestaShop en '+d.dominio,'Este dominio no parece usar PrestaShop. Si crees que sí, es posible que el detector haya tenido dificultades (cache, CDN). Para análisis web general usa la <a href="/" style="color:#FCD34D">auditoría completa</a>.');
+    html+=card('warn','No se detectó PrestaShop en '+rbEsc(d.dominio),'Este dominio no parece usar PrestaShop. Si crees que sí, es posible que el detector haya tenido dificultades (cache, CDN). Para análisis web general usa la <a href="/" style="color:#FCD34D">auditoría completa</a>.');
   } else {
-    var v=d.ps.version||'?';
+    var v=rbEsc(d.ps.version||'?');
     if(d.ps.skimmer_suspect){
       var ev=(d.ps.skimmer_evidence||[]).slice(0,2).map(rbEsc).join(' · ');
-      html+=card('crit','★ Posible SKIMMER detectado en checkout','Un skimmer es código JavaScript que roba los datos de tarjeta de tus clientes en el momento del pago. '+(ev?'<br><strong>Evidencia:</strong> '+ev+'. ':'')+'No es una confirmación forense, pero es una alerta muy seria: actúa como si lo fuera.','skimmer');
+      html+=card('crit','★ Posible SKIMMER detectado en checkout','Un skimmer es código JavaScript que roba los datos de tarjeta de tus clientes en el momento del pago. '+(ev?'<br><strong>Evidencia:</strong> '+ev+'. ':'')+'Es una alerta preliminar, no una confirmación: revísalo cuanto antes.','skimmer');
     }
-    if(d.ps.install_dir_exposed) html+=card('crit','/install/ accesible — RIESGO CRÍTICO','La carpeta de instalación sigue accesible desde internet. Permite que un atacante reinstale tu tienda con sus propias credenciales y tome el control total. Debe eliminarse siempre tras instalar.','install');
-    if(d.ps.admin_path_default) html+=card('crit','Panel admin sin renombrar','Tu back office está en '+(d.ps.admin_path_found||'/admin/')+', una ruta por defecto que los bots prueban automáticamente para fuerza bruta. PrestaShop recomienda renombrarla a algo impredecible.','admin');
-    if(d.ps.version_outdated) html+=card('warn','PrestaShop '+v+' obsoleto','Estás varias versiones por detrás. Las versiones antiguas acumulan vulnerabilidades públicas (algunas permiten ejecución remota de código) que los atacantes explotan en masa.','version');
+    if(d.ps.install_dir_exposed) html+=card('crit','/install/ accesible — RIESGO CRÍTICO','La carpeta de instalación sigue accesible desde internet y podría permitir reinstalar la tienda. Debe eliminarse tras instalar.','install');
+    if(d.ps.admin_path_default) html+=card('crit','Panel admin sin renombrar','Tu back office responde en '+rbEsc(d.ps.admin_path_found||'/admin/')+', una ruta por defecto que los bots prueban para ataques de fuerza bruta. Conviene renombrarla.','admin');
+    if(d.ps.version_outdated) html+=card('warn','PrestaShop '+v+' obsoleto','Hay versiones más recientes. Las antiguas acumulan vulnerabilidades públicas que se explotan de forma automatizada.','version');
     else html+=card('ok','PrestaShop '+v+' detectado','Versión actual o reciente. Buen punto de partida — mantén también los módulos al día.');
     var vm=d.ps.vulnerable_modules||[];
-    if(vm.length) html+=card('crit',vm.length+' módulo'+(vm.length>1?'s':'')+' vulnerable'+(vm.length>1?'s':''),'Detectados módulos con vulnerabilidades conocidas: '+vm.slice(0,3).map(function(m){return '<code>'+m.name+'</code> ('+m.severity+')';}).join(', ')+(vm.length>3?'...':'')+'. Los módulos desactualizados son el vector de entrada más común en PrestaShop.','modules');
+    if(vm.length) html+=card('crit',vm.length+' módulo'+(vm.length>1?'s':'')+' vulnerable'+(vm.length>1?'s':''),'Módulos con vulnerabilidades conocidas en algunas versiones: '+vm.slice(0,3).map(function(m){return '<code>'+rbEsc(m.name)+'</code> ('+rbEsc(m.desc)+')';}).join(', ')+(vm.length>3?'...':'')+'. Comprueba que tienes la última versión.','modules');
     var sf=d.ps.sensitive_files||[];
-    if(sf.length) html+=card('warn',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':'')+' expuesto'+(sf.length>1?'s':''),'Accesibles desde el navegador: '+sf.slice(0,3).map(function(f){return '<code>'+f.path+'</code>';}).join(', ')+(sf.length>3?'...':'')+'. Filtran versión, rutas internas o credenciales que ayudan a un atacante.','files');
-    if(!d.ps.https_forced) html+=card('crit','HTTPS no forzado en el checkout','Tu tienda no obliga a usar HTTPS, así que los datos de pago de tus clientes pueden viajar sin cifrar y ser interceptados. Incumple PCI-DSS y el RGPD.','https');
+    if(sf.length) html+=card('warn',sf.length+' archivo'+(sf.length>1?'s':'')+' sensible'+(sf.length>1?'s':'')+' expuesto'+(sf.length>1?'s':''),'Accesibles desde el navegador: '+sf.slice(0,3).map(function(f){return '<code>'+rbEsc(f.path)+'</code>';}).join(', ')+(sf.length>3?'...':'')+'. Filtran versión, rutas internas o credenciales que ayudan a un atacante.','files');
+    if(!d.ps.https_forced) html+=card('crit','HTTPS no forzado en el checkout','La versión http:// de la tienda no redirige a https://, así que los datos de tus clientes pueden viajar sin cifrar. PCI-DSS exige cifrarlos en tránsito.','https');
+    if(d.modo==='pasivo') html+=card('info','Análisis pasivo','No hemos comprobado: '+(d.ps.omitidos||[]).map(rbEsc).join(', ')+'. Son rutas que tu tienda no enlaza y solo las revisamos si verificas que el dominio es tuyo. <a href="/register" style="color:#86EFAC">Crear cuenta y verificar</a>');
   }
 
   // Tarjetas complementarias: SSL + puertos
   if(d.ssl){
-    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','Tu dominio no tiene HTTPS. Los navegadores marcan la web como "No segura" y es ilegal procesar pagos así. Es lo primero que debes resolver.','ssl_none');
-    else if(d.ssl.caducado) html+=card('crit','SSL caducado','El certificado expiró el '+(d.ssl.expira||'?')+'. Los navegadores muestran una pantalla de error a tus visitantes y dejas de vender.','ssl_exp');
+    if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','No hemos podido conectar por HTTPS. Los navegadores marcan la web como "No segura" y no deberías procesar pagos así. Es lo primero que debes resolver.','ssl_none');
+    else if(d.ssl.caducado) html+=card('crit','SSL caducado','El certificado expiró el '+rbEsc(d.ssl.expira||'?')+'. Los navegadores muestran una pantalla de error a tus visitantes y dejas de vender.','ssl_exp');
     else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de la fecha para no interrumpir el checkout ni asustar a tus clientes.','ssl_exp');
   }
   var puertos_riesgo=(d.puertos||[]).filter(function(p){return ['MySQL','RDP','Redis','MongoDB','MSSQL','PostgreSQL'].indexOf(p.servicio)>=0;});
-  if(puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':'')+' expuesto'+(puertos_riesgo.length>1?'s':''),'Servicios accesibles desde internet: '+puertos_riesgo.map(function(p){return '<code>'+p.puerto+'/'+p.servicio+'</code>';}).join(', ')+'. Una base de datos abierta al exterior es una invitación al robo de datos.','puertos');
+  if(d.modo!=='pasivo' && puertos_riesgo.length) html+=card('crit',puertos_riesgo.length+' puerto'+(puertos_riesgo.length>1?'s':'')+' crítico'+(puertos_riesgo.length>1?'s':'')+' expuesto'+(puertos_riesgo.length>1?'s':''),'Servicios accesibles desde internet: '+puertos_riesgo.map(function(p){return '<code>'+p.puerto+'/'+p.servicio+'</code>';}).join(', ')+'. Una base de datos abierta al exterior es una invitación al robo de datos.','puertos');
 
   document.getElementById('ps-cards').innerHTML=html;
 }

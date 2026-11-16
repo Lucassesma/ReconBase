@@ -77,7 +77,9 @@ class TestContenidoRemotoNoEjecutable:
             return None
 
         monkeypatch.setattr(engine, "_safe_get", falso)
-        res = engine.wordpress_audit("web-maliciosa.test")
+        monkeypatch.setattr(engine, "_leer_pagina", lambda *a, **k: (None, ""))
+        monkeypatch.setattr(engine, "sondear_fichero", lambda *a, **k: None)
+        res = engine.wordpress_audit("web-maliciosa.test", modo=engine.MODO_COMPLETO)
         assert res["users_found"], "debería haber detectado usuarios"
         for nombre in res["users_found"]:
             assert "<" not in nombre and ">" not in nombre

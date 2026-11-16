@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Auditoría de email y cabeceras HTTP gratuita | ReconBase</title>
-<meta name="description" content="Comprueba en segundos si tu dominio tiene SPF, DMARC y DKIM configurados, las cabeceras HTTP de seguridad activas y si aparece en listas negras. Sin registro.">
+<meta name="description" content="Comprueba en segundos si tu dominio tiene SPF y DMARC configurados, las cabeceras HTTP de seguridad y un certificado SSL válido. Análisis pasivo, sin registro.">
 <link rel="canonical" href="https://reconbase.es/auditoria-rapida">
 <link rel="icon" href="/static/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,7 +120,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;font-size:.78rem;col
 <div class="hero">
   <div class="hero-badge"><span class="dot"></span> Gratuito · Sin registro</div>
   <h1>Auditoría rápida de<br><span>email y cabeceras HTTP</span></h1>
-  <p class="hero-sub">3 checks críticos en 15 segundos. Descubre si tu dominio está expuesto a suplantación de correo, ataques XSS y listas negras.</p>
+  <p class="hero-sub">3 comprobaciones básicas en unos segundos: suplantación de correo (SPF/DMARC), cabeceras de seguridad y certificado SSL.</p>
 </div>
 
 <div class="scan-box">
@@ -132,15 +132,16 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;font-size:.78rem;col
   <div class="scan-checks">
     <span>SPF · DMARC</span>
     <span>Cabeceras HTTP</span>
-    <span>Reputación IP</span>
+    <span>Certificado SSL</span>
   </div>
+  {% include "_aviso_pasivo.html" %}
 </div>
 
 <div class="pillars">
   <div class="pillar">
     <div class="pillar-icon">📧</div>
-    <div class="pillar-title">SPF · DMARC · DKIM</div>
-    <div class="pillar-desc">Comprueba si alguien puede enviar emails haciéndose pasar por ti. El 90% de las empresas tienen esto mal.</div>
+    <div class="pillar-title">SPF · DMARC</div>
+    <div class="pillar-desc">Comprueba si tu dominio tiene los registros que dificultan que alguien envíe emails haciéndose pasar por ti.</div>
   </div>
   <div class="pillar">
     <div class="pillar-icon">🛡️</div>
@@ -148,9 +149,9 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;font-size:.78rem;col
     <div class="pillar-desc">CSP, X-Frame-Options, HSTS, X-Content-Type-Options. Sin ellas tu web es vulnerable a XSS y clickjacking.</div>
   </div>
   <div class="pillar">
-    <div class="pillar-icon">🔍</div>
-    <div class="pillar-title">Reputación IP</div>
-    <div class="pillar-desc">Si tu IP o dominio aparece en blocklists, tu correo va a spam y tu web puede ser bloqueada por antivirus.</div>
+    <div class="pillar-icon">🔒</div>
+    <div class="pillar-title">Certificado SSL</div>
+    <div class="pillar-desc">Si el certificado no es válido o está a punto de caducar, los navegadores avisan a tus visitantes de que la web no es segura.</div>
   </div>
 </div>
 
@@ -158,9 +159,9 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;font-size:.78rem;col
   <div class="spinner"></div>
   <div style="font-size:.9rem;color:var(--dim);font-weight:600" id="load-msg">Consultando registros DNS…</div>
   <div class="load-steps">
-    <div class="load-step active" id="ls1">→ Verificando SPF / DMARC / DKIM</div>
+    <div class="load-step active" id="ls1">→ Verificando SPF / DMARC</div>
     <div class="load-step" id="ls2">→ Analizando cabeceras HTTP</div>
-    <div class="load-step" id="ls3">→ Consultando listas de reputación</div>
+    <div class="load-step" id="ls3">→ Comprobando el certificado SSL</div>
   </div>
 </div>
 
@@ -169,7 +170,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;font-size:.78rem;col
 <div id="cta-after" style="display:none">
   <div class="cta-band">
     <h3>¿Quieres recibir alertas automáticas?</h3>
-    <p>Si algo cambia en tu SPF, DMARC o cabeceras, ReconBase te avisa por email al instante. Vigilancia 24/7 desde 9€/mes.</p>
+    <p>Con una cuenta y tu dominio verificado, ReconBase lo revisa periódicamente y te avisa por email si algo cambia. Plan Pro: 9 €/mes.</p>
     <div class="cta-btns">
       {% if user %}
         <a href="/" class="btn-primary">Activar vigilancia →</a>
@@ -186,21 +187,21 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;font-size:.78rem;col
   <div class="related-grid">
     <a href="/" class="related-card">
       <div class="related-card-title">🔍 Escáner de seguridad</div>
-      <div class="related-card-desc">Análisis completo: puertos, SSL, DNS, cabeceras y filtraciones.</div>
+      <div class="related-card-desc">SSL, DNS, cabeceras y CMS. Con tu dominio verificado, también puertos y ficheros expuestos.</div>
     </a>
     <a href="/auditoria-wordpress" class="related-card">
       <div class="related-card-title">🛡️ Auditoría WordPress</div>
-      <div class="related-card-desc">12 chequeos específicos para webs WordPress en 60 segundos.</div>
+      <div class="related-card-desc">Versión, plugins visibles con vulnerabilidades conocidas y más.</div>
     </a>
     <a href="/auditoria-prestashop" class="related-card">
       <div class="related-card-title">🛒 Auditoría PrestaShop</div>
-      <div class="related-card-desc">Detector de skimmers Magecart y vulnerabilidades de tienda.</div>
+      <div class="related-card-desc">Indicios de skimmers Magecart y módulos con vulnerabilidades conocidas.</div>
     </a>
   </div>
 </div>
 
 <footer>
-  <span>© 2026 ReconBase · <a href="/privacy">Privacidad</a> · <a href="/terms">Términos</a></span>
+  <span>© 2026 ReconBase · <a href="/privacy">Privacidad</a> · <a href="/terms">Términos</a> · <a href="/cookies">Cookies</a> · <a href="#" data-rb-cookies>Configurar cookies</a></span>
   <a href="/">← Volver al inicio</a>
 </footer>
 
@@ -222,7 +223,7 @@ function arScan() {
 
   // Animate load steps
   var steps = ['ls1','ls2','ls3'];
-  var msgs = ['Verificando SPF / DMARC…','Analizando cabeceras HTTP…','Consultando reputación IP…'];
+  var msgs = ['Verificando SPF / DMARC…','Analizando cabeceras HTTP…','Comprobando el certificado SSL…'];
   var si = 0;
   var stepTimer = setInterval(function(){
     si++;
@@ -237,13 +238,18 @@ function arScan() {
   fetch('/api/scan-demo', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({dominio: raw})
+    body: JSON.stringify({objetivo: raw})
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
     clearInterval(stepTimer);
     document.getElementById('loading').style.display = 'none';
     document.getElementById('ar-btn').disabled = false;
+    if (d.error) {
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').innerHTML = '<div style="text-align:center;padding:2rem;color:#F87171;font-size:.9rem">⚠ ' + arEsc(d.error) + '</div>';
+      return;
+    }
     renderARResult(d);
   })
   .catch(function(e){
@@ -256,27 +262,32 @@ function arScan() {
   });
 }
 
+function arEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+var AR_ALIAS = {'Content-Security-Policy':'CSP','X-Frame-Options':'Anti-Clickjacking','X-Content-Type-Options':'MIME-Sniffing','Strict-Transport-Security':'HSTS','Referrer-Policy':'Referrer-Policy'};
+function arHdr(h, n){ return !!(h && (h[n] || h[AR_ALIAS[n]])); }
+
 function renderARResult(d) {
   var html = '';
   var issues = 0;
+  AR_DOMAIN = arEsc(d.dominio || AR_DOMAIN);
 
   // Score badge
   var col = d.riesgo >= 70 ? '#EF4444' : d.riesgo >= 40 ? '#F59E0B' : '#22C55E';
   html += '<div class="result-header">' +
     '<div class="result-score" style="color:'+col+'">'+d.riesgo+'%</div>' +
-    '<div style="font-size:.75rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.12em;text-transform:uppercase;margin:.3rem 0">'+d.label+'</div>' +
+    '<div style="font-size:.75rem;font-weight:700;color:'+col+';font-family:\'JetBrains Mono\',monospace;letter-spacing:.12em;text-transform:uppercase;margin:.3rem 0">'+arEsc(d.label)+' · análisis pasivo</div>' +
     '<div class="result-domain">'+AR_DOMAIN+'</div>' +
     '</div>';
 
   // ── CHECK 1: SPF / DMARC ────────────────────────────────────────────────
   if (d.dns) {
-    var spf = d.dns.spf;
-    var dmarc = d.dns.dmarc;
+    var spf = d.dns.SPF;
+    var dmarc = d.dns.DMARC;
     var cls, icon, title, detail;
     if (!spf && !dmarc) {
       cls='crit'; icon='✕'; issues+=2;
       title = 'SPF y DMARC ausentes — dominio sin protección';
-      detail = 'Cualquiera puede enviar emails haciéndose pasar por <code>'+AR_DOMAIN+'</code>. ' +
+      detail = 'Es fácil enviar emails haciéndose pasar por <code>'+AR_DOMAIN+'</code>. ' +
         'Añade <code>v=spf1 include:... -all</code> y <code>v=DMARC1; p=reject;</code> en tu DNS.';
     } else if (!dmarc) {
       cls='warn'; icon='!'; issues++;
@@ -301,17 +312,17 @@ function renderARResult(d) {
   if (d.headers) {
     var missing = [];
     var present = [];
-    if (!d.headers['Content-Security-Policy']) missing.push('CSP'); else present.push('CSP');
-    if (!d.headers['X-Frame-Options'] && !d.headers['Content-Security-Policy']) missing.push('X-Frame-Options');
-    if (!d.headers['X-Content-Type-Options']) missing.push('X-Content-Type-Options'); else present.push('X-Content-Type-Options');
-    if (!d.headers['Strict-Transport-Security']) missing.push('HSTS'); else present.push('HSTS');
-    if (!d.headers['Referrer-Policy']) missing.push('Referrer-Policy');
+    if (!arHdr(d.headers,'Content-Security-Policy')) missing.push('CSP'); else present.push('CSP');
+    if (!arHdr(d.headers,'X-Frame-Options') && !arHdr(d.headers,'Content-Security-Policy')) missing.push('X-Frame-Options');
+    if (!arHdr(d.headers,'X-Content-Type-Options')) missing.push('X-Content-Type-Options'); else present.push('X-Content-Type-Options');
+    if (!arHdr(d.headers,'Strict-Transport-Security')) missing.push('HSTS'); else present.push('HSTS');
+    if (!arHdr(d.headers,'Referrer-Policy')) missing.push('Referrer-Policy');
 
     var cls2, icon2, title2, detail2;
     if (missing.length >= 3) {
       cls2='crit'; icon2='✕'; issues++;
       title2 = missing.length + ' cabeceras de seguridad ausentes';
-      detail2 = 'Faltan: <code>'+missing.join('</code>, <code>')+'</code>. Tu web es vulnerable a XSS, clickjacking y robo de sesión. ' +
+      detail2 = 'Faltan: <code>'+missing.join('</code>, <code>')+'</code>. Estas cabeceras ayudan a proteger frente a XSS y clickjacking. ' +
         (present.length ? 'Presentes: <code>'+present.join('</code>, <code>')+'</code>.' : '');
     } else if (missing.length > 0) {
       cls2='warn'; icon2='!'; issues++;
@@ -327,25 +338,26 @@ function renderARResult(d) {
     html += card('warn','?','Cabeceras HTTP','No se pudo analizar la respuesta HTTP','Comprueba que el dominio responde en HTTPS.','');
   }
 
-  // ── CHECK 3: Reputación / Blacklist ─────────────────────────────────────
-  // La demo no devuelve blacklist — mostramos el estado SSL como indicador de reputación
-  // y ofrecemos el análisis completo para la reputación real
+  // ── CHECK 3: Certificado SSL ─────────────────────────────────────────────
   var cls3, icon3, title3, detail3;
-  if (d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado) {
+  if (d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado && !d.ssl.pronto_a_caducar) {
     cls3='ok'; icon3='✓';
-    title3 = 'SSL válido — dominio con buena reputación inicial';
-    detail3 = 'Certificado activo' + (d.ssl.dias_restantes ? ', caduca en <code>'+d.ssl.dias_restantes+' días</code>' : '') +
-      '. Para comprobar si tu IP o dominio está en blocklists de spam o malware, crea una cuenta gratis y lanza el análisis completo.';
-  } else if (d.ssl && (!d.ssl.tiene_ssl || d.ssl.caducado)) {
+    title3 = 'Certificado SSL válido';
+    detail3 = 'Certificado activo' + (d.ssl.dias_restantes ? ', caduca en <code>'+arEsc(d.ssl.dias_restantes)+' días</code>' : '') + '.';
+  } else if (d.ssl && d.ssl.tiene_ssl && d.ssl.pronto_a_caducar) {
+    cls3='warn'; icon3='!'; issues++;
+    title3 = 'El certificado SSL caduca pronto';
+    detail3 = 'Caduca en <code>'+arEsc(d.ssl.dias_restantes)+' días</code>. Renuévalo o activa la renovación automática.';
+  } else if (d.ssl && d.ssl.caducado) {
     cls3='crit'; icon3='✕'; issues++;
-    title3 = d.ssl.caducado ? 'Certificado SSL caducado — riesgo de reputación' : 'Sin SSL — tu dominio puede estar marcado como inseguro';
-    detail3 = 'Los dominios sin SSL o con certificado caducado tienen mayor probabilidad de aparecer en blocklists. Renueva o instala el certificado.';
+    title3 = 'Certificado SSL caducado';
+    detail3 = 'Los navegadores muestran un aviso de seguridad a tus visitantes. Renueva el certificado.';
   } else {
-    cls3='warn'; icon3='!';
-    title3 = 'Reputación IP — análisis completo disponible en cuenta';
-    detail3 = 'Para comprobar si tu IP o dominio aparece en Spamhaus, SURBL o listas Barracuda, regístrate gratis y lanza el escáner completo.';
+    cls3='crit'; icon3='✕'; issues++;
+    title3 = 'No hemos podido conectar por HTTPS';
+    detail3 = 'Comprueba que el dominio tiene un certificado SSL instalado y que responde en el puerto 443.';
   }
-  html += card(cls3, icon3, 'Reputación IP', title3, detail3);
+  html += card(cls3, icon3, 'Certificado SSL', title3, detail3);
 
   // Summary
   var summaryCol = issues===0 ? '#4ADE80' : issues<=2 ? '#FBBF24' : '#F87171';

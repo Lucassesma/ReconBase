@@ -1,0 +1,14 @@
+{#- Analítica común a todas las páginas.
+    · Plausible: sin cookies ni identificadores, pasa por nuestro dominio (/api/track).
+    · Google Tag Manager / Analytics: NO se carga hasta que el visitante acepta las
+      cookies de analítica en el banner (static/js/consent.js). Los permisos de
+      publicidad quedan siempre denegados. -#}
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted'});
+window.RB_GTM_ID='GTM-PKCFGF7M';
+{% if config.GA_ID %}window.RB_GA_ID={{ config.GA_ID | tojson }};{% endif %}
+</script>
+<script src="/static/js/consent.js?v=1" defer></script>
+<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
+<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
