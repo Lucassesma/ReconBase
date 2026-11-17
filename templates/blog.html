@@ -2,34 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<!-- Google Consent Mode v2 (RGPD) -->
-<script>
-window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-// Estado por defecto: denegado (RGPD strict)
-gtag('consent','default',{
-  'ad_storage':'denied','analytics_storage':'denied',
-  'ad_user_data':'denied','ad_personalization':'denied',
-  'functionality_storage':'granted','security_storage':'granted',
-  'wait_for_update':500
-});
-// Si ya hay consentimiento aceptado guardado, flipear a granted ANTES de cargar GTM
-try{
-  var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');
-  if(v==='accepted'){
-    gtag('consent','update',{
-      'ad_storage':'granted','analytics_storage':'granted',
-      'ad_user_data':'granted','ad_personalization':'granted'
-    });
-  }
-}catch(_){}
-</script>
-<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
-<!-- End Google Tag Manager -->
+{% include "_analitica.html" %}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Blog de Ciberseguridad — ReconBase</title>
 <meta name="description" content="Artículos, guías y novedades sobre ciberseguridad para PYMEs. Aprende a proteger tu empresa con ReconBase.">
@@ -41,13 +14,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <meta property="og:url" content="{{ base_url }}/blog">
 <meta property="og:image" content="{{ base_url }}/og/home.png">
 <meta property="og:locale" content="es_ES">
-<!-- Privacy-friendly analytics by Plausible -->
-<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
-<script>
-  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init({domain:"reconbase.es", endpoint:"/api/track"})
-</script>
-{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -71,10 +37,6 @@ h1{font-size:1.8rem;font-weight:800;margin-bottom:.5rem}
 <link rel="stylesheet" href="/static/css/mobile.css">
 </head>
 <body>
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
 <nav>
   <a href="/" class="logo-text"><span style="color:var(--text)">RECON</span><span style="color:var(--green)">BASE</span></a>
   <div style="display:flex;gap:1.5rem;font-size:.85rem">
@@ -113,5 +75,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   {% endif %}
 </div>
+<div style="text-align:center;font-size:.75rem;padding:1.5rem 1rem;color:#64748B;font-family:Inter,system-ui,sans-serif"><a href="/privacy" style="color:#64748B;margin:0 .5rem">Privacidad</a><a href="/terms" style="color:#64748B;margin:0 .5rem">Términos</a><a href="/cookies" style="color:#64748B;margin:0 .5rem">Cookies</a><a href="#" data-rb-cookies style="color:#64748B;margin:0 .5rem">Configurar cookies</a></div>
 </body>
 </html>

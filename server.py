@@ -1131,25 +1131,19 @@ def index():
             # Si la query JSON falla por bad data, no romper la home
             db.session.rollback()
             logger.warning(f"[Index] query ps_scans falló: {e}")
-    stats_scans   = Scan.query.count()
-    stats_vulns   = max(int(stats_scans * 2.3), 12)
+    stats_scans   = Scan.query.count() + AnonymousScan.query.count()  # análisis reales: guardados + herramientas públicas
     stats_breaches = User.query.count()
-    # Si el usuario ya dio consentimiento (cookie HTTP), NO renderizamos el banner.
-    # Esto elimina cualquier race condition o parpadeo en cliente.
-    show_cookie_banner = not request.cookies.get("cookie_consent")
     resp = make_response(render_template("landing.html", user=current_user,
                            plan=plan, scans_mes=scans_mes,
                            ultimo_auto=ultimo_auto,
                            api_key_ok=bool(API_KEY),
                            scan_hora=scan_hora, scan_dias=scan_dias,
                            stats_scans=stats_scans,
-                           stats_vulns=stats_vulns,
                            stats_breaches=stats_breaches,
                            tiene_ps_sin_vigilancia=tiene_ps_sin_vigilancia,
                            ps_dominios_sample=ps_dominios_sample,
                            ha_escaneado=ha_escaneado,
-                           turnstile_site_key=os.getenv("TURNSTILE_SITE_KEY", ""),
-                           show_cookie_banner=show_cookie_banner))
+                           turnstile_site_key=os.getenv("TURNSTILE_SITE_KEY", "")))
     # Evitar que el navegador cachee el HTML (para que los fixes lleguen al instante)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
@@ -3980,22 +3974,6 @@ def admin_borrar_post(post_id):
     return jsonify({"ok": True})
 
 # ── BANNER DE COOKIES ──
-@app.route("/api/cookie-consent", methods=["POST"])
-@limiter.limit("60 per hour")
-def cookie_consent():
-    """Registra el consentimiento de cookies (para cumplir con la ley)."""
-    value = "accepted"
-    try:
-        data = request.get_json(silent=True) or {}
-        if data.get("level") == "essential":
-            value = "essential"
-    except Exception:
-        pass
-    resp = jsonify({"ok": True})
-    # NO httponly — así el JS puede leerla también como segundo nivel de detección.
-    resp.set_cookie("cookie_consent", value, max_age=365*24*3600, samesite="Lax")
-    return resp
-
 # ── EMAILS HTML TRANSACCIONALES ──
 def html_email_wrapper(titulo, cuerpo_html, cta_url=None, cta_text=None):
     """Envuelve contenido en una plantilla HTML corporativa."""

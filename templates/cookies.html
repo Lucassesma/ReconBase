@@ -2,34 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<!-- Google Consent Mode v2 (RGPD) -->
-<script>
-window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-// Estado por defecto: denegado (RGPD strict)
-gtag('consent','default',{
-  'ad_storage':'denied','analytics_storage':'denied',
-  'ad_user_data':'denied','ad_personalization':'denied',
-  'functionality_storage':'granted','security_storage':'granted',
-  'wait_for_update':500
-});
-// Si ya hay consentimiento aceptado guardado, flipear a granted ANTES de cargar GTM
-try{
-  var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');
-  if(v==='accepted'){
-    gtag('consent','update',{
-      'ad_storage':'granted','analytics_storage':'granted',
-      'ad_user_data':'granted','ad_personalization':'granted'
-    });
-  }
-}catch(_){}
-</script>
-<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
-<!-- End Google Tag Manager -->
+{% include "_analitica.html" %}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Política de Cookies — ReconBase</title>
 <meta name="description" content="Política de cookies de ReconBase. Qué cookies utilizamos y para qué.">
@@ -52,6 +25,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 h1{font-size:2rem;font-weight:800;letter-spacing:-.04em;margin-bottom:.5rem}
 .subtitle{color:var(--muted);font-size:.85rem;font-family:'JetBrains Mono',monospace;margin-bottom:3rem}
 h2{font-size:1.1rem;font-weight:700;margin:2.5rem 0 .75rem;color:var(--blue-lt)}
+.data-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;margin:1rem 0;font-size:.88rem}
+.data-box p{margin:.3rem 0}
+h3{font-size:.98rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--text)}
 p{color:#94A3B8;font-size:.92rem;margin-bottom:1rem;line-height:1.8}
 ul{color:#94A3B8;font-size:.92rem;margin:.5rem 0 1rem 1.5rem;line-height:1.8}
 table{width:100%;border-collapse:collapse;font-size:.85rem;margin:1rem 0}
@@ -60,18 +36,8 @@ th{background:var(--surface);color:var(--text);font-weight:700}
 footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font-size:.78rem;color:var(--dim)}
 </style>
 <link rel="stylesheet" href="/static/css/mobile.css">
-<!-- Privacy-friendly analytics by Plausible -->
-<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
-<script>
-  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-  plausible.init({domain:"reconbase.es", endpoint:"/api/track"})
-</script>
 </head>
 <body>
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
 <nav>
   <a href="/">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none" height="28">
@@ -84,77 +50,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div class="content">
   <h1>Política de Cookies</h1>
-  <div class="subtitle">Última actualización: 22 de abril de 2026</div>
+  <p style="color:var(--dim);font-size:.85rem;margin-bottom:2rem">Última actualización: 17 de noviembre de 2026</p>
 
-  <h2>1. ¿Qué es una cookie?</h2>
-  <p>Una cookie es un pequeño archivo de texto que un sitio web guarda en tu navegador para recordar información sobre tu visita. Las cookies pueden ser necesarias para el funcionamiento del sitio o servir para medir su uso.</p>
+  <h2>1. Qué son las cookies</h2>
+  <p>Una cookie es un pequeño archivo que una web guarda en tu navegador para recordar información sobre tu visita.</p>
 
-  <h2>2. ¿Qué cookies utiliza ReconBase?</h2>
-  <p>Usamos únicamente cookies estrictamente necesarias y, si das tu consentimiento, analíticas agregadas y anónimas.</p>
-
+  <h2>2. Cookies que usamos</h2>
   <table>
-    <thead><tr><th>Cookie</th><th>Tipo</th><th>Finalidad</th><th>Duración</th></tr></thead>
-    <tbody>
-      <tr>
-        <td><code>session</code></td>
-        <td>Técnica (necesaria)</td>
-        <td>Mantener la sesión del usuario autenticado</td>
-        <td>Sesión</td>
-      </tr>
-      <tr>
-        <td><code>cookie_consent</code></td>
-        <td>Técnica (necesaria)</td>
-        <td>Recordar que has aceptado el aviso de cookies</td>
-        <td>1 año</td>
-      </tr>
-      <tr>
-        <td><code>csrf_token</code></td>
-        <td>Técnica (necesaria)</td>
-        <td>Protección contra ataques CSRF en formularios</td>
-        <td>Sesión</td>
-      </tr>
-      <tr>
-        <td><code>_pk_*</code> (si activas Plausible)</td>
-        <td>Analítica (opcional)</td>
-        <td>Métricas de uso agregadas y anónimas. Plausible no usa identificadores persistentes ni cookies de terceros.</td>
-        <td>N/A (Plausible es cookie-less)</td>
-      </tr>
-      <tr>
-        <td><code>_ga, _ga_*</code> (si activas Google Analytics)</td>
-        <td>Analítica (opcional)</td>
-        <td>Medición de tráfico y comportamiento agregado</td>
-        <td>2 años</td>
-      </tr>
-    </tbody>
+    <tr><th>Cookie</th><th>Tipo</th><th>Finalidad</th><th>Duración</th></tr>
+    <tr><td><code>session</code>, <code>remember_token</code></td><td>Técnica (necesaria)</td><td>Mantener tu sesión iniciada y proteger los formularios</td><td>Sesión / hasta 30 días si inicias sesión</td></tr>
+    <tr><td><code>rb_cookies</code></td><td>Técnica (necesaria)</td><td>Recordar si aceptaste o rechazaste las cookies de analítica</td><td>6 meses</td></tr>
+    <tr><td><code>rb_ps_dismiss</code></td><td>Técnica (preferencia)</td><td>Recordar que has ocultado un aviso del panel</td><td>30 días</td></tr>
+    <tr><td><code>_ga</code>, <code>_ga_*</code></td><td>Analítica (opcional)</td><td>Google Analytics: medir cómo se usa la web. <strong>Solo se instalan si pulsas «Aceptar»</strong></td><td>Hasta 2 años</td></tr>
   </table>
+  <p>Las cookies técnicas no requieren consentimiento (art. 22.2 LSSI). Las de analítica solo se activan si las aceptas: hasta entonces no cargamos Google Tag Manager ni Google Analytics. No usamos cookies de publicidad.</p>
+  <p>También usamos <strong>Plausible</strong>, una analítica que no instala cookies ni guarda identificadores en tu dispositivo, y <strong>Cloudflare Turnstile</strong> en algunos formularios para evitar bots, que puede usar almacenamiento técnico necesario para esa verificación.</p>
 
-  <p><strong>Cookies técnicas:</strong> son imprescindibles para el funcionamiento de la plataforma. No requieren consentimiento previo (art. 22.2 LSSI).</p>
-  <p><strong>Cookies analíticas:</strong> solo se activan si has aceptado el banner de cookies. Puedes revocar tu consentimiento en cualquier momento borrando las cookies desde tu navegador.</p>
+  <h2>3. Cómo cambiar tu decisión</h2>
+  <p>Puedes aceptar o rechazar las cookies de analítica cuando quieras desde <a href="#" data-rb-cookies>Configurar cookies</a> (también en el pie de cada página). Si las rechazas después de haberlas aceptado, borramos las cookies de Google Analytics de tu navegador.</p>
+  <p>También puedes bloquear o borrar cookies desde tu navegador: <a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Chrome</a>, <a href="https://support.mozilla.org/es/kb/Borrar%20cookies" target="_blank" rel="noopener">Firefox</a>, <a href="https://support.apple.com/es-es/guide/safari/sfri11471/mac" target="_blank" rel="noopener">Safari</a>, <a href="https://support.microsoft.com/es-es/microsoft-edge" target="_blank" rel="noopener">Edge</a>. Si bloqueas las técnicas, no podrás iniciar sesión.</p>
 
-  <h2>3. Cookies de terceros</h2>
-  <p>Determinadas páginas cargan recursos de terceros que pueden establecer sus propias cookies:</p>
-  <ul>
-    <li><strong>Stripe</strong> (durante el proceso de pago): necesarias para detectar fraude y procesar la transacción. <a href="https://stripe.com/es/privacy" target="_blank" rel="noopener">Política de Stripe</a></li>
-    <li><strong>Google Fonts</strong> (carga de tipografías): no utiliza cookies, pero sí registra logs de solicitudes. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Política de Google</a></li>
-  </ul>
-
-  <h2>4. Cómo gestionar las cookies</h2>
-  <p>Puedes configurar, aceptar, bloquear o eliminar las cookies desde las preferencias de tu navegador:</p>
-  <ul>
-    <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Google Chrome</a></li>
-    <li><a href="https://support.mozilla.org/es/kb/habilitar-y-deshabilitar-cookies-sitios-web-rastrear-preferencias" target="_blank" rel="noopener">Mozilla Firefox</a></li>
-    <li><a href="https://support.apple.com/es-es/guide/safari/sfri11471/mac" target="_blank" rel="noopener">Safari</a></li>
-    <li><a href="https://support.microsoft.com/es-es/windows/eliminar-y-administrar-cookies-168dab11-0753-043d-7c16-ede5947fc64d" target="_blank" rel="noopener">Microsoft Edge</a></li>
-  </ul>
-  <p>Bloquear todas las cookies puede afectar al correcto funcionamiento de la plataforma, especialmente al inicio de sesión.</p>
-
-  <h2>5. Actualizaciones de esta política</h2>
-  <p>Esta política puede actualizarse cuando incorporemos nuevas herramientas o cambien los requisitos normativos. Publicaremos la versión vigente en esta misma URL con la fecha de la última revisión.</p>
-
-  <h2>6. Contacto</h2>
-  <p>Si tienes dudas sobre el uso de cookies, escribe a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
+  <h2>4. Más información</h2>
+  <p>Sobre el uso de tus datos, consulta la <a href="/privacy">Política de Privacidad</a>. Para cualquier duda, escribe a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
 </div>
 
-<footer>© 2026 Lucas Sesma Vinck — ReconBase. Todos los derechos reservados. · <a href="/terms">Términos de Servicio</a> · <a href="/privacy">Política de Privacidad</a></footer>
+<footer>© 2026 Lucas Sesma Vinck — ReconBase · <a href="/terms">Términos de Servicio</a> · <a href="/privacy">Política de Privacidad</a> · <a href="#" data-rb-cookies>Configurar cookies</a></footer>
 </body>
 </html>

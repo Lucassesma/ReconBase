@@ -2,12 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<script>
-window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('consent','default',{'ad_storage':'denied','analytics_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','functionality_storage':'granted','security_storage':'granted','wait_for_update':500});
-try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');if(v==='accepted'){gtag('consent','update',{'ad_storage':'granted','analytics_storage':'granted','ad_user_data':'granted','ad_personalization':'granted'});}}catch(_){}
-</script>
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
+{% include "_analitica.html" %}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Auditoría WordPress gratuita en 60 segundos — Plugins, versión y vulnerabilidades · ReconBase</title>
 <meta name="description" content="Revisa gratis tu WordPress: versión, plugins visibles con vulnerabilidades conocidas, certificado y cabeceras. Sin registro y sin instalar nada. Con tu dominio verificado, también xmlrpc.php, usuarios y ficheros expuestos.">
@@ -33,10 +28,6 @@ try{var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.
 {"@type":"Question","name":"¿Necesito instalar algo en mi WordPress?","acceptedAnswer":{"@type":"Answer","text":"Nada. La auditoría es 100% externa. No instalas plugins, no añades código, no compartes credenciales. Funciona en 60 segundos desde tu navegador."}}
 ]}
 </script>
-
-<script async defer data-domain="reconbase.es" data-api="/api/track" src="/js/pa.js"></script>
-<script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init({domain:"reconbase.es", endpoint:"/api/track"})</script>
-{% if config.GA_ID %}<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>{% endif %}
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080C14'/><text x='3' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%23E2EDF8'>R</text><text x='16' y='23' font-family='Arial Black,sans-serif' font-weight='900' font-size='18' fill='%2322C55E'>B</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -141,8 +132,6 @@ footer a{color:var(--muted-2);margin:0 .6rem}
 <script src="/static/js/toast.js"></script>
 </head>
 <body>
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PKCFGF7M" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-
 <nav>
   <a href="/" class="nav-logo">RECON<span style="color:var(--green)">BASE</span></a>
   <div class="nav-links">
@@ -221,7 +210,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
 </section>
 
 <footer>
-  <a href="/blog">Blog</a><a href="/pricing">Precios</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/privacy">Privacidad</a><a href="/terms">Términos</a>
+  <a href="/blog">Blog</a><a href="/pricing">Precios</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/privacy">Privacidad</a><a href="/cookies">Cookies</a><a href="#" data-rb-cookies>Configurar cookies</a><a href="/terms">Términos</a>
   <div style="margin-top:1rem;font-size:.72rem;color:var(--muted)">© ReconBase · Auditoría de seguridad para PYMEs españolas</div>
 </footer>
 

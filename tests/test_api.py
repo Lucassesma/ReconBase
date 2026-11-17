@@ -245,13 +245,20 @@ class TestSecurityHeaders:
 
 
 class TestCookieConsent:
-    """Tests para consentimiento de cookies."""
+    """Google solo se carga tras aceptar: ninguna página lo inserta directamente."""
 
-    def test_cookie_consent(self, client):
-        r = client.post("/api/cookie-consent")
-        data = r.get_json()
-        assert data["ok"] is True
-        assert "cookie_consent" in r.headers.get("Set-Cookie", "")
+    @pytest.mark.parametrize("ruta", ["/", "/terms", "/privacy", "/cookies", "/pricing", "/blog",
+                                      "/login", "/register", "/herramientas", "/auditoria-wordpress",
+                                      "/auditoria-prestashop", "/skimmer-check", "/comprobar-cabeceras-http",
+                                      "/comprobar-dmarc-spf", "/comprobar-lista-negra", "/auditoria-rapida",
+                                      "/escaner-info"])
+    def test_paginas_sin_google_antes_del_consentimiento(self, client, ruta):
+        html = client.get(ruta).get_data(as_text=True)
+        assert "/static/js/consent.js" in html, ruta
+        assert "googletagmanager.com/gtm.js" not in html, ruta
+        assert "ns.html?id=GTM" not in html, ruta
+        assert "'ad_storage':'granted'" not in html, ruta
+        assert "data-rb-cookies" in html, ruta
 
 
 class TestAPIv1:
