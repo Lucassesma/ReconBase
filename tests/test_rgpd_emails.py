@@ -160,3 +160,29 @@ class TestGratuito:
         assert client.post("/api/pdf", json={"riesgo": 0, "objetivo": "falso.com"}).status_code == 404
         assert client.post("/api/pdf", json={"scan_id": ajeno}).status_code == 404
         client.post("/api/logout")
+
+
+class TestAvisoTerminos:
+    def test_aviso_solo_una_vez_y_con_confirmacion(self, client, app, monkeypatch):
+        enviados = []
+        monkeypatch.setattr(server, "send_html_email", lambda to, *a, **k: enviados.append(to))
+        with app.app_context():
+            admin = _crear_usuario("admin-aviso@ejemplo.com")
+            admin.is_admin = True
+            db.session.commit()
+            total = User.query.count()
+        client.post("/api/login", json={"email": "admin-aviso@ejemplo.com", "password": "TestPass123"})
+        assert client.post("/api/admin/aviso-terminos", json={"prueba": True}).get_json()["enviados"] == 1
+        assert client.post("/api/admin/aviso-terminos", json={"confirmacion": "no"}).status_code == 400
+        enviados.clear()
+        r = client.post("/api/admin/aviso-terminos", json={"confirmacion": "ENVIAR"}).get_json()
+        assert r["enviados"] == total and len(enviados) == total
+        assert client.post("/api/admin/aviso-terminos", json={"confirmacion": "ENVIAR"}).get_json()["enviados"] == 0
+        client.post("/api/logout")
+
+    def test_no_admin_no_puede_enviar(self, client, app):
+        with app.app_context():
+            _crear_usuario("normal-aviso@ejemplo.com")
+        client.post("/api/login", json={"email": "normal-aviso@ejemplo.com", "password": "TestPass123"})
+        assert client.post("/api/admin/aviso-terminos", json={"confirmacion": "ENVIAR"}).status_code == 403
+        client.post("/api/logout")

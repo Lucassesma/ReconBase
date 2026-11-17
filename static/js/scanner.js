@@ -745,7 +745,4 @@ function rbToast(msg, type) {
     var tabEl = document.querySelector('.sc-tab[onclick*="\'' + tab + '\'"]');
     if (tabEl) tabEl.click();
   }
-  if (params.get('pago') === 'ok') {
-    setTimeout(function(){ alert('¡Pago completado! Tu plan Pro ya está activo. Recarga la página si no ves los cambios.'); }, 800);
-  }
 })();

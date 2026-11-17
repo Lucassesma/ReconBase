@@ -1004,12 +1004,12 @@ def og_image(page):
         "home": {
             "title": "RECONBASE",
             "sub": "Analiza la seguridad de tu empresa gratis",
-            "features": ["Puertos expuestos", "Filtraciones de datos", "Vulnerabilidades DNS"],
+            "features": ["SSL y cabeceras", "SPF y DMARC", "CMS y plugins"],
         },
         "pricing": {
             "title": "RECONBASE",
-            "sub": "Planes desde 0\u20ac \u2014 Ciberseguridad para PYMEs",
-            "features": ["Plan Gratis: 30 escaneos/mes", "Plan Pro: 9\u20ac/mes ilimitado", "Sin permanencia"],
+            "sub": "Gratis \u2014 Ciberseguridad para PYMEs",
+            "features": ["Todas las funciones", "Sin tarjeta", "Sin planes de pago"],
         },
         "terms": {
             "title": "RECONBASE",
@@ -3328,7 +3328,7 @@ def enviar_informe_automatico(destinatario, dominio, riesgo, label, desglose, pu
                 f"{desglose_txt}{puertos_txt}\n"
                 f"Ver informe completo:\n"
                 f"{BASE_URL}/app\n\n"
-                f"--\nReconBase - Vigilancia automatica Pro\n"
+                f"--\nReconBase - Vigilancia automatica\n"
             )
             with app.app_context():
                 msg = Message(
@@ -3431,7 +3431,7 @@ def enviar_alerta_ssl(destinatario, dominio, dias_restantes):
                 f"  3. Si usas Let's Encrypt, ejecuta: certbot renew\n\n"
                 f"Ver detalles en tu dashboard:\n"
                 f"{BASE_URL}/\n\n"
-                f"--\nReconBase - Vigilancia automática Pro\n"
+                f"--\nReconBase - Vigilancia automática\n"
             )
             with app.app_context():
                 mail.send(Message(
@@ -4101,7 +4101,8 @@ def admin_panel():
     users_verified  = User.query.filter_by(email_verified=True).count()
     recent_users    = User.query.order_by(User.created_at.desc()).limit(50).all()
     recent_scans    = Scan.query.order_by(Scan.timestamp.desc()).limit(20).all()
-    return render_template("admin.html",
+    return render_template(
+        "admin.html", aviso_pendientes=len(_usuarios_sin_aviso()), aviso_vigor=AVISO_TERMINOS_VIGOR,
         total_users=total_users, total_scans=total_scans,
         users_pro=users_pro, users_trial=users_trial,
         scans_hoy=scans_hoy, scans_mes=scans_mes,
@@ -4356,6 +4357,72 @@ def admin_metricas():
         logins_fallidos_hoy=logins_fallidos_hoy,
         logins_fallidos_recientes=logins_fallidos_recientes,
         now=now)
+
+
+# ─── Aviso a los usuarios del cambio de términos (nov. 2026) ──────────────────
+# Lo envía el administrador a mano desde /admin. Cada envío queda en el registro
+# de auditoría del usuario, así nadie lo recibe dos veces.
+AVISO_TERMINOS_EVENTO = "aviso_terminos_2026_11"
+AVISO_TERMINOS_VIGOR = "2 de diciembre de 2026"
+
+
+def _enviar_aviso_terminos(user):
+    cuerpo = (
+        f"<p>Hola,</p>"
+        f"<p>Te escribimos porque tienes una cuenta en ReconBase. Hemos actualizado los "
+        f"<a href='{BASE_URL}/terms'>Términos de Servicio</a> y la <a href='{BASE_URL}/privacy'>Política de Privacidad</a>. "
+        f"Los cambios entran en vigor el <strong>{AVISO_TERMINOS_VIGOR}</strong>. Lo principal:</p>"
+        "<ul>"
+        "<li><strong>ReconBase es gratuito.</strong> Ya no hay planes de pago: todas las cuentas tienen todas las funciones. "
+        "Si tenías una suscripción activa, puedes cancelarla desde tu perfil.</li>"
+        "<li><strong>Verificación de dominios.</strong> Las comprobaciones activas (puertos, rutas no enlazadas y ficheros expuestos) "
+        "y la vigilancia automática solo se hacen en dominios que verifiques como tuyos (con un registro DNS, una etiqueta en tu web "
+        "o un fichero). En el resto hacemos un análisis pasivo con información pública. Si tenías la vigilancia activa, "
+        "<strong>verifica tus dominios desde tu perfil</strong> para que siga funcionando.</li>"
+        "<li><strong>Filtraciones (Have I Been Pwned):</strong> solo se consulta tu propio email o los de tus dominios verificados.</li>"
+        "<li><strong>Emails:</strong> puedes decidir en tu perfil si quieres recibir consejos y novedades. Los avisos del servicio "
+        "te seguirán llegando.</li>"
+        "<li><strong>Privacidad:</strong> tus datos se alojan en la UE (Ámsterdam) y explicamos con detalle qué guardamos y durante cuánto tiempo.</li>"
+        "</ul>"
+        "<p>Si no estás de acuerdo, puedes eliminar tu cuenta desde tu perfil en cualquier momento. "
+        "Si tienes dudas, responde a este email o escribe a hola@reconbase.es.</p>"
+    )
+    send_html_email(user.email, "Cambios en ReconBase: ahora es gratis y actualizamos los términos",
+                    "Actualizamos los términos de ReconBase", cuerpo,
+                    BASE_URL + "/perfil#dominios", "Verificar mis dominios")
+
+
+def _usuarios_sin_aviso():
+    avisados = db.session.query(AuditLog.user_id).filter(AuditLog.evento == AVISO_TERMINOS_EVENTO)
+    return User.query.filter(~User.id.in_(avisados)).all()
+
+
+@app.route("/api/admin/aviso-terminos", methods=["POST"])
+@login_required
+@admin_required
+@limiter.limit("10 per hour")
+def admin_aviso_terminos():
+    data = request.get_json(silent=True) or {}
+    if data.get("prueba"):
+        try:
+            _enviar_aviso_terminos(current_user)
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"No se pudo enviar: {e}"}), 502
+        return jsonify({"ok": True, "enviados": 1, "prueba": True})
+    if (data.get("confirmacion") or "").strip().upper() != "ENVIAR":
+        return jsonify({"ok": False, "error": "Escribe ENVIAR para confirmar el envío a todos los usuarios"}), 400
+    enviados, fallidos = 0, 0
+    for user in _usuarios_sin_aviso():
+        try:
+            _enviar_aviso_terminos(user)
+            db.session.add(AuditLog(user_id=user.id, evento=AVISO_TERMINOS_EVENTO, detalles="Aviso de cambio de términos enviado"))
+            db.session.commit()
+            enviados += 1
+        except Exception as e:
+            db.session.rollback()
+            fallidos += 1
+            logger.warning(f"[AvisoTérminos] usuario {user.id}: {e}")
+    return jsonify({"ok": True, "enviados": enviados, "fallidos": fallidos})
 
 
 @app.route("/api/admin/user/<int:uid>/plan", methods=["POST"])
@@ -5796,6 +5863,7 @@ with app.app_context():
         "ALTER TABLE invoices ALTER COLUMN user_id DROP NOT NULL",
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cliente_email VARCHAR(120)",
         "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cliente_nombre VARCHAR(120)",
+        "ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS seed_version INTEGER DEFAULT 1",
     ]:
         try:
             db.session.execute(text(col_sql))
@@ -5804,6 +5872,8 @@ with app.app_context():
             db.session.rollback()
 
 # ─── Bootstrap de blog SEO (idempotente — solo crea si no existe el slug) ───
+# Versión 2 (nov. 2026): cifras sin fuente y casos inventados eliminados; NIS2 reescrito.
+BLOG_SEEDS_VERSION = 2
 _BLOG_SEEDS = [
     {
         "slug": "auditoria-seguridad-pymes-espana-guia-2026",
@@ -5812,7 +5882,7 @@ _BLOG_SEEDS = [
         "tags": "seguridad,pyme,RGPD,ENS,auditoria,2026",
         "contenido": """
 <h2>¿Por qué tu PYME necesita una auditoría de seguridad?</h2>
-<p>El 43&nbsp;% de los ciberataques en España afectan a pequeñas y medianas empresas, según el INCIBE. La razón es simple: las PYMEs suelen tener menos defensas que las corporaciones grandes, pero los datos que manejan (clientes, facturas, nóminas) son igual de valiosos para los atacantes.</p>
+<p>Las pequeñas y medianas empresas son un objetivo habitual de los ciberataques. La razón es simple: las PYMEs suelen tener menos defensas que las corporaciones grandes, pero los datos que manejan (clientes, facturas, nóminas) son igual de valiosos para los atacantes.</p>
 <p>Una auditoría de seguridad básica te permite identificar los puntos débiles antes de que alguien los explote. Y, lejos de lo que piensa la mayoría, no necesitas un equipo de hackers ni miles de euros en consultores: con las herramientas adecuadas y un par de horas a la semana puedes cubrir lo esencial.</p>
 
 <h2>Qué cubre una auditoría de seguridad básica</h2>
@@ -5845,7 +5915,7 @@ _BLOG_SEEDS = [
 </ol>
 
 <h2>Cuándo contratar un profesional</h2>
-<p>La auditoría DIY te cubre el 80&nbsp;% del riesgo común. Pero si manejas datos sensibles (sanitarios, financieros, biométricos) o ya has sufrido un incidente, contrata un pentester certificado. En España hay buenos profesionales por 2.000–5.000&nbsp;€ por proyecto.</p>
+<p>Una revisión hecha por ti mismo cubre los problemas más habituales. Pero si manejas datos sensibles (sanitarios, financieros, biométricos) o ya has sufrido un incidente, contrata a un profesional para una auditoría o un test de intrusión.</p>
 
 <h2>Conclusión</h2>
 <p>La seguridad de tu empresa no es opcional, pero tampoco tiene por qué ser cara. <a href="/">Empieza con una auditoría gratuita</a> de tu dominio en 2&nbsp;minutos y descubre qué tienes expuesto. Si los resultados te asustan, hablamos.</p>
@@ -5858,7 +5928,7 @@ _BLOG_SEEDS = [
         "tags": "email,SPF,DMARC,DKIM,seguridad,phishing",
         "contenido": """
 <h2>El problema: cualquiera puede enviar emails como si fuera tú</h2>
-<p>Por defecto, el protocolo SMTP no verifica el remitente. Eso significa que un atacante puede enviar un correo aparentando venir de <code>jefe@tuempresa.es</code> aunque no tenga acceso a tu dominio. Es la base del 90&nbsp;% del phishing dirigido a empresas (Business Email Compromise).</p>
+<p>Por defecto, el protocolo SMTP no verifica el remitente. Eso significa que un atacante puede enviar un correo aparentando venir de <code>jefe@tuempresa.es</code> aunque no tenga acceso a tu dominio. Es la base de muchos fraudes por email dirigidos a empresas (Business Email Compromise).</p>
 <p>SPF, DKIM y DMARC son tres registros DNS que, juntos, cierran este agujero. Configurarlos toma ~30&nbsp;minutos y reduce drásticamente las suplantaciones.</p>
 
 <h2>1. SPF — Sender Policy Framework</h2>
@@ -5910,11 +5980,11 @@ _BLOG_SEEDS = [
     {
         "slug": "auditoria-wordpress-12-checks-2026",
         "titulo": "Auditoría WordPress: 12 checks de seguridad que tu web debería pasar (guía 2026)",
-        "excerpt": "El 43% de los sitios web del mundo usa WordPress, y por eso es el CMS más atacado. Te enseño los 12 checks esenciales que toda web WordPress debería pasar — con ejemplos y herramientas gratuitas para validarlos.",
+        "excerpt": "WordPress es el CMS más usado del mundo, y por eso uno de los más atacados. Te enseño los 12 checks esenciales que toda web WordPress debería pasar — con ejemplos y herramientas gratuitas para validarlos.",
         "tags": "wordpress,seguridad,auditoria,plugins,cve",
         "contenido": """
-<h2>Por qué WordPress es el objetivo número 1</h2>
-<p>WordPress mueve el <strong>43&nbsp;% de internet</strong> según W3Techs. Eso lo convierte en el objetivo más rentable para atacantes: con un solo exploit pueden vulnerar miles de webs. En 2024 se reportaron más de <strong>5.000 vulnerabilidades conocidas</strong> en plugins de WordPress (datos de WPScan).</p>
+<h2>Por qué WordPress es un objetivo tan atacado</h2>
+<p>WordPress es el gestor de contenidos más usado del mundo según <a href="https://w3techs.com/technologies/details/cm-wordpress" target="_blank" rel="noopener">W3Techs</a>. Eso lo convierte en un objetivo muy rentable: con un solo exploit se pueden vulnerar miles de webs. Cada año se publican miles de vulnerabilidades en plugins y temas de WordPress.</p>
 <p>Y la mayoría son <strong>fáciles de explotar</strong>: solo necesitan que tu admin no haya actualizado un plugin en 3 meses. Por eso los pentesters profesionales empiezan SIEMPRE por WordPress cuando auditan una pyme.</p>
 
 <h2>Los 12 checks que toda auditoría WordPress debería incluir</h2>
@@ -5959,7 +6029,7 @@ _BLOG_SEEDS = [
 <p>Y un redirect 301 a nivel servidor.</p>
 
 <h3>10. Tema y plugins de fuentes confiables</h3>
-<p>NO instales temas/plugins "premium gratis" de webs piratas. Vienen <strong>siempre con malware</strong>. Usa repositorio oficial de WordPress, ThemeForest, CodeCanyon o webs reconocidas (Yoast, WP Rocket, etc.).</p>
+<p>NO instales temas/plugins "premium gratis" de webs piratas. Es muy habitual que traigan <strong>malware</strong>. Usa repositorio oficial de WordPress, ThemeForest, CodeCanyon o webs reconocidas (Yoast, WP Rocket, etc.).</p>
 
 <h3>11. Backups automáticos</h3>
 <p>Plugin <strong>UpdraftPlus</strong> (gratis) → configura backup semanal a Google Drive/Dropbox. Si te hackean, restauras en 5&nbsp;min en lugar de perder todo.</p>
@@ -5971,13 +6041,13 @@ _BLOG_SEEDS = [
 <p>Hacer estos 12 checks manualmente tarda 1-2 horas. <a href="/">ReconBase</a> los pasa automáticamente en 2 minutos analizando solo tu dominio — sin acceso a tu WordPress. Detecta versión, plugins visibles, archivos sensibles expuestos y mucho más. <strong>Gratis, sin tarjeta</strong>.</p>
 
 <h2>Conclusión</h2>
-<p>WordPress es seguro <em>cuando se mantiene</em>. La mayoría de hackeos a pymes españolas vienen de un plugin desactualizado durante 3 meses, no de un atacante sofisticado. Estos 12 checks cubren el 90&nbsp;% de los vectores de ataque comunes. <a href="/">Analiza tu WordPress aquí</a> y arregla lo que detecte hoy.</p>
+<p>WordPress es seguro <em>cuando se mantiene</em>. Muchos hackeos a webs pequeñas empiezan por un plugin desactualizado, no por un atacante sofisticado. Estos 12 checks cubren los vectores de ataque más comunes. <a href="/">Analiza tu WordPress aquí</a> y arregla lo que detecte hoy.</p>
 """.strip()
     },
     {
         "slug": "ataques-bec-business-email-compromise-pymes-espana",
         "titulo": "Ataques BEC (Business Email Compromise): la estafa silenciosa que se lleva miles de euros de pymes españolas",
-        "excerpt": "BEC es el tipo de ataque que más dinero roba a pymes en España según el INCIBE. No usa malware ni hackeo técnico: solo un email bien escrito. Te enseño cómo funciona, casos reales y cómo blindarte en 30 minutos.",
+        "excerpt": "El fraude BEC no usa malware ni hackeo técnico: solo un email bien escrito que suplanta a un jefe o a un proveedor. Te explicamos cómo funciona, ejemplos típicos y cómo protegerte.",
         "tags": "BEC,phishing,suplantacion,SPF,DMARC,pyme",
         "contenido": """
 <h2>¿Qué es un ataque BEC y por qué deberías preocuparte?</h2>
@@ -5987,20 +6057,20 @@ _BLOG_SEEDS = [
   <li>Un email convincente</li>
   <li>Que tu dominio <strong>no tenga SPF/DMARC</strong> bien configurados</li>
 </ul>
-<p>Según el <a href="https://www.incibe.es" target="_blank" rel="noopener">INCIBE</a>, BEC es el tipo de ciberataque que <strong>más dinero roba</strong> en España, por encima del ransomware. Las pymes son su objetivo favorito porque no tienen procesos formales de verificación de transferencias.</p>
+<p>El BEC es uno de los fraudes que más dinero cuesta a las empresas: el <a href="https://www.ic3.gov" target="_blank" rel="noopener">IC3 del FBI</a> lo sitúa cada año entre los delitos con mayores pérdidas declaradas. Las pymes son un objetivo habitual porque a menudo no tienen procesos formales para verificar transferencias.</p>
 
-<h2>3 casos reales (sucedidos a pymes españolas)</h2>
+<h2>3 ejemplos típicos (ilustrativos)</h2>
 
-<h3>Caso 1: La asesoría de Madrid (12.500&nbsp;€)</h3>
-<p>Una asesoría fiscal recibió un email "del gerente" pidiendo a la administrativa que transfiriera 12.500&nbsp;€ a un nuevo proveedor por una "urgencia". El email venía de <code>gerente@asesoria-X.com</code> — exactamente el dominio real. La administrativa lo hizo. El gerente nunca había mandado ese email.</p>
+<h3>Ejemplo 1: el falso gerente</h3>
+<p>Una empresa recibe un email "del gerente" pidiendo a administración que transfiera un importe a un nuevo proveedor por una "urgencia". El email venía de <code>gerente@asesoria-X.com</code> — exactamente el dominio real. Si nadie lo comprueba por teléfono, el dinero sale. El gerente nunca había mandado ese email.</p>
 <p><strong>Causa raíz</strong>: el dominio no tenía DMARC configurado. Cualquier atacante podía enviar emails como <code>gerente@asesoria-X.com</code> desde un servidor externo y pasar el filtro.</p>
 
-<h3>Caso 2: La empresa de logística (40.000&nbsp;€)</h3>
+<h3>Ejemplo 2: el falso banco</h3>
 <p>Una pyme de logística recibió un email "de su banco" pidiendo confirmar una operación. La factura adjunta venía de un dominio MUY parecido al banco real. La pyme tenía las credenciales bancarias del director financiero comprometidas (filtración antigua, no cambió la contraseña). El atacante hizo la transferencia desde la web del banco — para el banco, era una operación legítima.</p>
 <p><strong>Causa raíz</strong>: credenciales filtradas + sin 2FA en banca online.</p>
 
-<h3>Caso 3: La clínica dental (8.700&nbsp;€)</h3>
-<p>Un email "del proveedor de material" pedía actualizar el IBAN de cobro porque "había cambiado de banco". La gestoría actualizó el IBAN en su programa de gestión sin verificar telefónicamente. La siguiente transferencia (8.700&nbsp;€) fue a la cuenta del atacante.</p>
+<h3>Ejemplo 3: el cambio de IBAN</h3>
+<p>Un email "del proveedor de material" pedía actualizar el IBAN de cobro porque "había cambiado de banco". La gestoría actualizó el IBAN en su programa de gestión sin verificar telefónicamente. La siguiente transferencia va a la cuenta del atacante.</p>
 <p><strong>Causa raíz</strong>: cero proceso de verificación de cambios de IBAN.</p>
 
 <h2>Cómo blindar tu pyme contra BEC (30 minutos)</h2>
@@ -6009,7 +6079,7 @@ _BLOG_SEEDS = [
 <p>Es el bloqueo técnico número 1. Sin esto, cualquiera puede suplantar tu dominio. Tenemos una <a href="/blog/configurar-spf-dkim-dmarc-paso-a-paso">guía paso a paso</a> y una <a href="/comprobar-dmarc-spf">herramienta gratuita</a> para validar tu configuración.</p>
 
 <h3>2. Política interna de "doble verificación" en transferencias (10 min)</h3>
-<p>Establece por escrito y comunica al equipo: <strong>cualquier transferencia &gt;1.000&nbsp;€ o cambio de IBAN debe verificarse telefónicamente con un número conocido</strong> (no el que aparezca en el email). Esta política sola previene el 80&nbsp;% de los BEC.</p>
+<p>Establece por escrito y comunica al equipo: <strong>cualquier transferencia &gt;1.000&nbsp;€ o cambio de IBAN debe verificarse telefónicamente con un número conocido</strong> (no el que aparezca en el email). Esta política, por sí sola, frena la mayoría de estos fraudes.</p>
 
 <h3>3. 2FA en todas las cuentas críticas (5 min)</h3>
 <p>Banca online, email, ERP, CRM. Sin 2FA, una credencial filtrada = atacante dentro. Usa Google Authenticator o Authy.</p>
@@ -6030,7 +6100,7 @@ _BLOG_SEEDS = [
 </ul>
 
 <h2>Conclusión</h2>
-<p>BEC es el ataque <em>más rentable</em> contra pymes españolas porque no requiere habilidad técnica del atacante — solo aprovecha procesos descuidados de la empresa. Las medidas son baratas (DMARC, 2FA, política de doble verificación) y reducen un 90&nbsp;% el riesgo. <a href="/">Empieza por analizar gratis tu dominio</a> y ver si tu empresa ya está expuesta.</p>
+<p>El BEC funciona porque no requiere habilidad técnica: aprovecha procesos descuidados de la empresa. Las medidas son baratas (DMARC, 2FA, política de doble verificación) y reducen mucho el riesgo. <a href="/">Empieza por analizar gratis tu dominio</a> y ver si tu empresa ya está expuesta.</p>
 """.strip()
     },
     {
@@ -6040,7 +6110,7 @@ _BLOG_SEEDS = [
         "tags": "ransomware,pyme,backup,seguridad,INCIBE,2026",
         "contenido": """
 <h2>¿Qué es el ransomware y por qué las pymes son el objetivo favorito?</h2>
-<p>El <strong>ransomware</strong> es un tipo de malware que cifra todos los archivos de tu empresa y exige un rescate (ransom) en criptomonedas para devolverte el acceso. En 2024, el INCIBE gestionó más de 1.500 incidentes de ransomware en empresas españolas, con pérdidas medias de <strong>45.000&nbsp;€ por empresa</strong> entre rescate, tiempo de parada y recuperación.</p>
+<p>El <strong>ransomware</strong> es un tipo de malware que cifra todos los archivos de tu empresa y exige un rescate (ransom) en criptomonedas para devolverte el acceso. Además del posible rescate, el coste real suele estar en el tiempo de parada, la recuperación y el daño a la reputación.</p>
 <p>Las pymes son el objetivo favorito porque:</p>
 <ul>
   <li>No tienen backups automatizados y verificados.</li>
@@ -6050,7 +6120,7 @@ _BLOG_SEEDS = [
 </ul>
 
 <h2>Cómo entra el ransomware en tu empresa</h2>
-<p>En el 90&nbsp;% de los casos, uno de estos tres vectores:</p>
+<p>Los vectores de entrada más habituales son estos tres:</p>
 <ol>
   <li><strong>Phishing por email:</strong> un empleado abre un adjunto (PDF, Word, ZIP) o hace clic en un enlace. El malware se instala silenciosamente y se propaga por la red.</li>
   <li><strong>RDP expuesto a internet:</strong> si tienes el puerto 3389 (Escritorio Remoto) abierto con contraseñas débiles, los atacantes lo encuentran con herramientas automáticas y entran por fuerza bruta.</li>
@@ -6058,7 +6128,7 @@ _BLOG_SEEDS = [
 </ol>
 
 <h2>¿Pagar el rescate funciona?</h2>
-<p>El <strong>40&nbsp;% de las empresas que pagan no recuperan todos sus archivos</strong> (Sophos, 2024). Además:</p>
+<p>Pagar <strong>no garantiza recuperar los archivos</strong>, y las autoridades desaconsejan hacerlo. Además:</p>
 <ul>
   <li>Pagas en criptomonedas no rastreables: no hay garantías.</li>
   <li>Apareces en las listas de "pagadores" y recibirás más ataques.</li>
@@ -6077,7 +6147,7 @@ _BLOG_SEEDS = [
 <p>Si necesitas acceso remoto, usa una VPN con 2FA. El RDP directo a internet es una invitación abierta. Con <a href="/">ReconBase</a> puedes comprobar si el puerto 3389 está expuesto en tu dominio.</p>
 
 <h3>3. Actualiza todo, siempre</h3>
-<p>Windows Update, Office, Adobe, Java, el firmware del router. El 60&nbsp;% de los ransomwares explotan vulnerabilidades con parche disponible que nadie instaló.</p>
+<p>Windows Update, Office, Adobe, Java, el firmware del router. Muchos ataques aprovechan vulnerabilidades que ya tenían parche disponible y nadie instaló.</p>
 
 <h3>4. Formación anti-phishing para el equipo</h3>
 <p>Un empleado formado es mejor que cualquier antivirus. Simula ataques de phishing con herramientas como <strong>GoPhish</strong> (gratuito) para medir y mejorar.</p>
@@ -6089,12 +6159,12 @@ _BLOG_SEEDS = [
 <p>Nadie debería tener permisos de administrador para el trabajo del día a día. Si el malware corre como usuario sin privilegios, su impacto es mucho menor.</p>
 
 <h3>7. Plan de respuesta a incidentes escrito</h3>
-<p>Decide HOY: si mañana te cifran los servidores, ¿quién llama a quién? ¿Cuándo involucras al INCIBE (017)? ¿Tienes el contacto de tu proveedor de IT? Tener el plan escrito antes del incidente vale más que cualquier herramienta.</p>
+<p>Decide HOY: si mañana te cifran los servidores, ¿quién llama a quién? ¿Cuándo llamas al 017 de INCIBE? ¿Tienes el contacto de tu proveedor de IT? Tener el plan escrito antes del incidente vale más que cualquier herramienta.</p>
 
 <h2>Si ya estás infectado: pasos inmediatos</h2>
 <ol>
   <li><strong>Desconecta</strong> los equipos afectados de la red (sin apagarlos).</li>
-  <li><strong>Llama al INCIBE:</strong> línea gratuita <strong>017</strong>, disponible 24/7 para empresas.</li>
+  <li><strong>Llama al 017 de INCIBE:</strong> línea gratuita y confidencial de ayuda en ciberseguridad.</li>
   <li><strong>No pagues</strong> sin consultar antes con un experto.</li>
   <li><strong>Denuncia</strong> a la Guardia Civil (GDT) o Policía Nacional (UDEF) — en algunos casos recuperan fondos.</li>
   <li>Restaura desde el backup offline verificado.</li>
@@ -6107,11 +6177,11 @@ _BLOG_SEEDS = [
     {
         "slug": "gestion-contrasenas-empresa-politica-gestores-2fa",
         "titulo": "Gestión de contraseñas en tu empresa: política, gestores y 2FA (guía práctica 2026)",
-        "excerpt": "El 81% de las brechas de seguridad en empresas involucran contraseñas débiles o robadas. Te damos la política de contraseñas que deberías tener, los mejores gestores para equipos y cómo implantar 2FA sin que el equipo proteste.",
+        "excerpt": "Las contraseñas débiles, reutilizadas o robadas están detrás de muchas brechas de seguridad. Te damos la política de contraseñas que deberías tener, los mejores gestores para equipos y cómo implantar 2FA sin que el equipo proteste.",
         "tags": "contraseñas,2FA,gestion,seguridad,pyme,passwords",
         "contenido": """
 <h2>El problema con las contraseñas en las pymes</h2>
-<p>Según el informe <em>Data Breach Investigations Report</em> de Verizon, el <strong>81&nbsp;% de las brechas de seguridad en empresas</strong> involucran contraseñas débiles, reutilizadas o robadas. Y en las pymes la situación es peor: la misma contraseña en el email, el ERP y el banco; post-its con credenciales pegados al monitor; contraseñas compartidas por WhatsApp.</p>
+<p>El informe anual <a href="https://www.verizon.com/business/resources/reports/dbir/" target="_blank" rel="noopener"><em>Data Breach Investigations Report</em> de Verizon</a> sitúa año tras año el uso de credenciales robadas entre las principales vías de entrada en las brechas. En muchas pymes, además, la misma contraseña en el email, el ERP y el banco; post-its con credenciales pegados al monitor; contraseñas compartidas por WhatsApp.</p>
 <p>La buena noticia: esto tiene solución sin necesitar conocimientos técnicos, con herramientas gratuitas o de bajo coste.</p>
 
 <h2>La política de contraseñas que deberías tener</h2>
@@ -6129,7 +6199,7 @@ _BLOG_SEEDS = [
 
 <h3>Bitwarden (recomendado para pymes)</h3>
 <ul>
-  <li>Plan Teams: <strong>4&nbsp;€/usuario/mes</strong>. Plan gratuito individual ilimitado.</li>
+  <li>Plan para equipos de pago por usuario y plan gratuito individual (consulta precios actuales en su web).</li>
   <li>Open source, auditorías de seguridad públicas.</li>
   <li>Compartir contraseñas entre departamentos con permisos granulares.</li>
   <li>Extensiones para Chrome, Firefox, Safari, app móvil.</li>
@@ -6137,7 +6207,7 @@ _BLOG_SEEDS = [
 
 <h3>1Password Business</h3>
 <ul>
-  <li><strong>7,99&nbsp;€/usuario/mes</strong>. Más caro, mejor UX.</li>
+  <li>De pago por usuario. Más caro, muy cómodo de usar.</li>
   <li>Travel Mode (oculta bóvedas sensibles al cruzar fronteras).</li>
   <li>Integración con SSO corporativo (Okta, Azure AD).</li>
 </ul>
@@ -6163,7 +6233,7 @@ _BLOG_SEEDS = [
 
 <h3>Tipos de 2FA ordenados de mejor a peor</h3>
 <ol>
-  <li><strong>Llaves físicas (YubiKey):</strong> lo más seguro. Resistente a phishing. Coste ~50&nbsp;€/unidad.</li>
+  <li><strong>Llaves físicas (YubiKey):</strong> lo más seguro. Resistente a phishing. Tienen un coste por unidad.</li>
   <li><strong>App TOTP (Google Authenticator, Authy, Aegis):</strong> muy seguro, gratuito. Recomendado para la mayoría.</li>
   <li><strong>Push notification (Duo, Microsoft Authenticator):</strong> cómodo, pero vulnerable a "MFA fatigue" (el atacante envía 50 notificaciones hasta que el usuario acepta una).</li>
   <li><strong>SMS:</strong> funciona pero es el más débil (SIM swapping). Mejor que nada, pero evitar si hay alternativa.</li>
@@ -6183,84 +6253,50 @@ _BLOG_SEEDS = [
 </ul>
 
 <h2>Conclusión</h2>
-<p>Las contraseñas débiles son el vector de entrada más común en ciberataques a pymes — y el más fácil de cerrar. Con Bitwarden gratuito y Google Authenticator ya cubres el 80&nbsp;% del riesgo. <a href="/">Comprueba gratis si los emails de tu empresa han aparecido en filtraciones</a> y empieza a actuar hoy.</p>
+<p>Las contraseñas débiles son el vector de entrada más común en ciberataques a pymes — y el más fácil de cerrar. Con un gestor de contraseñas y el doble factor ya reduces mucho el riesgo. <a href="/">Comprueba gratis si los emails de tu empresa han aparecido en filtraciones</a> y empieza a actuar hoy.</p>
 """.strip()
     },
     {
         "slug": "nis2-espana-empresas-obligadas-como-cumplir-2026",
-        "titulo": "NIS2 en España: qué empresas están obligadas y cómo cumplir (guía práctica 2026)",
-        "excerpt": "La directiva NIS2 ya es de obligado cumplimiento en España. Te explicamos qué empresas están dentro del ámbito, qué obligaciones reales tienen y cómo empezar a cumplir sin volverte loco.",
-        "tags": "NIS2,normativa,ciberseguridad,pyme,RGPD,INCIBE,2026",
+        "titulo": "NIS2 en España: qué es, a quién afecta y cómo prepararte (guía práctica)",
+        "excerpt": "La directiva NIS2 amplía mucho las empresas obligadas a gestionar su ciberseguridad. Te explicamos qué dice, a quién afecta, en qué punto está su aplicación en España y cómo empezar a prepararte.",
+        "tags": "NIS2,normativa,ciberseguridad,pyme,RGPD,2026",
         "contenido": """
-<h2>NIS2: la normativa que muchas pymes ignoran y les va a costar caro</h2>
-<p>La Directiva (UE) 2022/2555, más conocida como <strong>NIS2</strong>, es la nueva normativa europea de ciberseguridad. Reemplaza a la antigua NIS y amplía MUCHO el número de empresas obligadas a cumplir. En España se transpuso mediante el Real Decreto-ley aprobado en 2025 y desde entonces es legalmente exigible.</p>
-<p>El problema: <strong>el 70&nbsp;% de las pymes españolas afectadas no saben que están afectadas</strong>. Y los reguladores (INCIBE-CERT y CCN-CERT) ya pueden imponer multas de hasta <strong>10 millones de euros o el 2&nbsp;% de la facturación global</strong>, lo que sea mayor.</p>
+<h2>Qué es NIS2</h2>
+<p>La <a href="https://eur-lex.europa.eu/eli/dir/2022/2555/oj" target="_blank" rel="noopener">Directiva (UE) 2022/2555</a>, conocida como <strong>NIS2</strong>, es la norma europea que obliga a muchas empresas y organismos a gestionar los riesgos de ciberseguridad y a notificar los incidentes graves. Sustituye a la primera directiva NIS y amplía mucho los sectores afectados.</p>
+<p>Al ser una <strong>directiva</strong>, no se aplica directamente a las empresas: cada Estado debe incorporarla a su legislación. El plazo terminaba el 17 de octubre de 2024. En España, la transposición se tramita mediante la <strong>Ley de Coordinación y Gobernanza de la Ciberseguridad</strong>. Antes de tomar decisiones, comprueba en el <a href="https://www.boe.es" target="_blank" rel="noopener">BOE</a> si ya está en vigor, qué plazos fija y qué autoridad te corresponde.</p>
 
-<h2>¿Qué empresas están obligadas a cumplir NIS2?</h2>
-<p>NIS2 distingue dos categorías:</p>
-
-<h3>Entidades esenciales (las grandes)</h3>
+<h2>¿A quién afecta?</h2>
+<p>La directiva distingue entre <strong>entidades esenciales</strong> y <strong>entidades importantes</strong>, según el sector y el tamaño:</p>
 <ul>
-  <li>Empresas con <strong>más de 250 empleados</strong> o <strong>50 M€ de facturación</strong> que operen en sectores críticos.</li>
-  <li>Sectores: energía, transporte, banca, salud, agua potable, infraestructuras digitales, administración pública.</li>
+  <li><strong>Sectores de alta criticidad</strong> (anexo I): energía, transporte, banca, infraestructuras de mercados financieros, sanidad, agua potable y residuales, infraestructura digital, gestión de servicios TIC entre empresas, administración pública y espacio.</li>
+  <li><strong>Otros sectores críticos</strong> (anexo II): servicios postales, gestión de residuos, sustancias químicas, alimentación, fabricación de determinados productos (por ejemplo, dispositivos médicos, electrónica, maquinaria y vehículos), proveedores digitales (mercados en línea, motores de búsqueda, redes sociales) e investigación.</li>
+</ul>
+<p>Como regla general, se aplica a <strong>medianas y grandes empresas</strong> de esos sectores (a partir de 50 empleados, o más de 10 millones de euros tanto de volumen de negocio como de balance). Las pequeñas y microempresas quedan fuera, salvo excepciones como algunos proveedores de servicios de DNS, registros de nombres de dominio o prestadores de servicios de confianza.</p>
+<p>Aunque tu empresa no esté obligada, puede que te lo pidan tus clientes: las entidades obligadas deben revisar también la seguridad de su <strong>cadena de suministro</strong>.</p>
+
+<h2>Qué obliga a hacer</h2>
+<ul>
+  <li><strong>Medidas de gestión de riesgos</strong> (art. 21): análisis de riesgos, gestión de incidentes, continuidad y copias de seguridad, seguridad de la cadena de suministro, gestión de vulnerabilidades, cifrado, control de accesos, autenticación multifactor y formación.</li>
+  <li><strong>Responsabilidad de la dirección</strong> (art. 20): los órganos de dirección deben aprobar las medidas, supervisar su aplicación y recibir formación.</li>
+  <li><strong>Notificación de incidentes significativos</strong> (art. 23) al CSIRT o autoridad que corresponda: alerta temprana en 24 horas, notificación del incidente en 72 horas e informe final en un mes.</li>
 </ul>
 
-<h3>Entidades importantes (donde caen MUCHAS pymes)</h3>
-<ul>
-  <li>Empresas con <strong>más de 50 empleados</strong> o <strong>10 M€ de facturación</strong> en sectores ampliados.</li>
-  <li>Sectores: <strong>servicios postales y mensajería, gestión de residuos, química, alimentación, fabricación industrial, proveedores digitales (SaaS, marketplaces, redes sociales), investigación.</strong></li>
-</ul>
+<h2>Sanciones</h2>
+<p>La directiva fija que las multas máximas deben ser de, al menos, <strong>10 millones de euros o el 2&nbsp;% del volumen de negocio mundial</strong> para las entidades esenciales y <strong>7 millones o el 1,4&nbsp;%</strong> para las importantes (art. 34). Las sanciones concretas en España dependerán de la ley de transposición y las impondrán las autoridades que esta designe.</p>
 
-<p>👉 Si eres un <strong>SaaS, una empresa de logística, una fábrica con más de 50 empleados o un proveedor de servicios digitales</strong>, lo más probable es que NIS2 te aplique aunque no te lo hayan dicho.</p>
-
-<h2>Las 4 obligaciones reales que tienes que cumplir</h2>
-
-<h3>1. Gestión de riesgos de ciberseguridad</h3>
-<p>Tener una <strong>política de seguridad documentada</strong> que cubra: análisis de riesgos, política de control de accesos, gestión de incidentes, continuidad de negocio, cifrado, formación al personal y seguridad en la cadena de suministro.</p>
-<p><em>En pyme:</em> un documento de 8-15 páginas firmado por dirección. No hace falta una novela.</p>
-
-<h3>2. Notificación de incidentes en 24h</h3>
-<p>Si sufres un incidente significativo (ransomware, exfiltración de datos, indisponibilidad de servicios), <strong>tienes 24h para notificar al INCIBE-CERT</strong>, 72h para un informe inicial y 1 mes para el informe final. Saltarte este plazo es lo que más multas está generando.</p>
-
-<h3>3. Responsabilidad directa de la dirección</h3>
-<p>NIS2 introduce una novedad importante: <strong>los administradores y directivos pueden ser personalmente responsables</strong> de las multas si no han aprobado e implementado las medidas. No vale con "es cosa de IT". El consejo / gerencia tiene que recibir formación en ciberseguridad y aprobar formalmente el plan.</p>
-
-<h3>4. Auditorías y supervisión</h3>
-<p>El regulador puede pedirte una <strong>auditoría externa de ciberseguridad</strong> en cualquier momento. Si no la tienes y no puedes demostrar tu cumplimiento, multa al canto.</p>
-
-<h2>Cómo empezar a cumplir NIS2 sin volverte loco</h2>
-<p>Plan de 90 días realista para una pyme de 50-200 empleados:</p>
-
+<h2>Cómo empezar a prepararte</h2>
 <ol>
-  <li><strong>Días 1-15 — Diagnóstico:</strong> haz un inventario de activos (servidores, SaaS, dominios, datos personales) y una <strong>auditoría externa de tu superficie de exposición</strong>. <a href="/">Con ReconBase tienes un análisis inicial gratis</a> que cubre puertos abiertos, certificados SSL, configuración DNS/email y filtraciones de credenciales — los hallazgos te valen como evidencia inicial de "due diligence".</li>
-  <li><strong>Días 16-30 — Política de seguridad:</strong> redacta el documento marco con plantillas. INCIBE publica un kit gratis en su web para pymes.</li>
-  <li><strong>Días 31-60 — Implementación técnica:</strong> 2FA en todo, gestor de contraseñas, copias de seguridad cifradas y offline, parches al día, formación obligatoria al personal.</li>
-  <li><strong>Días 61-75 — Plan de respuesta a incidentes:</strong> protocolo de qué hacer si te atacan, con teléfonos del INCIBE-CERT (017) y de tu asesoría legal.</li>
-  <li><strong>Días 76-90 — Aprobación formal:</strong> el plan se eleva a dirección, se firma en acta y se programa una revisión cada 6 meses.</li>
+  <li><strong>Comprueba si estás dentro:</strong> revisa tu sector en los anexos de la directiva y tu tamaño.</li>
+  <li><strong>Haz inventario</strong> de sistemas, datos y proveedores críticos.</li>
+  <li><strong>Cubre lo básico:</strong> autenticación multifactor, copias de seguridad probadas, actualizaciones al día y SPF/DMARC en tu dominio.</li>
+  <li><strong>Escribe un plan de respuesta a incidentes</strong> con responsables y contactos. El <a href="https://www.incibe.es/linea-de-ayuda-en-ciberseguridad" target="_blank" rel="noopener">017 de INCIBE</a> ofrece ayuda gratuita en ciberseguridad.</li>
+  <li><strong>Forma a la dirección y al equipo</strong>, y deja constancia.</li>
 </ol>
-
-<h2>Cuánto cuesta cumplir NIS2 en una pyme</h2>
-<p>Rangos reales del mercado en España (2026):</p>
-<ul>
-  <li><strong>DIY con kit de INCIBE + herramientas gratuitas:</strong> 0&nbsp;€ + 80-120 horas de trabajo interno.</li>
-  <li><strong>Consultoría externa para redacción de la política:</strong> 3.000-8.000 €.</li>
-  <li><strong>Auditoría técnica externa anual:</strong> 5.000-15.000 € según tamaño.</li>
-  <li><strong>SOC gestionado / monitorización 24/7:</strong> desde 1.500 €/mes (pyme).</li>
-</ul>
-<p>Es una inversión, pero <strong>las multas son de 5 a 6 cifras</strong>. Y los ataques que NIS2 quiere evitar cuestan, en media, <strong>105.000 €</strong> a una pyme española (datos del Observatorio del INCIBE 2025).</p>
-
-<h2>Errores típicos que cometen las pymes con NIS2</h2>
-<ul>
-  <li>❌ Pensar que "como soy pequeño no me aplica". Si estás en un sector ampliado y pasas de 50 empleados, te aplica.</li>
-  <li>❌ Comprar un seguro de ciberriesgo y pensar que ya estás cubierto. El seguro paga el daño, pero no te exime de las multas regulatorias.</li>
-  <li>❌ Delegar todo al departamento de IT sin involucrar a dirección. NIS2 obliga a la dirección a aprobar y formarse.</li>
-  <li>❌ No formar a empleados. El 80% de los incidentes empiezan por un click humano en un phishing.</li>
-  <li>❌ Dejar la cadena de suministro fuera. Si tu proveedor de cloud / software cae, tu obligación de notificar sigue siendo tuya.</li>
-</ul>
+<p>INCIBE publica guías y recursos gratuitos para empresas en su web. Para revisar la parte externa de tu web (certificado, cabeceras, SPF/DMARC y, si verificas el dominio, puertos y ficheros expuestos) puedes usar el <a href="/">análisis gratuito de ReconBase</a>. Ten en cuenta que ninguna herramienta por sí sola te hace cumplir NIS2.</p>
 
 <h2>Conclusión</h2>
-<p>NIS2 no es una recomendación: es ley vigente en España y los inspectores del INCIBE ya están actuando. Si tu pyme está en alguno de los sectores ampliados (SaaS, logística, fabricación, alimentación, gestión de residuos, química) y supera los 50 empleados, <strong>tienes que actuar ya</strong>.</p>
-<p>Lo primero — y más barato — es saber qué tienes expuesto. <a href="/">Lanza una auditoría gratuita de tu dominio en 2 minutos</a> y empieza a documentar tu postura de seguridad. Es el primer paso de cualquier plan de cumplimiento serio.</p>
+<p>NIS2 amplía mucho las empresas que deben tomarse en serio la ciberseguridad. Comprueba si te afecta, sigue la tramitación de la ley española y empieza por las medidas básicas, que conviene tener aunque no estés obligado. Este artículo es informativo y no sustituye al asesoramiento legal.</p>
 """.strip()
     },
     {
@@ -6286,7 +6322,7 @@ _BLOG_SEEDS = [
 <h2>Señal 3: Modificaciones recientes que tú no has hecho</h2>
 <p>Si gestionas tu web por FTP/SSH, conéctate y mira qué archivos se han modificado en las últimas 48h:</p>
 <pre><code>find /var/www/tudominio -type f -mtime -2 -ls</code></pre>
-<p>Si ves archivos modificados en directorios como <code>wp-content/uploads/</code>, <code>wp-includes/</code> o <code>wp-admin/</code> y tú no has tocado nada esos días, hay 90&nbsp;% de probabilidad de que sea una backdoor.</p>
+<p>Si ves archivos modificados en directorios como <code>wp-content/uploads/</code>, <code>wp-includes/</code> o <code>wp-admin/</code> y tú no has tocado nada esos días, investígalo: puede ser una puerta trasera.</p>
 
 <h2>Señal 4: Usuarios admin que no creaste</h2>
 <p>El primer movimiento de un atacante en WordPress es crearse un usuario administrador propio. Comprueba en <code>Usuarios → Todos los usuarios</code> en tu wp-admin. Cualquier nombre tipo <code>admin2</code>, <code>support</code>, <code>wpsystem</code>, <code>1qaz2wsx</code> o un email random con dominio raro es señal clara de compromiso.</p>
@@ -6306,7 +6342,7 @@ _BLOG_SEEDS = [
 <p><strong>Verificar ahora:</strong> abre Chrome → F12 → modo dispositivo móvil → entra a tu web desde una búsqueda de Google (no escribiéndola directamente). Si te redirige a algo raro, estás comprometido.</p>
 
 <h2>Señal 7: El antivirus o el navegador bloquean tu web</h2>
-<p>Si tus clientes te dicen <em>"me sale una pantalla roja al entrar"</em>, tu dominio ha entrado en alguna blocklist (Google Safe Browsing, Norton Safe Web, etc.). En este momento estás <strong>perdiendo el 70&nbsp;% del tráfico</strong> porque ningún navegador deja entrar.</p>
+<p>Si tus clientes te dicen <em>"me sale una pantalla roja al entrar"</em>, tu dominio ha entrado en alguna lista de sitios peligrosos (como las de Google). Muchos navegadores muestran una advertencia y buena parte de tus visitantes no llegará a entrar.</p>
 <p><strong>Verificar ahora:</strong> tu dominio en <a href="https://transparencyreport.google.com/safe-browsing/search" target="_blank" rel="noopener">Google Safe Browsing</a>. Si sale "No safe" o "Some pages are dangerous", tienes confirmación oficial.</p>
 
 <h2>Comprobación en 2 minutos: la versión rápida</h2>
@@ -6328,7 +6364,7 @@ _BLOG_SEEDS = [
   <li><strong>Aplica todas las actualizaciones</strong>: WordPress core, todos los plugins, todos los themes. Borra los que no uses.</li>
   <li><strong>Solicita revisión en Google Search Console</strong> una vez limpia la web, para que te quiten de la lista negra.</li>
   <li><strong>Audita la causa raíz</strong>: ¿entraron por una contraseña filtrada? ¿por un plugin vulnerable? ¿por una contraseña FTP por defecto del hosting? Sin saber la causa, te volverán a hackear en semanas.</li>
-  <li><strong>Notifica si es necesario.</strong> Si hubo exfiltración de datos personales, tienes 72h para notificar a la AEPD (RGPD). Si estás bajo NIS2, también al INCIBE-CERT en 24h.</li>
+  <li><strong>Notifica si es necesario.</strong> Si hubo exfiltración de datos personales, tienes 72h para notificar a la AEPD (RGPD). Si tu empresa está sujeta a NIS2, revisa también sus plazos de notificación.</li>
 </ol>
 
 <h2>Conclusión</h2>
@@ -6342,7 +6378,7 @@ _BLOG_SEEDS = [
         "tags": "prestashop,skimmer,magecart,ecommerce,seguridad,checkout,PCI-DSS,2026",
         "contenido": """
 <h2>El robo silencioso que está vaciando tiendas PrestaShop en España</h2>
-<p>En 2025, el CCN-CERT registró un <strong>aumento del 340%</strong> en incidentes de robo de datos de tarjeta en tiendas online españolas (vs 2024). El vector dominante: <strong>skimmers digitales</strong>, también conocidos como <em>Magecart</em>, <em>web skimmers</em> o <em>e-skimmers</em>. Y PrestaShop está entre los CMS más afectados.</p>
+<p>Los <strong>skimmers digitales</strong>, también conocidos como <em>Magecart</em>, <em>web skimmers</em> o <em>e-skimmers</em>, son una de las formas más dañinas de robar datos de tarjeta en tiendas online. Afectan a cualquier plataforma, también a PrestaShop.</p>
 <p>Lo más peligroso es que <strong>no tienes ni idea de que estás afectado hasta semanas después</strong>. Tu tienda funciona normal, tus clientes pagan normal, tú vendes normal. Y mientras tanto, los datos de tarjeta de cada compra llegan al servidor de un atacante en Rusia, Ucrania o Vietnam.</p>
 
 <h2>¿Qué es exactamente un skimmer digital?</h2>
@@ -6371,7 +6407,7 @@ _BLOG_SEEDS = [
 <p>Si recibes 2-3 emails en una semana de clientes diciendo que les llegaron cargos fraudulentos después de comprar en tu tienda, no es coincidencia. <strong>Es la pista más fiable</strong>.</p>
 
 <h3>4. Aumento de chargebacks de tu pasarela</h3>
-<p>Mira el panel de Redsys, Stripe o tu banco. Si los chargebacks suben un 20-30% sin explicación, podrías tener un skimmer activo desde hace meses.</p>
+<p>Mira el panel de Redsys, Stripe o tu banco. Si los contracargos suben sin explicación, podrías tener un skimmer activo.</p>
 
 <h3>5. Archivos PHP modificados en /modules/ o /themes/</h3>
 <p>Conéctate por SSH/FTP y mira los timestamps:</p>
@@ -6394,15 +6430,15 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
   <li><strong>Renombra el panel de administración</strong> a algo aleatorio: /admin-x7K9pQ por ejemplo.</li>
   <li><strong>Elimina /install/</strong> si sigue ahí.</li>
   <li><strong>Activa autenticación en dos factores</strong> para todos los usuarios admin.</li>
-  <li><strong>Notifica a la AEPD en 72h</strong> (obligatorio RGPD art. 33). Si estás bajo NIS2 también al INCIBE-CERT en 24h.</li>
+  <li><strong>Notifica a la AEPD en 72h</strong> (obligatorio RGPD art. 33). Si tu empresa está sujeta a NIS2, revisa también sus plazos de notificación.</li>
   <li><strong>Avisa a tu pasarela de pago.</strong> Pueden ayudarte a identificar el rango de fechas afectado y notificar a las tarjetas comprometidas.</li>
   <li><strong>Si has perdido la certificación PCI-DSS</strong>: contacta con tu QSA (Qualified Security Assessor) para recertificación. Sin esto no puedes vender online.</li>
 </ol>
 
 <h2>Cómo prevenir nuevos skimmers</h2>
 <ul>
-  <li><strong>Mantén PrestaShop y módulos al día.</strong> El 80% de skimmers entran por vulnerabilidades conocidas que tienen parche.</li>
-  <li><strong>Audita mensualmente con ReconBase</strong> o herramientas equivalentes. El coste de la suscripción Pro es 50x más barato que limpiar un incidente.</li>
+  <li><strong>Mantén PrestaShop y módulos al día.</strong> Muchos skimmers entran por vulnerabilidades conocidas que ya tenían parche.</li>
+  <li><strong>Revisa la tienda periódicamente</strong> con ReconBase (gratuito) o herramientas equivalentes.</li>
   <li><strong>Activa CSP (Content Security Policy)</strong> con allowlist de dominios. Impide que JavaScript externo cargue desde dominios no autorizados — el ataque Magecart deja de funcionar.</li>
   <li><strong>Subresource Integrity (SRI)</strong> en los scripts externos. Garantiza que el JS no haya sido modificado en tránsito.</li>
   <li><strong>Logs centralizados</strong> con alerta automática si cambian archivos PHP en producción.</li>
@@ -6411,43 +6447,43 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
 </ul>
 
 <h2>Conclusión</h2>
-<p>Los skimmers digitales son la amenaza nº1 contra tiendas PrestaShop en 2026 y la mayoría de propietarios no saben que están infectados. La detección temprana ahorra multas RGPD, chargebacks y pérdida del sello PCI-DSS. <a href="/auditoria-prestashop">Lanza una auditoría gratuita de tu PrestaShop ahora</a> y comprueba si el detector de skimmers de ReconBase encuentra algo sospechoso. Si lo encuentra, sigue el protocolo de esta guía.</p>
+<p>Los skimmers digitales son una amenaza seria para cualquier tienda online y pueden pasar mucho tiempo sin detectarse. Detectarlos pronto reduce el daño a tus clientes, los contracargos y los problemas con tu pasarela de pago. <a href="/auditoria-prestashop">Lanza una auditoría gratuita de tu PrestaShop ahora</a> y comprueba si el detector de skimmers de ReconBase encuentra algo sospechoso. Si lo encuentra, sigue el protocolo de esta guía.</p>
 """.strip()
     },
     {
         "slug": "auditoria-wordpress-12-checks-reconbase",
-        "titulo": "Auditoría WordPress: los 12 checks de seguridad que hace ReconBase gratis en 60 segundos",
-        "excerpt": "Repasamos uno a uno los 12 chequeos técnicos que ReconBase ejecuta en cualquier WordPress: qué busca, por qué importa, qué hacer si falla. Sin instalar plugins, sin compartir credenciales.",
+        "titulo": "Auditoría WordPress: los 12 checks de seguridad que hace ReconBase gratis",
+        "excerpt": "Repasamos uno a uno los 12 chequeos técnicos de ReconBase para WordPress: cuáles se hacen en cualquier web y cuáles solo en dominios verificados, qué buscan y qué hacer si fallan.",
         "tags": "wordpress,auditoria,seguridad,wp-scan,plugins,xmlrpc,wp-json,2026",
         "contenido": """
 <h2>Por qué necesitas auditar tu WordPress (aunque tu web vaya bien)</h2>
-<p>WordPress es el CMS más usado del mundo: el 43% de toda Internet corre sobre él. Eso lo convierte también en el <strong>objetivo más atacado</strong>. El 90% de los hackeos a webs WordPress se producen por tres causas: <strong>versión obsoleta, plugin vulnerable o credenciales filtradas</strong>. Las tres son detectables sin tocar el sitio, simplemente analizando lo que se ve desde fuera.</p>
-<p>Esa es exactamente la idea de la <a href="/auditoria-wordpress">auditoría gratuita de ReconBase</a>: 12 chequeos en 60 segundos, sin instalar nada, sin compartir el wp-admin. Te explico qué hace cada uno.</p>
+<p>WordPress es el CMS más usado del mundo y, por eso, uno de los más atacados. Tres causas aparecen una y otra vez en los hackeos: <strong>versión obsoleta, plugin vulnerable o credenciales filtradas</strong>. Buena parte de esto se puede revisar desde fuera, sin tocar el sitio.</p>
+<p>Esa es exactamente la idea de la <a href="/auditoria-wordpress">auditoría gratuita de ReconBase</a>: 12 chequeos sin instalar nada ni compartir el wp-admin. Los marcados como <strong>(dominio verificado)</strong> solo se hacen si demuestras que el dominio es tuyo, porque consisten en probar rutas que tu web no enlaza. Te explico qué hace cada uno.</p>
 
 <h2>1. Detección de la versión del core</h2>
-<p>Buscamos la versión de WordPress por cuatro caminos: <code>&lt;meta name="generator"&gt;</code> en el HTML de la home, generator del feed RSS (<code>/feed/</code>), API JSON (<code>/wp-json/</code>) y el archivo <code>/readme.html</code>. Si todos coinciden con la última versión estable, OK. Si detectamos una versión inferior, te marcamos cuántas minor o major versiones llevas de retraso.</p>
-<p><strong>Por qué importa:</strong> el equipo de WordPress publica parches de seguridad cada pocas semanas. Versiones >12 meses antiguas suelen tener al menos 1-2 CVEs públicos explotables.</p>
+<p>Buscamos la versión de WordPress en la etiqueta <code>&lt;meta name="generator"&gt;</code> de la home, en el feed RSS (<code>/feed/</code>) y en la API JSON (<code>/wp-json/</code>), y la comparamos con la última versión estable. Si detectamos una versión inferior, te marcamos cuántas minor o major versiones llevas de retraso.</p>
+<p><strong>Por qué importa:</strong> el equipo de WordPress publica parches de seguridad cada pocas semanas. Cuanto más antigua es la versión, más vulnerabilidades públicas acumula.</p>
 
-<h2>2. xmlrpc.php expuesto</h2>
+<h2>2. xmlrpc.php expuesto (dominio verificado)</h2>
 <p>Comprobamos si <code>/xmlrpc.php</code> responde 200 con cabecera XML-RPC. Si responde, está abierto.</p>
-<p><strong>Por qué importa:</strong> xmlrpc.php permite hacer login con una única petición HTTP (en vez de pasar por el formulario de wp-login.php) y, peor aún, soporta el método <code>system.multicall</code> que ejecuta cientos de logins en una sola petición. Resultado: fuerza bruta acelerada 100x. Además es un vector clásico de amplificación pingback DDoS.</p>
+<p><strong>Por qué importa:</strong> xmlrpc.php permite hacer login con una única petición HTTP (en vez de pasar por el formulario de wp-login.php) y, peor aún, soporta el método <code>system.multicall</code> que ejecuta cientos de logins en una sola petición. Resultado: fuerza bruta mucho más rápida. Además es un vector clásico de amplificación pingback DDoS.</p>
 <p><strong>Cómo arreglarlo:</strong> si no usas Jetpack ni edición móvil remota, bloquéalo en .htaccess o nginx. Una sola línea.</p>
 
-<h2>3. Enumeración de usuarios vía wp-json</h2>
+<h2>3. Enumeración de usuarios vía wp-json (dominio verificado)</h2>
 <p>Hacemos GET a <code>/wp-json/wp/v2/users</code>. Si responde con una lista de usuarios, los enumeramos (hasta los 5 primeros, sin recoger emails ni datos sensibles).</p>
-<p><strong>Por qué importa:</strong> cualquier atacante puede leer los nombres de usuario reales de tus administradores sin necesidad de adivinar. Combinado con xmlrpc abierto o con un wp-login.php sin captcha = fuerza bruta dirigida en horas.</p>
+<p><strong>Por qué importa:</strong> cualquier atacante puede leer los nombres de usuario reales de tus administradores sin necesidad de adivinar. Combinado con xmlrpc abierto o con un wp-login.php sin límite de intentos, facilita la fuerza bruta dirigida.</p>
 <p><strong>Cómo arreglarlo:</strong> plugin "Stop User Enumeration" o regla nginx que bloquee la ruta. Lleva 5 minutos.</p>
 
 <h2>4. Plugins activos y cruce con CVEs conocidos</h2>
 <p>Extraemos los slugs de plugin de las URLs <code>/wp-content/plugins/[slug]/</code> presentes en el HTML. Cruzamos con nuestra lista interna de plugins con vulnerabilidades públicas conocidas (WP File Manager RCE pre-auth, Duplicator antiguos, Elementor con XSS, Contact Form 7 con upload vulnerable, etc.).</p>
-<p><strong>Por qué importa:</strong> el plugin obsoleto es el vector #1 de hackeo de WordPress en 2026. Algunos CVEs son tan graves que permiten ejecución remota de código sin autenticación.</p>
+<p><strong>Por qué importa:</strong> la mayoría de vulnerabilidades que se publican en el ecosistema WordPress están en plugins. Algunos CVEs son tan graves que permiten ejecución remota de código sin autenticación.</p>
 <p><strong>Limitación:</strong> solo detectamos plugins que dejan rastro en el HTML público. Los plugins de admin-only no los vemos (es esperado).</p>
 
 <h2>5. Theme activo y versión</h2>
 <p>Identificamos el theme por la ruta <code>/wp-content/themes/[slug]/</code>. Conocer el theme ayuda a detectar themes premium descontinuados o themes nulled (piratas) con backdoors preinstaladas.</p>
 
-<h2>6. Archivos sensibles expuestos</h2>
-<p>Probamos seis rutas típicas que <strong>nunca deberían estar accesibles desde el navegador</strong>:</p>
+<h2>6. Archivos sensibles expuestos (dominio verificado)</h2>
+<p>Comprobamos si responden seis rutas típicas que <strong>nunca deberían estar accesibles desde el navegador</strong>. Solo miramos si responden: nunca descargamos su contenido.</p>
 <ul>
   <li><code>/wp-config.php.bak</code> y <code>/wp-config.php~</code>: backups con credenciales DB en claro.</li>
   <li><code>/.wp-config.php.swp</code>: archivo swap de vim — credenciales DB recuperables.</li>
@@ -6460,7 +6496,7 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
 <h2>7. SSL/TLS y caducidad del certificado</h2>
 <p>Comprobamos si tu dominio tiene HTTPS, si el certificado es válido y cuántos días faltan para que expire. Si caduca en <30 días, te avisamos. Si ya caducó, alerta crítica.</p>
 
-<h2>8. Puertos críticos abiertos</h2>
+<h2>8. Puertos críticos abiertos (dominio verificado)</h2>
 <p>Escaneo de puertos críticos (MySQL, RDP, MongoDB, Redis, PostgreSQL, MSSQL). Tu hosting nunca debería exponer estos puertos al exterior — si responden, hay un riesgo real de robo de base de datos.</p>
 
 <h2>9. Configuración DNS (SPF + DMARC)</h2>
@@ -6473,7 +6509,7 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
 <p>Análisis pasivo de subdominios. Te mostramos los detectados. Útil para encontrar entornos de staging, paneles internos o servicios olvidados que también deberían auditarse.</p>
 
 <h2>12. Filtraciones de credenciales asociadas al dominio</h2>
-<p>Cuando proporcionas un email empresarial, cruzamos con HaveIBeenPwned para ver si las credenciales asociadas han aparecido en alguna brecha pública (LinkedIn 2021, Adobe, Dropbox, etc.). Si tu admin reusa contraseña, esta es la entrada que un atacante encontrará primero.</p>
+<p>Si analizas tu propio email o uno de un dominio que has verificado, lo consultamos en <a href="https://haveibeenpwned.com" target="_blank" rel="noopener">Have I Been Pwned</a> para ver si ha aparecido en alguna brecha pública. Si tu admin reusa contraseña, esta es la entrada que un atacante encontrará primero.</p>
 
 <h2>Cómo se ve el resultado</h2>
 <p>El informe que recibes tiene:</p>
@@ -6485,24 +6521,24 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
 </ul>
 <p>Y, si te registras gratis, también recibes:</p>
 <ul>
-  <li>PDF ejecutivo profesional para mandar a dirección o cumplir RGPD/NIS2.</li>
-  <li>Monitorización 24/7: reescaneo automático y alerta inmediata si aparece un problema nuevo.</li>
+  <li>Informe PDF para compartir con dirección o con tu proveedor.</li>
+  <li>Con el dominio verificado, vigilancia automática: análisis periódicos y aviso por email si aparece un problema nuevo.</li>
   <li>Histórico de escaneos para ver evolución.</li>
-  <li>Verificación de filtraciones de email contra HaveIBeenPwned ilimitada.</li>
+  <li>Consulta de filtraciones de tu email y de los de tus dominios verificados.</li>
 </ul>
 
 <h2>Limitaciones honestas</h2>
-<p>Esta auditoría externa cubre el 80% del riesgo común de WordPress, pero <strong>no es un pentest</strong>. No detecta:</p>
+<p>Esta auditoría externa cubre los problemas más habituales de WordPress, pero <strong>no es un pentest</strong>. No detecta:</p>
 <ul>
   <li>Plugins instalados sin rastro en HTML público (raros).</li>
   <li>Vulnerabilidades específicas de tu código personalizado (custom plugins/themes).</li>
   <li>Backdoors que se camuflen perfectamente en archivos PHP del core.</li>
   <li>Configuraciones inseguras del wp-admin (capacidades de roles, etc.).</li>
 </ul>
-<p>Para eso necesitas un escáner interno como Wordfence o Sucuri, o una auditoría manual por un pentester. Pero <strong>la mayoría de hackeos detectables se previenen con esta capa externa</strong> — porque la mayoría de atacantes usan exactamente los mismos vectores que nuestros 12 checks miran.</p>
+<p>Para eso necesitas un escáner interno como Wordfence o Sucuri, o una auditoría manual por un pentester. Aun así, esta capa externa cubre los vectores que más usan los ataques automatizados.</p>
 
 <h2>Conclusión</h2>
-<p>La auditoría WordPress de ReconBase es lo que harías tú mismo si fueras pentester y tuvieras 60 segundos. <a href="/auditoria-wordpress">Pásala ahora a tu dominio</a> y mira el informe. Si todo sale en verde, perfecto — tienes evidencia de "due diligence" para auditorías de cumplimiento. Si sale algo en rojo, mejor lo arreglas antes de que un atacante lo encuentre.</p>
+<p><a href="/auditoria-wordpress">Pasa la auditoría a tu dominio</a> y mira el informe. Si sale algo en rojo, mejor arreglarlo antes de que lo encuentre un atacante.</p>
 """.strip()
     },
     {
@@ -6512,14 +6548,14 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
         "tags": "wordpress,vulnerabilidades,parches,botnet,seguridad,CVE,2026",
         "contenido": """
 <h2>La ventana entre vulnerabilidad y ataque se mide ya en horas</h2>
-<p>Hace cinco años, cuando se publicaba una vulnerabilidad en un plugin popular de WordPress, los administradores tenían días — a veces semanas — para aplicar el parche antes de que alguien la explotara. En 2026 esa ventana se ha desplomado: los datos del sector muestran que los primeros intentos de explotación masiva llegan, de media, <strong>en menos de 12 horas</strong> desde la publicación del CVE. En algunos casos documentados, en menos de 2 horas.</p>
+<p>Hace cinco años, cuando se publicaba una vulnerabilidad en un plugin popular de WordPress, los administradores tenían días — a veces semanas — para aplicar el parche antes de que alguien la explotara. Hoy esa ventana es mucho más corta: los primeros intentos de explotación automatizada pueden llegar <strong>en cuestión de horas</strong> desde que se publica la vulnerabilidad.</p>
 <p>Esto cambia por completo las reglas. Ya no basta con "actualizar de vez en cuando". Si tu WordPress tiene un plugin vulnerable y tú te enteras el lunes de una vulnerabilidad publicada el viernes, es muy probable que tu web lleve el fin de semana entero siendo escaneada por botnets automatizadas.</p>
 
 <h2>¿Por qué se ha acelerado tanto?</h2>
 <p>Cuatro factores se han combinado:</p>
 <ol>
   <li><strong>Automatización total del lado atacante.</strong> Los grupos de ataque ya no buscan webs a mano. Tienen botnets que monitorizan las bases de datos públicas de vulnerabilidades (CVE, WPScan, Wordfence Intelligence) y, en cuanto aparece una nueva, generan automáticamente el exploit y lo lanzan contra millones de webs WordPress indexadas.</li>
-  <li><strong>WordPress es el objetivo más rentable.</strong> Con el 43% de Internet sobre WordPress, cualquier vulnerabilidad en un plugin con cientos de miles de instalaciones es una mina. El retorno por hora de trabajo del atacante es altísimo.</li>
+  <li><strong>WordPress es el objetivo más rentable.</strong> Al ser el CMS más usado, cualquier vulnerabilidad en un plugin con cientos de miles de instalaciones es una mina. El retorno por hora de trabajo del atacante es altísimo.</li>
   <li><strong>Inteligencia artificial en la generación de exploits.</strong> Lo que antes requería un investigador experto ahora se acelera con herramientas que convierten el aviso de seguridad (el "advisory") en código de explotación funcional en minutos.</li>
   <li><strong>El parque de WordPress está desatendido.</strong> La mayoría de pymes instalaron su WordPress hace años y nadie lo mantiene. Plugins de 2019, versiones de core sin actualizar, themes nulled. Es terreno fértil.</li>
 </ol>
@@ -6545,7 +6581,7 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
 <p>Cada plugin y theme instalado — aunque esté desactivado — es una puerta potencial. Un plugin desactivado con una vulnerabilidad de tipo "unauthenticated" sigue siendo explotable. Borra todo lo que no uses de verdad.</p>
 
 <h3>3. Monitorización continua, no revisiones puntuales</h3>
-<p>Aquí está la clave de 2026: como la ventana es de horas, la revisión manual mensual no sirve. Necesitas que <strong>algo vigile tu web cada día</strong> y te avise en cuanto aparezca un problema nuevo. La vigilancia nocturna de ReconBase reescanea tu dominio automáticamente y te envía una alerta por email (y Slack) si detecta una versión obsoleta, un plugin que pasó a ser vulnerable o un archivo sensible recién expuesto.</p>
+<p>Aquí está la clave de 2026: como la ventana es de horas, la revisión manual mensual no sirve. Necesitas que <strong>algo vigile tu web cada día</strong> y te avise en cuanto aparezca un problema nuevo. Con tu dominio verificado, la vigilancia de ReconBase lo analiza automáticamente y te envía una alerta por email (y Slack) si detecta una versión obsoleta, un plugin que pasó a ser vulnerable o un archivo sensible recién expuesto.</p>
 
 <h3>4. Bloquea los vectores de fuerza bruta</h3>
 <p>Deshabilita xmlrpc.php si no lo usas, bloquea la enumeración de usuarios y pon un límite de intentos de login. Son tres cambios de configuración que cierran los ataques automatizados más comunes.</p>
@@ -6567,6 +6603,14 @@ with app.app_context():
         for _seed in _BLOG_SEEDS:
             existing = BlogPost.query.filter_by(slug=_seed["slug"]).first()
             if existing:
+                # Las correcciones de contenido de los seeds se aplican a los
+                # posts ya publicados subiendo BLOG_SEEDS_VERSION.
+                if (existing.seed_version or 1) < BLOG_SEEDS_VERSION:
+                    existing.titulo = _seed["titulo"]
+                    existing.excerpt = _seed["excerpt"]
+                    existing.contenido = _seed["contenido"]
+                    existing.tags = _seed["tags"]
+                    existing.seed_version = BLOG_SEEDS_VERSION
                 continue
             _bp = BlogPost(
                 slug=_seed["slug"],
@@ -6576,6 +6620,7 @@ with app.app_context():
                 tags=_seed["tags"],
                 publicado=True,
                 autor="ReconBase",
+                seed_version=BLOG_SEEDS_VERSION,
             )
             db.session.add(_bp)
         db.session.commit()

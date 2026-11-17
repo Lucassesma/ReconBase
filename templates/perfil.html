@@ -28,7 +28,6 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
 .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.22rem .7rem;border-radius:20px;font-size:.72rem;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.04em}
 .badge-pro{background:rgba(34,197,94,.15);color:#4ADE80;border:1px solid #14532D}
 .badge-free{background:rgba(100,116,139,.12);color:#94A3B8;border:1px solid #334155}
-.badge-trial{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid #78350F}
 .badge-ok{background:rgba(34,197,94,.1);color:#4ADE80;border:1px solid #14532D}
 .badge-warn{background:rgba(239,68,68,.1);color:#F87171;border:1px solid #7F1D1D}
 .progress-wrap{margin-top:1rem}
@@ -262,7 +261,7 @@ details.card-collapsible .col-body > div:first-child{margin-top:0}
     <summary>
       <span style="display:flex;align-items:center;gap:.75rem">
         <span class="col-icon">🔌</span>
-        <span>Integraciones (Slack, Webhook){% if user.plan_efectivo == 'free' %} <span style="font-size:.62rem;background:#14532D;color:#4ADE80;padding:.15rem .55rem;border-radius:12px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:.4rem">🔒 PRO</span>{% endif %}</span>
+        <span>Integraciones (Slack, Webhook)</span>
       </span>
       <span class="chev">›</span>
     </summary>
@@ -270,24 +269,6 @@ details.card-collapsible .col-body > div:first-child{margin-top:0}
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Recibe notificaciones automáticas en Slack o tu propio webhook tras cada escaneo.
     </div>
-    {% if user.plan_efectivo == 'free' %}
-    <div style="padding:1.1rem 1.25rem;background:linear-gradient(135deg,rgba(20,83,45,.35),rgba(21,128,61,.1));border:1px solid #14532D;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-      <div style="font-size:.85rem;color:#CBD5E1;line-height:1.5">
-        Las integraciones con <strong style="color:#E2EDF8">Slack</strong> y <strong style="color:#E2EDF8">webhooks</strong> están disponibles a partir del plan Pro. Lleva las alertas al canal donde ya trabajas.
-      </div>
-      <a href="/#precios" style="text-decoration:none"><button class="btn btn-green" style="white-space:nowrap">Pásate a Pro — 9€/mes</button></a>
-    </div>
-    <div style="opacity:.4;pointer-events:none;margin-top:1rem">
-      <div class="form-group">
-        <label class="form-label">Slack Webhook URL</label>
-        <input class="form-input" type="url" id="int-slack" placeholder="https://hooks.slack.com/services/T.../B.../xxx" disabled>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Webhook personalizado (HTTPS)</label>
-        <input class="form-input" type="url" id="int-webhook" placeholder="https://tu-servidor.com/webhook" disabled>
-      </div>
-    </div>
-    {% else %}
     <div class="form-group">
       <label class="form-label">Slack Webhook URL</label>
       <input class="form-input" type="url" id="int-slack" placeholder="https://hooks.slack.com/services/T.../B.../xxx">
@@ -299,7 +280,7 @@ details.card-collapsible .col-body > div:first-child{margin-top:0}
     <button class="btn btn-green" onclick="guardarIntegraciones()">Guardar integraciones</button>
     <div class="msg msg-ok" id="int-ok" style="display:none">Integraciones guardadas</div>
     <div class="msg msg-err" id="int-err"></div>
-    {% endif %}
+    
     </div>
   </details>
 

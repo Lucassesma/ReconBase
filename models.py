@@ -133,6 +133,7 @@ class BlogPost(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     tags       = db.Column(db.String(300), nullable=True)
+    seed_version = db.Column(db.Integer, default=1, nullable=True)  # versión del contenido sembrado
 
 
 # ─── Monitorización SSL ───────────────────────────────────────────────────────

@@ -99,6 +99,13 @@ tr:hover{background:rgba(34,197,94,.04)}
   </table>
   </div>
 
+  <div class="section-title">Aviso de cambio de términos</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:2rem;font-size:.85rem;line-height:1.6">
+    <p style="margin-bottom:.75rem">Email a todos los usuarios explicando que ReconBase es gratis, la verificación de dominios y los nuevos términos (en vigor el {{ aviso_vigor }}). Pendientes de recibirlo: <strong>{{ aviso_pendientes }}</strong>. Los términos prometen avisar con 15 días de antelación: envíalo cuanto antes o cambia la fecha.</p>
+    <button class="btn-sm" onclick="avisoTerminos(true)">Enviarme una prueba</button>
+    <button class="btn-sm red" onclick="avisoTerminos(false)">Enviar a todos</button>
+  </div>
+
   <div class="section-title">Últimos escaneos (20)</div>
   <div style="overflow-x:auto">
   <table>
@@ -124,6 +131,19 @@ tr:hover{background:rgba(34,197,94,.04)}
 </div>
 
 <script>
+async function avisoTerminos(prueba) {
+  var body = {prueba: prueba};
+  if (!prueba) {
+    var c = prompt('Se enviará el email a todos los usuarios que aún no lo han recibido. Escribe ENVIAR para confirmar.');
+    if (c === null) return;
+    body.confirmacion = c;
+  }
+  var r = await fetch('/api/admin/aviso-terminos', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  var d = await r.json();
+  if (d.ok) { toast((d.prueba ? 'Prueba enviada a tu email' : ('Enviados: ' + d.enviados + (d.fallidos ? ' · fallidos: ' + d.fallidos : ''))), 'ok'); if (!d.prueba) setTimeout(function(){ location.reload(); }, 1500); }
+  else toast(d.error || 'Error', 'err');
+}
+
 async function cambiarPlan(uid, plan) {
   if (!confirm('¿Cambiar a ' + plan + '?')) return;
   var r = await fetch('/api/admin/user/' + uid + '/plan', {
