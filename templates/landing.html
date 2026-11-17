@@ -2,44 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<!-- Google Consent Mode v2 (RGPD) -->
-<script>
-window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-// Estado por defecto: denegado (RGPD strict)
-gtag('consent','default',{
-  'ad_storage':'denied','analytics_storage':'denied',
-  'ad_user_data':'denied','ad_personalization':'denied',
-  'functionality_storage':'granted','security_storage':'granted',
-  'wait_for_update':500
-});
-// Si ya hay consentimiento aceptado guardado, flipear a granted ANTES de cargar GTM
-try{
-  var v=localStorage.getItem('rb_consent_v3')||(/(^|;\s*)rb_consent=accepted/.test(document.cookie||'')?'accepted':'');
-  if(v==='accepted'){
-    gtag('consent','update',{
-      'ad_storage':'granted','analytics_storage':'granted',
-      'ad_user_data':'granted','ad_personalization':'granted'
-    });
-  }
-}catch(_){}
-</script>
-<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PKCFGF7M');</script>
-<!-- End Google Tag Manager -->
+{% include "_analitica.html" %}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- Theme bootstrap (antes de pintar para evitar FOUC) -->
-<title>ReconBase — Analizamos 47 puntos de seguridad de tu web en 2 minutos</title>
+<title>ReconBase — Revisa gratis la seguridad de tu web en 2 minutos</title>
 
-<!-- Banner de cookies: se gestiona 100% al final del body en su propio bloque.
-     No hay HTML server-side, así que aquí no hace falta blocker anti-flash. -->
 
 
 <!-- SEO básico -->
-<meta name="description" content="Analizamos 47 puntos de seguridad de tu web en 2 minutos: puertos expuestos, filtraciones de datos, suplantación de email (SPF/DMARC), cabeceras HTTPS, certificados SSL y subdominios olvidados. Gratis, sin tarjeta, sin instalar nada.">
+<meta name="description" content="Revisa gratis la seguridad de la web de tu empresa: certificado SSL, suplantación de email (SPF/DMARC), cabeceras HTTP y CMS. Con tu dominio verificado, también puertos y ficheros expuestos. Sin tarjeta y sin instalar nada.">
 <meta name="keywords" content="analizar seguridad dominio, escaner seguridad web, filtraciones datos empresa, seguridad pymes, auditoría seguridad gratis, SPF DMARC, puertos expuestos">
 <meta name="author" content="ReconBase">
 <meta name="robots" content="index, follow">
@@ -49,8 +20,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- Open Graph (redes sociales) -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ base_url }}/">
-<meta property="og:title" content="ReconBase — Analizamos 47 puntos de seguridad de tu web en 2 minutos">
-<meta property="og:description" content="Analizamos 47 puntos de seguridad: puertos expuestos, filtraciones, SPF/DMARC, cabeceras HTTPS y SSL. Gratis, sin tarjeta, en 2 minutos.">
+<meta property="og:title" content="ReconBase — Revisa gratis la seguridad de tu web en 2 minutos">
+<meta property="og:description" content="SSL, SPF/DMARC, cabeceras HTTP y CMS de tu web. Gratis, sin tarjeta, en 2 minutos.">
 <meta property="og:image" content="{{ base_url }}/og/home.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -58,15 +29,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="ReconBase — Analizamos 47 puntos de seguridad de tu web en 2 minutos">
-<meta name="twitter:description" content="Analizamos 47 puntos de seguridad: puertos expuestos, filtraciones, SPF/DMARC, cabeceras HTTPS y SSL. Gratis, sin tarjeta, en 2 minutos.">
+<meta name="twitter:title" content="ReconBase — Revisa gratis la seguridad de tu web en 2 minutos">
+<meta name="twitter:description" content="SSL, SPF/DMARC, cabeceras HTTP y CMS de tu web. Gratis, sin tarjeta, en 2 minutos.">
 <meta name="twitter:image" content="{{ base_url }}/og/home.png">
-
-<!-- Analytics (GA opcional; Plausible se inserta abajo proxied via /js/pa.js) -->
-{% if config.GA_ID %}
-<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GA_ID }}"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ config.GA_ID }}');</script>
-{% endif %}
 
 <!-- JSON-LD Structured Data -->
 <script type="application/ld+json">
@@ -77,94 +42,35 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "@type": "SoftwareApplication",
       "name": "ReconBase",
       "url": "{{ base_url }}",
-      "description": "ReconBase analiza la seguridad perimetral de tu empresa: puertos expuestos, filtraciones de datos, configuración DNS y cabeceras HTTP. Sin conocimientos técnicos. Resultados en 2 minutos.",
+      "description": "ReconBase revisa la seguridad de la web de tu empresa: certificado SSL, SPF y DMARC, cabeceras HTTP, CMS y, en dominios verificados, puertos y ficheros expuestos. Gratis y sin conocimientos técnicos.",
       "applicationCategory": "SecurityApplication",
       "operatingSystem": "Web",
-      "offers": [
-        {
-          "@type": "Offer",
-          "name": "Plan Free",
-          "price": "0",
-          "priceCurrency": "EUR",
-          "description": "30 análisis al mes, 10 dominios, informe básico"
-        },
-        {
-          "@type": "Offer",
-          "name": "Plan Pro",
-          "price": "29",
-          "priceCurrency": "EUR",
-          "priceSpecification": {
-            "@type": "UnitPriceSpecification",
-            "billingDuration": "P1M"
-          },
-          "description": "Escaneos ilimitados, vigilancia nocturna automática, alertas por email, informes PDF ejecutivos"
-        }
-      ],
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR", "description": "Gratuito"},
       "featureList": [
-        "Escáner de puertos",
-        "Detección de filtraciones en dark web",
         "Verificación SPF y DMARC",
         "Auditoría de cabeceras HTTP",
-        "Enumeración de subdominios",
-        "Detección de CMS",
-        "Informes PDF ejecutivos",
-        "Vigilancia nocturna automática"
+        "Certificado SSL/TLS",
+        "Detección de CMS y plugins visibles",
+        "Escaneo de puertos en dominios verificados",
+        "Consulta de filtraciones en Have I Been Pwned",
+        "Informes PDF"
       ]
     },
     {
       "@type": "Organization",
       "name": "ReconBase",
       "url": "{{ base_url }}",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "hola@reconbase.es",
-        "contactType": "customer support",
-        "availableLanguage": "Spanish"
-      }
+      "contactPoint": {"@type": "ContactPoint", "email": "hola@reconbase.es", "contactType": "customer support", "availableLanguage": "Spanish"}
     },
     {
       "@type": "FAQPage",
       "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "¿Necesito conocimientos de ciberseguridad para usar ReconBase?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. Diseñado para dueños de negocio sin perfil técnico. Los informes explican cada riesgo con pasos de acción concretos."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Es legal escanear mi propio dominio?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Completamente legal. Solo puedes analizar dominios que tú mismo introduzcas. El motor usa técnicas pasivas sobre infraestructura pública."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Qué pasa si ReconBase detecta una filtración de datos?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contraseñas, 2FA, notificación RGPD si aplica."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿Puedo cancelar el plan Pro en cualquier momento?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Sí, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿El pago es seguro?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta."
-          }
-        }
+        {"@type": "Question", "name": "¿Necesito conocimientos de ciberseguridad para usar ReconBase?",
+         "acceptedAnswer": {"@type": "Answer", "text": "No. Cada resultado explica qué significa y cómo solucionarlo paso a paso."}},
+        {"@type": "Question", "name": "¿Es legal analizar un dominio con ReconBase?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Sin cuenta, ReconBase solo hace un análisis pasivo: lee lo que la web publica para cualquier visitante. Las comprobaciones activas (puertos, rutas no enlazadas, ficheros) solo se hacen en dominios cuyo titular ha verificado que son suyos."}},
+        {"@type": "Question", "name": "¿Cuánto cuesta?",
+         "acceptedAnswer": {"@type": "Answer", "text": "Nada. ReconBase es gratuito y no pide tarjeta."}}
       ]
     }
   ]
@@ -564,7 +470,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href="#caracteristicas" class="nav-link" onclick="navSwitch('landing')">Características</a>
     <a href="#como-funciona" class="nav-link" onclick="navSwitch('landing')">Cómo funciona</a>
     <a href="/herramientas" class="nav-link">Herramientas</a>
-    <a href="#precios" class="nav-link" onclick="navSwitch('landing')">Precios</a>
+    <a href="#precios" class="nav-link" onclick="navSwitch('landing')">Gratis</a>
     <a href="/blog" class="nav-link">Blog</a>
     <a href="#faq" class="nav-link" onclick="navSwitch('landing')">FAQ</a>
   </div>
@@ -579,7 +485,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <a href="#caracteristicas" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Características</a>
     <a href="#como-funciona" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Cómo funciona</a>
     <a href="/herramientas" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Herramientas</a>
-    <a href="#precios" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Precios</a>
+    <a href="#precios" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Gratis</a>
     <a href="/blog" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">Blog</a>
     <a href="#faq" onclick="rbCloseHamb()" style="display:block;padding:.8rem 1.2rem;color:#0F172A;font-weight:600;font-size:.95rem;border-bottom:1px solid #F1F5F9">FAQ</a>
     {% if not (user and user.is_authenticated) %}
@@ -625,11 +531,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div id="rb-notif-list"><div style="text-align:center;color:#475569;padding:1.5rem;font-size:.82rem">Cargando...</div></div>
     </div>
     <a href="/perfil" class="btn-login">Mi perfil</a>
-    {% if plan == 'free' %}
-    <button class="btn-nav" onclick="pagarPlanLanding('pro')">Pro — 9€/mes</button>
-    {% else %}
-    <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .7rem;border-radius:20px;font-weight:700">PRO</span>
-    {% endif %}
     {% else %}
     <a href="/login" class="btn-login">Iniciar sesión</a>
     <a href="/register" class="btn-nav">Registro gratuito</a>
@@ -650,7 +551,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div style="flex:1;min-width:200px">
     <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:#FCD34D;text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:.3rem">PrestaShop detectado · vigilancia inactiva</div>
     <div style="font-size:.9rem;font-weight:700;color:#FEF3C7;margin-bottom:.3rem">Activa la vigilancia del checkout para detectar skimmers</div>
-    <div style="font-size:.82rem;color:#FCD34D;line-height:1.6">Has escaneado {% if ps_dominios_sample %}<strong style="color:#FEF3C7;font-family:'JetBrains Mono',monospace">{{ ps_dominios_sample[0] }}</strong>{% if ps_dominios_sample|length > 1 %} y {{ ps_dominios_sample|length - 1 }} tienda{% if ps_dominios_sample|length > 2 %}s{% endif %} más{% endif %}{% else %}una tienda PrestaShop{% endif %} pero <strong>no tienes monitorización automática activa</strong>. Activa la vigilancia nocturna y recibirás email + Slack inmediato si aparece un skimmer Magecart en tu checkout.</div>
+    <div style="font-size:.82rem;color:#FCD34D;line-height:1.6">Has escaneado {% if ps_dominios_sample %}<strong style="color:#FEF3C7;font-family:'JetBrains Mono',monospace">{{ ps_dominios_sample[0] }}</strong>{% if ps_dominios_sample|length > 1 %} y {{ ps_dominios_sample|length - 1 }} tienda{% if ps_dominios_sample|length > 2 %}s{% endif %} más{% endif %}{% else %}una tienda PrestaShop{% endif %} pero <strong>no tienes la vigilancia automática activa</strong>. Verifica el dominio y activa la vigilancia para recibir un aviso por email (y Slack, si lo conectas) si aparecen indicios de un skimmer.</div>
     <div style="margin-top:.7rem;display:flex;gap:.6rem;flex-wrap:wrap">
       <a href="/perfil#vigilancia" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.45rem 1rem;border-radius:6px;font-size:.78rem;font-weight:700;text-decoration:none">Activar vigilancia →</a>
       <a href="/blog/skimmers-digitales-prestashop-magecart-2026" style="background:transparent;border:1px solid rgba(252,211,77,.4);color:#FCD34D;padding:.45rem 1rem;border-radius:6px;font-size:.78rem;font-weight:600;text-decoration:none">Por qué importa</a>
@@ -681,36 +582,9 @@ function rbDismissPSBanner(){
   <div style="font-size:1.5rem;line-height:1;margin-top:.1rem">👋</div>
   <div style="flex:1;min-width:200px">
     <div style="font-size:.9rem;font-weight:700;color:#E2EDF8;margin-bottom:.3rem">Bienvenido a ReconBase</div>
-    <div style="font-size:.82rem;color:#94A3B8;line-height:1.6">Empieza introduciendo el dominio de tu empresa arriba y pulsa <strong style="color:#22C55E">ESCANEAR</strong>. En menos de 2 minutos verás si tienes puertos expuestos, si tu dominio puede ser suplantado y si alguna contraseña ha filtrado.</div>
+    <div style="font-size:.82rem;color:#94A3B8;line-height:1.6">Empieza introduciendo el dominio de tu empresa arriba y pulsa <strong style="color:#22C55E">ESCANEAR</strong>. En unos minutos verás si tu dominio puede ser suplantado, cómo están tu certificado y tus cabeceras y, si verificas el dominio en tu perfil, también los puertos y ficheros expuestos.</div>
   </div>
   <button onclick="rbDismissOnboarding()" style="background:none;border:none;color:#64748B;font-size:1.1rem;cursor:pointer;padding:.1rem .3rem;line-height:1;align-self:flex-start">✕</button>
-</div>
-{% endif %}
-
-{% if plan == 'free' %}
-<div class="sc-plan-banner">
-  <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
-    <span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;background:#DCFCE7;color:#15803D;padding:.2rem .8rem;border-radius:20px;font-weight:700">PLAN FREE</span>
-    <div>
-      <div style="font-size:.83rem;color:#374151">Tu empresa no está siendo vigilada automáticamente cada noche</div>
-      <div style="display:flex;align-items:center;gap:.6rem;margin-top:.3rem">
-        <div style="height:5px;width:120px;background:#BBF7D0;border-radius:3px;overflow:hidden"><div style="height:100%;width:{{ (scans_mes/30*100)|int }}%;background:{% if scans_mes>=25 %}#DC2626{% elif scans_mes>=15 %}#D97706{% else %}#16A34A{% endif %};border-radius:3px"></div></div>
-        <span style="font-size:.74rem;color:{% if scans_mes>=25 %}#DC2626{% elif scans_mes>=15 %}#D97706{% else %}#64748B{% endif %}">{{ scans_mes }}/30 escaneos este mes</span>
-      </div>
-    </div>
-  </div>
-  <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-    {% if not user.trial_end %}
-    <button onclick="activarTrial()" id="btn-trial" style="background:transparent;color:#22C55E;border:1px solid #166534;padding:.6rem 1.1rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;white-space:nowrap">14 días Pro gratis →</button>
-    {% endif %}
-    <button onclick="pagarPlanLanding('pro')" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.3rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap">Pásate a Pro — 9€/mes</button>
-  </div>
-</div>
-{% endif %}
-{% if user and user.is_authenticated and user.trial_end and plan == 'pro' and user.plan != 'pro' %}
-<div style="background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:8px;padding:.75rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-  <span style="font-size:.82rem;color:#4ADE80">Trial Pro activo — acceso completo hasta el {{ user.trial_end.strftime('%d/%m/%Y') }}</span>
-  <button onclick="pagarPlanLanding('pro')" style="background:#15803D;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.76rem;cursor:pointer">Suscribirse antes de que expire →</button>
 </div>
 {% endif %}
 
@@ -750,8 +624,8 @@ function rbDismissPSBanner(){
         </div>
         <div style="display:flex;align-items:center;gap:.75rem;font-size:.82rem">
           <span style="color:#334155;font-size:.9rem">○</span>
-          <span style="color:#E2EDF8">Activar vigilancia nocturna</span>
-          {% if plan == 'free' %}<span style="font-size:.65rem;background:#DCFCE7;color:#15803D;padding:.1rem .5rem;border-radius:10px;font-weight:700">PRO</span>{% endif %}
+          <span style="color:#E2EDF8">Verificar tu dominio y activar la vigilancia</span>
+          <a href="/perfil#dominios" style="font-size:.7rem;color:#22C55E;font-weight:600">→ Ir al perfil</a>
         </div>
       </div>
     </div>
@@ -783,7 +657,7 @@ function rbDismissPSBanner(){
         <div class="sc-metric"><div class="sc-mlbl">Puertos Abiertos</div><div class="sc-mval" id="sc-m-puertos">—</div><div class="sc-msub">detectados</div></div>
         <div class="sc-metric"><div class="sc-mlbl">Subdominios</div><div class="sc-mval" id="sc-m-subs">—</div><div class="sc-msub">encontrados</div></div>
         <div class="sc-metric"><div class="sc-mlbl">SPF / DMARC</div><div class="sc-mval" id="sc-m-dns" style="font-size:1.1rem;padding-top:.3rem">—</div><div class="sc-msub" id="sc-m-dns-sub">—</div></div>
-        <div class="sc-metric"><div class="sc-mlbl">Filtraciones</div><div class="sc-mval" id="sc-m-leaks">—</div><div class="sc-msub">en Deep Web</div></div>
+        <div class="sc-metric"><div class="sc-mlbl">Filtraciones</div><div class="sc-mval" id="sc-m-leaks">—</div><div class="sc-msub">en brechas conocidas</div></div>
       </div>
       <div class="sc-main-grid">
         <div class="sc-gauge-card">
@@ -818,33 +692,11 @@ function rbDismissPSBanner(){
 
   <!-- EXPORTAR -->
   <div class="sc-panel" id="sc-exportar">
-    {% if plan == 'free' %}
-    <div class="sc-export-grid" style="margin-bottom:1rem">
-      <div class="sc-export-card" id="sc-pdf-card" style="position:relative;border-color:#15803D">
-        <div style="position:absolute;top:.75rem;right:.75rem;background:#DCFCE7;color:#15803D;font-size:.65rem;font-weight:700;font-family:'JetBrains Mono',monospace;padding:.15rem .55rem;border-radius:20px">PAGO ÚNICO</div>
-        <div style="font-size:2rem;margin-bottom:.75rem">📄</div>
-        <div class="sc-export-title">Informe PDF Ejecutivo</div>
-        <div class="sc-export-desc" id="sc-pdf-desc">Descarga el informe completo de este escaneo en PDF.</div>
-        <div id="sc-pdf-btn">
-          <button class="sc-btn-exp p" style="opacity:.45;cursor:not-allowed" disabled id="sc-pdf-btn-buy">Escanea primero para desbloquear</button>
-          <div style="text-align:center;margin-top:.5rem;font-size:.72rem;color:var(--muted)">o <span onclick="pagarPlanLanding('pro')" style="color:#22C55E;cursor:pointer;font-weight:600">suscríbete a Pro (9€/mes)</span> para PDF ilimitados</div>
-        </div>
-      </div>
-      <div class="sc-export-card" style="opacity:.4">
-        <div style="font-size:2rem;margin-bottom:.75rem">📦</div>
-        <div class="sc-export-title">Datos Raw (JSON)</div>
-        <div class="sc-export-desc">Disponible en el plan Pro.</div>
-        <button class="sc-btn-exp s" disabled style="cursor:not-allowed">Requiere plan Pro</button>
-      </div>
-    </div>
-    {% endif %}
-    <div class="sc-empty" id="sc-exp-empty" {% if plan=='free' %}style="display:none"{% endif %}><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
+        <div class="sc-empty" id="sc-exp-empty"><h3>Sin datos</h3><p>Ejecuta un escaneo primero.</p></div>
     <div id="sc-exp-content" style="display:none">
       <div id="sc-exp-summary" style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:.85rem;color:var(--muted);margin-bottom:1rem"></div>
       <div class="sc-export-grid">
-        {% if plan != 'free' %}
-        <div class="sc-export-card"><div style="font-size:2rem;margin-bottom:.75rem">📄</div><div class="sc-export-title">Informe PDF Ejecutivo</div><div class="sc-export-desc">Documento profesional con todos los hallazgos.</div><button class="sc-btn-exp p" onclick="scDescargarPDF()">Descargar PDF</button></div>
-        {% endif %}
+        <div class="sc-export-card"><div style="font-size:2rem;margin-bottom:.75rem">📄</div><div class="sc-export-title">Informe PDF</div><div class="sc-export-desc">Documento con todos los hallazgos del análisis.</div><button class="sc-btn-exp p" onclick="scDescargarPDF()">Descargar PDF</button></div>
         <div class="sc-export-card"><div style="font-size:2rem;margin-bottom:.75rem">📦</div><div class="sc-export-title">Datos Raw (JSON)</div><div class="sc-export-desc">Exporta todos los datos en formato JSON.</div><button class="sc-btn-exp s" onclick="scDescargarJSON()">Exportar JSON</button></div>
       </div>
     </div>
@@ -852,7 +704,6 @@ function rbDismissPSBanner(){
 
   <!-- HISTORIAL -->
   <div class="sc-panel" id="sc-historial">
-    {% if plan == 'free' %}<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.75rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap"><span style="font-size:.82rem;color:#15803D">Plan Free: historial de los últimos 7 días.</span><span onclick="pagarPlanLanding('pro')" style="font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer">Historial ilimitado con Pro →</span></div>{% endif %}
     <div class="sc-empty" id="sc-hist-empty"><h3>Sin escaneos recientes</h3><p>El historial aparecerá aquí.</p></div>
     <div id="sc-hist-content" style="display:none">
       <table class="sc-hist-tbl"><thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Fecha</th><th></th></tr></thead><tbody id="sc-hist-body"></tbody></table>
@@ -878,19 +729,19 @@ function rbDismissPSBanner(){
 <div class="hero-wrap">
 <section class="hero">
   <div class="hero-left">
-    <div class="hero-badge"><span class="dot"></span> Análisis gratuito · Sin tarjeta · 2 minutos</div>
-    <h1>Analizamos <em>47 puntos</em><br>de seguridad de tu web<br>en 2 minutos.</h1>
-    <p>¿Es tu web un entorno seguro para tus visitantes? ¿Están los datos de tus clientes protegidos? Introduce tu dominio y descubre puertos expuestos, filtraciones, configuración DNS vulnerable y cabeceras inseguras. Sin instalar nada.</p>
+    <div class="hero-badge"><span class="dot"></span> Gratis · Sin tarjeta · 2 minutos</div>
+    <h1>Revisa la <em>seguridad</em><br>de tu web<br>en 2 minutos.</h1>
+    <p>Introduce tu dominio y comprueba tu certificado SSL, si tu email puede ser suplantado (SPF/DMARC), tus cabeceras de seguridad y tu CMS. Si verificas que el dominio es tuyo, analizamos también puertos y ficheros expuestos. Sin instalar nada.</p>
     <div class="hero-scan-form">
       <div class="hsf-wrap">
         <input type="text" id="hero-domain" class="hsf-input" placeholder="tuempresa.com" onkeydown="if(event.key==='Enter')heroScan()" autocomplete="off" spellcheck="false">
         <button class="hsf-btn" onclick="heroScan()">Analizar ahora →</button>
       </div>
-      <div class="hsf-hint">También acepta emails corporativos e IPs · Gratis, sin tarjeta</div>
+      <div class="hsf-hint">Análisis pasivo de información pública · <a href="/escaner-info" style="color:inherit;text-decoration:underline">cómo funciona</a> · al usarlo aceptas los <a href="/terms" style="color:inherit;text-decoration:underline">Términos</a></div>
     </div>
     <div style="margin-top:.75rem;display:flex;align-items:center;gap:.5rem">
       <span style="width:6px;height:6px;border-radius:50%;background:#22C55E;display:inline-block;flex-shrink:0;animation:pulse 2s ease infinite"></span>
-      <span style="font-size:.65rem;color:rgba(134,239,172,.45);font-family:'JetBrains Mono',monospace">{{ stats_scans }} análisis realizados · {{ stats_breaches }} empresas registradas</span>
+      <span style="font-size:.65rem;color:rgba(134,239,172,.45);font-family:'JetBrains Mono',monospace">{{ stats_scans }} análisis realizados · {{ stats_breaches }} cuentas creadas</span>
     </div>
     <div style="margin-top:.65rem">
       <a href="#como-funciona" style="font-size:.78rem;color:rgba(134,239,172,.55);font-family:'JetBrains Mono',monospace">¿Cómo funciona? →</a>
@@ -912,7 +763,7 @@ function rbDismissPSBanner(){
       <div class="gauge-center">
         <div class="gauge-pct" id="gauge-pct">0%</div>
         <div class="gauge-risk-label" id="gauge-risk-label" style="color:#EF4444">—</div>
-        <div class="gauge-sublabel">empresa media española</div>
+        <div class="gauge-sublabel">ejemplo ilustrativo</div>
       </div>
     </div>
     <div class="gauge-items">
@@ -925,16 +776,9 @@ function rbDismissPSBanner(){
 </section>
 <div class="hero-counter">
   <div class="hero-counter-inner">
-    <div style="display:flex;align-items:center;gap:.45rem;margin-right:.25rem">
-      <span class="dot" style="flex-shrink:0"></span>
-      <span style="font-size:.62rem;font-family:'JetBrains Mono',monospace;color:#86EFAC;letter-spacing:.14em;text-transform:uppercase;opacity:.8">En vivo</span>
-    </div>
+    <div class="hc-stat"><span class="hc-num" id="cnt-dominios">0</span><span class="hc-lbl">análisis realizados</span></div>
     <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-dominios">0</span><span class="hc-lbl">dominios analizados</span></div>
-    <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-vulns">0</span><span class="hc-lbl">riesgos detectados</span></div>
-    <div class="hc-div"></div>
-    <div class="hc-stat"><span class="hc-num" id="cnt-breaches">0</span><span class="hc-lbl">empresas protegidas</span></div>
+    <div class="hc-stat"><span class="hc-num" id="cnt-breaches">0</span><span class="hc-lbl">cuentas creadas</span></div>
     <div class="hc-div"></div>
     <a href="/register" style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:#22C55E;font-weight:700;white-space:nowrap;letter-spacing:.05em;text-decoration:none">Únete →</a>
   </div>
@@ -954,7 +798,7 @@ function rbDismissPSBanner(){
           <span style="font-size:.65rem;background:rgba(34,197,94,.12);color:#86EFAC;padding:.2rem .55rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em">WORDPRESS</span>
         </div>
         <div style="font-size:1.05rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">Auditoría WordPress</div>
-        <div style="font-size:.82rem;color:#94A3B8;line-height:1.55;margin-bottom:1rem">Versión, plugins con CVE, xmlrpc.php, usuarios enumerables vía wp-json y archivos sensibles expuestos.</div>
+        <div style="font-size:.82rem;color:#94A3B8;line-height:1.55;margin-bottom:1rem">Versión y plugins visibles con vulnerabilidades conocidas. Con tu dominio verificado, también xmlrpc.php, usuarios y ficheros expuestos.</div>
         <div style="font-size:.75rem;color:#4ADE80;font-weight:700">Auditar gratis →</div>
       </a>
       <a href="/auditoria-prestashop" style="background:#0A1410;border:1px solid rgba(245,158,11,.3);border-radius:12px;padding:1.5rem 1.4rem;text-align:left;color:inherit;transition:border-color .2s;display:block;position:relative">
@@ -964,7 +808,7 @@ function rbDismissPSBanner(){
           <span style="font-size:.65rem;background:rgba(245,158,11,.12);color:#FCD34D;padding:.2rem .55rem;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.08em">PRESTASHOP</span>
         </div>
         <div style="font-size:1.05rem;font-weight:700;color:#F0FDF4;margin-bottom:.35rem">Auditoría PrestaShop</div>
-        <div style="font-size:.82rem;color:#94A3B8;line-height:1.55;margin-bottom:1rem">Detección de skimmers digitales en el checkout, módulos vulnerables, /install/ expuesto y HTTPS no forzado.</div>
+        <div style="font-size:.82rem;color:#94A3B8;line-height:1.55;margin-bottom:1rem">Indicios de skimmers en el JavaScript de la tienda, módulos con vulnerabilidades conocidas y HTTPS. Con tu dominio verificado, también /install/ y el panel de administración.</div>
         <div style="font-size:.75rem;color:#FCD34D;font-weight:700">Detectar skimmers gratis →</div>
       </a>
     </div>
@@ -985,9 +829,9 @@ function rbDismissPSBanner(){
 </div>
 
 <div class="compat">
-  <span class="compat-lbl">Integra con:</span>
+  <span class="compat-lbl">Comprueba:</span>
   <span>Have I Been Pwned</span><span>DNS / DMARC / SPF</span>
-  <span>HTTP Security Headers</span><span>Port Scanning</span><span>Subdomain Enumeration</span>
+  <span>Cabeceras HTTP</span><span>Puertos (dominios verificados)</span><span>Subdominios</span>
 </div>
 
 
@@ -996,7 +840,7 @@ function rbDismissPSBanner(){
   <div style="max-width:1100px;margin:0 auto">
     <div class="sec-label" style="text-align:center">El producto</div>
     <h2 style="text-align:center;font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:800;letter-spacing:-.04em;margin-bottom:.6rem">Esto es lo que ves cuando escaneas</h2>
-    <p style="text-align:center;color:var(--muted);font-size:.9rem;max-width:480px;margin:0 auto 2.5rem;line-height:1.7">El panel completo. Resultados en tiempo real, tarjetas por criticidad y descarga del informe PDF en menos de 2 minutos.</p>
+    <p style="text-align:center;color:var(--muted);font-size:.9rem;max-width:480px;margin:0 auto 2.5rem;line-height:1.7">El panel completo: tarjetas por criticidad, guía para solucionar cada punto e informe PDF. Los datos de esta captura son de ejemplo.</p>
     <!-- Browser frame -->
     <div class="product-preview-mock" style="border-radius:12px;overflow:hidden;border:1px solid #1E293B;box-shadow:0 24px 64px rgba(0,0,0,.25)">
       <!-- Chrome bar -->
@@ -1141,7 +985,7 @@ function rbDismissPSBanner(){
       </div>
       <div class="cf-what">
         <div class="cf-what-title">Qué hace ReconBase</div>
-        Escanea los puertos más comunes. Detecta servicios críticos expuestos: RDP (3389), SSH (22), bases de datos MySQL/PostgreSQL/MongoDB y paneles de administración.
+        En dominios verificados, comprueba 23 puertos habituales y detecta servicios críticos expuestos: RDP (3389), SSH (22) y bases de datos como MySQL, PostgreSQL o MongoDB.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
@@ -1286,7 +1130,7 @@ function rbDismissPSBanner(){
       </div>
       <div class="cf-what">
         <div class="cf-what-title">Qué hace ReconBase</div>
-        Usa consultas DNS y técnicas OSINT para mapear los subdominios activos de tu dominio. Identifica cuáles responden, en qué IP están y si tienen puertos críticos abiertos.
+        Consulta en el DNS público una lista de nombres habituales (www, mail, admin, staging, dev...) para mostrarte qué subdominios existen y a qué IP apuntan.
       </div>
       <div class="cf-fix">
         <div class="cf-fix-title">Si encuentra algo</div>
@@ -1390,7 +1234,7 @@ function rbDismissPSBanner(){
 <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:1.5rem 6%;background:var(--surface)">
   <div style="max-width:1100px;margin:0 auto;display:flex;gap:1.25rem;align-items:flex-start">
     <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:#16A34A;flex-shrink:0;margin-top:.1rem">→</div>
-    <p style="font-size:.9rem;color:var(--muted);line-height:1.75;margin:0">El problema más frecuente en los dominios que analizamos no son los puertos abiertos. Es el registro DMARC ausente — lo tiene mal configurado la mayoría de pymes. Sin él, cualquiera puede enviar un email que aparezca como si viniera de tu empresa, sin que tu servidor lo sepa.</p>
+    <p style="font-size:.9rem;color:var(--muted);line-height:1.75;margin:0">Uno de los problemas más habituales no son los puertos abiertos, sino el registro DMARC ausente. Sin él es mucho más fácil enviar emails que parezcan venir de tu empresa.</p>
   </div>
 </div>
 
@@ -1398,7 +1242,7 @@ function rbDismissPSBanner(){
 <section class="section" id="antes-despues" style="max-width:1100px">
   <div class="sec-label" style="text-align:center">Comparativa</div>
   <h2 class="sec-title" style="text-align:center;margin-bottom:.75rem">El mismo dominio, antes y después</h2>
-  <p class="sec-sub" style="text-align:center;margin:0 auto 2.5rem;max-width:520px">La diferencia no es el dominio, ni el presupuesto. Es haber dejado de ir a ciegas — y poder dormir tranquilo sabiendo lo que pasa en tu empresa.</p>
+  <p class="sec-sub" style="text-align:center;margin:0 auto 2.5rem;max-width:520px">Ejemplo ilustrativo de cómo cambia un dominio tras corregir lo que encuentra el análisis.</p>
   <div class="bacomp-grid">
     <div class="ba-card ba-before">
       <div class="ba-header-bar">
@@ -1422,12 +1266,12 @@ function rbDismissPSBanner(){
       </div>
       <div class="ba-risk-bar"><div class="ba-risk-fill" style="width:12%;background:linear-gradient(90deg,#14532d,#22C55E)"></div></div>
       <div class="ba-items">
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Las puertas correctas están cerradas — ningún atacante puede colarse por ahí</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Los puertos que no se usan están cerrados</span></div>
         <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Credenciales renovadas y doble factor en todas las cuentas del equipo</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Nadie puede enviar emails haciéndose pasar por tu empresa</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Tu web está blindada frente a los ataques más comunes a clientes</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">SPF y DMARC configurados contra la suplantación de email</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Cabeceras de seguridad configuradas</span></div>
         <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">El panel de admin solo lo ve quien tú decides</span></div>
-        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Vigilancia 24/7 — si algo cambia, te avisamos antes de que sea un problema</span></div>
+        <div class="ba-item good"><span class="ba-icon">✓</span><span class="ba-text">Análisis periódicos con aviso por email si algo cambia</span></div>
       </div>
     </div>
   </div>
@@ -1465,7 +1309,7 @@ function rbDismissPSBanner(){
         <li style="padding:.55rem 0;display:flex;gap:.7rem;align-items:flex-start;font-size:.92rem;color:#475569"><span style="color:#16A34A;font-weight:800;flex-shrink:0">✓</span><span><strong style="color:#0F172A">Email automático:</strong> alertas con contexto y guía de remediación.</span></li>
         <li style="padding:.55rem 0;display:flex;gap:.7rem;align-items:flex-start;font-size:.92rem;color:#475569"><span style="color:#16A34A;font-weight:800;flex-shrink:0">✓</span><span><strong style="color:#0F172A">Webhook custom:</strong> conecta con tu SIEM, tu ticketing o tu herramienta interna.</span></li>
       </ul>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:#64748B;letter-spacing:.1em;text-transform:uppercase">Disponible en plan Pro</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:#64748B;letter-spacing:.1em;text-transform:uppercase">Incluido gratis</div>
     </div>
     <div style="background:#0A1410;border:1px solid #152B1E;border-radius:14px;padding:1.5rem;box-shadow:0 20px 60px -20px rgba(0,0,0,.6)">
       <div style="display:flex;align-items:center;gap:.6rem;padding-bottom:.9rem;margin-bottom:1rem;border-bottom:1px solid #152B1E">
@@ -1574,7 +1418,7 @@ function rbDismissPSBanner(){
       <div class="demo-panel" id="dp-3">
         <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Vista previa PDF ejecutivo</div>
         <div class="demo-pdf-preview">
-          <div class="pdf-header"><div style="font-size:.9rem;font-weight:700">ReconBase Enterprise</div><div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:.15rem">Informe de Auditoría de Seguridad</div></div>
+          <div class="pdf-header"><div style="font-size:.9rem;font-weight:700">ReconBase · ejemplo</div><div style="font-size:.7rem;color:rgba(255,255,255,.6);margin-top:.15rem">Informe de Auditoría de Seguridad</div></div>
           <div class="pdf-row"><span class="pdf-key">Objetivo</span><span style="color:#93C5FD;font-family:'JetBrains Mono',monospace;font-size:.78rem">miempresa.com</span></div>
           <div class="pdf-row"><span class="pdf-key">Riesgo global</span><span style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:.78rem">42% MODERADO</span></div>
           <div class="pdf-row"><span class="pdf-key">SPF / DMARC</span><span style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:.78rem">[OK]</span></div>
@@ -1583,7 +1427,7 @@ function rbDismissPSBanner(){
         </div>
       </div>
       <div class="demo-panel" id="dp-4">
-        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Alertas automáticas — Plan Pro</div>
+        <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">Alertas automáticas — dominios verificados</div>
         <div class="alert-demo"><div class="alert-demo-title">NUEVA ALERTA - miempresa.com</div><div class="alert-demo-body">Nuevo subdominio detectado: <span style="color:#60A5FA">api2.miempresa.com</span>. Verifica si fue creado intencionalmente.</div></div>
         <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:1rem"><div style="font-size:.75rem;font-weight:700;color:var(--green);margin-bottom:.5rem;font-family:'JetBrains Mono',monospace">ULTIMA RONDA - 03:00</div><div style="font-size:.78rem;color:var(--muted);line-height:1.8">Red perimetral: <span style="color:var(--green)">Limpia</span><br>SPF / DMARC: <span style="color:var(--green)">Verificados</span><br>Subdominios nuevos: <span style="color:var(--amber)">1 detectado</span></div></div>
       </div>
@@ -1591,170 +1435,33 @@ function rbDismissPSBanner(){
   </div>
 </section>
 
-<!-- GANCHO DE VALOR — ancla psicológica antes del precio -->
-<section style="padding:4rem 6% 3rem;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(22,163,74,.07) 0%,transparent 60%)">
-  <div style="max-width:760px;margin:0 auto">
-    <div style="font-size:.72rem;font-family:'JetBrains Mono',monospace;color:#15803D;text-transform:uppercase;letter-spacing:.18em;margin-bottom:1.25rem">// la pregunta que importa</div>
-    <h2 style="font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.2;color:#0F172A;margin-bottom:1.25rem">¿Cuánto pagarías por descubrir una <span style="color:#16A34A">brecha de seguridad</span> en tu web… <span style="color:#DC2626">antes</span> que un atacante?</h2>
-    <p style="font-size:1.02rem;color:#475569;max-width:580px;margin:0 auto 2rem;line-height:1.6">Una filtración media le cuesta a una pyme española <strong style="color:#0F172A">105.000€</strong> entre recuperación, multas RGPD y reputación. Descubrir el problema a tiempo cuesta <strong style="color:#16A34A">2 minutos y 0€</strong>.</p>
-    <a href="#" onclick="event.preventDefault();var i=document.getElementById('hero-domain');if(i){i.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){i.focus();},400);}" style="display:inline-block;background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;padding:.9rem 2rem;border-radius:10px;font-weight:700;font-size:.95rem">Analizar mi web gratis →</a>
-  </div>
-</section>
-
+<!-- GRATIS -->
 <div class="dark-band" id="precios">
-  <div class="dark-band-inner">
-    <div style="text-align:center;margin-bottom:2rem"><div class="sec-label" style="text-align:center">Precios</div><h2 class="sec-title" style="text-align:center">Simple. Sin sorpresas.</h2></div>
-
-    <!-- Toggle mensual / anual -->
-    <div style="display:flex;align-items:center;justify-content:center;gap:.75rem;margin-bottom:2rem">
-      <span id="lbl-mensual" style="font-size:.85rem;font-weight:700;color:#E2EDF8">Mensual</span>
-      <div onclick="toggleBilling()" id="billing-toggle" style="width:44px;height:24px;background:#152B1E;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;border:1px solid #166534">
-        <div id="billing-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#22C55E;transition:left .2s"></div>
-      </div>
-      <span id="lbl-anual" style="font-size:.85rem;color:#64748B">Anual <span style="font-size:.7rem;background:#DCFCE7;color:#15803D;padding:.1rem .5rem;border-radius:10px;font-weight:700;margin-left:.25rem">2 meses gratis</span></span>
+  <div class="dark-band-inner" style="text-align:center">
+    <div class="sec-label" style="text-align:center">Precio</div>
+    <h2 class="sec-title" style="text-align:center">Gratis. Sin tarjeta ni letra pequeña.</h2>
+    <p style="color:#94A3B8;max-width:620px;margin:1rem auto 2rem;line-height:1.7;font-size:.95rem">Todas las funciones están incluidas para todas las cuentas: análisis, historial, informe PDF, monitorización SSL, uptime y DNS, alertas por email, integraciones y API. Las comprobaciones activas (puertos, rutas y ficheros) y la vigilancia automática solo se hacen en dominios que hayas verificado como tuyos.</p>
+    <a href="/register" class="btn-plan sl" style="display:inline-block;max-width:320px;text-decoration:none">Crear cuenta gratis</a>
+    <div style="max-width:760px;margin:2.5rem auto 0;font-size:.78rem;color:#64748B;line-height:1.7">
+      Servidores en la UE (Ámsterdam). Nuestra web usa HTTPS con HSTS y CSP. No vendemos ni cedemos tus datos. <a href="/privacy" style="color:#94A3B8;text-decoration:underline">Política de privacidad</a> · <a href="/cookies" style="color:#94A3B8;text-decoration:underline">Cookies</a> · <a href="/escaner-info" style="color:#94A3B8;text-decoration:underline">Cómo funciona el escáner</a>
     </div>
-
-    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));max-width:1100px;margin:0 auto">
-
-      <!-- FREE -->
-      <div class="plan">
-        <div class="plan-name">Gratuito</div>
-        <div class="plan-price">0 <span>/ mes</span></div>
-        <div class="plan-desc">Para ver si tienes problemas. No para ignorarlos.</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>30 análisis al mes (gratis siempre)</div>
-        <div class="pf"><span class="ck">v</span>Puertos expuestos a internet</div>
-        <div class="pf"><span class="ck">v</span>Protección contra suplantación de email</div>
-        <div class="pf"><span class="ck">v</span>Cabeceras de seguridad web</div>
-        <div class="pf"><span class="ck">v</span>Subdominios accesibles</div>
-        <div class="plan-div" style="margin-top:1.2rem"></div>
-        <div class="pf off"><span class="cx">x</span>Filtraciones en la Deep Web</div>
-        <div class="pf off"><span class="cx">x</span>Alertas automáticas por email</div>
-        <div class="pf off"><span class="cx">x</span>Vigilancia nocturna 24/7</div>
-        <div class="pf off"><span class="cx">x</span>Monitorización SSL/Uptime/DNS</div>
-        <a href="/register" class="btn-plan ol" style="margin-top:1.75rem;display:block;text-align:center">Empezar gratis</a>
-      </div>
-
-      <!-- PRO (señuelo hace que este parezca ganga) -->
-      <div class="plan hot">
-        <div class="plan-badge">MÁS POPULAR</div>
-        <div class="plan-name">Pro</div>
-        <div class="plan-price"><span id="pro-price">9</span> <span>/ mes</span></div>
-        <div id="pro-anual-note" style="display:none;font-size:.72rem;color:#22C55E;margin-top:-.5rem;margin-bottom:.25rem">90€/año · ahorras 18€</div>
-        <div style="font-size:.72rem;background:rgba(34,197,94,.12);color:#22C55E;border:1px solid #14532D;border-radius:20px;padding:.2rem .75rem;display:inline-block;margin-bottom:.6rem;font-family:'JetBrains Mono',monospace;font-weight:700">La multa media por brecha RGPD: 20.000€</div>
-        <div class="plan-desc">Protección continua por menos de 1€ al día. Sin permanencia.</div>
-        <div class="plan-div"></div>
-        <div class="pf"><span class="ck">v</span>Escaneos ilimitados</div>
-        <div class="pf"><span class="ck">v</span><strong>Filtraciones Deep Web</strong> — ¿hay contraseñas de tu empresa filtradas?</div>
-        <div class="pf"><span class="ck">v</span>Alertas automáticas por email</div>
-        <div class="pf"><span class="ck">v</span>Vigilancia nocturna 24/7</div>
-        <div class="pf"><span class="ck">v</span>SSL · Uptime · DNS en tiempo real</div>
-        <div class="pf"><span class="ck">v</span>Informe PDF ejecutivo incluido</div>
-        <div class="pf"><span class="ck">v</span>API pública para integrar en CI/CD</div>
-        <div class="pf"><span class="ck">v</span>Soporte prioritario</div>
-        <div class="plan-div" style="margin-top:1.2rem"></div>
-        <button class="btn-plan sl" id="btn-pro-subscribe" onclick="pagarPlanActual()">Proteger mi empresa — 9€/mes</button>
-        <div style="text-align:center;font-size:.7rem;color:var(--muted);margin-top:.6rem">Sin permanencia · Cancela cuando quieras</div>
-      </div>
-
-    </div>
-
-    <!-- Trust badges: seguridad y cumplimiento -->
-    <div class="rb-trust" style="max-width:960px;margin:2.5rem auto 0;padding:1.5rem 1.2rem;background:rgba(6,13,9,.4);border:1px solid var(--border);border-radius:12px">
-      <div style="text-align:center;font-size:.68rem;font-family:'JetBrains Mono',monospace;letter-spacing:.15em;color:#64748B;margin-bottom:1rem;text-transform:uppercase">Tus datos, protegidos y en Europa</div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:.75rem">
-        <div class="rb-trust-badge" title="Reglamento General de Protección de Datos — UE 2016/679">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 6v6c0 5 3.5 9.5 9 10 5.5-.5 9-5 9-10V6l-9-4z"/><path d="M9 12l2 2 4-4"/></svg>
-          <div><div class="rb-trust-name">RGPD</div><div class="rb-trust-desc">Datos en la UE</div></div>
-        </div>
-        <div class="rb-trust-badge" title="Alineado con ISO/IEC 27001 — Sistema de Gestión de Seguridad de la Información">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <div><div class="rb-trust-name">ISO 27001</div><div class="rb-trust-desc">Controles alineados</div></div>
-        </div>
-        <div class="rb-trust-badge" title="Esquema Nacional de Seguridad — Real Decreto 311/2022">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <div><div class="rb-trust-name">ENS</div><div class="rb-trust-desc">Compatible sector público</div></div>
-        </div>
-        <div class="rb-trust-badge" title="Servidores ubicados en la Unión Europea">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M2 12h20M12 2v20"/></svg>
-          <div><div class="rb-trust-name">Hosted in EU</div><div class="rb-trust-desc">Frankfurt · Railway</div></div>
-        </div>
-        <div class="rb-trust-badge" title="Todas las comunicaciones cifradas con TLS 1.2+">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15v2M12 9v2"/><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>
-          <div><div class="rb-trust-name">TLS 1.3</div><div class="rb-trust-desc">Cifrado extremo a extremo</div></div>
-        </div>
-      </div>
-      <div style="text-align:center;font-size:.7rem;color:#475569;margin-top:1rem;line-height:1.6">
-        No vendemos ni compartimos tus datos. <a href="/privacy" style="color:#64748B;text-decoration:underline">Política de privacidad</a> · <a href="/cookies" style="color:#64748B;text-decoration:underline">Cookies</a>
-      </div>
-    </div>
-
-    <!-- Tabla comparativa actualizada -->
-    <div style="max-width:780px;margin:2.5rem auto 0;overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:.82rem">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:.7rem 1rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Característica</th>
-            <th style="text-align:center;padding:.7rem 1rem;color:var(--text);font-weight:700;border-bottom:1px solid var(--border)">Gratuito</th>
-            <th style="text-align:center;padding:.7rem 1rem;color:#22C55E;font-weight:700;border-bottom:1px solid var(--border)">Pro</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Análisis al mes</td><td style="text-align:center;color:var(--text)">30</td><td style="text-align:center;color:#22C55E;font-weight:700">Ilimitados</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Dominios monitorizables</td><td style="text-align:center;color:var(--text)">10</td><td style="text-align:center;color:#22C55E;font-weight:700">50</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Puertos · DNS · SPF · DMARC</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Auditoría WordPress · PrestaShop · skimmers</td><td style="text-align:center">✓</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Filtraciones Deep Web</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">SSL · Uptime · DNS en tiempo real</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Vigilancia nocturna 24/7</td><td style="text-align:center;color:var(--muted)">—</td><td style="text-align:center;color:#22C55E">✓</td></tr>
-          <tr style="border-bottom:1px solid var(--border)"><td style="padding:.65rem 1rem;color:var(--muted)">Informe PDF ejecutivo</td><td style="text-align:center;color:var(--muted)">9€/informe</td><td style="text-align:center;color:#22C55E">Incluido</td></tr>
-          <tr><td style="padding:.65rem 1rem;color:var(--muted)">Precio mensual</td><td style="text-align:center;color:var(--text)">0€</td><td style="text-align:center;color:#22C55E;font-weight:700">9€</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Trust badges -->
-    <div style="margin-top:3rem;text-align:center">
-      <div style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:1.25rem">Cumplimiento y seguridad</div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:1rem">
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">🇪🇺</span> RGPD / GDPR Compliant</div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">🔒</span> HTTPS · HSTS · CSP</div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">🛡️</span> ISO 27001 alineado</div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">📊</span> ENS (Esquema Nacional)</div>
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1.1rem;font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:.5rem"><span style="font-size:1rem">⚡</span> 99.9% Uptime SLA</div>
-      </div>
-    </div>
-
   </div>
 </div>
 
 <section class="section" id="faq" style="max-width:720px">
   <div class="sec-label">FAQ</div><h2 class="sec-title">Preguntas frecuentes</h2><br>
-  <div class="faq-item"><div class="faq-q">¿Necesito conocimientos de ciberseguridad?</div><div class="faq-a">No. Diseñado para dueños de negocio sin perfil técnico. Los informes explican cada riesgo con pasos de acción concretos.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Es legal escanear mi propio dominio?</div><div class="faq-a">Completamente legal. Solo puedes analizar dominios que tú mismo introduzcas. El motor usa técnicas pasivas sobre infraestructura pública.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Qué pasa si detecta una filtración?</div><div class="faq-a">Recibes una alerta con el nombre de la brecha, fecha y datos comprometidos. El informe incluye los pasos exactos: cambio de contraseñas, 2FA, notificación RGPD si aplica.</div></div>
-  <div class="faq-item"><div class="faq-q">¿Puedo cancelar en cualquier momento?</div><div class="faq-a">Sí, sin permanencia ni penalizaciones. Conservas el acceso hasta el final del periodo pagado.</div></div>
-  <div class="faq-item"><div class="faq-q">¿El pago es seguro?</div><div class="faq-a">Los pagos se procesan a través de Stripe con certificación PCI DSS nivel 1. En ningún momento almacenamos datos de tu tarjeta.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Necesito conocimientos de ciberseguridad?</div><div class="faq-a">No. Cada resultado explica qué significa y cómo solucionarlo paso a paso.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Puedo analizar cualquier dominio?</div><div class="faq-a">El análisis pasivo (lo que la web publica para cualquier visitante: DNS, certificado, cabeceras, CMS) sí. Las comprobaciones activas, como el escaneo de puertos o buscar ficheros expuestos, solo las hacemos en dominios cuyo titular ha verificado que son suyos. Puedes ver el detalle en <a href="/escaner-info">cómo funciona el escáner</a>.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Qué pasa si encuentra una filtración?</div><div class="faq-a">Te mostramos en qué brechas conocidas aparece tu email (según Have I Been Pwned) y qué hacer: cambiar las contraseñas afectadas y activar el doble factor.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Por qué es gratis?</div><div class="faq-a">Queremos que cualquier pequeña empresa pueda revisar su seguridad básica sin barreras. No hay planes de pago, no pedimos tarjeta y no vendemos tus datos.</div></div>
+  <div class="faq-item"><div class="faq-q">¿Detecta todos los problemas de seguridad?</div><div class="faq-a">No. Es un análisis externo y automático: detecta los problemas más habituales, pero no sustituye a una auditoría profesional.</div></div>
 </section>
 
-<!-- SOCIAL PROOF -->
-<div style="border-top:1px solid var(--border);padding:4rem 6%">
-  <div style="max-width:900px;margin:0 auto">
-    <div class="sec-label" style="margin-bottom:2rem">Lo que dicen los primeros usuarios</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"El primer escaneo encontró el puerto de la base de datos abierto desde la última migración. Llevaba meses así y nadie en la empresa lo sabía."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Ana R. — freelance, desarrollo web · Barcelona</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Lo paso a todos los dominios que entrego a clientes. En 2 minutos sé si hay algo que arreglar antes de la entrega. No he encontrado nada más rápido."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Carlos M. — desarrollador freelance · Madrid</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem">
-        <p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1rem">"Tenía DMARC sin configurar desde siempre. Cualquiera podía mandar emails como si fuera yo. Con las instrucciones del informe lo arreglé en 10 minutos."</p>
-        <div style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--dim)">Miguel S. — gestoría fiscal, 6 empleados · Valencia</div>
-      </div>
-    </div>
+<!-- OPINIONES -->
+<div style="border-top:1px solid var(--border);padding:3.5rem 6%">
+  <div style="max-width:720px;margin:0 auto;text-align:center">
+    <div class="sec-label" style="text-align:center;margin-bottom:1rem">Tu opinión</div>
+    <p style="font-size:.95rem;color:var(--muted);line-height:1.7">ReconBase es un proyecto nuevo. Si lo usas, cuéntanos qué te ha resultado útil y qué echas en falta en <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
   </div>
 </div>
 
@@ -1768,7 +1475,7 @@ function rbDismissPSBanner(){
     </svg>
   </a>
   <div class="f-copy">2026 ReconBase. Todos los derechos reservados.</div>
-  <div class="f-links"><a href="/herramientas">Herramientas</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-cabeceras-http">Cabeceras HTTP</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a><a href="/terms">Términos</a><a href="/cookies">Cookies</a><a href="mailto:hola@reconbase.es">Contacto</a></div>
+  <div class="f-links"><a href="/herramientas">Herramientas</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-cabeceras-http">Cabeceras HTTP</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a><a href="/terms">Términos</a><a href="/cookies">Cookies</a><a href="#" data-rb-cookies>Configurar cookies</a><a href="/escaner-info">Cómo funciona el escáner</a><a href="mailto:hola@reconbase.es">Contacto</a></div>
 </footer>
 
 <script>
@@ -1814,7 +1521,6 @@ function _heroAnimateOnce(){
   // pero seguro de llamar). Los contadores se animan siempre.
   try { animateGauge(); } catch(_){}
   animateCounter('cnt-dominios',{{ stats_scans | default(0) }},2000);
-  animateCounter('cnt-vulns',{{ stats_vulns | default(0) }},2200);
   animateCounter('cnt-breaches',{{ stats_breaches | default(0) }},1800);
 }
 // Observador principal: la franja de contadores SIEMPRE es visible (incluso
@@ -1853,15 +1559,6 @@ function setDemo(idx,btn){
 document.querySelectorAll('.faq-item').forEach(item=>{
   item.addEventListener('click',()=>item.classList.toggle('open'));
 });
-async function pagarPlan(plan){
-  try{
-    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});
-    const data=await res.json();
-    if(data.url){window.open(data.url,'_blank');}
-    else{toast(data.error||'Error al iniciar el pago', 'err');}
-  }catch(e){toast('Error de conexión. Inténtalo de nuevo.', 'err');}
-}
-
 // Marca el onboarding como completado en el backend y oculta los dos banners.
 // Una vez completado no vuelve a salir (persistido en BD por usuario).
 function rbDismissOnboarding(){
@@ -2273,86 +1970,10 @@ window.RB = { isLoggedIn: {{ 'true' if user and user.is_authenticated else 'fals
 window.RB_TURNSTILE_KEY = {{ (turnstile_site_key or '') | tojson }};
 var isLoggedIn = window.RB.isLoggedIn;
 </script>
-<script src="/static/js/scanner.js?v=4"></script>
+<script src="/static/js/scanner.js?v=5"></script>
 {% if turnstile_site_key and not (user and user.is_authenticated) %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>{% endif %}
 
-<!-- GDPR Cookie Banner — 100% client-side injection.
-     NO hay HTML del banner en el servidor. El JS lo construye y lo inserta
-     SOLO si no hay consent (ni localStorage ni cookie HTTP). Sin HTML no puede
-     haber parpadeo, race condition ni problemas de caché. -->
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// RB_COOKIE_VERSION: v3-direct-cookie — el botón escribe document.cookie
-// directamente (sin esperar fetch), así la próxima carga ya no muestra
-// banner aunque el fetch al servidor falle o tarde.
-// ═══════════════════════════════════════════════════════════════════
-(function(){
-  var KEY_LS = 'rb_consent_v3';
-  var KEY_CK = 'rb_consent';
-
-  function hasConsent(){
-    try { if (localStorage.getItem(KEY_LS)) return true; } catch(_){}
-    return /(^|;\s*)rb_consent=/.test(document.cookie || '') ||
-           /(^|;\s*)cookie_consent=/.test(document.cookie || ''); // legacy
-  }
-  function persistConsent(level){
-    try { localStorage.setItem(KEY_LS, level); } catch(_){}
-    // Cookie directa — no esperamos al fetch del servidor
-    var maxAge = 365*24*3600;
-    var secure = (location.protocol === 'https:') ? '; Secure' : '';
-    document.cookie = KEY_CK + '=' + level + '; Max-Age=' + maxAge + '; Path=/; SameSite=Lax' + secure;
-    // Google Consent Mode v2: actualizar consent en tiempo real (RGPD)
-    try {
-      if (typeof gtag === 'function') {
-        var granted = (level === 'accepted');
-        gtag('consent','update',{
-          'ad_storage':       granted ? 'granted' : 'denied',
-          'analytics_storage':granted ? 'granted' : 'denied',
-          'ad_user_data':     granted ? 'granted' : 'denied',
-          'ad_personalization':granted ? 'granted' : 'denied'
-        });
-      }
-    } catch(_){}
-    // Y notificamos al server en background (no bloquea)
-    try {
-      fetch('/api/cookie-consent', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({level: level}),
-        keepalive: true
-      }).catch(function(){});
-    } catch(_){}
-  }
-
-  console.log('[RB] cookie banner v3 — consent =', hasConsent());
-  if (hasConsent()) return;
-
-  function build(){
-    if (document.getElementById('rb-consent-bar')) return;
-    var div = document.createElement('div');
-    div.id = 'rb-consent-bar';
-    div.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0A1410;border-top:1px solid #152B1E;padding:1rem 6%;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap';
-    div.innerHTML =
-      '<div style="font-size:.8rem;color:#94A3B8;max-width:600px;line-height:1.5">' +
-        'Usamos cookies técnicas esenciales para el funcionamiento de la plataforma. No usamos cookies de seguimiento ni publicidad. ' +
-        '<a href="/privacy" style="color:#22C55E;text-decoration:underline">Política de privacidad</a>' +
-      '</div>' +
-      '<div style="display:flex;gap:.75rem;flex-shrink:0">' +
-        '<button id="rb-c-accept" type="button" style="background:#15803D;color:#fff;border:none;padding:.5rem 1.25rem;border-radius:6px;font-family:Inter,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer">Aceptar</button>' +
-        '<button id="rb-c-reject" type="button" style="background:transparent;color:#64748B;border:1px solid #1E293B;padding:.5rem 1rem;border-radius:6px;font-family:Inter,sans-serif;font-size:.82rem;cursor:pointer">Solo esenciales</button>' +
-      '</div>';
-    (document.body || document.documentElement).appendChild(div);
-    document.getElementById('rb-c-accept').onclick = function(){ persistConsent('accepted'); div.remove(); };
-    document.getElementById('rb-c-reject').onclick = function(){ persistConsent('essential'); div.remove(); };
-  }
-  // Mantener compat con las funciones globales antiguas por si algo las llama
-  window.aceptarCookies   = function(){ persistConsent('accepted');  var el=document.getElementById('rb-consent-bar'); if(el) el.remove(); };
-  window.rechazarCookies  = function(){ persistConsent('essential'); var el=document.getElementById('rb-consent-bar'); if(el) el.remove(); };
-
-  if (document.body) build();
-  else document.addEventListener('DOMContentLoaded', build, {once:true});
-})();
-
 // ═══════════════════════════════════════════════════════
 // NOTIFICACIONES IN-APP
 // ═══════════════════════════════════════════════════════
@@ -2391,8 +2012,8 @@ function rbLoadNotifs() {
         '<div style="display:flex;align-items:flex-start;gap:.5rem">'+
           '<span style="font-size:.9rem;flex-shrink:0;margin-top:.1rem">'+ico+'</span>'+
           '<div style="min-width:0">'+
-            '<div style="font-size:.8rem;font-weight:'+(n.leida?'400':'700')+';color:#E2EDF8;margin-bottom:.15rem;line-height:1.3">'+n.titulo+'</div>'+
-            (n.mensaje ? '<div style="font-size:.74rem;color:#64748B;line-height:1.4;margin-bottom:.2rem">'+n.mensaje.substring(0,80)+(n.mensaje.length>80?'...':'')+'</div>' : '')+
+            '<div style="font-size:.8rem;font-weight:'+(n.leida?'400':'700')+';color:#E2EDF8;margin-bottom:.15rem;line-height:1.3">'+rbEsc(n.titulo)+'</div>'+
+            (n.mensaje ? '<div style="font-size:.74rem;color:#64748B;line-height:1.4;margin-bottom:.2rem">'+rbEsc(n.mensaje.substring(0,80))+(n.mensaje.length>80?'...':'')+'</div>' : '')+
             '<div style="font-size:.68rem;color:#475569;font-family:JetBrains Mono,monospace">'+n.created_at+'</div>'+
           '</div>'+
           (!n.leida ? '<span style="width:7px;height:7px;border-radius:50%;background:#22C55E;flex-shrink:0;margin-top:.3rem"></span>' : '')+

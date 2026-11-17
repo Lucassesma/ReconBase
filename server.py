@@ -250,19 +250,19 @@ def set_security_headers(resp):
     # Permisos del navegador restringidos
     resp.headers.setdefault(
         'Permissions-Policy',
-        'camera=(), microphone=(), geolocation=(), payment=(self "https://checkout.stripe.com")'
+        'camera=(), microphone=(), geolocation=(), payment=()'
     )
     # CSP relajada pero razonable (el sitio usa inline JS/CSS, Google Fonts y Chart.js CDN)
     resp.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://js.stripe.com https://plausible.io https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://challenges.cloudflare.com; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://plausible.io https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://challenges.cloudflare.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https://api.stripe.com https://plausible.io https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; "
-        "frame-src https://js.stripe.com https://checkout.stripe.com https://www.googletagmanager.com https://challenges.cloudflare.com; "
-        "form-action 'self' https://checkout.stripe.com; "
+        "connect-src 'self' https://plausible.io https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; "
+        "frame-src https://www.googletagmanager.com https://challenges.cloudflare.com; "
+        "form-action 'self'; "
         "base-uri 'self'; "
         "object-src 'none'"
     )
@@ -596,9 +596,7 @@ def proxy_plausible_event():
     if not payload:
         return ("", 204)
     # IP real del visitante (Cloudflare la pone en CF-Connecting-IP)
-    real_ip = (request.headers.get("CF-Connecting-IP")
-               or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-               or request.remote_addr or "")
+    real_ip = _ip_cliente() or ""
     user_agent = request.headers.get("User-Agent", "Mozilla/5.0")
     fwd_headers = {
         "Content-Type": "application/json",
@@ -1234,67 +1232,8 @@ def report_publico(token):
 
 @app.route("/pago-exito")
 def pago_exito():
-    """Página tras pago. Sirve también como fallback de reconciliación:
-    si el webhook no llegó (eventos en cola, fallo de red, etc.), aquí
-    consultamos a Stripe la sesión y actualizamos el plan del usuario."""
-    session_id = request.args.get("session_id", "")
-    reconciled = False
-    if session_id and current_user.is_authenticated and stripe.api_key:
-        try:
-            sess = stripe.checkout.Session.retrieve(session_id)
-            # Verificar que la sesión es de este usuario (anti-spoofing)
-            ref = getattr(sess, "client_reference_id", None)
-            same_user = (ref and str(ref) == str(current_user.id))
-            email_match = (getattr(sess, "customer_email", "") or "").lower() == current_user.email.lower()
-            if same_user or email_match:
-                mode = getattr(sess, "mode", None)
-                # payment_status puede ser 'paid', 'unpaid', 'no_payment_required' (cupón 100%)
-                pstatus = getattr(sess, "payment_status", "")
-                if mode == "subscription" and pstatus in ("paid", "no_payment_required"):
-                    if current_user.plan != "pro":
-                        current_user.plan = "pro"
-                        db.session.commit()
-                        reconciled = True
-                        logger.info(f"[PagoExito] Reconciliación: plan→pro para {current_user.email} (session {session_id})")
-                        try:
-                            enviar_email_pro_activado(current_user)
-                        except Exception as _me:
-                            logger.warning(f"[PagoExito] email pro_activado: {_me}")
-                        # Crear factura si no hay ya una para esta sesión
-                        try:
-                            meta = getattr(sess, "metadata", {}) or {}
-                            billing = (meta.get("billing") if hasattr(meta, "get") else None) or "mensual"
-                            amount_total = getattr(sess, "amount_total", None)
-                            currency = (getattr(sess, "currency", "eur") or "eur").upper()
-                            desde = datetime.utcnow()
-                            if billing in ("anual", "annual", "yearly"):
-                                hasta = desde + timedelta(days=365)
-                                concepto = "Plan Pro ReconBase — Suscripción anual"
-                                importe_default = 290.00
-                            else:
-                                hasta = desde + timedelta(days=30)
-                                concepto = "Plan Pro ReconBase — Suscripción mensual"
-                                importe_default = 29.00
-                            importe = (amount_total / 100.0) if amount_total else importe_default
-                            inv = Invoice(
-                                user_id=current_user.id,
-                                stripe_invoice_id=getattr(sess, "id", None),
-                                numero=_generar_numero_factura(),
-                                concepto=concepto,
-                                importe=importe,
-                                moneda=currency,
-                                estado='pagada',
-                                periodo_desde=desde,
-                                periodo_hasta=hasta,
-                            )
-                            db.session.add(inv)
-                            db.session.commit()
-                        except Exception as _ie:
-                            logger.warning(f"[PagoExito] crear factura: {_ie}")
-                            db.session.rollback()
-        except Exception as e:
-            logger.warning(f"[PagoExito] retrieve session {session_id}: {e}")
-    return render_template("pago_exito.html", reconciled=reconciled)
+    """ReconBase es gratuito: la antigua página de pago redirige a la home."""
+    return redirect(url_for("index"))
 
 @app.route("/terms")
 def terms():
@@ -1368,7 +1307,6 @@ def api_status():
     services.append(_check("Web (HTTP/HTTPS)", lambda: (True, "Servidor activo")))
     services.append(_check("Base de datos PostgreSQL", _check_db))
     # Stripe: usa /v1 (devuelve 401 sin auth, lo cual confirma que el API está vivo).
-    services.append(_check("Stripe (pagos)", lambda: _http_head("https://api.stripe.com/v1/charges", expected=(200,401,403))))
     # Resend: igual; sin token devuelve 401, eso prueba que la API responde.
     services.append(_check("Resend (emails)", lambda: _http_head("https://api.resend.com/emails", expected=(200,401,403,405))))
     services.append(_check("Cloudflare (DNS/CDN)", lambda: _http_head("https://www.cloudflare.com")))
@@ -1405,16 +1343,14 @@ def register_page():
 
 @app.route("/pricing")
 def pricing_page():
-    return render_template("pricing.html", user=current_user if current_user.is_authenticated else None)
+    return render_template("pricing.html")
 
 # ── AUTH API ──
 def _track_login_attempt(email, exito, razon):
     """Guarda un intento de login (éxito o fallo) en la tabla login_attempts.
     Silencioso ante errores — nunca debe romper el login."""
     try:
-        ip_real = (request.headers.get("CF-Connecting-IP")
-                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                   or request.remote_addr or "")
+        ip_real = _ip_cliente() or ""
         ua = (request.headers.get("User-Agent") or "")[:255]
         db.session.add(LoginAttempt(
             email=(email or "")[:120],
@@ -1431,9 +1367,7 @@ def _track_login_attempt(email, exito, razon):
 def _marcar_login_exitoso(user):
     """Actualiza last_login + login_count del usuario tras login OK."""
     try:
-        ip_real = (request.headers.get("CF-Connecting-IP")
-                   or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-                   or request.remote_addr or "")
+        ip_real = _ip_cliente() or ""
         user.last_login = datetime.utcnow()
         user.last_login_ip = ip_real[:45] or None
         user.login_count = (user.login_count or 0) + 1
@@ -1482,7 +1416,7 @@ def api_login():
     login_user(user, remember=True, duration=timedelta(days=30))
     _marcar_login_exitoso(user)
     _track_login_attempt(email, exito=True, razon="ok")
-    _registrar_audit(user.id, 'login', f"Login exitoso desde {request.remote_addr}")
+    _registrar_audit(user.id, 'login', "Login correcto")
     return jsonify({"ok": True})
 
 def enviar_email_verificacion(user):
@@ -1552,7 +1486,7 @@ def _verify_turnstile(token, remote_ip=None):
 @app.route("/api/register", methods=["POST"])
 @limiter.limit("5 per hour")
 def api_register():
-    data     = request.get_json()
+    data     = request.get_json(silent=True) or {}
     email    = data.get("email", "").strip().lower()
     password = data.get("password", "")
     empresa  = (data.get("empresa") or "").strip()
@@ -1562,8 +1496,7 @@ def api_register():
     if len(password) < 8:
         return jsonify({"ok": False, "error": "La contraseña debe tener al menos 8 caracteres"}), 400
     # Anti-bot: verificar Turnstile (si está configurado)
-    remote_ip = request.headers.get("CF-Connecting-IP") or request.remote_addr
-    if not _verify_turnstile(ts_token, remote_ip):
+    if not _verify_turnstile(ts_token, _ip_cliente()):
         return jsonify({"ok": False, "error": "Verificación anti-bot fallida. Recarga la página e inténtalo de nuevo."}), 403
     if User.query.filter_by(email=email).first():
         return jsonify({"ok": False, "error": "Este email ya está registrado"}), 400
@@ -1571,7 +1504,9 @@ def api_register():
     # Lo pueden cambiar luego en /perfil.
     if not empresa:
         empresa = email.split("@")[0].replace(".", " ").replace("_", " ").title()[:120] or "Tu empresa"
-    user = User(email=email, empresa=empresa)
+    user = User(email=email, empresa=empresa,
+                acepta_comercial=data.get("acepta_comercial") is True,
+                comercial_actualizado_at=datetime.utcnow())
     user.set_password(password)
     user.generate_verify_token()
     db.session.add(user)
@@ -1796,16 +1731,23 @@ def auditar_cms():
 @app.route("/api/lead-unlock", methods=["POST"])
 @limiter.limit("10 per hour")
 def lead_unlock():
-    """Captura email + ejecuta scan completo. Lead magnet sin registro: menos fricción que crear cuenta."""
-    import re as _re
-    data     = request.get_json() or {}
+    """Envía por email el informe pasivo de un dominio. El seguimiento comercial
+    solo si el visitante marca la casilla (desmarcada por defecto)."""
+    data     = request.get_json(silent=True) or {}
     email    = (data.get("email") or "").strip().lower()[:120]
     objetivo = (data.get("objetivo") or "").strip()[:200]
+    acepta_comercial = data.get("acepta_comercial") is True
 
-    if not email or not _re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+    if not email or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         return jsonify({"error": "Email inválido"}), 400
     if not objetivo:
         return jsonify({"error": "Introduce un dominio"}), 400
+    if not _verify_turnstile(data.get("cf-turnstile-response", ""), _ip_cliente()):
+        return jsonify({"error": "Verificación anti-bot fallida. Recarga la página e inténtalo de nuevo."}), 403
+    # Nadie puede usar el formulario para inundar de emails una dirección ajena.
+    hace_un_dia = datetime.utcnow() - timedelta(days=1)
+    if Lead.query.filter(Lead.email == email, Lead.created_at >= hace_un_dia).count() >= 3:
+        return jsonify({"error": "Ya hemos enviado varios informes a este email hoy. Inténtalo mañana."}), 429
 
     dominio = _normalizar_dominio(objetivo)
     if not dominio:
@@ -1827,117 +1769,26 @@ def lead_unlock():
         lead = Lead(
             email=email, objetivo=objetivo, dominio=dominio,
             riesgo=riesgo, resultado=resultado,
-            ip=(request.headers.get('X-Forwarded-For', request.remote_addr) or '')[:45],
+            ip=_hash_ip_visitante(),
             user_agent=(request.headers.get('User-Agent') or '')[:255],
             convertido=bool(ya_user),
+            acepta_comercial=acepta_comercial,
+            consentimiento_at=datetime.utcnow() if acepta_comercial else None,
         )
         db.session.add(lead)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        logger.warning(f"No se pudo guardar lead {email}: {e}")
+        logger.warning(f"No se pudo guardar el lead: {e}")
 
-    # Email con resumen del informe (solo si no es usuario existente)
+    # Email con el informe pedido
     try:
-        if not User.query.filter_by(email=email).first():
-            enviar_email_lead(email, objetivo, riesgo, label, puertos, dns, ssl_info, es_followup=False)
+        enviar_email_lead(email, dominio, riesgo, label, puertos, dns, ssl_info,
+                          es_followup=False, acepta_comercial=acepta_comercial)
     except Exception as e:
-        logger.warning(f"No se pudo enviar email a lead {email}: {e}")
+        logger.warning(f"No se pudo enviar el email al lead: {e}")
 
     return jsonify(resultado)
-
-@app.route("/api/checkout", methods=["POST"])
-@login_required
-@limiter.limit("10 per hour")
-def crear_checkout():
-    data = request.get_json() or {}
-    plan = data.get("plan", "")
-    billing = (data.get("billing") or "mensual").lower()
-    if plan != "pro":
-        return jsonify({"error": "Plan no válido"}), 400
-
-    if billing in ("anual", "annual", "yearly"):
-        price_id = STRIPE_PRICE_PRO_ANUAL or STRIPE_PRICE_PRO  # fallback a mensual si no hay anual
-        if not STRIPE_PRICE_PRO_ANUAL:
-            app.logger.warning("PRICE_PRO_ANUAL no configurado — usando precio mensual como fallback")
-    else:
-        price_id = STRIPE_PRICE_PRO
-
-    if not price_id:
-        app.logger.error("STRIPE_PRICE_PRO no configurado")
-        return jsonify({"error": "Pago temporalmente no disponible"}), 503
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            mode="subscription",
-            customer_email=current_user.email,
-            client_reference_id=str(current_user.id),
-            line_items=[{"price": price_id, "quantity": 1}],
-            success_url=request.host_url + "pago-exito?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=request.host_url + "#precios",
-            metadata={"billing": billing, "user_id": str(current_user.id)},
-            allow_promotion_codes=True,
-            billing_address_collection="auto",
-            tax_id_collection={"enabled": True},
-        )
-        return jsonify({"url": checkout_session.url})
-    except Exception as e:
-        app.logger.exception("Error creando checkout Stripe")
-        return jsonify({"error": "No se pudo iniciar el pago"}), 500
-
-@app.route("/api/checkout-informe", methods=["POST"])
-@login_required
-def checkout_informe():
-    data    = request.get_json()
-    scan_id = data.get("scan_id")
-    if not scan_id:
-        return jsonify({"error": "scan_id requerido"}), 400
-    try:
-        scan_id = int(scan_id)
-    except (TypeError, ValueError):
-        return jsonify({"error": "scan_id inválido"}), 400
-    scan_obj = db.session.get(Scan, scan_id)
-    if not scan_obj or scan_obj.user_id != current_user.id:
-        return jsonify({"error": "Escaneo no encontrado"}), 404
-    try:
-        informe_session = stripe.checkout.Session.create(
-            mode="payment",
-            customer_email=current_user.email,
-            line_items=[{
-                "price_data": {
-                    "currency": "eur",
-                    "product_data": {"name": "Informe PDF ejecutivo — ReconBase"},
-                    "unit_amount": 900,
-                },
-                "quantity": 1,
-            }],
-            success_url=request.host_url + f"app?informe_ok={scan_id}&sid={{CHECKOUT_SESSION_ID}}",
-            cancel_url=request.host_url + "app",
-            metadata={"scan_id": str(scan_id), "user_id": str(current_user.id)},
-        )
-        return jsonify({"url": informe_session.url})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/verificar-informe", methods=["POST"])
-@login_required
-def verificar_informe():
-    """Verifica el pago de Stripe y desbloquea el PDF del escaneo concreto."""
-    data       = request.get_json()
-    session_id = data.get("session_id")
-    scan_id    = data.get("scan_id")
-    if not session_id or not scan_id:
-        return jsonify({"ok": False}), 400
-    try:
-        stripe_session = stripe.checkout.Session.retrieve(session_id)
-        if stripe_session.payment_status == "paid":
-            scan_obj = db.session.get(Scan, int(scan_id))
-            if scan_obj and scan_obj.user_id == current_user.id:
-                scan_obj.pdf_unlocked = True
-                db.session.commit()
-                return jsonify({"ok": True})
-    except Exception as e:
-        app.logger.exception(f"Error verificando informe: {e}")
-    return jsonify({"ok": False})
 
 def _resolve_user_from_obj(obj):
     """Busca el usuario: primero client_reference_id, luego metadata.user_id,
@@ -2237,47 +2088,73 @@ def cambiar_password():
 @login_required
 @limiter.limit("5 per hour")
 def exportar_datos():
-    """Derecho a la portabilidad (GDPR art. 20). Devuelve un JSON con todos los datos del usuario."""
+    """Derecho de acceso y portabilidad (RGPD arts. 15 y 20): todos los datos de la cuenta en JSON."""
     user = current_user
-    scans = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).all()
+    uid = user.id
+
+    def fila(obj, campos):
+        return {c: (getattr(obj, c).isoformat() if isinstance(getattr(obj, c), datetime) else getattr(obj, c))
+                for c in campos}
+
+    scans = Scan.query.filter_by(user_id=uid).order_by(Scan.timestamp.desc()).all()
     data = {
         "exportado_en": datetime.utcnow().isoformat() + "Z",
         "usuario": {
-            "id": user.id,
-            "email": user.email,
-            "empresa": user.empresa,
-            "plan": user.plan,
+            "id": user.id, "email": user.email, "empresa": user.empresa,
             "email_verified": user.email_verified,
-            "trial_end": user.trial_end.isoformat() if user.trial_end else None,
-            "scan_hora": user.scan_hora,
-            "scan_dias": user.scan_dias,
-            "fecha_registro": user.created_at.isoformat() if getattr(user, "created_at", None) else None,
+            "fecha_registro": user.created_at.isoformat() if user.created_at else None,
+            "ultimo_acceso": user.last_login.isoformat() if user.last_login else None,
+            "ultima_ip_acceso": user.last_login_ip,
+            "acepta_comercial": bool(user.acepta_comercial),
+            "scan_hora": user.scan_hora, "scan_dias": user.scan_dias,
+            "slack_webhook_configurado": bool(user.slack_webhook),
+            "webhook_configurado": bool(user.custom_webhook),
+            "2fa_activado": bool(user.totp_enabled),
         },
-        "escaneos": [
-            {
-                "id": s.id,
-                "objetivo": s.objetivo,
-                "dominio": s.dominio,
-                "riesgo": s.riesgo,
-                "label": s.label,
-                "timestamp": s.timestamp.isoformat() if s.timestamp else None,
-                "resultado": s.resultado,
-            }
-            for s in scans
-        ],
-        "total_escaneos": len(scans),
+        "dominios": [fila(d, ["dominio", "activo", "added_at", "autorizacion_at", "verificado", "verif_metodo", "verificado_at"])
+                     for d in Domain.query.filter_by(user_id=uid).all()],
+        "escaneos": [{"id": s.id, "objetivo": s.objetivo, "dominio": s.dominio, "riesgo": s.riesgo,
+                      "label": s.label, "timestamp": s.timestamp.isoformat() if s.timestamp else None,
+                      "resultado": s.resultado} for s in scans],
+        "notificaciones": [fila(n, ["tipo", "titulo", "mensaje", "leida", "created_at"])
+                           for n in Notification.query.filter_by(user_id=uid).all()],
+        "registro_de_actividad": [fila(a, ["evento", "ip", "user_agent", "detalles", "created_at"])
+                                  for a in AuditLog.query.filter_by(user_id=uid).all()],
+        "intentos_de_acceso": [fila(l, ["ip", "user_agent", "exito", "razon", "created_at"])
+                               for l in LoginAttempt.query.filter_by(email=user.email).all()],
+        "facturas": [fila(f, ["numero", "concepto", "importe", "moneda", "estado", "created_at"])
+                     for f in Invoice.query.filter_by(user_id=uid).all()],
     }
     buf = io.BytesIO(json.dumps(data, indent=2, ensure_ascii=False, default=str).encode("utf-8"))
-    nombre = f"reconbase_datos_{user.email.replace('@','_at_')}_{datetime.utcnow().strftime('%Y%m%d')}.json"
+    nombre = f"reconbase_mis_datos_{datetime.utcnow().strftime('%Y%m%d')}.json"
     return send_file(buf, mimetype="application/json", as_attachment=True, download_name=nombre)
+
+
+def _borrar_datos_usuario(user):
+    """Borra la cuenta y todos sus datos en UNA transacción (RGPD art. 17).
+    Las facturas emitidas se conservan (obligación legal de conservación),
+    desvinculadas de la cuenta y con una copia de los datos del cliente."""
+    uid, email = user.id, (user.email or "").lower()
+    for factura in Invoice.query.filter_by(user_id=uid).all():
+        factura.cliente_email = factura.cliente_email or email
+        factura.cliente_nombre = factura.cliente_nombre or user.empresa
+        factura.user_id = None
+    for modelo in (Scan, Domain, SSLCheck, UptimeCheck, Notification, DNSRecord,
+                   TechDetection, IPReputation, AuditLog):
+        modelo.query.filter_by(user_id=uid).delete(synchronize_session=False)
+    LoginAttempt.query.filter(db.func.lower(LoginAttempt.email) == email).delete(synchronize_session=False)
+    Lead.query.filter(db.func.lower(Lead.email) == email).delete(synchronize_session=False)
+    db.session.delete(user)
+
 
 # ── GDPR: eliminar cuenta (derecho al olvido) ──
 @app.route("/api/eliminar-cuenta", methods=["POST"])
 @login_required
 @limiter.limit("3 per hour")
 def eliminar_cuenta():
-    """Derecho al olvido (GDPR art. 17). Cancela suscripción Stripe, borra escaneos y borra usuario."""
-    data = request.get_json() or {}
+    """Derecho de supresión (RGPD art. 17): cancela la suscripción antigua si la
+    hubiera y borra la cuenta con todos sus datos."""
+    data = request.get_json(silent=True) or {}
     password = data.get("password", "")
     confirmacion = (data.get("confirmacion") or "").strip().upper()
     if confirmacion != "ELIMINAR":
@@ -2285,47 +2162,33 @@ def eliminar_cuenta():
     if not current_user.check_password(password):
         return jsonify({"ok": False, "error": "Contraseña incorrecta"}), 400
 
-    user = current_user
-    user_id = user.id
-    email = user.email
+    user_id = current_user.id
+    email = current_user.email
 
-    # 1) Intentar cancelar suscripción activa de Stripe (best effort)
+    # Suscripciones de pago antiguas (ReconBase ya es gratuito): mejor esfuerzo.
     if stripe.api_key:
         try:
             customers = stripe.Customer.list(email=email, limit=1)
             if customers.data:
-                customer_id = customers.data[0].id
-                subs = stripe.Subscription.list(customer=customer_id, status="active", limit=10)
+                subs = stripe.Subscription.list(customer=customers.data[0].id, status="active", limit=10)
                 for sub in subs.data:
                     try:
                         stripe.Subscription.delete(sub.id)
-                        logger.info(f"[GDPR] Suscripcion {sub.id} cancelada para {email}")
                     except Exception as e:
-                        logger.error(f"[GDPR] Error cancelando sub {sub.id}: {e}")
+                        logger.error(f"[RGPD] Error cancelando la suscripción {sub.id}: {e}")
         except Exception as e:
-            logger.error(f"[GDPR] Error Stripe al eliminar cuenta {email}: {e}")
+            logger.error(f"[RGPD] Error de Stripe al eliminar la cuenta {user_id}: {e}")
 
-    # 2) Borrar escaneos del usuario
     try:
-        Scan.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        logger.exception(f"[GDPR] Error borrando escaneos de {email}: {e}")
-        return jsonify({"ok": False, "error": "Error borrando escaneos"}), 500
-
-    # 3) Cerrar sesión y borrar usuario
-    try:
+        user = db.session.get(User, user_id)
         logout_user()
-        u_obj = db.session.get(User, user_id)
-        if u_obj:
-            db.session.delete(u_obj)
-            db.session.commit()
-        logger.info(f"[GDPR] Cuenta {email} eliminada completamente")
+        _borrar_datos_usuario(user)
+        db.session.commit()
+        logger.info(f"[RGPD] Cuenta {user_id} eliminada con todos sus datos")
     except Exception as e:
         db.session.rollback()
-        logger.exception(f"[GDPR] Error borrando usuario {email}: {e}")
-        return jsonify({"ok": False, "error": "Error borrando la cuenta"}), 500
+        logger.exception(f"[RGPD] Error eliminando la cuenta {user_id}: {e}")
+        return jsonify({"ok": False, "error": "No se pudo eliminar la cuenta. Escríbenos a hola@reconbase.es y la eliminamos nosotros."}), 500
 
     return jsonify({"ok": True, "msg": "Cuenta eliminada"})
 
@@ -2352,14 +2215,14 @@ def enviar_email_onboarding(destinatario):
             cuerpo = (
                 "Hola,\n\n"
                 "Te registraste en ReconBase hace 2 dias y todavia no has analizado tu dominio.\n\n"
-                "En menos de 2 minutos puedes saber:\n"
-                "  - Si tienes puertos criticos expuestos al exterior\n"
-                "  - Si algun email de tu empresa aparece en filtraciones conocidas\n"
-                "  - Si tu dominio puede ser suplantado para ataques de phishing\n\n"
-                "Muchas empresas descubren problemas graves en su primer escaneo.\n\n"
-                "Entra ahora y analiza gratis:\n"
-                f"{BASE_URL}/app\n\n"
-                "--\nReconBase - Seguridad perimetral para PYMEs\n"
+                "En unos minutos puedes saber:\n"
+                "  - Si tu dominio puede ser suplantado para enviar emails falsos (SPF y DMARC)\n"
+                "  - Como estan tu certificado SSL y tus cabeceras de seguridad\n"
+                "  - Si verificas el dominio, tambien sus puertos y ficheros expuestos\n\n"
+                "Entra y analiza tu dominio gratis:\n"
+                f"{BASE_URL}/\n\n"
+                "--\nReconBase\n"
+                + _pie_comercial_texto(destinatario, "Recibes este email porque tienes cuenta en ReconBase y aceptaste recibir consejos.")
             )
             with app.app_context():
                 mail.send(Message(
@@ -2407,8 +2270,8 @@ def enviar_email_post_escaneo(destinatario, empresa, objetivo, riesgo, label, de
                 f"PUNTOS A REVISAR:\n{problemas}\n"
                 f"Cada uno de estos problemas tiene una solución concreta. Entra al dashboard para ver el informe completo con los pasos exactos:\n\n"
                 f"{BASE_URL}/\n\n"
-                f"Si quieres que ReconBase vigile tu dominio automáticamente cada noche y te avise si algo cambia, activa el plan Pro:\n"
-                f"{BASE_URL}/#precios\n\n"
+                f"Si el dominio es tuyo, verificalo en tu perfil para hacer el analisis completo y activar la vigilancia automatica (gratis):\n"
+                f"{BASE_URL}/perfil#dominios\n\n"
                 f"--\nReconBase - Seguridad perimetral para PYMEs\n"
             )
             with app.app_context():
@@ -2491,30 +2354,6 @@ def enviar_email_pro_activado(user):
     # 3. Arrancamos el hilo pasándole LAS DOS variables seguras
     threading.Thread(target=_send, args=(email_destino, nombre_empresa), daemon=True).start()
 
-def enviar_email_trial_expirando(user, dias_restantes):
-    email_destino  = user.email
-    nombre_empresa = user.empresa
-    base_url       = BASE_URL
-    def _send(email, empresa, dias):
-        try:
-            dias_txt = f"{dias} día{'s' if dias != 1 else ''}"
-            with app.app_context():
-                send_html_email(
-                    email,
-                    f"Tu trial Pro termina en {dias_txt} — ReconBase",
-                    f"⏳ Tu trial termina en {dias_txt}",
-                    f"Hola <strong>{empresa}</strong>,<br><br>"
-                    f"Tu periodo de prueba Pro termina en <strong>{dias_txt}</strong>.<br><br>"
-                    f"Cuando expire perderás acceso a: vigilancia nocturna, alertas, filtraciones y PDFs.<br><br>"
-                    f"Suscríbete ahora para mantener la protección completa.",
-                    cta_url=f"{base_url}/#precios",
-                    cta_text="Suscribirme a Pro — 9€/mes"
-                )
-                logger.info(f"[Trial] Aviso HTML a {email} ({dias}d)")
-        except Exception as e:
-            logger.warning(f"[Trial] Error a {email}: {e}")
-    threading.Thread(target=_send, args=(email_destino, nombre_empresa, dias_restantes), daemon=True).start()
-
 def enviar_email_reset(user):
     # Extraer atributos antes de lanzar el thread (evita DetachedInstanceError)
     email_destino = user.email
@@ -2539,221 +2378,184 @@ def enviar_email_reset(user):
             logger.warning(f"[Reset] Error a {email}: {e}")
     threading.Thread(target=_send, args=(email_destino, link), daemon=True).start()
 
-def enviar_email_limite_free(destinatario):
+# ─── Comunicaciones comerciales (LSSI art. 21) ────────────────────────────────
+# · Leads: solo reciben el informe que piden; el seguimiento, solo si marcaron
+#   la casilla (desmarcada por defecto).
+# · Usuarios: emails de servicio siempre; los comerciales (consejos, reenganche)
+#   solo si no se opusieron en el registro o en su perfil.
+# · Cada email comercial lleva un enlace de baja firmado.
+from itsdangerous import URLSafeSerializer, BadSignature
+
+_firmante_baja = URLSafeSerializer(app.secret_key, salt="baja-comercial")
+
+
+def _url_baja(email):
+    return f"{BASE_URL}/baja/{_firmante_baja.dumps((email or '').strip().lower())}"
+
+
+def _pie_comercial_html(email, motivo):
+    return (f"<p style='font-size:.75rem;color:#64748B;margin-top:1.5rem'>{motivo} "
+            f"<a href='{_url_baja(email)}' style='color:#64748B'>Darme de baja de estos emails</a>.</p>")
+
+
+def _pie_comercial_texto(email, motivo):
+    return f"\n\n{motivo} Para darte de baja: {_url_baja(email)}\n"
+
+
+def _dar_de_baja(email):
+    email = (email or "").strip().lower()
+    n = 0
+    for lead in Lead.query.filter_by(email=email).all():
+        lead.unsubscribed = True
+        lead.acepta_comercial = False
+        n += 1
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.acepta_comercial = False
+        user.comercial_actualizado_at = datetime.utcnow()
+        n += 1
+    db.session.commit()
+    return n
+
+
+def _problemas_resumen(puertos, dns_info, ssl_info, modo=None):
+    problemas = []
+    crit = [p for p in (puertos or []) if p.get('servicio') in engine.SERVICIOS_CRITICOS]
+    if crit:
+        problemas.append(f"🔴 <strong>{len(crit)} servicio(s) crítico(s) expuesto(s)</strong>: "
+                         + ", ".join(_html_escape(f"{p['puerto']}/{p['servicio']}") for p in crit[:4]))
+    if dns_info:
+        if not dns_info.get('SPF') and not dns_info.get('DMARC'):
+            problemas.append("🔴 <strong>Sin SPF ni DMARC</strong>: es fácil enviar emails haciéndose pasar por tu dominio")
+        elif not dns_info.get('DMARC'):
+            problemas.append("🟡 <strong>DMARC no configurado</strong>: riesgo de suplantación de tu dominio")
+        elif not dns_info.get('SPF'):
+            problemas.append("🟡 <strong>SPF no configurado</strong>: riesgo de suplantación de tu dominio")
+    if ssl_info and ssl_info.get('caducado'):
+        problemas.append("🔴 <strong>Certificado SSL caducado</strong>: los navegadores avisan de inseguridad")
+    elif ssl_info and ssl_info.get('pronto_a_caducar'):
+        problemas.append(f"🟡 <strong>El SSL caduca en {ssl_info.get('dias_restantes', '?')} días</strong>")
+    return problemas
+
+
+def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, ssl_info,
+                      es_followup=False, acepta_comercial=False):
+    """Informe pedido desde la home (transaccional). Con es_followup=True es el
+    recordatorio de las 48 h, que solo se envía a leads con consentimiento."""
     def _send():
         try:
-            base_url = BASE_URL
-            with app.app_context():
-                send_html_email(
-                    destinatario,
-                    "Has agotado tus escaneos gratuitos este mes — ReconBase",
-                    "Has alcanzado el límite gratuito",
-                    "Has usado todos tus escaneos gratuitos de este mes.<br><br>"
-                    "Tu empresa puede seguir expuesta a amenazas que no puedes revisar ahora.<br><br>"
-                    "Con <strong>Pro a 9€/mes</strong>:<br>"
-                    "✅ Escaneos ilimitados<br>✅ Vigilancia nocturna 24/7<br>"
-                    "✅ Alertas automáticas<br>✅ Informes PDF completos",
-                    cta_url=f"{base_url}/#precios",
-                    cta_text="Activar Pro — 9€/mes"
-                )
-                logger.info(f"[Limite] Email HTML enviado a {destinatario}")
-        except Exception as e:
-            logger.warning(f"[Limite] Error a {destinatario}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
-
-def enviar_email_lead(destinatario, objetivo, riesgo, label, puertos, dns_info, ssl_info, es_followup=False):
-    """Email tras desbloquear informe con email (lead magnet). Si es_followup=True, es el recordatorio 48h."""
-    def _send():
-        try:
-            base_url = BASE_URL
-            nivel = "CRÍTICO" if riesgo >= 70 else "MODERADO" if riesgo >= 40 else "BAJO"
-            color = "#EF4444" if riesgo >= 70 else "#F59E0B" if riesgo >= 40 else "#22C55E"
-
-            # Contar problemas concretos
-            problemas = []
-            crit_ports = [p for p in (puertos or []) if p.get('puerto') in {3389, 22, 3306, 5432, 27017, 6379, 5900, 23, 21, 1433}]
-            if crit_ports:
-                problemas.append(f"🔴 <strong>{len(crit_ports)} puerto{'s' if len(crit_ports)>1 else ''} crítico{'s' if len(crit_ports)>1 else ''} expuesto{'s' if len(crit_ports)>1 else ''}</strong>: {', '.join(str(p['puerto']) for p in crit_ports[:4])}")
-            if dns_info and not dns_info.get('spf') and not dns_info.get('dmarc'):
-                problemas.append("🔴 <strong>Dominio suplantable</strong>: sin SPF ni DMARC configurados")
-            elif dns_info and not dns_info.get('dmarc'):
-                problemas.append("🟡 <strong>DMARC no configurado</strong>: riesgo de phishing con tu dominio")
-            elif dns_info and not dns_info.get('spf'):
-                problemas.append("🟡 <strong>SPF no configurado</strong>: emails suplantables")
-            if ssl_info and ssl_info.get('caducado'):
-                problemas.append("🔴 <strong>Certificado SSL caducado</strong>: los navegadores avisan de inseguridad")
-            elif ssl_info and ssl_info.get('pronto_a_caducar'):
-                problemas.append(f"🟡 <strong>SSL caduca en {ssl_info.get('dias_restantes','?')} días</strong>")
-
-            problemas_html = "<ul style='margin:.5rem 0 1rem;padding-left:1.2rem;line-height:1.8'>" + \
-                "".join(f"<li>{p}</li>" for p in problemas[:5]) + "</ul>" if problemas else \
-                "<p style='color:#22C55E'>✓ No se detectaron problemas críticos en este escaneo.</p>"
-
-            if es_followup:
-                subject = f"Recordatorio: {objetivo} tiene {riesgo}% de riesgo — ¿lo vas a proteger?"
-                titulo = f"¿Sigues con {riesgo}% de riesgo en {objetivo}?"
-                intro = (
-                    f"Hace 48 horas analizaste <strong>{objetivo}</strong> con ReconBase.<br>"
-                    f"El nivel de riesgo era <strong style='color:{color}'>{riesgo}% — {label}</strong> y aún no has creado cuenta.<br><br>"
-                    "Esto es lo que sigue sin resolverse:"
-                )
-                cta_text = "Crear cuenta y proteger mi empresa →"
-            else:
-                subject = f"Tu informe de {objetivo} — Riesgo {nivel} ({riesgo}%)"
-                titulo = f"Informe de {objetivo}: {riesgo}% de riesgo"
-                intro = (
-                    f"Acabas de analizar <strong>{objetivo}</strong> en ReconBase.<br>"
-                    f"Nivel de riesgo: <strong style='color:{color}'>{riesgo}% — {label}</strong>.<br><br>"
-                    "Resumen de los hallazgos más importantes:"
-                )
-                cta_text = "Guardar informe + activar vigilancia →"
-
-            cuerpo = (
-                f"{intro}"
-                f"{problemas_html}"
-                "<p style='font-size:.88rem;color:#64748B;margin-top:1rem'>"
-                "Con una cuenta gratuita puedes:<br>"
-                "• Guardar este informe y su historial<br>"
-                "• Recibir alertas automáticas cuando algo cambie<br>"
-                "• Descargar el PDF ejecutivo con pasos de remediación"
-                "</p>"
-            )
-
             from urllib.parse import quote
-            cta_url = f"{base_url}/register?email={quote(destinatario)}&target={quote(objetivo)}"
-
+            color = "#EF4444" if riesgo >= 70 else "#F59E0B" if riesgo >= 40 else "#22C55E"
+            obj = _html_escape(objetivo)
+            problemas = _problemas_resumen(puertos, dns_info, ssl_info)
+            problemas_html = ("<ul style='margin:.5rem 0 1rem;padding-left:1.2rem;line-height:1.8'>"
+                              + "".join(f"<li>{p}</li>" for p in problemas[:5]) + "</ul>") if problemas else \
+                "<p style='color:#22C55E'>✓ No hemos encontrado problemas en lo analizado.</p>"
+            if es_followup:
+                subject = f"¿Has podido revisar la seguridad de {objetivo}?"
+                titulo = f"Recordatorio: el análisis de {obj}"
+                intro = (f"Hace un par de días analizaste <strong>{obj}</strong> en ReconBase "
+                         f"(riesgo <strong style='color:{color}'>{riesgo}%</strong>). Estos eran los puntos a revisar:")
+            else:
+                subject = f"Tu análisis de {objetivo} — riesgo {riesgo}%"
+                titulo = f"Análisis de {obj}: {riesgo}% de riesgo"
+                intro = (f"Este es el resumen del análisis de <strong>{obj}</strong> que has pedido en ReconBase "
+                         f"(nivel de riesgo <strong style='color:{color}'>{riesgo}% — {_html_escape(label)}</strong>).")
+            cuerpo = (
+                f"<p>{intro}</p>{problemas_html}"
+                "<p style='font-size:.85rem;color:#64748B'>Ha sido un análisis pasivo: solo información pública "
+                "(DNS, certificado, cabeceras y lo que la web publica). Si el dominio es tuyo, con una cuenta gratuita "
+                "puedes verificarlo y hacer el análisis completo, guardar el historial y recibir alertas.</p>"
+            )
+            if acepta_comercial:
+                cuerpo += _pie_comercial_html(destinatario, "Recibes este email porque pediste el informe en reconbase.es y aceptaste recibir consejos.")
+            else:
+                cuerpo += ("<p style='font-size:.75rem;color:#64748B;margin-top:1.5rem'>Recibes este email porque pediste "
+                           "este informe en reconbase.es. No te enviaremos nada más.</p>")
+            cta_url = f"{BASE_URL}/register?email={quote(destinatario)}&target={quote(objetivo)}"
             with app.app_context():
-                send_html_email(destinatario, subject, titulo, cuerpo, cta_url=cta_url, cta_text=cta_text)
-                logger.info(f"[Lead{'Followup' if es_followup else ''}] Email enviado a {destinatario} · {objetivo} · {riesgo}%")
+                send_html_email(destinatario, subject, titulo, cuerpo, cta_url=cta_url, cta_text="Crear cuenta gratis")
+                logger.info(f"[Lead{'Followup' if es_followup else ''}] Email enviado · {objetivo}")
         except Exception as e:
-            logger.warning(f"[Lead email] Error a {destinatario}: {e}")
+            logger.warning(f"[Lead email] Error: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 
 def enviar_email_lead_dia7(destinatario, objetivo, riesgo, problemas_lista):
-    """Email día 7: educativo. Caso real + razón concreta para volver."""
-    base_url = BASE_URL
+    """Día 7 (solo con consentimiento): por qué importan SPF y DMARC y cómo configurarlos."""
     def _send():
         try:
+            from urllib.parse import quote
             problemas_html = ""
             if problemas_lista:
-                problemas_html = "<ul style='margin:.6rem 0 1rem;padding-left:1.2rem;line-height:1.8;color:#94A3B8'>"
-                for p in problemas_lista[:3]:
-                    problemas_html += f"<li>{p}</li>"
-                problemas_html += "</ul>"
-
-            from urllib.parse import quote
-            unsub_url = f"{base_url}/api/unsubscribe?email={quote(destinatario)}"
-            cta_url = f"{base_url}/register?email={quote(destinatario)}&target={quote(objetivo)}"
-
+                problemas_html = ("<p>En tu análisis de <strong>" + _html_escape(objetivo) + "</strong> vimos:</p>"
+                                  "<ul style='margin:.6rem 0 1rem;padding-left:1.2rem;line-height:1.8;color:#94A3B8'>"
+                                  + "".join(f"<li>{p}</li>" for p in problemas_lista[:3]) + "</ul>")
             cuerpo = (
-                f"Hace una semana escaneaste <strong>{objetivo}</strong> en ReconBase.<br><br>"
-                f"Te dejo un dato del INCIBE que igual te importa: el <strong>43% de los ciberataques en España "
-                f"van a pymes</strong> y la mayoría son via <strong>emails suplantados</strong> (BEC, Business "
-                f"Email Compromise) o <strong>credenciales filtradas</strong>.<br><br>"
-                f"En tu caso:"
+                "<p>Una de las estafas más habituales contra pequeñas empresas es el email que parece venir de un "
+                "proveedor o de tu propia empresa y pide un pago o unas credenciales.</p>"
+                "<p>Los registros <strong>SPF</strong> y <strong>DMARC</strong> de tu DNS ayudan a que los servidores de "
+                "correo rechacen esos emails falsos. Configurarlos suele llevar pocos minutos.</p>"
                 f"{problemas_html}"
-                "<p style='background:#0A1F12;border:1px solid #166534;border-radius:8px;padding:1rem;color:#BBF7D0;margin:1rem 0;font-size:.88rem'>"
-                "<strong>📌 Caso real:</strong> Una asesoría de Madrid recibió un mail \"de su jefe\" pidiendo "
-                "transferir 12.500€ a una cuenta. SPF no estaba configurado → el mail pasó el filtro. Lo enviaron. "
-                "El jefe nunca lo había mandado. Recuperar el dinero les costó 6 meses y un proceso legal. "
-                "<strong>SPF + DMARC habrían bloqueado ese email en origen.</strong>"
-                "</p>"
-                "<p>Configurar SPF/DMARC son 5 minutos en tu DNS. ReconBase te dice exactamente qué registros añadir.</p>"
-                "<p style='font-size:.78rem;color:#64748B;margin-top:1.5rem'>"
-                f"¿No te interesa? <a href='{unsub_url}' style='color:#64748B'>Darse de baja</a>."
-                "</p>"
+                f"<p>Puedes comprobar tu dominio y ver qué registros añadir en <a href='{BASE_URL}/comprobar-dmarc-spf'>nuestra herramienta gratuita</a>.</p>"
+                + _pie_comercial_html(destinatario, "Recibes este email porque aceptaste recibir consejos de ReconBase.")
             )
             with app.app_context():
-                send_html_email(
-                    destinatario,
-                    f"Por qué tu pyme es 5x más probable de ser hackeada que Apple",
-                    "Lo que aprendí escaneando 50 dominios de pymes",
-                    cuerpo,
-                    cta_url=cta_url, cta_text="Ver mi informe completo →"
-                )
-                logger.info(f"[LeadDia7] Email enviado a {destinatario}")
+                send_html_email(destinatario, "Cómo evitar que suplanten el email de tu empresa",
+                                "SPF y DMARC: 5 minutos que evitan muchos fraudes", cuerpo,
+                                cta_url=f"{BASE_URL}/register?email={quote(destinatario)}&target={quote(objetivo)}",
+                                cta_text="Crear cuenta gratis")
+                logger.info("[LeadDia7] Email enviado")
         except Exception as e:
-            logger.warning(f"[LeadDia7] Error a {destinatario}: {e}")
+            logger.warning(f"[LeadDia7] Error: {e}")
     threading.Thread(target=_send, daemon=True).start()
 
 
-def enviar_email_lead_dia14(destinatario, objetivo, riesgo):
-    """Email día 14: última oportunidad con cupón para activar Pro."""
-    base_url = BASE_URL
-    def _send():
-        try:
-            from urllib.parse import quote
-            unsub_url = f"{base_url}/api/unsubscribe?email={quote(destinatario)}"
-            cta_url = f"{base_url}/register?email={quote(destinatario)}&target={quote(objetivo)}"
-
-            cuerpo = (
-                f"Hace 2 semanas analizaste <strong>{objetivo}</strong> con ReconBase. "
-                f"Riesgo detectado: <strong>{riesgo}%</strong>.<br><br>"
-                "Sé que estás ocupado. Te mando este último email con una propuesta concreta:<br><br>"
-                "<div style='background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:10px;padding:1.25rem;margin:1rem 0;text-align:center'>"
-                "<div style='font-size:1.05rem;font-weight:800;color:#F0FDF4;margin-bottom:.5rem'>"
-                "🎁 30 días Pro gratis"
-                "</div>"
-                "<div style='font-size:.85rem;color:#BBF7D0;line-height:1.5'>"
-                "Crea tu cuenta antes del próximo lunes y te activamos <strong>30 días del plan Pro</strong> sin tarjeta. "
-                "Vigilancia 24/7, alertas automáticas, informes PDF ilimitados.<br><br>"
-                "Sin permanencia. Si no te convence, no haces nada y vuelves a Free automáticamente."
-                "</div>"
-                "</div>"
-                "<p>Una vez activado tendrás:</p>"
-                "<ul style='margin:.5rem 0 1rem;padding-left:1.2rem;line-height:1.8'>"
-                "<li>✅ Tu dominio escaneado cada noche automáticamente</li>"
-                "<li>✅ Email instantáneo si detectamos algo nuevo</li>"
-                "<li>✅ Informe PDF ejecutivo (para enseñar a tu jefe / cliente / proveedor)</li>"
-                "<li>✅ Filtraciones de tus emails corporativos contra HIBP</li>"
-                "</ul>"
-                "<p style='font-size:.85rem;color:#94A3B8'>Si no te interesa, no pasa nada. Es el último que te mando del lanzamiento.</p>"
-                "<p style='font-size:.78rem;color:#64748B;margin-top:1.5rem'>"
-                f"<a href='{unsub_url}' style='color:#64748B'>Darse de baja de todos los emails</a>."
-                "</p>"
-            )
-            with app.app_context():
-                send_html_email(
-                    destinatario,
-                    "30 días Pro gratis — última oferta para tu pyme",
-                    "Última oportunidad antes de cerrar tu acceso",
-                    cuerpo,
-                    cta_url=cta_url, cta_text="Activar 30 días Pro gratis →"
-                )
-                logger.info(f"[LeadDia14] Email enviado a {destinatario}")
-        except Exception as e:
-            logger.warning(f"[LeadDia14] Error a {destinatario}: {e}")
-    threading.Thread(target=_send, daemon=True).start()
+@app.route("/baja/<token>")
+@limiter.limit("60 per hour")
+def baja_comercial(token):
+    try:
+        email = _firmante_baja.loads(token)
+    except BadSignature:
+        return render_template("verify_result.html", ok=False, titulo_pagina="Baja",
+                               msg="El enlace no es válido. Escríbenos a hola@reconbase.es y te damos de baja."), 400
+    try:
+        _dar_de_baja(email)
+    except Exception as e:
+        db.session.rollback()
+        logger.warning(f"[Baja] error: {e}")
+    return render_template("verify_result.html", ok=True, titulo_pagina="Baja", titulo="Te hemos dado de baja",
+                           msg="No recibirás más consejos ni novedades de ReconBase. Seguirás recibiendo los emails "
+                               "necesarios del servicio si tienes cuenta. Si fue un error, puedes volver a activarlos en tu perfil.")
 
 
 @app.route("/api/unsubscribe", methods=["GET"])
 @limiter.limit("60 per hour")
 def api_unsubscribe():
-    """Opt-out de los emails de followup. RGPD: derecho de oposición (art. 21)."""
+    """Enlace de baja de los emails enviados antes de los enlaces firmados.
+    Se mantiene para que esos enlaces sigan funcionando."""
     email = (request.args.get("email") or "").strip().lower()
     if not email:
         return ("Falta email", 400)
     try:
-        # Marcar todos los leads con ese email como unsubscribed
-        leads = Lead.query.filter_by(email=email).all()
-        for l in leads:
-            l.unsubscribed = True
-        # Si tiene cuenta, marcar también la flag de comunicaciones (si existe)
-        db.session.commit()
-        logger.info(f"[Unsubscribe] {email} dado de baja ({len(leads)} leads)")
+        _dar_de_baja(email)
     except Exception as e:
         db.session.rollback()
-        logger.warning(f"[Unsubscribe] error con {email}: {e}")
-    return Response(
-        "<html><body style='font-family:sans-serif;text-align:center;padding:3rem;background:#060D09;color:#E2EDF8'>"
-        "<h2>Te hemos dado de baja</h2>"
-        "<p>No recibirás más emails de seguimiento de ReconBase.</p>"
-        "<p style='color:#64748B;font-size:.85rem'>Si fue un error, escríbenos a hola@reconbase.es y te volvemos a apuntar.</p>"
-        "<a href='https://reconbase.es' style='color:#22C55E'>Volver al sitio</a>"
-        "</body></html>",
-        mimetype="text/html"
-    )
+        logger.warning(f"[Unsubscribe] error: {e}")
+    return render_template("verify_result.html", ok=True, titulo_pagina="Baja", titulo="Te hemos dado de baja",
+                           msg="No recibirás más emails de seguimiento de ReconBase.")
+
+
+@app.route("/api/preferencias", methods=["GET", "POST"])
+@login_required
+def preferencias_comerciales():
+    user = db.session.get(User, current_user.id)
+    if request.method == "POST":
+        user.acepta_comercial = bool((request.get_json(silent=True) or {}).get("acepta_comercial"))
+        user.comercial_actualizado_at = datetime.utcnow()
+        db.session.commit()
+        _registrar_audit(user.id, "preferencias_email", "acepta" if user.acepta_comercial else "rechaza")
+    return jsonify({"ok": True, "acepta_comercial": bool(user.acepta_comercial)})
 
 
 def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_anterior=None):
@@ -2813,17 +2615,6 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
 @require_verified
 @limiter.limit("20 per hour")
 def scan():
-    if current_user.plan_efectivo == "free":
-        from sqlalchemy import extract
-        now = datetime.utcnow()
-        scans_mes = Scan.query.filter(
-            Scan.user_id == current_user.id,
-            extract('month', Scan.timestamp) == now.month,
-            extract('year',  Scan.timestamp) == now.year
-        ).count()
-        if scans_mes >= 30:
-            return jsonify({"error": "limite_free"}), 403
-
     data     = request.get_json(silent=True) or {}
     raw      = (data.get("objetivo") or "").strip()[:200]
     if not raw:
@@ -2864,18 +2655,6 @@ def scan():
     if total_scans_usuario == 1:
         enviar_email_post_escaneo(current_user.email, current_user.empresa, objetivo, riesgo, label, desglose, puertos, len(subs) if not es_ip else 0)
 
-    # Email de límite Free cuando se agota el último escaneo del mes
-    if current_user.plan == 'free':
-        from sqlalchemy import extract as _ext
-        _now = datetime.utcnow()
-        _total = Scan.query.filter(
-            Scan.user_id == current_user.id,
-            _ext('month', Scan.timestamp) == _now.month,
-            _ext('year',  Scan.timestamp) == _now.year
-        ).count()
-        if _total >= 30:
-            enviar_email_limite_free(current_user.email)
-
     # Enviar alerta solo si el riesgo subió respecto al escaneo anterior del mismo dominio
     scan_anterior = Scan.query.filter_by(user_id=current_user.id, dominio=dominio)\
         .order_by(Scan.timestamp.desc()).offset(1).first()
@@ -2906,12 +2685,7 @@ def scan():
 @app.route("/api/historial", methods=["GET"])
 @login_required
 def historial():
-    # Free: últimos 7 días. Pro: histórico ilimitado.
     q = Scan.query.filter_by(user_id=current_user.id)
-    if current_user.plan_efectivo == 'free':
-        from datetime import datetime, timedelta
-        cutoff = datetime.utcnow() - timedelta(days=7)
-        q = q.filter(Scan.timestamp >= cutoff)
     scans = q.order_by(Scan.timestamp.desc()).limit(500).all()
     result = []
     for s in scans:
@@ -3506,37 +3280,21 @@ def generar_pdf():
 
     pdf.ln(4)
     # Caja de marca / CTA
-    plan = current_user.plan_efectivo
-    if plan == 'free':
-        pdf.set_fill_color(240, 253, 244)
-        pdf.set_draw_color(*BRAND_GREEN_LIGHT)
-        y0 = pdf.get_y()
-        pdf.rect(15, y0, 180, 28, "DF")
-        pdf.set_xy(20, y0 + 4)
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.set_text_color(*BRAND_GREEN)
-        pdf.cell(0, 5, sanitizar("Plan Pro - Vigilancia continua y sin marca de agua"), ln=1)
-        pdf.set_x(20)
-        pdf.set_font("Helvetica", "", 9)
-        pdf.set_text_color(*TEXT_DARK)
-        pdf.multi_cell(170, 4.5, sanitizar("Escaneos ilimitados, monitorización 24/7, alertas automáticas, integración Slack/webhook, hasta 10 dominios y reports PDF mensuales sin marca."))
-        pdf.set_x(20)
-        pdf.set_font("Helvetica", "B", 9)
-        pdf.set_text_color(*BRAND_GREEN)
-        pdf.cell(0, 5, sanitizar(">> Activa Pro en reconbase.es/pricing - 9 EUR/mes, sin permanencia"), ln=1)
-    else:
-        pdf.set_fill_color(*BG_SOFT)
-        pdf.set_draw_color(*BORDER)
-        y0 = pdf.get_y()
-        pdf.rect(15, y0, 180, 20, "DF")
-        pdf.set_xy(20, y0 + 5)
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.set_text_color(*BRAND_GREEN)
-        pdf.cell(0, 5, sanitizar("¿Necesitas ayuda implementando estas recomendaciones?"), ln=1)
-        pdf.set_x(20)
-        pdf.set_font("Helvetica", "", 9)
-        pdf.set_text_color(*TEXT_DARK)
-        pdf.cell(0, 5, sanitizar("Escríbenos a hola@reconbase.es y te orientamos sin coste."), ln=1)
+    pdf.set_fill_color(*BG_SOFT)
+    pdf.set_draw_color(*BORDER)
+    y0 = pdf.get_y()
+    pdf.rect(15, y0, 180, 24, "DF")
+    pdf.set_xy(20, y0 + 4)
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.cell(0, 5, sanitizar("Alcance de este informe"), ln=1)
+    pdf.set_x(20)
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.multi_cell(170, 4, sanitizar(
+        "Análisis automático y externo realizado en la fecha indicada. Detecta problemas habituales, "
+        "pero no garantiza la ausencia de vulnerabilidades ni sustituye a una auditoría profesional. "
+        "¿Dudas? Escríbenos a hola@reconbase.es."))
 
     draw_footer()
 
@@ -3597,8 +3355,7 @@ def escaneo_automatico():
         hora_actual = now_madrid.hour
         dia_actual  = now_madrid.weekday()  # 0=lunes, 6=domingo
 
-        usuarios_pro = User.query.filter_by(plan='pro').all()
-        for user in usuarios_pro:
+        for user in User.query.all():
             # Global schedule defaults
             user_dias_str = user.scan_dias or ''
             user_dias = [int(d) for d in user_dias_str.split(',') if d.strip()] if user_dias_str else []
@@ -3694,10 +3451,9 @@ def enviar_alerta_ssl(destinatario, dominio, dias_restantes):
     threading.Thread(target=_send, daemon=True).start()
 
 def cron_ssl_alerts():
-    """Alerta a usuarios Pro cuando su SSL caduca en ≤30 días."""
+    """Alerta cuando el SSL del último dominio analizado caduca en ≤30 días."""
     with app.app_context():
-        usuarios_pro = User.query.filter_by(plan='pro').all()
-        for user in usuarios_pro:
+        for user in User.query.all():
             ultimo = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
             if not ultimo or not ultimo.resultado:
                 continue
@@ -3804,19 +3560,6 @@ def cron_resumen_mensual():
             dominios = list({s.dominio for s in scans})
             enviar_resumen_mensual(user.email, user.empresa, len(scans), riesgo_prom, dominios)
 
-def cron_trial_expiring():
-    """Avisa a usuarios cuyo trial expira en 2 días o en 1 día."""
-    with app.app_context():
-        ahora = datetime.utcnow()
-        usuarios = User.query.filter(
-            User.trial_end.isnot(None),
-            User.plan == 'free'
-        ).all()
-        for user in usuarios:
-            dias = (user.trial_end - ahora).days
-            if dias in (1, 2):
-                enviar_email_trial_expirando(user, dias)
-
 def enviar_email_reengagement(user):
     email_destino  = user.email
     nombre_empresa = user.empresa
@@ -3825,14 +3568,13 @@ def enviar_email_reengagement(user):
         try:
             cuerpo = (
                 f"Hola {empresa},\n\n"
-                f"Hace tiempo que no escaneas tu dominio en ReconBase.\n\n"
-                f"Las amenazas cambian constantemente. En las últimas 2 semanas:\n"
-                f"  - Nuevas brechas de datos pueden haber expuesto emails de tu empresa\n"
-                f"  - Los certificados SSL pueden haber caducado\n"
-                f"  - Nuevos puertos pueden haberse abierto sin que lo sepas\n\n"
-                f"Un escaneo tarda 2 minutos y es gratis:\n"
+                f"Hace tiempo que no analizas tu dominio en ReconBase.\n\n"
+                f"En unas semanas pueden cambiar cosas: un certificado a punto de caducar, un cambio en el DNS\n"
+                f"o un plugin que ha quedado desactualizado.\n\n"
+                f"Un analisis tarda un par de minutos y es gratis:\n"
                 f"{base_url}/\n\n"
-                f"--\nReconBase - Seguridad perimetral para PYMEs\n"
+                f"--\nReconBase\n"
+                + _pie_comercial_texto(email, "Recibes este email porque tienes cuenta en ReconBase y aceptaste recibir consejos.")
             )
             with app.app_context():
                 mail.send(Message(
@@ -3853,26 +3595,22 @@ def cron_reengagement():
         usuarios = User.query.all()
         for user in usuarios:
             ultimo_scan = Scan.query.filter_by(user_id=user.id).order_by(Scan.timestamp.desc()).first()
-            if ultimo_scan and limite - timedelta(days=1) <= ultimo_scan.timestamp <= limite:
+            if user.acepta_comercial and ultimo_scan and limite - timedelta(days=1) <= ultimo_scan.timestamp <= limite:
                 enviar_email_reengagement(user)
 
 def cron_lead_followup():
-    """Secuencia de 3 emails post-captura para leads que no se registraron:
-       Stage 1 (48h):  recordatorio del informe
-       Stage 2 (7d):   educativo + caso real (BEC, INCIBE)
-       Stage 3 (14d):  oferta 30 días Pro gratis
-    Skip si: ya creó cuenta, ya unsubscribed, o ya estamos en stage 3.
-    """
+    """Seguimiento de leads que ACEPTARON recibir comunicaciones comerciales:
+       Stage 1 (48 h): recordatorio del informe
+       Stage 2 (7 d):  consejo sobre SPF/DMARC
+    Nunca a leads sin consentimiento, dados de baja o que ya tienen cuenta."""
     with app.app_context():
         ahora = datetime.utcnow()
-
         try:
-            # Coger todos los leads no convertidos no dados de baja
             todos = Lead.query.filter(
-                getattr(Lead, 'unsubscribed', None) == False,
-                Lead.convertido == False
-            ).all() if hasattr(Lead, 'unsubscribed') else Lead.query.filter(
-                Lead.convertido == False
+                Lead.acepta_comercial.is_(True),
+                Lead.unsubscribed.is_(False),
+                Lead.convertido.is_(False),
+                Lead.followup_stage < 2,
             ).all()
         except Exception as e:
             logger.warning(f"[LeadFollowup] Query error: {e}")
@@ -3880,66 +3618,31 @@ def cron_lead_followup():
 
         for lead in todos:
             try:
-                stage = getattr(lead, 'followup_stage', 0) or 0
-                if stage >= 3:
-                    continue  # ya completó toda la secuencia
-
-                # Si ya creó cuenta entre medias, marcar convertido y saltar
                 if User.query.filter_by(email=lead.email).first():
                     lead.convertido = True
                     db.session.commit()
                     continue
-
-                edad = ahora - lead.created_at
-                dias = edad.total_seconds() / 86400.0
-
-                # Decidir qué stage toca enviar HOY (sin solapar)
+                dias = (ahora - lead.created_at).total_seconds() / 86400.0
+                stage = lead.followup_stage or 0
                 next_stage = None
-                if stage == 0 and 2.0 <= dias < 3.0:      # día 2 (~48h)
+                if stage == 0 and 2.0 <= dias < 3.0:
                     next_stage = 1
-                elif stage == 1 and 7.0 <= dias < 8.0:    # día 7
+                elif stage == 1 and 7.0 <= dias < 8.0:
                     next_stage = 2
-                elif stage == 2 and 14.0 <= dias < 15.0:  # día 14
-                    next_stage = 3
-
                 if next_stage is None:
                     continue
-
                 r = lead.resultado or {}
-
                 if next_stage == 1:
-                    # Stage 1 — recordatorio 48h (email lead followup ya existente)
-                    enviar_email_lead(
-                        lead.email, lead.objetivo, lead.riesgo,
-                        r.get('label', ''), r.get('puertos', []),
-                        r.get('dns', {}), r.get('ssl', {}),
-                        es_followup=True
-                    )
-
-                elif next_stage == 2:
-                    # Stage 2 — educativo día 7
-                    problemas = []
-                    crit = [p for p in (r.get('puertos') or []) if p.get('puerto') in {3389,22,3306,5432,27017,6379,5900,23,21,1433}]
-                    if crit:
-                        problemas.append(f"<strong>{len(crit)} puerto(s) críticos expuestos</strong>: " + ", ".join(str(p['puerto']) for p in crit[:3]))
-                    dns = r.get('dns') or {}
-                    if not dns.get('spf') and not dns.get('dmarc'):
-                        problemas.append("<strong>Sin SPF ni DMARC</strong>: cualquiera puede mandar emails como tu empresa")
-                    elif not dns.get('dmarc'):
-                        problemas.append("<strong>DMARC no configurado</strong>: tu dominio puede ser suplantado")
-                    enviar_email_lead_dia7(lead.email, lead.objetivo, lead.riesgo, problemas)
-
-                elif next_stage == 3:
-                    # Stage 3 — última oferta día 14
-                    enviar_email_lead_dia14(lead.email, lead.objetivo, lead.riesgo)
-
-                # Actualizar tracking
+                    enviar_email_lead(lead.email, lead.objetivo, lead.riesgo, r.get('label', ''),
+                                      r.get('puertos', []), r.get('dns', {}), r.get('ssl', {}),
+                                      es_followup=True, acepta_comercial=True)
+                else:
+                    enviar_email_lead_dia7(lead.email, lead.objetivo, lead.riesgo,
+                                           _problemas_resumen([], r.get('dns') or {}, {}))
                 lead.followup_stage = next_stage
-                lead.followup_sent = True  # legacy compat
-                if hasattr(lead, 'last_email_at'):
-                    lead.last_email_at = ahora
+                lead.followup_sent = True
+                lead.last_email_at = ahora
                 db.session.commit()
-
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"[LeadFollowup] Error con lead {getattr(lead, 'id', '?')}: {e}")
@@ -3955,7 +3658,7 @@ def cron_onboarding():
             User.created_at <  ventana_fin
         ).all()
         for user in candidatos:
-            if Scan.query.filter_by(user_id=user.id).count() == 0:
+            if user.acepta_comercial and Scan.query.filter_by(user_id=user.id).count() == 0:
                 enviar_email_onboarding(user.email)
 
 scheduler = BackgroundScheduler(timezone="Europe/Madrid")
@@ -3964,7 +3667,6 @@ scheduler.add_job(cron_onboarding,      'cron', hour=10, minute=0)
 scheduler.add_job(cron_ssl_alerts,      'cron', hour=9,  minute=0)
 scheduler.add_job(cron_resumen_mensual, 'cron', hour=8,  minute=0)
 scheduler.add_job(cron_resumen_semanal, 'cron', hour=8,  minute=5)
-scheduler.add_job(cron_trial_expiring,  'cron', hour=9,  minute=30)
 scheduler.add_job(cron_reengagement,    'cron', hour=11, minute=0)
 scheduler.add_job(cron_lead_followup,   'cron', hour=10, minute=30)
 if os.environ.get("WERKZEUG_RUN_MAIN") != "true" or not app.debug:
@@ -4037,8 +3739,6 @@ def guardar_alertas():
 @limiter.limit("20 per hour")
 def horario_dominio(dom_id):
     """Configura horario individual para un dominio."""
-    if current_user.plan_efectivo != 'pro':
-        return jsonify({"ok": False, "error": "Solo Pro"}), 403
     dom = Domain.query.filter_by(id=dom_id, user_id=current_user.id).first()
     if not dom:
         return jsonify({"ok": False, "error": "Dominio no encontrado"}), 404
@@ -4078,7 +3778,7 @@ def api_v1_scan():
     if not user:
         return jsonify({"error": "API key inválida"}), 401
     # Limites: free=10/mes, pro=100/mes
-    max_calls = 10 if user.plan_efectivo == 'free' else 100
+    max_calls = 100
     if (user.api_calls_month or 0) >= max_calls:
         return jsonify({"error": f"Límite mensual alcanzado ({max_calls} llamadas)"}), 429
 
@@ -4702,10 +4402,13 @@ def admin_borrar_usuario(uid):
     user = db.session.get(User, uid)
     if not user:
         return jsonify({"ok": False, "error": "Usuario no encontrado"}), 404
-    Scan.query.filter_by(user_id=uid).delete(synchronize_session=False)
-    Domain.query.filter_by(user_id=uid).delete(synchronize_session=False)
-    db.session.delete(user)
-    db.session.commit()
+    try:
+        _borrar_datos_usuario(user)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.exception(f"[Admin] Error borrando usuario {uid}: {e}")
+        return jsonify({"ok": False, "error": "No se pudo borrar"}), 500
     return jsonify({"ok": True})
 
 # ── MULTI-DOMINIO Y VERIFICACIÓN DE TITULARIDAD ──
@@ -4823,10 +4526,10 @@ def anadir_dominio():
     if _bloqueo:
         return _bloqueo
     # Limites: free=10, pro=50
-    max_doms = 10 if current_user.plan_efectivo == 'free' else 50
+    max_doms = 50
     count = Domain.query.filter_by(user_id=current_user.id).count()
     if count >= max_doms:
-        plan_txt = f"{max_doms} dominios en plan Gratis" if current_user.plan_efectivo == 'free' else f"{max_doms} dominios en plan Pro"
+        plan_txt = f"{max_doms} dominios"
         return jsonify({"ok": False, "error": f"Máximo {plan_txt}. Elimina uno antes de añadir otro."}), 400
     existing = Domain.query.filter_by(user_id=current_user.id, dominio=dominio).first()
     if existing:
@@ -4935,9 +4638,6 @@ def get_integraciones():
 @login_required
 @limiter.limit("10 per hour")
 def guardar_integraciones():
-    # Integraciones (Slack / webhooks custom) son exclusivas del plan Pro
-    if current_user.plan_efectivo == 'free':
-        return jsonify({"ok": False, "error": "Las integraciones (Slack y webhooks) son exclusivas del plan Pro. Actualiza tu plan para activarlas."}), 403
     data = request.get_json() or {}
     user = db.session.get(User, current_user.id)
     slack = (data.get("slack_webhook") or "").strip()
@@ -5087,7 +4787,7 @@ def _crear_notificacion(user_id, tipo, titulo, mensaje=None, url=None):
 def _registrar_audit(user_id, evento, detalles=None, req=None):
     """Registra un evento de auditoría."""
     try:
-        ip = (req or request).remote_addr if (req or request) else None
+        ip = _ip_cliente()
         ua = (req or request).headers.get('User-Agent', '')[:500] if (req or request) else None
         log = AuditLog(user_id=user_id, evento=evento, ip=ip,
                        user_agent=ua, detalles=detalles)
@@ -5342,6 +5042,48 @@ def _check_ip_reputacion(ip):
         if any(str(r).startswith("127.0.0.") for r in respuestas):
             listas.append(bl)
     return {'limpio': len(listas) == 0, 'listas_negras': listas}
+
+
+# ─── Conservación de datos (RGPD art. 5.1.e) ──────────────────────────────────
+# Plazos publicados en la política de privacidad. Un cambio aquí debe reflejarse allí.
+PLAZOS_CONSERVACION = {
+    "intentos_login_dias": 365,
+    "audit_log_dias": 365,
+    "escaneos_anonimos_dias": 365,
+    "leads_sin_consentimiento_dias": 90,
+    "leads_con_consentimiento_dias": 730,
+    "leads_baja_dias": 30,
+    "notificaciones_leidas_dias": 180,
+    "uptime_dias": 90,
+    "exclusiones_sin_confirmar_dias": 30,
+    "webhooks_procesados_dias": 365,
+}
+
+
+def cron_retencion_datos():
+    """Borra cada día los datos que han superado su plazo de conservación."""
+    with app.app_context():
+        ahora = datetime.utcnow()
+        P = PLAZOS_CONSERVACION
+        hace = lambda dias: ahora - timedelta(days=dias)
+        borrados = {}
+        try:
+            borrados["login_attempts"] = LoginAttempt.query.filter(LoginAttempt.created_at < hace(P["intentos_login_dias"])).delete(synchronize_session=False)
+            borrados["audit_logs"] = AuditLog.query.filter(AuditLog.created_at < hace(P["audit_log_dias"])).delete(synchronize_session=False)
+            borrados["anonymous_scans"] = AnonymousScan.query.filter(AnonymousScan.created_at < hace(P["escaneos_anonimos_dias"])).delete(synchronize_session=False)
+            borrados["leads_sin_consentimiento"] = Lead.query.filter(Lead.acepta_comercial.is_(False), Lead.created_at < hace(P["leads_sin_consentimiento_dias"])).delete(synchronize_session=False)
+            borrados["leads_con_consentimiento"] = Lead.query.filter(Lead.acepta_comercial.is_(True), Lead.created_at < hace(P["leads_con_consentimiento_dias"])).delete(synchronize_session=False)
+            borrados["leads_baja"] = Lead.query.filter(Lead.unsubscribed.is_(True), Lead.created_at < hace(P["leads_baja_dias"])).delete(synchronize_session=False)
+            borrados["notificaciones"] = Notification.query.filter(Notification.leida.is_(True), Notification.created_at < hace(P["notificaciones_leidas_dias"])).delete(synchronize_session=False)
+            borrados["uptime"] = UptimeCheck.query.filter(UptimeCheck.checked_at < hace(P["uptime_dias"])).delete(synchronize_session=False)
+            borrados["exclusiones"] = ScanOptOut.query.filter(ScanOptOut.confirmado.is_(False), ScanOptOut.created_at < hace(P["exclusiones_sin_confirmar_dias"])).delete(synchronize_session=False)
+            borrados["webhooks"] = ProcessedWebhook.query.filter(ProcessedWebhook.created_at < hace(P["webhooks_procesados_dias"])).delete(synchronize_session=False)
+            db.session.commit()
+            logger.info(f"[Retención] {borrados}")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"[Retención] Error: {e}")
+        return borrados
 
 
 def _generar_numero_factura():
@@ -5860,47 +5602,6 @@ def get_audit_log():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ─── RUTAS: Trial 14 días gratis ──────────────────────────────────────────
-# ═══════════════════════════════════════════════════════════════════════════
-
-@app.route("/api/trial/activar", methods=["POST"])
-@app.route("/api/activar-trial", methods=["POST"])
-@login_required
-@limiter.limit("3 per day")
-def activar_trial():
-    user = db.session.get(User, current_user.id)
-    if user.trial_used:
-        return jsonify({"ok": False, "error": "Ya usaste tu período de prueba gratuito"}), 400
-    if user.plan == 'pro':
-        return jsonify({"ok": False, "error": "Ya tienes el plan Pro"}), 400
-    user.trial_end = datetime.utcnow() + timedelta(days=14)
-    user.trial_used = True
-    db.session.commit()
-    _registrar_audit(user.id, 'trial_activado', f"Trial Pro 14 días activado")
-    _crear_notificacion(user.id, 'trial',
-        "🎉 Trial Pro activo — 14 días",
-        "Tienes acceso completo a todas las funciones Pro durante 14 días. ¡Aprovéchalo!")
-    try:
-        send_html_email(user.email,
-            "¡Tu Trial Pro de ReconBase ha comenzado!",
-            "Trial Pro activo — 14 días de acceso completo",
-            f"""<p>Hola {user.empresa},</p>
-<p>Tu período de prueba <strong>Pro de 14 días</strong> está ahora activo.
-Tienes acceso completo a todas las funciones:</p>
-<ul style="color:#94A3B8;margin:.5rem 0 1rem 1.5rem">
-<li>Dominios ilimitados</li><li>Escaneos ilimitados</li>
-<li>Monitorización SSL/Uptime/DNS en tiempo real</li>
-<li>API pública</li><li>Alertas avanzadas</li>
-</ul>
-<p>Tu trial expira el <strong>{user.trial_end.strftime('%d/%m/%Y')}</strong>.</p>""",
-            BASE_URL + "/",
-            "Ir a ReconBase")
-    except Exception:
-        pass
-    return jsonify({"ok": True, "trial_end": user.trial_end.strftime('%d/%m/%Y')})
-
-
-# ═══════════════════════════════════════════════════════════════════════════
 # ─── RUTAS: Facturas ──────────────────────────────────────────────────────
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -6033,6 +5734,7 @@ try:
     scheduler.add_job(cron_ip_reputation,    'cron', hour=5,   minute=0,   id='ip_rep',     replace_existing=True)
     scheduler.add_job(cron_pdf_reports,      'cron', hour=7,   minute=30,  id='pdf_rep',    replace_existing=True)
     scheduler.add_job(cron_reverificar_dominios, 'cron', hour=4, minute=15, id='reverif_dom', replace_existing=True)
+    scheduler.add_job(cron_retencion_datos, 'cron', hour=4, minute=45, id='retencion', replace_existing=True)
 except Exception as _sched_e:
     logger.warning(f"[Scheduler] Batch 2 jobs: {_sched_e}")
 
@@ -6107,6 +5809,15 @@ with app.app_context():
         "ALTER TABLE domains ADD COLUMN IF NOT EXISTS verif_comprobado_at TIMESTAMP",
         "CREATE TABLE IF NOT EXISTS scan_opt_outs (id SERIAL PRIMARY KEY, dominio VARCHAR(255) NOT NULL, email VARCHAR(120) NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, confirmado BOOLEAN DEFAULT FALSE NOT NULL, created_at TIMESTAMP DEFAULT NOW(), confirmado_at TIMESTAMP)",
         "CREATE INDEX IF NOT EXISTS idx_scan_opt_outs_dominio ON scan_opt_outs(dominio)",
+        # ── Consentimiento de comunicaciones comerciales (LSSI art. 21) ──
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS acepta_comercial BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS comercial_actualizado_at TIMESTAMP",
+        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS acepta_comercial BOOLEAN DEFAULT FALSE NOT NULL",
+        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS consentimiento_at TIMESTAMP",
+        # ── Facturas conservadas tras la baja del cliente ──
+        "ALTER TABLE invoices ALTER COLUMN user_id DROP NOT NULL",
+        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cliente_email VARCHAR(120)",
+        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cliente_nombre VARCHAR(120)",
     ]:
         try:
             db.session.execute(text(col_sql))

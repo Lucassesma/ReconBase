@@ -9,6 +9,20 @@ os.environ["RECONBASE_API_KEY"] = ""
 os.environ["STRIPE_SECRET_KEY"] = ""
 os.environ["RESEND_API_KEY"] = ""
 
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+
+# SQLite no aplica las claves foráneas por defecto; PostgreSQL (producción) sí.
+# Sin esto, los tests no detectarían borrados que fallan en producción.
+# Se registra ANTES de importar el servidor, que abre la conexión al importarse.
+@event.listens_for(Engine, "connect")
+def _activar_claves_foraneas(conexion, _registro):
+    if conexion.__class__.__module__.startswith("sqlite3"):
+        cursor = conexion.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
 from server import app as flask_app, db as _db, limiter
 from models import db as _db, User
 

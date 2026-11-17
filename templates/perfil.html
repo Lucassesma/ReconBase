@@ -183,37 +183,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <!-- Plan -->
   <div class="card">
-    <div class="card-title">Plan y suscripción</div>
-
-    {% set plan_ef = user.plan_efectivo %}
-
+    <div class="card-title">Tu cuenta</div>
     <div class="info-row">
-      <span class="info-label">Plan activo</span>
-      <span class="info-val">
-        {% if plan_ef == 'pro' and user.plan == 'free' and user.trial_end %}
-          <span class="badge badge-trial">⚡ Trial Pro</span>
-        {% elif plan_ef == 'pro' %}
-          <span class="badge badge-pro">⚡ Pro</span>
-        {% else %}
-          <span class="badge badge-free">Free</span>
-        {% endif %}
-      </span>
-    </div>
-
-    {% if user.trial_end and user.plan != 'pro' %}
-    <div class="info-row">
-      <span class="info-label">Trial expira</span>
-      <span class="info-val" style="color:var(--amber)">{{ user.trial_end.strftime('%d %b %Y') }}</span>
-    </div>
-    {% endif %}
-
-    {% if plan_ef == 'pro' %}
-    <div class="info-row">
-      <span class="info-label">Escaneos</span>
-      <span class="info-val" style="color:var(--green)">Ilimitados</span>
+      <span class="info-label">Plan</span>
+      <span class="info-val"><span class="badge badge-pro">Gratuito · todas las funciones</span></span>
     </div>
     <div class="info-row">
-      <span class="info-label">Vigilancia nocturna</span>
+      <span class="info-label">Vigilancia automática</span>
       {% if scan_dias %}
         {% set dias_map = ['L','M','X','J','V','S','D'] %}
         <span class="info-val" style="color:var(--green)">Activa · {{ '%02d:00'|format(scan_hora) }}h
@@ -223,51 +199,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="info-val" style="color:var(--muted)">Desactivada</span>
       {% endif %}
     </div>
-    <div class="info-row">
-      <span class="info-label">Filtraciones Deep Web</span>
-      <span class="info-val" style="color:var(--green)">Incluidas</span>
-    </div>
-    {% else %}
-    <!-- Free: barra de uso + upgrade -->
-    <div class="progress-wrap" style="padding:.65rem 0">
-      <div class="progress-label">
-        <span>Escaneos este mes</span>
-        <span style="color:{% if scans_mes >= 8 %}var(--red){% elif scans_mes >= 5 %}var(--amber){% else %}var(--text){% endif %}">{{ scans_mes }} / 10</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:{{ (scans_mes/10*100)|int }}%;background:{% if scans_mes>=8 %}#EF4444{% elif scans_mes>=5 %}#F59E0B{% else %}#22C55E{% endif %}"></div>
-      </div>
-    </div>
-
-    {% if not user.trial_end %}
-    <div style="margin-top:1rem;background:linear-gradient(135deg,#0A1F12,#0F2A18);border:1px solid #166534;border-radius:8px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-      <div>
-        <div style="font-size:.85rem;font-weight:700;color:#E2EDF8;margin-bottom:.2rem">Prueba Pro gratis 7 días</div>
-        <div style="font-size:.78rem;color:#94A3B8">Sin tarjeta. Escaneos ilimitados + vigilancia nocturna.</div>
-      </div>
-      <button onclick="activarTrialPerfil()" id="btn-trial-perfil" style="background:linear-gradient(135deg,#16A34A,#22C55E);color:#fff;border:none;padding:.6rem 1.25rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap">Activar trial →</button>
-    </div>
-    {% endif %}
-
-    <a href="/#precios" style="display:block;margin-top:.85rem">
-      <button class="btn btn-green">Pásate a Pro — 9€/mes · Escaneos ilimitados + vigilancia nocturna</button>
-    </a>
-    {% endif %}
+    <div style="font-size:.78rem;color:var(--muted);margin-top:.75rem;line-height:1.5">ReconBase es gratuito: no hay planes de pago ni te pediremos tarjeta.</div>
 
     {% if user.plan == 'pro' %}
     <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
-      <div style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem">Para gestionar o cancelar tu suscripción, usa el portal de Stripe:</div>
-      <button onclick="abrirPortalStripe()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:.6rem 1.25rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#EF4444';this.style.color='#F87171'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">Gestionar suscripción →</button>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem">Tenías una suscripción de pago. ReconBase ahora es gratuito: si sigue activa en Stripe, puedes cancelarla desde aquí y conservarás todas las funciones.</div>
+      <button onclick="abrirPortalStripe()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:.6rem 1.25rem;border-radius:7px;font-family:'Inter',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer">Gestionar o cancelar suscripción →</button>
     </div>
     {% endif %}
   </div>
 
-  <!-- Vigilancia nocturna (Pro) -->
-  {% if plan_ef == 'pro' %}
-  <div class="card">
-    <div class="card-title">Vigilancia nocturna automática</div>
+  <!-- Vigilancia automática -->
+  <div class="card" id="vigilancia">
+    <div class="card-title">Vigilancia automática</div>
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">
-      ReconBase escanea tu dominio automáticamente según el horario que configures. Si detecta cambios o sube el riesgo, te avisa por email.
+      ReconBase analiza automáticamente tus <strong style="color:var(--text)">dominios verificados</strong> en el horario que elijas y te avisa por email si sube el riesgo.
     </div>
     <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;margin-bottom:1.25rem">
       <input type="checkbox" id="vig-activo" {% if scan_dias %}checked{% endif %} style="accent-color:#16A34A;width:16px;height:16px;cursor:pointer" onchange="toggleVigConfig()">
@@ -298,32 +244,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button onclick="guardarHorario()" class="btn btn-green" style="padding:.6rem 1.4rem;font-size:.85rem">Guardar horario</button>
     <div id="vig-msg" style="margin-top:.75rem;font-size:.82rem;display:none"></div>
   </div>
-  {% endif %}
 
-  <!-- Trial Pro 14 días -->
-  {% if not user.trial_used and user.plan == 'free' %}
-  <div class="card" style="border-color:#166534;background:linear-gradient(135deg,#0A1F12,#0A1410)">
-    <div class="card-title" style="color:#22C55E">Prueba Pro gratis — 14 días</div>
-    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">
-      Acceso completo a todas las funciones Pro durante <strong style="color:#E2EDF8">14 días</strong>, sin tarjeta de crédito.<br>
-      Monitorización SSL/Uptime/DNS en tiempo real · API pública · Alertas avanzadas · Dominios ilimitados.
-    </div>
-    <button class="btn btn-green" onclick="activarTrialPerfil()" id="btn-trial-perfil">
-      ⚡ Activar 14 días gratis
-    </button>
+  <!-- Preferencias de email -->
+  <div class="card">
+    <div class="card-title">Emails de ReconBase</div>
+    <label style="display:flex;align-items:flex-start;gap:.6rem;cursor:pointer">
+      <input type="checkbox" id="pref-comercial" {% if user.acepta_comercial %}checked{% endif %} onchange="guardarPreferencias()" style="accent-color:#16A34A;width:16px;height:16px;margin-top:.15rem;cursor:pointer">
+      <span style="font-size:.85rem;line-height:1.5">Quiero recibir consejos de seguridad y novedades de ReconBase.<br>
+      <span style="font-size:.76rem;color:var(--muted)">Los emails del servicio (alertas, verificaciones e informes que pidas) se envían siempre.</span></span>
+    </label>
   </div>
-  {% elif user.trial_activo %}
-  <div class="card" style="border-color:#78350F;background:linear-gradient(135deg,#1a0f00,#0A1410)">
-    <div class="card-title" style="color:#FCD34D">Trial Pro activo</div>
-    <div class="info-row">
-      <span class="info-label">Expira el</span>
-      <span class="info-val" style="color:var(--amber)">{{ user.trial_end.strftime('%d %b %Y') }} ({{ user.trial_dias_restantes }} días restantes)</span>
-    </div>
-    <a href="/#precios" style="display:block;margin-top:1rem">
-      <button class="btn btn-green">Suscribirse antes de que expire — 9€/mes</button>
-    </a>
-  </div>
-  {% endif %}
 
   <!-- Cambiar contraseña -->
   <div class="card">
@@ -349,7 +279,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="card" id="dominios">
     <div class="card-title">Mis dominios</div>
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5">
-      Añade los dominios de tu empresa (plan Gratis: hasta 10 · Pro: hasta 50). Sin verificar, ReconBase solo hace el
+      Añade los dominios de tu empresa (hasta 50). Sin verificar, ReconBase solo hace el
       <strong style="color:var(--text)">análisis pasivo</strong> (información pública). Para el <strong style="color:var(--text)">análisis completo</strong>
       (puertos, rutas y ficheros expuestos) y la vigilancia automática, verifica que el dominio es tuyo.
       <a href="/escaner-info" target="_blank" style="color:var(--green)">Qué incluye cada uno</a>
@@ -491,7 +421,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="col-body">
     <div style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.4">
       Usa tu API key para integrar escaneos en tus propias herramientas o CI/CD.
-      <br>Free: 10 llamadas/mes · Pro: 100 llamadas/mes.
+      <br>Límite: 100 llamadas al mes.
     </div>
     <div style="margin-bottom:.5rem">
       <div style="position:relative;margin-bottom:.5rem">
@@ -889,16 +819,13 @@ async function eliminarCuenta() {
   }
 }
 
-function activarTrialPerfil() {
-  var btn = document.getElementById('btn-trial-perfil');
-  if (btn) { btn.disabled=true; btn.textContent='Activando...'; }
-  fetch('/api/activar-trial', {method:'POST', headers:{'Content-Type':'application/json'}})
-  .then(function(r){ return r.json(); })
-  .then(function(d) {
-    if (d.ok) { toast('Trial Pro activado hasta el ' + d.trial_end + ' ✓', 'green'); setTimeout(function(){ location.reload(); }, 1800); }
-    else { toast(d.error || 'Error al activar el trial', 'red'); if (btn) { btn.disabled=false; btn.textContent='Activar trial →'; } }
-  })
-  .catch(function(){ toast('Error de conexión', 'red'); if (btn) { btn.disabled=false; } });
+async function guardarPreferencias() {
+  var chk = document.getElementById('pref-comercial');
+  try {
+    var r = await fetch('/api/preferencias', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({acepta_comercial: chk.checked})});
+    var d = await r.json();
+    toast(d.acepta_comercial ? 'Recibirás consejos y novedades' : 'No recibirás consejos ni novedades', 'ok');
+  } catch(e) { chk.checked = !chk.checked; toast('Error de conexión', 'red'); }
 }
 
 // ── Informe PDF automático ──

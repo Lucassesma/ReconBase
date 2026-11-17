@@ -112,7 +112,6 @@ function scLanzar() {
     try { if(typeof plausible==='function') plausible('scan_completed'); } catch(_){}
     scCurrentData = d;
     scRenderResults(d);
-    if (d.scan_id) { scActivarBtnPDF(d.scan_id); }
   })
   .catch(function() {
     scResetLoading();
@@ -381,50 +380,6 @@ function scRenderExport(d) {
   document.getElementById('sc-exp-content').style.display = 'block';
   var sum = document.getElementById('sc-exp-summary');
   if (sum) sum.innerHTML = '<strong>' + rbEsc(d.objetivo) + '</strong> — Riesgo: <strong style="color:' + (d.riesgo>=70?'#DC2626':d.riesgo>=40?'#D97706':'#16A34A') + '">' + d.riesgo + '%</strong> · ' + d.timestamp;
-  scUpdatePdfFreeCard(d);
-}
-
-function scUpdatePdfFreeCard(d) {
-  var desc = document.getElementById('sc-pdf-desc');
-  var icon = document.getElementById('sc-pdf-icon');
-  var btn = document.getElementById('sc-pdf-btn');
-  if (!desc) return;
-  if (d && d.riesgo !== undefined) {
-    desc.textContent = 'Informe listo para: ' + d.objetivo + ' (' + d.riesgo + '% riesgo). Requiere plan Pro.';
-    if (icon) icon.textContent = '🔒';
-    if (btn) btn.innerHTML = '<button class="sc-btn-exp p" onclick="scComprarInforme()" style="cursor:pointer">Desbloquear PDF — Pro 9€/mes</button>';
-  }
-}
-
-function scComprarInforme() { pagarPlanLanding('pro'); }
-
-function scActivarBtnPDF(scanId) {
-  var btn = document.getElementById('sc-pdf-btn-buy');
-  if (!btn) return;
-  btn.disabled = false;
-  btn.style.opacity = '1';
-  btn.style.cursor = 'pointer';
-  btn.textContent = 'Desbloquear informe — 9€';
-  btn.onclick = function() { scComprarInforme9(scanId); };
-}
-
-function scPDFLoginRequired() {
-  rbToast('Inicia sesión para desbloquear el informe PDF', 'error');
-  setTimeout(function(){ window.location.href = '/login'; }, 1400);
-}
-
-function scComprarInforme9(scanId) {
-  fetch('/api/checkout-informe', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({scan_id: scanId})
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if (d.url) { window.open(d.url, '_blank'); }
-    else { alert(d.error || 'Error al iniciar el pago'); }
-  })
-  .catch(function(){ alert('Error de conexión'); });
 }
 
 function scDescargarPDF() {
@@ -771,64 +726,6 @@ function rbToast(msg, type) {
     t.style.opacity = '0';
     setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 300);
   }, 3200);
-}
-
-function activarTrial() {
-  var btn = document.getElementById('btn-trial');
-  if (btn) { btn.disabled = true; btn.textContent = 'Activando...'; }
-  fetch('/api/activar-trial', {method:'POST', headers:{'Content-Type':'application/json'}})
-  .then(function(r){ return r.json(); })
-  .then(function(d) {
-    if (d.ok) {
-      rbToast('✓ Trial Pro activado hasta el ' + d.trial_end, 'ok');
-      setTimeout(function(){ location.reload(); }, 1800);
-    } else {
-      rbToast(d.error || 'Error al activar el trial', 'error');
-      if (btn) { btn.disabled = false; btn.textContent = '7 días Pro gratis →'; }
-    }
-  })
-  .catch(function(){ rbToast('Error de conexión', 'error'); if (btn) { btn.disabled = false; } });
-}
-
-var billingAnual = false;
-function toggleBilling() {
-  billingAnual = !billingAnual;
-  var knob = document.getElementById('billing-knob');
-  var toggle = document.getElementById('billing-toggle');
-  var lblM = document.getElementById('lbl-mensual');
-  var lblA = document.getElementById('lbl-anual');
-  var price = document.getElementById('pro-price');
-  var note = document.getElementById('pro-anual-note');
-  var btn = document.getElementById('btn-pro-subscribe');
-  if (billingAnual) {
-    if (knob) knob.style.left = '23px';
-    if (toggle) toggle.style.background = '#166534';
-    if (lblM) lblM.style.color = '#64748B';
-    if (lblA) lblA.style.color = '#E2EDF8';
-    if (price) price.textContent = '7,5';
-    if (note) note.style.display = 'block';
-    if (btn) btn.textContent = 'Suscribirse — 90€/año';
-  } else {
-    if (knob) knob.style.left = '3px';
-    if (toggle) toggle.style.background = '#152B1E';
-    if (lblM) lblM.style.color = '#E2EDF8';
-    if (lblA) lblA.style.color = '#64748B';
-    if (price) price.textContent = '9';
-    if (note) note.style.display = 'none';
-    if (btn) btn.textContent = 'Suscribirse — 9€/mes';
-  }
-}
-function pagarPlanActual() {
-  pagarPlanLanding('pro', billingAnual ? 'anual' : 'mensual');
-}
-
-function pagarPlanLanding(plan, billing) {
-  var payload = {plan: plan};
-  if (billing) payload.billing = billing;
-  fetch('/api/checkout', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
-  .then(function(r){return r.json();})
-  .then(function(d){ if(d.url){window.open(d.url,'_blank');}else{alert(d.error||'Error al iniciar el pago');} })
-  .catch(function(){alert('Error de conexión.');});
 }
 
 // Auto-rellenar objetivo desde ?target=

@@ -98,7 +98,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="main">
   <div class="card">
     <div class="card-title">Crea tu cuenta</div>
-    <div class="card-sub">Empieza gratis o pasa a Pro por 9€/mes</div>
+    <div class="card-sub">Gratis, sin tarjeta</div>
     <div class="error-msg" id="error-msg"></div>
     <div class="success-msg" id="success-msg">Cuenta creada correctamente. Redirigiendo...</div>
     <form onsubmit="handleRegister(event)">
@@ -114,47 +114,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <label>Nombre de empresa <span style="color:var(--muted);font-size:.75rem;font-weight:400">(opcional)</span></label>
         <input type="text" id="empresa" placeholder="Lo puedes rellenar después">
       </div>
-      <div class="field">
-        <label>Plan</label>
-        <div class="plan-select" style="grid-template-columns:1fr 1fr">
-          <div class="plan-opt selected" onclick="selectPlan(this,'starter')">
-            <div class="plan-opt-name">Gratuito</div>
-            <div class="plan-opt-price">Gratis</div>
-          </div>
-          <div class="plan-opt" onclick="selectPlan(this,'pro')">
-            <div class="plan-opt-name">Pro</div>
-            <div class="plan-opt-price">9€/mes</div>
-          </div>
-        </div>
-      </div>
-      <input type="hidden" id="plan-selected" value="starter">
+      <label style="display:flex;gap:.55rem;align-items:flex-start;font-size:.78rem;color:var(--muted);line-height:1.45;margin:.2rem 0 1rem;cursor:pointer">
+        <input type="checkbox" id="sin-publicidad" style="margin-top:.15rem">
+        <span>No quiero recibir consejos ni novedades de ReconBase por email. (Seguirás recibiendo los emails necesarios del servicio, como alertas y verificaciones. Puedes cambiarlo cuando quieras en tu perfil.)</span>
+      </label>
       {% if turnstile_site_key %}
       <!-- Captcha invisible Cloudflare Turnstile -->
       <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-theme="dark" data-size="flexible" style="margin:1rem 0"></div>
       {% endif %}
       <button type="submit" class="btn-submit">Crear cuenta gratis</button>
-      <div class="terms">Al registrarte aceptas nuestros <a href="/terms">Términos de Servicio</a> y <a href="/privacy">Política de Privacidad</a>.</div>
+      <div class="terms">Al registrarte aceptas los <a href="/terms">Términos de Servicio</a>. Tratamos tus datos según la <a href="/privacy">Política de Privacidad</a>.</div>
     </form>
     <div class="footer-link">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></div>
     <div class="footer-link" style="margin-top:.75rem"><a href="/" style="color:var(--dim)">Volver a la web</a></div>
   </div>
 </div>
 <script>
-function selectPlan(el, plan) {
-  document.querySelectorAll('.plan-opt').forEach(function(o){ o.classList.remove('selected'); });
-  el.classList.add('selected');
-  document.getElementById('plan-selected').value = plan;
-  var btn = document.querySelector('.btn-submit');
-  if(plan === 'starter') {
-    btn.textContent = 'Crear cuenta gratis';
-  } else {
-    btn.textContent = 'Continuar al pago';
-  }
-}
 function handleRegister(e) {
   e.preventDefault();
-  var plan = document.getElementById('plan-selected').value;
-  // Recoger token Turnstile si está activo
   var tsToken = '';
   var tsInput = document.querySelector('[name="cf-turnstile-response"]');
   if (tsInput) tsToken = tsInput.value || '';
@@ -162,44 +139,9 @@ function handleRegister(e) {
     empresa: document.getElementById('empresa').value,
     email: document.getElementById('email').value,
     password: document.getElementById('password').value,
-    plan: plan,
+    acepta_comercial: !document.getElementById('sin-publicidad').checked,
     'cf-turnstile-response': tsToken
   };
-  // Si elige Pro, primero registrar y luego redirigir al checkout de Stripe
-  if(plan !== 'starter') {
-    fetch('/api/register', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data)
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(res) {
-      if(res.ok) {
-        // GA4 event: registro Pro completado, redirigiendo al checkout
-        try { if(typeof gtag==='function') gtag('event','sign_up',{method:'email',plan:'pro'}); } catch(_){}
-        try { if(typeof plausible==='function') plausible('sign_up'); } catch(_){}
-        // Cuenta creada, ahora redirigir al checkout de Stripe
-        document.getElementById('success-msg').textContent = 'Cuenta creada. Redirigiendo al pago...';
-        document.getElementById('success-msg').classList.add('show');
-        fetch('/api/checkout', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({plan: 'pro'})
-        })
-        .then(function(r2){ return r2.json(); })
-        .then(function(d2) {
-          if(d2.url) window.location.href = d2.url;
-          else { window.location.href = '/'; }
-        })
-        .catch(function(){ window.location.href = '/'; });
-      } else {
-        var el = document.getElementById('error-msg');
-        el.textContent = res.error || 'Error al crear la cuenta';
-        el.classList.add('show');
-      }
-    });
-    return;
-  }
   fetch('/api/register', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -208,7 +150,6 @@ function handleRegister(e) {
   .then(function(r){ return r.json(); })
   .then(function(res) {
     if(res.ok) {
-      // GA4 event: nuevo registro completado
       try { if(typeof gtag==='function') gtag('event','sign_up',{method:'email'}); } catch(_){}
       try { if(typeof plausible==='function') plausible('sign_up'); } catch(_){}
       document.getElementById('success-msg').classList.add('show');

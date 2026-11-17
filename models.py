@@ -45,16 +45,19 @@ class User(UserMixin, db.Model):
     last_login_ip       = db.Column(db.String(45), nullable=True)
     login_count         = db.Column(db.Integer, default=0, nullable=False)
     last_scan_at        = db.Column(db.DateTime, nullable=True)
+    # Comunicaciones comerciales (consejos, novedades). Los emails de servicio
+    # (alertas, verificaciones, informes pedidos) no dependen de esto.
+    acepta_comercial          = db.Column(db.Boolean, default=False, nullable=False)
+    comercial_actualizado_at  = db.Column(db.DateTime, nullable=True)
 
     scans   = db.relationship('Scan',   backref='user', lazy=True)
     domains = db.relationship('Domain', backref='user', lazy=True, cascade='all, delete-orphan')
 
     @property
     def plan_efectivo(self):
-        """Devuelve 'pro' si está en trial activo, si no el plan real."""
-        if self.trial_end and datetime.utcnow() < self.trial_end:
-            return 'pro'
-        return self.plan
+        """ReconBase es gratuito: todas las cuentas tienen todas las funciones.
+        (La columna `plan` solo conserva el histórico de quien pagó en su día.)"""
+        return 'pro'
 
     @property
     def trial_activo(self):
@@ -239,13 +242,17 @@ class Lead(db.Model):
     followup_stage = db.Column(db.Integer, default=0, nullable=False)  # 0=inicial, 1=48h, 2=7d, 3=14d, 4=último
     last_email_at = db.Column(db.DateTime, nullable=True)  # último email enviado
     unsubscribed = db.Column(db.Boolean, default=False, nullable=False)  # opt-out
+    acepta_comercial = db.Column(db.Boolean, default=False, nullable=False)  # casilla de consentimiento
+    consentimiento_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Invoice(db.Model):
     __tablename__ = 'invoices'
     id                = db.Column(db.Integer, primary_key=True)
-    user_id           = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id           = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # NULL si el cliente borró su cuenta
+    cliente_email     = db.Column(db.String(120), nullable=True)
+    cliente_nombre    = db.Column(db.String(120), nullable=True)
     stripe_invoice_id = db.Column(db.String(100), nullable=True)
     numero            = db.Column(db.String(50), nullable=False)   # RB-2026-0001
     concepto          = db.Column(db.String(255), nullable=False)
