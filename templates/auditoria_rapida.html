@@ -341,7 +341,11 @@ function renderARResult(d) {
 
   // ── CHECK 3: Certificado SSL ─────────────────────────────────────────────
   var cls3, icon3, title3, detail3;
-  if (d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado && !d.ssl.pronto_a_caducar) {
+  if (d.ssl && d.ssl.tiene_ssl && d.ssl.valido === false && !d.ssl.caducado) {
+    cls3='crit'; icon3='✕'; issues++;
+    title3 = 'Certificado SSL no válido';
+    detail3 = arEsc(d.ssl.error || '') + '. Los navegadores muestran un aviso de seguridad a tus visitantes.';
+  } else if (d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado && !d.ssl.pronto_a_caducar) {
     cls3='ok'; icon3='✓';
     title3 = 'Certificado SSL válido';
     detail3 = 'Certificado activo' + (d.ssl.dias_restantes ? ', caduca en <code>'+arEsc(d.ssl.dias_restantes)+' días</code>' : '') + '.';

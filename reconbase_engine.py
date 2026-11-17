@@ -1122,6 +1122,16 @@ def check_blacklist(domain, web_risk_key=None):
 # ─────────────────────────────────────────────────────────────
 # MÓDULO 7: ANÁLISIS SSL/TLS
 # ─────────────────────────────────────────────────────────────
+def _contexto_tls():
+    """Contexto TLS con el almacén de certificados de certifi: el mismo resultado
+    en cualquier sistema operativo (en Windows, el de Python puede ir incompleto)."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
+
+
 def ssl_scan(target, port=443, timeout=6):
     """Analiza el certificado SSL/TLS y configuración de cifrado."""
     result = {
@@ -1133,6 +1143,7 @@ def ssl_scan(target, port=443, timeout=6):
         "caducado": False,
         "pronto_a_caducar": False,
         "sujeto": None,
+        "valido": False,          # cadena de confianza y nombre correctos
         "error": None,
     }
     ip = ip_publica_de(target, solo_ipv4=False)
@@ -1140,12 +1151,13 @@ def ssl_scan(target, port=443, timeout=6):
         result["error"] = "Destino no permitido o no resuelve"
         return result
     try:
-        ctx = ssl.create_default_context()
+        ctx = _contexto_tls()
         with socket.create_connection((ip, port), timeout=timeout) as sock:
             with ctx.wrap_socket(sock, server_hostname=target) as ssock:
                 cert = ssock.getpeercert()
                 cipher = ssock.cipher()
                 result["tiene_ssl"] = True
+                result["valido"] = True
                 result["version_ssl"] = ssock.version()
                 result["cifrado"] = cipher[0] if cipher else None
                 expire_str = cert.get("notAfter", "")
@@ -1159,8 +1171,19 @@ def ssl_scan(target, port=443, timeout=6):
                 sujeto = dict(x[0] for x in cert.get("subject", []))
                 result["sujeto"] = sujeto.get("commonName", "")
     except ssl.SSLCertVerificationError as e:
+        # Hay HTTPS, pero el navegador mostraría un aviso: certificado caducado,
+        # autofirmado o emitido para otro nombre.
         result["tiene_ssl"] = True
-        result["error"] = "Certificado no verificable: " + str(e)[:80]
+        motivo = (getattr(e, "verify_message", "") or str(e)).lower()
+        if "expired" in motivo:
+            result["caducado"] = True
+            result["error"] = "Certificado caducado"
+        elif "hostname" in motivo or "mismatch" in motivo:
+            result["error"] = "El certificado no corresponde a este dominio"
+        elif "self" in motivo:
+            result["error"] = "Certificado autofirmado"
+        else:
+            result["error"] = "Certificado no verificable: " + str(e)[:80]
     except ConnectionRefusedError:
         result["error"] = "Puerto 443 cerrado"
     except Exception as e:
@@ -1318,6 +1341,8 @@ def puntuar(res):
     ssl_info = res.get("ssl") or {}
     if ssl_info.get("caducado"):
         sumar("SSL caducado", 20)
+    elif ssl_info.get("tiene_ssl") and ssl_info.get("valido") is False:
+        sumar("Certificado SSL no válido", 15)
     elif ssl_info.get("pronto_a_caducar"):
         sumar("SSL por caducar", 10)
 

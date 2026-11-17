@@ -224,7 +224,8 @@ function scRenderCards(d) {
 
   if (d.ssl) {
     if (!d.ssl.tiene_ssl) html += scCard('crit', 'Sin certificado SSL/TLS', 'Tu dominio no tiene HTTPS.', 'ssl');
-    else if (d.ssl.caducado) html += scCard('crit', 'Certificado SSL caducado', 'Expiró el ' + (d.ssl.expira || '?') + '.', 'ssl');
+    else if (d.ssl.caducado) html += scCard('crit', 'Certificado SSL caducado', 'Los navegadores muestran un aviso de inseguridad.', 'ssl');
+    else if (d.ssl.valido === false) html += scCard('crit', 'Certificado SSL no válido', rbEsc(d.ssl.error || '') + '. Los navegadores muestran un aviso de inseguridad.', 'ssl');
     else if (d.ssl.pronto_a_caducar) html += scCard('warn', 'SSL caduca en ' + d.ssl.dias_restantes + ' días', 'Renuévalo pronto.', 'ssl');
     else html += scCard('ok', 'SSL/TLS válido', 'Caduca en ' + (d.ssl.dias_restantes || '?') + ' días.');
   }
@@ -345,7 +346,7 @@ function scRenderRadarChart(d, canvasId) {
   var puertos = scEsPasivo(d) ? 0 : Math.min((d.puertos||[]).length * 10, 100);
   var dns = (d.dns && d.dns.SPF && d.dns.DMARC) ? 0 : (d.dns && (d.dns.SPF || d.dns.DMARC)) ? 40 : 80;
   var headers = 100 - Math.min(Object.values(d.headers||{}).filter(Boolean).length * 15, 100);
-  var ssl = d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado ? 0 : 70;
+  var ssl = d.ssl && d.ssl.tiene_ssl && !d.ssl.caducado && d.ssl.valido !== false ? 0 : 70;
   var leaks = Math.min((d.leaks||0) * 25, 100);
   var newChart = new Chart(canvas, {
     type: 'radar',

@@ -1680,7 +1680,7 @@ function demoProblemas(d){
     if(miss) p.push({crit:false});
   }
   if(d.ssl){
-    if(!d.ssl.tiene_ssl || d.ssl.caducado) p.push({crit:true});
+    if(!d.ssl.tiene_ssl || d.ssl.caducado || d.ssl.valido===false) p.push({crit:true});
     else if(d.ssl.pronto_a_caducar) p.push({crit:false});
   }
   var wp=d.wp||{}, ps=d.ps||{};
@@ -1777,7 +1777,8 @@ function renderDemoResult(d){
 
   if(d.ssl){
     if(!d.ssl.tiene_ssl) html+=demoCard('crit','Sin certificado SSL/TLS','No hemos podido establecer una conexión HTTPS con el dominio.');
-    else if(d.ssl.caducado) html+=demoCard('crit','Certificado SSL caducado','Expiró el '+rbEsc(d.ssl.expira||'?')+'. Los navegadores muestran un aviso de inseguridad.');
+    else if(d.ssl.caducado) html+=demoCard('crit','Certificado SSL caducado','Los navegadores muestran un aviso de inseguridad.');
+    else if(d.ssl.valido===false) html+=demoCard('crit','Certificado SSL no válido',rbEsc(d.ssl.error||'')+'. Los navegadores muestran un aviso de inseguridad.');
     else if(d.ssl.pronto_a_caducar) html+=demoCard('warn','SSL caduca en '+rbEsc(d.ssl.dias_restantes)+' días','Renuévalo antes de que expire.');
     else html+=demoCard('ok','SSL/TLS válido','Certificado activo, caduca en '+rbEsc(d.ssl.dias_restantes||'?')+' días.');
   }
@@ -1959,7 +1960,7 @@ window.RB = { isLoggedIn: {{ 'true' if user and user.is_authenticated else 'fals
 window.RB_TURNSTILE_KEY = {{ (turnstile_site_key or '') | tojson }};
 var isLoggedIn = window.RB.isLoggedIn;
 </script>
-<script src="/static/js/scanner.js?v=5"></script>
+<script src="/static/js/scanner.js?v=6"></script>
 {% if turnstile_site_key and not (user and user.is_authenticated) %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>{% endif %}
 
 <script>

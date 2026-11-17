@@ -186,3 +186,24 @@ class TestAvisoTerminos:
         client.post("/api/login", json={"email": "normal-aviso@ejemplo.com", "password": "TestPass123"})
         assert client.post("/api/admin/aviso-terminos", json={"confirmacion": "ENVIAR"}).status_code == 403
         client.post("/api/logout")
+
+
+class TestBlogCorregido:
+    def test_posts_antiguos_se_actualizan(self, app):
+        from models import BlogPost
+        with app.app_context():
+            post = BlogPost.query.filter_by(slug="nis2-espana-empresas-obligadas-como-cumplir-2026").first()
+            post.contenido = "contenido antiguo con multas inventadas"
+            post.seed_version = 1
+            db.session.commit()
+            server._sembrar_blog()
+            post = BlogPost.query.filter_by(slug="nis2-espana-empresas-obligadas-como-cumplir-2026").first()
+            assert "Directiva (UE) 2022/2555" in post.contenido
+            assert post.seed_version == server.BLOG_SEEDS_VERSION
+
+    def test_sin_cifras_inventadas(self, app):
+        from models import BlogPost
+        with app.app_context():
+            todo = " ".join(p.contenido for p in BlogPost.query.all())
+            for frase in ("340%", "105.000", "43&nbsp;% de los ciberataques", "asesoría de Madrid", "INCIBE-CERT y CCN-CERT) ya pueden imponer"):
+                assert frase not in todo, frase

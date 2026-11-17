@@ -296,3 +296,13 @@ class TestFuentesDeTerceros:
         assert server._check_ip_reputacion("1.2.3.4")["limpio"] is True
         monkeypatch.setattr(dns.resolver, "resolve", lambda name, tipo, lifetime=3: ["127.0.0.2"])
         assert server._check_ip_reputacion("1.2.3.4")["limpio"] is False
+
+
+class TestCertificadoNoValido:
+    def test_certificado_no_valido_penaliza(self):
+        res = engine.puntuar({"dns": {"SPF": True, "DMARC": True}, "ssl": {"tiene_ssl": True, "valido": False}})
+        assert res["desglose"] == {"Certificado SSL no válido": 15}
+
+    def test_certificado_valido_no_penaliza(self):
+        res = engine.puntuar({"dns": {"SPF": True, "DMARC": True}, "ssl": {"tiene_ssl": True, "valido": True, "dias_restantes": 90}})
+        assert res["riesgo"] == 0

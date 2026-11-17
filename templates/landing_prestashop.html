@@ -320,7 +320,8 @@ function renderResults(d){
   // Tarjetas complementarias: SSL + puertos
   if(d.ssl){
     if(!d.ssl.tiene_ssl) html+=card('crit','Sin certificado SSL/TLS','No hemos podido conectar por HTTPS. Los navegadores marcan la web como "No segura" y no deberías procesar pagos así. Es lo primero que debes resolver.','ssl_none');
-    else if(d.ssl.caducado) html+=card('crit','SSL caducado','El certificado expiró el '+rbEsc(d.ssl.expira||'?')+'. Los navegadores muestran una pantalla de error a tus visitantes y dejas de vender.','ssl_exp');
+    else if(d.ssl.caducado) html+=card('crit','SSL caducado','Los navegadores muestran una pantalla de error a tus visitantes y dejas de vender.','ssl_exp');
+    else if(d.ssl.valido===false) html+=card('crit','Certificado SSL no válido',rbEsc(d.ssl.error||'')+'. Los navegadores muestran un aviso de inseguridad a tus visitantes.','ssl_exp');
     else if(d.ssl.pronto_a_caducar) html+=card('warn','SSL caduca en '+d.ssl.dias_restantes+' días','Renuévalo antes de la fecha para no interrumpir el checkout ni asustar a tus clientes.','ssl_exp');
   }
   var puertos_riesgo=(d.puertos||[]).filter(function(p){return ['MySQL','RDP','Redis','MongoDB','MSSQL','PostgreSQL'].indexOf(p.servicio)>=0;});

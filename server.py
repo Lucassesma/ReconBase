@@ -2862,7 +2862,9 @@ def generar_pdf():
     if len(miss_h) >= 2:
         findings.append(('warn', f"{len(miss_h)} cabeceras HTTP ausentes", ', '.join(miss_h)))
     if ssl_i.get('caducado'):
-        findings.append(('crit', "Certificado SSL caducado", f"Caducó el {ssl_i.get('expira','?')}"))
+        findings.append(('crit', "Certificado SSL caducado", "Los navegadores muestran un aviso de inseguridad"))
+    elif ssl_i.get('tiene_ssl') and ssl_i.get('valido') is False:
+        findings.append(('crit', "Certificado SSL no válido", ssl_i.get('error') or ""))
     elif ssl_i.get('pronto_a_caducar'):
         findings.append(('warn', f"SSL caduca en {ssl_i.get('dias_restantes','?')} días", "Renueva pronto"))
     elif not ssl_i.get('tiene_ssl'):
@@ -3027,8 +3029,9 @@ def generar_pdf():
     # ─── 4. SSL/TLS ───
     section_header("4. CERTIFICADO SSL/TLS")
     if ssl_i.get('tiene_ssl'):
-        kv("Estado", "Caducado" if ssl_i.get('caducado') else ("Próximo a caducar" if ssl_i.get('pronto_a_caducar') else "Válido"),
-           CRIT_RED if ssl_i.get('caducado') else (WARN_AMBER if ssl_i.get('pronto_a_caducar') else OK_GREEN))
+        no_valido = ssl_i.get('valido') is False and not ssl_i.get('caducado')
+        kv("Estado", "Caducado" if ssl_i.get('caducado') else ("No válido" if no_valido else ("Próximo a caducar" if ssl_i.get('pronto_a_caducar') else "Válido")),
+           CRIT_RED if (ssl_i.get('caducado') or no_valido) else (WARN_AMBER if ssl_i.get('pronto_a_caducar') else OK_GREEN))
         if ssl_i.get('expira'):       kv("Caduca el", ssl_i.get('expira'))
         if ssl_i.get('dias_restantes') is not None:
             kv("Días restantes", str(ssl_i.get('dias_restantes')))
@@ -6598,7 +6601,8 @@ find /var/www/tutienda/themes -type f -name "*.tpl" -mtime -30 -ls</code></pre>
     },
 ]
 
-with app.app_context():
+def _sembrar_blog():
+    """Crea los posts de ejemplo que falten y actualiza los que tengan una versión antigua."""
     try:
         for _seed in _BLOG_SEEDS:
             existing = BlogPost.query.filter_by(slug=_seed["slug"]).first()
@@ -6628,6 +6632,10 @@ with app.app_context():
     except Exception as _bse:
         logger.warning(f"[Bootstrap] blog seeds: {_bse}")
         db.session.rollback()
+
+
+with app.app_context():
+    _sembrar_blog()
 
 
 # ─── Bootstrap de admin: marcar como admin los emails listados en ADMIN_EMAILS ───
