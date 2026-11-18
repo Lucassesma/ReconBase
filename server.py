@@ -468,9 +468,18 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:5000").rstrip("/")
 # Host "bonito" para mostrar en emails / PDFs / footers (sin esquema)
 BASE_HOST = BASE_URL.split("://", 1)[-1]
 
+# Email de contacto público. Vacío = no se muestra en ningún sitio (la web, los
+# emails y los PDF omiten las frases de contacto). Configúralo en Railway.
+CONTACTO_EMAIL = (os.getenv("CONTACT_EMAIL", "") or "").strip()
+
+
+def _con_contacto(frase):
+    """' ' + frase con {email} rellenado si hay email de contacto; '' si no."""
+    return (" " + frase.format(email=CONTACTO_EMAIL)) if CONTACTO_EMAIL else ""
+
 @app.context_processor
 def inject_base_url():
-    return {"base_url": BASE_URL, "base_host": BASE_HOST}
+    return {"base_url": BASE_URL, "base_host": BASE_HOST, "contacto_email": CONTACTO_EMAIL}
 
 # ── RUTAS PÚBLICAS ──
 
@@ -901,8 +910,10 @@ def security_txt():
     """Permite a investigadores reportar vulnerabilidades de forma estándar."""
     from flask import Response
     expires = (datetime.utcnow() + timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not CONTACTO_EMAIL:
+        abort(404)
     txt = (
-        "Contact: mailto:hola@reconbase.es\n"
+        f"Contact: mailto:{CONTACTO_EMAIL}\n"
         f"Expires: {expires}\n"
         "Preferred-Languages: es, en\n"
         "Canonical: https://reconbase.es/.well-known/security.txt\n"
@@ -950,7 +961,7 @@ def api_excluir_dominio():
             f"{BASE_URL}/excluir-dominio/confirmar/{peticion.token}", "Confirmar exclusión")
     except Exception as e:
         logger.warning(f"[Exclusión] no se pudo enviar el email a {email}: {e}")
-        return jsonify({"ok": False, "error": "No pudimos enviar el email. Escríbenos a hola@reconbase.es."}), 502
+        return jsonify({"ok": False, "error": "No pudimos enviar el email. Inténtalo de nuevo más tarde." + _con_contacto("Si el problema sigue, escríbenos a {email}.")}), 502
     return jsonify({"ok": True})
 
 
@@ -968,8 +979,8 @@ def confirmar_exclusion(token):
         logger.info(f"[Exclusión] confirmada para {peticion.dominio}")
     return render_template("verify_result.html", ok=True, titulo_pagina="Exclusión del escáner",
                            titulo="Exclusión confirmada",
-                           msg=f"ReconBase no analizará {peticion.dominio} ni sus subdominios. "
-                               "Si cambias de opinión, escríbenos a hola@reconbase.es.")
+                           msg=f"ReconBase no analizará {peticion.dominio} ni sus subdominios."
+                               + _con_contacto("Si cambias de opinión, escríbenos a {email}."))
 
 
 @app.route("/og/<page>.png")
@@ -1560,7 +1571,7 @@ def stripe_portal():
             msg = str(ire)
             logger.error(f"[Portal] InvalidRequest: {msg}")
             if "configuration" in msg.lower() or "no configuration" in msg.lower():
-                return jsonify({"ok": False, "error": "El portal de facturación no está activado en Stripe. Escríbenos a hola@reconbase.es y cancelamos tu suscripción manualmente."}), 500
+                return jsonify({"ok": False, "error": "El portal de facturación no está activado en Stripe." + _con_contacto("Escríbenos a {email} y cancelamos tu suscripción manualmente.")}), 500
             return jsonify({"ok": False, "error": f"Stripe: {msg}"}), 500
         return jsonify({"ok": True, "url": portal_session.url})
     except stripe.error.AuthenticationError:
@@ -2182,7 +2193,7 @@ def eliminar_cuenta():
     except Exception as e:
         db.session.rollback()
         logger.exception(f"[RGPD] Error eliminando la cuenta {user_id}: {e}")
-        return jsonify({"ok": False, "error": "No se pudo eliminar la cuenta. Escríbenos a hola@reconbase.es y la eliminamos nosotros."}), 500
+        return jsonify({"ok": False, "error": "No se pudo eliminar la cuenta. Inténtalo de nuevo en unos minutos." + _con_contacto("Si sigue fallando, escríbenos a {email} y la eliminamos nosotros.")}), 500
 
     return jsonify({"ok": True, "msg": "Cuenta eliminada"})
 
@@ -2512,7 +2523,7 @@ def baja_comercial(token):
         email = _firmante_baja.loads(token)
     except BadSignature:
         return render_template("verify_result.html", ok=False, titulo_pagina="Baja",
-                               msg="El enlace no es válido. Escríbenos a hola@reconbase.es y te damos de baja."), 400
+                               msg="El enlace no es válido. Usa el enlace de baja de un email más reciente o cambia tus preferencias en tu perfil." + _con_contacto("También puedes escribirnos a {email}.")), 400
     try:
         _dar_de_baja(email)
     except Exception as e:
@@ -3292,8 +3303,8 @@ def generar_pdf():
     pdf.set_text_color(*TEXT_MUTED)
     pdf.multi_cell(170, 4, sanitizar(
         "Análisis automático y externo realizado en la fecha indicada. Detecta problemas habituales, "
-        "pero no garantiza la ausencia de vulnerabilidades ni sustituye a una auditoría profesional. "
-        "¿Dudas? Escríbenos a hola@reconbase.es."))
+        "pero no garantiza la ausencia de vulnerabilidades ni sustituye a una auditoría profesional."
+        + _con_contacto("¿Dudas? Escríbenos a {email}.")))
 
     draw_footer()
 
@@ -4387,8 +4398,8 @@ def _enviar_aviso_terminos(user):
         "te seguirán llegando.</li>"
         "<li><strong>Privacidad:</strong> tus datos se alojan en la UE (Ámsterdam) y explicamos con detalle qué guardamos y durante cuánto tiempo.</li>"
         "</ul>"
-        "<p>Si no estás de acuerdo, puedes eliminar tu cuenta desde tu perfil en cualquier momento. "
-        "Si tienes dudas, responde a este email o escribe a hola@reconbase.es.</p>"
+        "<p>Si no estás de acuerdo, puedes eliminar tu cuenta desde tu perfil en cualquier momento."
+        + _con_contacto("Si tienes dudas, escríbenos a {email}.") + "</p>"
     )
     send_html_email(user.email, "Cambios en ReconBase: ahora es gratis y actualizamos los términos",
                     "Actualizamos los términos de ReconBase", cuerpo,
@@ -5689,7 +5700,8 @@ def descargar_factura_pdf(fid):
         pdf.set_font('Helvetica', '', 10)
         pdf.set_text_color(100, 116, 139)
         pdf.cell(0, 6, BASE_HOST, ln=True)
-        pdf.cell(0, 6, 'hola@reconbase.es', ln=True)
+        if CONTACTO_EMAIL:
+            pdf.cell(0, 6, CONTACTO_EMAIL, ln=True)
         pdf.ln(8)
         pdf.set_font('Helvetica', 'B', 28)
         pdf.set_text_color(0, 0, 0)

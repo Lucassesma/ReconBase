@@ -59,8 +59,8 @@
     {
       "@type": "Organization",
       "name": "ReconBase",
-      "url": "{{ base_url }}",
-      "contactPoint": {"@type": "ContactPoint", "email": "hola@reconbase.es", "contactType": "customer support", "availableLanguage": "Spanish"}
+      "url": "{{ base_url }}"{% if contacto_email %},
+      "contactPoint": {"@type": "ContactPoint", "email": {{ contacto_email | tojson }}, "contactType": "customer support", "availableLanguage": "Spanish"}{% endif %}
     },
     {
       "@type": "FAQPage",
@@ -1436,13 +1436,15 @@ function rbDismissPSBanner(){
   <div class="faq-item"><div class="faq-q">¿Detecta todos los problemas de seguridad?</div><div class="faq-a">No. Es un análisis externo y automático: detecta los problemas más habituales, pero no sustituye a una auditoría profesional.</div></div>
 </section>
 
+{% if contacto_email %}
 <!-- OPINIONES -->
 <div style="border-top:1px solid var(--border);padding:3.5rem 6%">
   <div style="max-width:720px;margin:0 auto;text-align:center">
     <div class="sec-label" style="text-align:center;margin-bottom:1rem">Tu opinión</div>
-    <p style="font-size:.95rem;color:var(--muted);line-height:1.7">ReconBase es un proyecto nuevo. Si lo usas, cuéntanos qué te ha resultado útil y qué echas en falta en <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
+    <p style="font-size:.95rem;color:var(--muted);line-height:1.7">ReconBase es un proyecto nuevo. Si lo usas, cuéntanos qué te ha resultado útil y qué echas en falta en <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>.</p>
   </div>
 </div>
+{% endif %}
 
 
 </main>
@@ -1454,7 +1456,7 @@ function rbDismissPSBanner(){
     </svg>
   </a>
   <div class="f-copy">2026 ReconBase. Todos los derechos reservados.</div>
-  <div class="f-links"><a href="/herramientas">Herramientas</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-cabeceras-http">Cabeceras HTTP</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a><a href="/terms">Términos</a><a href="/cookies">Cookies</a><a href="#" data-rb-cookies>Configurar cookies</a><a href="/escaner-info">Cómo funciona el escáner</a><a href="mailto:hola@reconbase.es">Contacto</a></div>
+  <div class="f-links"><a href="/herramientas">Herramientas</a><a href="/auditoria-wordpress">Auditoría WordPress</a><a href="/auditoria-prestashop">Auditoría PrestaShop</a><a href="/comprobar-cabeceras-http">Cabeceras HTTP</a><a href="/comprobar-dmarc-spf">Comprobar DMARC/SPF</a><a href="/blog">Blog</a><a href="/privacy">Privacidad</a><a href="/terms">Términos</a><a href="/cookies">Cookies</a><a href="#" data-rb-cookies>Configurar cookies</a><a href="/escaner-info">Cómo funciona el escáner</a>{% if contacto_email %}<a href="mailto:{{ contacto_email }}">Contacto</a>{% endif %}</div>
 </footer>
 
 <script>

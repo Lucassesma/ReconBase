@@ -73,7 +73,7 @@ footer a{color:var(--muted-2);margin:0 .6rem}
   <h2>Preguntas frecuentes</h2>
   <div class="faq"><div class="faq-q">¿Por qué es gratis?</div><div class="faq-a">Queremos que cualquier pequeña empresa pueda revisar su seguridad básica sin barreras. No vendemos tus datos ni mostramos publicidad.</div></div>
   <div class="faq"><div class="faq-q">¿Por qué tengo que verificar mi dominio para algunas funciones?</div><div class="faq-a">Porque el escaneo de puertos o la búsqueda de ficheros expuestos son comprobaciones activas que solo deben hacerse con permiso del titular. Verificar el dominio (publicando un código en tu DNS o en tu web) demuestra que es tuyo. <a href="/escaner-info">Cómo funciona el escáner</a>.</div></div>
-  <div class="faq"><div class="faq-q">Tenía una suscripción de pago, ¿qué pasa ahora?</div><div class="faq-a">Conservas todas las funciones. Si tu suscripción sigue activa, cancélala desde tu perfil («Gestionar o cancelar suscripción») o escríbenos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</div></div>
+  <div class="faq"><div class="faq-q">Tenía una suscripción de pago, ¿qué pasa ahora?</div><div class="faq-a">Conservas todas las funciones. Si tu suscripción sigue activa, cancélala desde tu perfil («Gestionar o cancelar suscripción»){% if contacto_email %} o escríbenos a <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>{% endif %}.</div></div>
 </main>
 
 <footer>

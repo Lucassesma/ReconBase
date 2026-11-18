@@ -130,7 +130,7 @@ footer{border-top:1px solid var(--border);padding:1.5rem 6%;text-align:center;fo
   </div>
 
   <div class="info">
-    <p><strong>¿Algo no funciona?</strong> Si crees que hay un problema y no lo vemos reflejado aquí, escríbenos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a> con todos los detalles posibles (URL, navegador, captura).</p>
+{% if contacto_email %}    <p><strong>¿Algo no funciona?</strong> Si crees que hay un problema y no lo vemos reflejado aquí, escríbenos a <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a> con todos los detalles posibles (URL, navegador, captura).</p>{% endif %}
     <p style="margin-top:.75rem">Esta página se actualiza automáticamente cada 60 segundos. Los datos se cachean en el servidor para no saturar a los proveedores.</p>
   </div>
 

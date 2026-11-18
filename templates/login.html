@@ -98,7 +98,7 @@ function handleLogin(e) {
     var ct = r.headers.get('Content-Type') || '';
     if (!ct.includes('application/json')) {
       var el = document.getElementById('error-msg');
-      el.innerHTML = 'Tu cuenta o IP está temporalmente bloqueada por el firewall (Cloudflare). Espera 10 minutos y vuelve a intentarlo. <br>Si persiste, escribe a hola@reconbase.es.';
+      el.innerHTML = 'Tu cuenta o IP está temporalmente bloqueada por el firewall (Cloudflare). Espera 10 minutos y vuelve a intentarlo.{% if contacto_email %} <br>Si persiste, escribe a ' + {{ contacto_email | tojson }} + '.{% endif %}';
       el.classList.add('show');
       throw new Error('Cloudflare WAF block');
     }

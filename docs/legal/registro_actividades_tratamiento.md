@@ -2,7 +2,7 @@
 
 Documento interno. No se publica. Revísalo cada vez que cambie lo que guarda la aplicación.
 
-- **Responsable:** Lucas Sesma Vinck (NIF 53779442Z), Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias). hola@reconbase.es
+- **Responsable:** Lucas Sesma Vinck (NIF 53779442Z), Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias). Email de contacto: pendiente de crear (variable CONTACT_EMAIL)
 - **Delegado de protección de datos:** no designado (no concurren los supuestos del art. 37 RGPD).
 - **Última revisión:** 17 de noviembre de 2026.
 

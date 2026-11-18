@@ -60,7 +60,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
     <p><strong>Responsable:</strong> Lucas Sesma Vinck</p>
     <p><strong>NIF:</strong> 53779442Z</p>
     <p><strong>Domicilio:</strong> Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias), España</p>
-    <p><strong>Email:</strong> <a href="mailto:hola@reconbase.es">hola@reconbase.es</a></p>
+    {% if contacto_email %}<p><strong>Email:</strong> <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a></p>{% endif %}
   </div>
   <p>No se ha designado Delegado de Protección de Datos al no concurrir los supuestos del artículo 37 del RGPD.</p>
 
@@ -109,7 +109,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
   </table>
 
   <h2>5. Tus derechos</h2>
-  <p>Puedes ejercer en cualquier momento los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y retirar tu consentimiento sin que afecte a lo anterior. Desde tu perfil puedes descargar todos tus datos, cambiar tus preferencias de email y eliminar tu cuenta. Para lo demás, escribe a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>: responderemos en el plazo de un mes. ReconBase no toma decisiones automatizadas con efectos jurídicos sobre ti.</p>
+  <p>Puedes ejercer en cualquier momento los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y retirar tu consentimiento sin que afecte a lo anterior. Desde tu perfil puedes descargar todos tus datos, cambiar tus preferencias de email y eliminar tu cuenta. Para lo demás, {% if contacto_email %}escribe a <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>{% else %}escribe a la dirección postal del responsable indicada arriba{% endif %}: responderemos en el plazo de un mes. ReconBase no toma decisiones automatizadas con efectos jurídicos sobre ti.</p>
   <p>Si crees que no hemos tratado bien tus datos, puedes reclamar ante la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española de Protección de Datos</a> (C/ Jorge Juan, 6, 28001 Madrid).</p>
 
   <h2>6. Seguridad</h2>

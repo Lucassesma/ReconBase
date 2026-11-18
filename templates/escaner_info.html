@@ -105,10 +105,10 @@ footer a{color:var(--muted-2);margin:0 .6rem}
       <p id="ex-msg"></p>
     </form>
   </div>
-  <p>Si no tienes ninguna dirección de email en el dominio, escríbenos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a> y lo resolveremos de otra forma.</p>
+  {% if contacto_email %}<p>Si no tienes ninguna dirección de email en el dominio, escríbenos a <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a> y lo resolveremos de otra forma.</p>{% endif %}
 
   <h2>Contacto</h2>
-  <p>Para cualquier duda o incidencia relacionada con el escáner escribe a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>. También puedes consultar nuestro <a href="/.well-known/security.txt">security.txt</a>, los <a href="/terms">Términos</a> y la <a href="/privacy">Política de privacidad</a>.</p>
+  <p>{% if contacto_email %}Para cualquier duda o incidencia relacionada con el escáner escribe a <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>. También puedes consultar nuestro <a href="/.well-known/security.txt">security.txt</a>, los {% else %}Puedes consultar los {% endif %}<a href="/terms">Términos</a> y la <a href="/privacy">Política de privacidad</a>.</p>
 </main>
 
 <footer>

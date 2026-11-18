@@ -59,7 +59,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
     <p><strong>Titular:</strong> Lucas Sesma Vinck</p>
     <p><strong>NIF:</strong> 53779442Z</p>
     <p><strong>Domicilio:</strong> Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias), España</p>
-    <p><strong>Email:</strong> <a href="mailto:hola@reconbase.es">hola@reconbase.es</a></p>
+    {% if contacto_email %}<p><strong>Email:</strong> <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a></p>{% endif %}
     <p><strong>Sitio web:</strong> {{ base_host }}</p>
   </div>
 
@@ -89,13 +89,13 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
   <p>El titular de un dominio puede pedir que ReconBase no lo analice desde <a href="/escaner-info#excluir">esta página</a>. Respetaremos la exclusión en todas las herramientas, salvo para quien demuestre ser titular del dominio verificándolo.</p>
 
   <h2>6. Cuenta</h2>
-  <p>Eres responsable de la veracidad de tus datos y de mantener en secreto tus credenciales. Si detectas un acceso no autorizado, avísanos en <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>. Puedes eliminar tu cuenta cuando quieras desde tu perfil.</p>
+  <p>Eres responsable de la veracidad de tus datos y de mantener en secreto tus credenciales. Si detectas un acceso no autorizado, cambia tu contraseña{% if contacto_email %} y avísanos en <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>{% endif %}. Puedes eliminar tu cuenta cuando quieras desde tu perfil.</p>
 
   <h2>7. Precio</h2>
   <p>ReconBase es gratuito. Si en el futuro ofreciéramos funciones de pago, te lo comunicaríamos con antelación y nunca se cobraría nada sin tu aceptación expresa.</p>
 
   <h2>8. Informes compartidos</h2>
-  <p>Si generas un enlace público de un informe, cualquiera que tenga el enlace podrá verlo. Si quieres desactivarlo, escríbenos a <a href="mailto:hola@reconbase.es">hola@reconbase.es</a>.</p>
+  <p>Si generas un enlace público de un informe, cualquiera que tenga el enlace podrá verlo. Si quieres desactivarlo, {% if contacto_email %}escríbenos a <a href="mailto:{{ contacto_email }}">{{ contacto_email }}</a>{% else %}contacta con nosotros en los datos indicados en el apartado 1{% endif %}.</p>
 
   <h2>9. Datos de terceros: Have I Been Pwned</h2>
   <p>La información sobre filtraciones procede de <a href="https://haveibeenpwned.com" target="_blank" rel="noopener">Have I Been Pwned</a> y se ofrece bajo su licencia Creative Commons Attribution 4.0. La información sobre sitios peligrosos procede de Google Web Risk.</p>

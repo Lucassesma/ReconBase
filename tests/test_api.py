@@ -263,3 +263,23 @@ class TestAPIv1:
                         json={"dominio": "example.com"},
                         headers={"X-API-Key": "rb_fake_key_123"})
         assert r.status_code == 401
+
+
+class TestEmailDeContacto:
+    PAGINAS = ["/", "/terms", "/privacy", "/cookies", "/pricing", "/escaner-info", "/status", "/login"]
+
+    def test_sin_email_configurado_no_se_muestra_ninguno(self, client, monkeypatch):
+        import server
+        monkeypatch.setattr(server, "CONTACTO_EMAIL", "")
+        for ruta in self.PAGINAS:
+            html = client.get(ruta).get_data(as_text=True)
+            assert 'href="mailto:' not in html and "hola@reconbase" not in html, ruta
+        assert client.get("/.well-known/security.txt").status_code == 404
+        assert "dirección postal del responsable" in client.get("/privacy").get_data(as_text=True)
+
+    def test_con_email_configurado_aparece(self, client, monkeypatch):
+        import server
+        monkeypatch.setattr(server, "CONTACTO_EMAIL", "contacto@ejemplo.com")
+        for ruta in ["/terms", "/privacy", "/escaner-info"]:
+            assert "mailto:contacto@ejemplo.com" in client.get(ruta).get_data(as_text=True), ruta
+        assert "contacto@ejemplo.com" in client.get("/.well-known/security.txt").get_data(as_text=True)
