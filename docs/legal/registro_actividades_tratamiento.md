@@ -2,7 +2,7 @@
 
 Documento interno. No se publica. Revísalo cada vez que cambie lo que guarda la aplicación.
 
-- **Responsable:** Lucas Sesma Vinck (NIF 53779442Z), Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias). Email de contacto: pendiente de crear (variable CONTACT_EMAIL)
+- **Responsable:** Lucas Sesma Vinck (NIF 53779442Z), Calle Doctor Aquilino Hurlé 22, 8.º A, 33202 Gijón (Asturias). contacto@reconbase.es (Cloudflare Email Routing → Gmail)
 - **Delegado de protección de datos:** no designado (no concurren los supuestos del art. 37 RGPD).
 - **Última revisión:** 17 de noviembre de 2026.
 
@@ -16,7 +16,7 @@ Los plazos de conservación son los de `PLAZOS_CONSERVACION` en `server.py`. Los
 | Base jurídica | Ejecución del contrato (art. 6.1.b) |
 | Interesados | Personas que crean una cuenta (normalmente profesionales y pymes) |
 | Datos | Email, nombre de empresa, hash de la contraseña, preferencias, dominios y su verificación (fecha de la declaración de titularidad o autorización), escaneos, URL de Slack o webhook, clave de API, secreto 2FA, último acceso e IP |
-| Destinatarios | Encargados: Railway (alojamiento en la UE), Cloudflare, Resend y Sentry (si está activo) |
+| Destinatarios | Encargados: Railway (alojamiento en la UE), Cloudflare, Resend y Sentry (si está activo). Los emails de contacto llegan por Cloudflare Email Routing a Gmail (Google) |
 | Transferencias | EE. UU. (Cloudflare, Resend, Sentry, posible soporte de Railway): Data Privacy Framework o cláusulas contractuales tipo |
 | Conservación | Mientras exista la cuenta. La baja borra todo de inmediato (`_borrar_datos_usuario`) |
 | Seguridad | TLS, hash de contraseñas con sal, 2FA opcional, acceso restringido a la BD, anti-SSRF en el escáner y límites de uso |

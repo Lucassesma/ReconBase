@@ -468,9 +468,9 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:5000").rstrip("/")
 # Host "bonito" para mostrar en emails / PDFs / footers (sin esquema)
 BASE_HOST = BASE_URL.split("://", 1)[-1]
 
-# Email de contacto público. Vacío = no se muestra en ningún sitio (la web, los
-# emails y los PDF omiten las frases de contacto). Configúralo en Railway.
-CONTACTO_EMAIL = (os.getenv("CONTACT_EMAIL", "") or "").strip()
+# Email de contacto público (aviso legal, privacidad, security.txt, emails y PDF).
+# Se puede cambiar con la variable CONTACT_EMAIL; vacía = no se muestra ninguno.
+CONTACTO_EMAIL = os.getenv("CONTACT_EMAIL", "contacto@reconbase.es").strip()
 
 
 def _con_contacto(frase):
