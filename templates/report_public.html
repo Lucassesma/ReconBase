@@ -64,7 +64,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
     <div class="meta">
       <div class="label" style="color:{{ col }}">{{ r.label }}</div>
       <div class="objetivo">{{ r.objetivo }}</div>
-      <div class="fecha">{{ r.timestamp }}</div>
+      <div class="fecha">{{ r.timestamp }}{% if r.modo == 'pasivo' %} · análisis pasivo (solo información pública){% endif %}</div>
     </div>
   </div>
 
@@ -91,7 +91,13 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
   <!-- Hallazgos -->
   <div class="section-title">Hallazgos</div>
 
-  {% if r.puertos and r.puertos|length > 0 %}
+  {% if r.modo == 'pasivo' %}
+  <div class="card" style="border-left-color:#64748B">
+    <span class="badge" style="background:rgba(100,116,139,.15);color:#94A3B8">INFO</span>
+    <div class="card-title">Puertos y servicios: no comprobados</div>
+    <div class="card-desc">Este fue un análisis pasivo. El escaneo de puertos solo se hace en dominios verificados por su titular.</div>
+  </div>
+  {% elif r.puertos and r.puertos|length > 0 %}
   <div class="card card-crit">
     <span class="badge b-crit">CRITICO</span>
     <div class="card-title">{{ r.puertos|length }} puerto{{ 's' if r.puertos|length > 1 else '' }} expuesto{{ 's' if r.puertos|length > 1 else '' }}</div>
@@ -120,6 +126,8 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
   {% if r.ssl %}
     {% if r.ssl.caducado %}
     <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">Certificado SSL caducado</div><div class="card-desc">Los navegadores muestran aviso de inseguridad.</div></div>
+    {% elif r.ssl.tiene_ssl and r.ssl.valido == false %}
+    <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">Certificado SSL no válido</div><div class="card-desc">{{ r.ssl.error or '' }}. Los navegadores muestran aviso de inseguridad.</div></div>
     {% elif r.ssl.pronto_a_caducar %}
     <div class="card card-warn"><span class="badge b-warn">ADVERTENCIA</span><div class="card-title">SSL caduca en {{ r.ssl.dias_restantes }} días</div><div class="card-desc">Renovar antes de que expire.</div></div>
     {% elif r.ssl.tiene_ssl %}
@@ -128,17 +136,17 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem
   {% endif %}
 
   {% if r.leaks and r.leaks > 0 %}
-  <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">{{ r.leaks }} filtración{{ 'es' if r.leaks > 1 else '' }} detectada{{ 's' if r.leaks > 1 else '' }}</div><div class="card-desc">Credenciales comprometidas encontradas en bases de datos filtradas.</div></div>
+  <div class="card card-crit"><span class="badge b-crit">CRITICO</span><div class="card-title">{{ r.leaks }} filtración{{ 'es' if r.leaks > 1 else '' }} detectada{{ 's' if r.leaks > 1 else '' }}</div><div class="card-desc">El email aparece en brechas de seguridad conocidas. Fuente: <a href="https://haveibeenpwned.com" target="_blank" rel="noopener">Have I Been Pwned</a> (CC BY 4.0).</div></div>
   {% endif %}
 
   <!-- CTA -->
   <div class="cta">
     <div class="cta-title">¿Quieres monitorizar este dominio automáticamente?</div>
-    <div class="cta-sub">ReconBase vigila tu dominio cada noche y te avisa si algo cambia. Crea tu cuenta gratis y empieza a proteger tu empresa.</div>
+    <div class="cta-sub">Si el dominio es tuyo, crea una cuenta gratis y verifícalo: ReconBase lo analizará periódicamente y te avisará si algo cambia.</div>
     <a href="/register" class="btn">Crear cuenta gratis →</a>
   </div>
 
-  <div class="watermark">Informe generado con ReconBase · {{ base_host }}</div>
+  <div class="watermark">Informe generado con ReconBase · {{ base_host }}<br>Análisis automático y externo en la fecha indicada: no garantiza la ausencia de vulnerabilidades.</div>
 </div>
 </body>
 </html>

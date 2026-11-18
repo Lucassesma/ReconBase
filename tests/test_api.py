@@ -213,16 +213,6 @@ class TestProtectedEndpoints:
         assert r.status_code == 200
         assert r.content_type == "application/json"
 
-    def test_evolucion(self, client, test_user):
-        self._login(client)
-        r = client.get("/api/evolucion")
-        data = r.get_json()
-        assert "series" in data
-
-
-class TestSecurityHeaders:
-    """Tests para cabeceras de seguridad."""
-
     def test_hsts(self, client):
         r = client.get("/")
         assert "Strict-Transport-Security" in r.headers

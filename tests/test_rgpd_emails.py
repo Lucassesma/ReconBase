@@ -207,3 +207,19 @@ class TestBlogCorregido:
             todo = " ".join(p.contenido for p in BlogPost.query.all())
             for frase in ("340%", "105.000", "43&nbsp;% de los ciberataques", "asesoría de Madrid", "INCIBE-CERT y CCN-CERT) ya pueden imponer"):
                 assert frase not in todo, frase
+
+
+class TestVigorTerminos:
+    def test_fecha_de_vigor_15_dias_tras_el_primer_aviso(self, client, app):
+        with app.app_context():
+            u = _crear_usuario("vigor@ejemplo.com")
+            hace_dos_dias = datetime.utcnow() - timedelta(days=2)
+            primero = db.session.query(db.func.min(AuditLog.created_at)).filter(
+                AuditLog.evento == server.AVISO_TERMINOS_EVENTO).scalar()
+            if primero is None:
+                db.session.add(AuditLog(user_id=u.id, evento=server.AVISO_TERMINOS_EVENTO, created_at=hace_dos_dias))
+                db.session.commit()
+                primero = hace_dos_dias
+            esperado = server._fecha_es(primero + timedelta(days=15))
+        html = client.get("/terms").get_data(as_text=True)
+        assert f"entran en vigor el {esperado}" in html

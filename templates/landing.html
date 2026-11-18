@@ -582,7 +582,6 @@ function rbDismissPSBanner(){
   <div class="sc-tab" onclick="scSwitch('dashboard',this)">Dashboard</div>
   <div class="sc-tab" onclick="scSwitch('exportar',this)">Exportar</div>
   <div class="sc-tab" onclick="scSwitch('historial',this)">Historial</div>
-  <div class="sc-tab" onclick="scSwitch('tendencia',this)">Tendencia</div>
 </div>
 
 <div class="sc-content">
@@ -699,15 +698,6 @@ function rbDismissPSBanner(){
     </div>
   </div>
 
-  <!-- TENDENCIA -->
-  <div class="sc-panel" id="sc-tendencia">
-    <div class="sc-empty" id="sc-tend-empty"><h3>Sin datos de tendencia</h3><p>Haz al menos 2 escaneos para ver la evolución.</p></div>
-    <div id="sc-tend-content" style="display:none">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.5rem" id="sc-tend-stats"></div>
-      <div class="sc-chart-card" style="margin-bottom:1rem"><h4>Evolución del riesgo</h4><div class="sc-chart-wrap" style="height:280px"><canvas id="sc-tend-chart"></canvas></div></div>
-      <div class="sc-chart-card"><h4>Desglose por escaneo</h4><div style="overflow-x:auto;margin-top:.5rem"><table class="sc-hist-tbl"><thead><tr><th>#</th><th>Objetivo</th><th>Riesgo</th><th>Puertos</th><th>Filtraciones</th><th>Subdominios</th><th>Fecha</th></tr></thead><tbody id="sc-tend-body"></tbody></table></div></div>
-    </div>
-  </div>
 
 
 </div><!-- /sc-content -->
@@ -1960,7 +1950,7 @@ window.RB = { isLoggedIn: {{ 'true' if user and user.is_authenticated else 'fals
 window.RB_TURNSTILE_KEY = {{ (turnstile_site_key or '') | tojson }};
 var isLoggedIn = window.RB.isLoggedIn;
 </script>
-<script src="/static/js/scanner.js?v=6"></script>
+<script src="/static/js/scanner.js?v=7"></script>
 {% if turnstile_site_key and not (user and user.is_authenticated) %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>{% endif %}
 
 <script>

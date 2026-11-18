@@ -51,7 +51,7 @@ footer{border-top:1px solid var(--border);padding:2rem 6%;text-align:center;font
 
 <div class="content">
   <h1>Términos de Servicio</h1>
-  <p style="color:var(--dim);font-size:.85rem;margin-bottom:2rem">Última actualización: 17 de noviembre de 2026 · Para las cuentas creadas antes de esta fecha entran en vigor el 2 de diciembre de 2026</p>
+  <p style="color:var(--dim);font-size:.85rem;margin-bottom:2rem">Última actualización: 17 de noviembre de 2026 · Para las cuentas creadas antes de esa fecha entran en vigor {% if vigor_terminos %}el {{ vigor_terminos }}{% else %}15 días después de que se lo comuniquemos por email{% endif %}</p>
 
   <h2>1. Quién presta el servicio</h2>
   <p>En cumplimiento del artículo 10 de la Ley 34/2002 (LSSI):</p>

@@ -1231,7 +1231,7 @@ def pago_exito():
 
 @app.route("/terms")
 def terms():
-    return render_template("terms.html")
+    return render_template("terms.html", vigor_terminos=_fecha_vigor_terminos())
 
 
 # ── PÁGINA DE STATUS PÚBLICO ──
@@ -3691,28 +3691,6 @@ def guardar_horario():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 # ── COMPARATIVA ENTRE ESCANEOS ──
-@app.route("/api/evolucion", methods=["GET"])
-@login_required
-def evolucion_riesgo():
-    """Devuelve la evolución de riesgo agrupada por dominio para gráficos."""
-    dominio_filter = request.args.get("dominio", "")
-    q = Scan.query.filter_by(user_id=current_user.id)
-    if dominio_filter:
-        q = q.filter_by(dominio=dominio_filter)
-    scans = q.order_by(Scan.timestamp.asc()).limit(200).all()
-    # Agrupar por dominio
-    series = {}
-    for s in scans:
-        d = s.dominio
-        if d not in series:
-            series[d] = []
-        series[d].append({
-            "fecha": s.timestamp.strftime("%d/%m/%Y %H:%M") if s.timestamp else "",
-            "riesgo": s.riesgo,
-            "label": s.label,
-        })
-    return jsonify({"series": series})
-
 # ── ALERTAS CONFIGURABLES ──
 @app.route("/api/alertas", methods=["GET"])
 @login_required
@@ -4107,7 +4085,7 @@ def admin_panel():
     recent_users    = User.query.order_by(User.created_at.desc()).limit(50).all()
     recent_scans    = Scan.query.order_by(Scan.timestamp.desc()).limit(20).all()
     return render_template(
-        "admin.html", aviso_pendientes=len(_usuarios_sin_aviso()), aviso_vigor=AVISO_TERMINOS_VIGOR,
+        "admin.html", aviso_pendientes=len(_usuarios_sin_aviso()), aviso_vigor=_fecha_vigor_terminos(),
         total_users=total_users, total_scans=total_scans,
         users_pro=users_pro, users_trial=users_trial,
         scans_hoy=scans_hoy, scans_mes=scans_mes,
@@ -4368,15 +4346,35 @@ def admin_metricas():
 # Lo envía el administrador a mano desde /admin. Cada envío queda en el registro
 # de auditoría del usuario, así nadie lo recibe dos veces.
 AVISO_TERMINOS_EVENTO = "aviso_terminos_2026_11"
-AVISO_TERMINOS_VIGOR = "2 de diciembre de 2026"
+AVISO_TERMINOS_DIAS = 15  # antelación prometida en los términos
+_MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+          "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def _fecha_es(d):
+    return f"{d.day} de {_MESES[d.month - 1]} de {d.year}"
+
+
+def _fecha_vigor_terminos():
+    """Los términos nuevos entran en vigor 15 días después del PRIMER envío del
+    aviso, así se cumple la antelación prometida se envíe cuando se envíe.
+    None si aún no se ha enviado."""
+    try:
+        primero = db.session.query(db.func.min(AuditLog.created_at)).filter(
+            AuditLog.evento == AVISO_TERMINOS_EVENTO).scalar()
+    except Exception:
+        db.session.rollback()
+        return None
+    return _fecha_es(primero + timedelta(days=AVISO_TERMINOS_DIAS)) if primero else None
 
 
 def _enviar_aviso_terminos(user):
+    vigor = _fecha_vigor_terminos() or _fecha_es(datetime.utcnow() + timedelta(days=AVISO_TERMINOS_DIAS))
     cuerpo = (
         f"<p>Hola,</p>"
         f"<p>Te escribimos porque tienes una cuenta en ReconBase. Hemos actualizado los "
         f"<a href='{BASE_URL}/terms'>Términos de Servicio</a> y la <a href='{BASE_URL}/privacy'>Política de Privacidad</a>. "
-        f"Los cambios entran en vigor el <strong>{AVISO_TERMINOS_VIGOR}</strong>. Lo principal:</p>"
+        f"Los cambios entran en vigor el <strong>{vigor}</strong>. Lo principal:</p>"
         "<ul>"
         "<li><strong>ReconBase es gratuito.</strong> Ya no hay planes de pago: todas las cuentas tienen todas las funciones. "
         "Si tenías una suscripción activa, puedes cancelarla desde tu perfil.</li>"

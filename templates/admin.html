@@ -101,7 +101,7 @@ tr:hover{background:rgba(34,197,94,.04)}
 
   <div class="section-title">Aviso de cambio de términos</div>
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:2rem;font-size:.85rem;line-height:1.6">
-    <p style="margin-bottom:.75rem">Email a todos los usuarios explicando que ReconBase es gratis, la verificación de dominios y los nuevos términos (en vigor el {{ aviso_vigor }}). Pendientes de recibirlo: <strong>{{ aviso_pendientes }}</strong>. Los términos prometen avisar con 15 días de antelación: envíalo cuanto antes o cambia la fecha.</p>
+    <p style="margin-bottom:.75rem">Email a todos los usuarios explicando que ReconBase es gratis, la verificación de dominios y los nuevos términos. {% if aviso_vigor %}Entran en vigor el <strong>{{ aviso_vigor }}</strong> (15 días después del primer envío).{% else %}Aún no se ha enviado: los términos entrarán en vigor 15 días después del primer envío a todos.{% endif %} Pendientes de recibirlo: <strong>{{ aviso_pendientes }}</strong>.</p>
     <button class="btn-sm" onclick="avisoTerminos(true)">Enviarme una prueba</button>
     <button class="btn-sm red" onclick="avisoTerminos(false)">Enviar a todos</button>
   </div>
