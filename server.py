@@ -2577,6 +2577,8 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
                 diff = riesgo - riesgo_anterior
                 cambio_html = f"<p style='color:#94A3B8;font-size:13px'>Cambio respecto al anterior: {riesgo_anterior}% → <strong style='color:{color_riesgo}'>{riesgo}%</strong> (+{diff}%)</p>"
 
+            # Python 3.11 (producción) no admite barras invertidas dentro de las expresiones de una f-string.
+            pie_hibp = ('<p style="color:#94A3B8;font-size:12px">' + HIBP_ATRIBUCION + '.</p>') if desglose.get('Filtraciones') else ''
             cuerpo_html = (
                 f"Se ha detectado un <strong>aumento en el nivel de riesgo</strong> de tu dominio.<br><br>"
                 f"<table style='background:#080C14;border:1px solid #152B1E;border-radius:8px;padding:16px;width:100%;border-collapse:collapse'>"
@@ -2587,7 +2589,7 @@ def enviar_alerta_email(destinatario, objetivo, riesgo, label, desglose, riesgo_
                 f"</table><br>"
                 f"{cambio_html}"
                 f"{'<p><strong>Puntos a revisar:</strong></p><ul>' + desglose_html + '</ul>' if desglose_html else ''}"
-                f"{'<p style=\"color:#94A3B8;font-size:12px\">' + HIBP_ATRIBUCION + '.</p>' if desglose.get('Filtraciones') else ''}"
+                f"{pie_hibp}"
             )
             base_url = BASE_URL
             with app.app_context():
